@@ -1,0 +1,11 @@
+{
+  "Error check": {
+    "prefix": "err",
+    "body": [
+      "if err != nil {",
+      "\treturn ${1:nil}, err",
+      "}"
+    ],
+    "description": "Basic error check"
+  }
+}

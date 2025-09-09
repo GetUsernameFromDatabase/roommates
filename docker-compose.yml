@@ -1,0 +1,99 @@
+# Reminders for myself so I won't need to check every time
+# - ports: first port is for outside container use, the other inside docker
+# https://docs.docker.com/compose/
+version: '3'
+
+volumes:
+  db_data:
+  redis_data:
+
+services:
+  # --- KAFKA ---
+  kafka-0:
+    image: apache/kafka-native:3.9.1
+    restart: always
+    ports:
+      - 9092:9092
+    environment:
+      # https://kafka.apache.org/documentation/#configuration
+      # conversion rules -- https://github.com/apache/kafka/blob/trunk/docker/examples/README.md#using-environment-variables
+      KAFKA_LISTENERS: CONTROLLER://localhost:9091,HOST://0.0.0.0:9092,DOCKER://0.0.0.0:9093
+      KAFKA_ADVERTISED_LISTENERS: HOST://localhost:9092,DOCKER://kafka:9093
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,DOCKER:PLAINTEXT,HOST:PLAINTEXT
+
+      # for KRaft mode
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@localhost:9091
+
+      KAFKA_INTER_BROKER_LISTENER_NAME: DOCKER
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+
+  kafka_ui:
+    image: kafbat/kafka-ui:main
+    ports:
+      - 1337:8080
+    environment:
+      DYNAMIC_CONFIG_ENABLED: 'true'
+      KAFKA_CLUSTERS_0_NAME: roommates
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:9093
+    depends_on:
+      - kafka-0
+
+  # --- DATABASE ---
+  db:
+    command: -c config_file=/etc/postgresql.conf
+    build:
+      context: .
+      dockerfile: PostgreSQL.DockerFile
+    restart: always
+    ports:
+      - 5432:5432
+    environment:
+      # https://hub.docker.com/_/postgres/#environment-variables
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - ./postgresql.conf:/etc/postgresql.conf
+      - db_data:/var/lib/postgresql/data
+      - ./logs/postgresql:/logs
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready"]
+      interval: 1s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:8.2
+    command: redis-server --save 20 1 --loglevel warning --requirepass "$REDIS_PASSWORD"
+    restart: always
+    ports:
+      - 6379:6379
+    volumes:
+      - redis_data:/data
+
+  # --- CORE ---
+  app:
+    depends_on:
+      db:
+        condition: service_healthy
+        required: true 
+        restart: true
+      redis:
+        condition: service_started
+      # TODO: add kafka-0 when the time comes
+    build:
+      context: ./app
+      dockerfile: Dockerfile
+    ports:
+      # match latter with SERVER_ADDR env
+      - 8000:8080
+    env_file: .env
+    environment:
+      SERVER_ADDR: :8080
+      DATABASE_HOST: db
+      DATABASE_PORT: 5432
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka-0:9093
+      REDIS_ADDR: redis:6379

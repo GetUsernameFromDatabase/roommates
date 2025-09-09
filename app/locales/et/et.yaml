@@ -1,0 +1,26 @@
+et:
+  app:
+    title: 'Toakaaslased'
+  forms:
+    email:
+      title: 'E-Posti Address'
+      error-generic: 'Vale e-posti address'
+    password:
+      title: 'Parool'
+      confirm: 'Kinnitage oma parool'
+      error-length: 'Parool peab olema sisaldama vähemalt %d tähte'
+      error-case: 'Parool peab sisaldama nii suuri kui ka väikeseid tähti'
+      error-symbol: 'Parool peab sisaldama vähemalt ühte erimärki'
+      error-must-match: 'Mõlemad paroolid peavad samad olema'
+    username:
+      title: 'Kasutajanimi'
+      error-length: 'Kasutajanimi peab olema vähemalt %d tähte'
+    error:
+      invalid-credential: 'Vale sisselogimisinfo'
+  login:
+    title: 'Logi sisse'
+    register: 'Registreeri konto'
+    no-account: 'Kas sul ei ole kontot?'
+  register:
+    title: 'Registreeri'
+    already-have-account: 'Konto juba olemas'

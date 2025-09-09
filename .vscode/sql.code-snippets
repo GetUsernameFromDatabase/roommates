@@ -1,0 +1,33 @@
+{
+  "B-Tree Index": {
+    "prefix": "indx",
+    "body": [
+      "CREATE INDEX idx_${1}_${2} ON ${1:table_name} (${2:column_name});"
+    ],
+    "description": "Best for: Range queries and equality checks (<, <=, =, >=, >)."
+  },
+  "Hash Index": {
+    "prefix": "indxhash",
+    "body": [
+      "CREATE INDEX idxh_${1}_${2} ON ${1:table_name} USING HASH (${2:column_name});"
+    ],
+    "description": "Best for: Exact match queries (=)."
+  },
+  "GIN (Generalized Inverted Index)": {
+    "prefix": "indxgin",
+    "body": [
+      "CREATE INDEX idxgin_${1}_${2} ON ${1:table_name} USING GIN (${2:column_name});"
+    ],
+    "description": "Best for: Array and full-text searches (<@, @>, =, &&)."
+  },
+  "PostgreSQL moddatetime": {
+    "prefix": "mdt",
+    "body": [
+      "CREATE TRIGGER mdt_${1}",
+      "  BEFORE UPDATE ON ${1:table_name}",
+      "  FOR EACH ROW",
+      "  EXECUTE PROCEDURE moddatetime (${2:updated_at});"
+    ],
+    "description": "https://www.postgresql.org/docs/current/contrib-spi.html#CONTRIB-SPI-MODDATETIME"
+  }
+}

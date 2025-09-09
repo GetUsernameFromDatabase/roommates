@@ -1,0 +1,73 @@
+package components
+
+import (
+	"github.com/invopop/ctxi18n/i18n"
+	"roomates/globals"
+	"roomates/locales"
+)
+
+// title has default which is i18n-zed
+templ HeaderComponent(title string) {
+	{{
+		if title == "" {
+			title = i18n.T(ctx, string(locales.LKAppTitle), i18n.Default("Roommates"))
+		}
+	}}
+	<head>
+		<title>{ title }</title>
+		<link rel="stylesheet" href="/assets/franken-ui@2.1.0-next.20.core.min.css"/>
+		<link
+			rel="stylesheet"
+			href="/assets/franken-ui@2.1.0-next.20.utilities.min.css"
+		/>
+		<script src="/assets/franken-ui@2.1.0-next.20.core.iife.js" type="module"></script>
+		<script src="/assets/franken-ui@2.1.0-next.20.icon.iife.js" type="module"></script>
+		<script src="/assets/htmx.2.0.6.min.js" type="module"></script>
+		<script>
+		const __FRANKEN__ = JSON.parse(localStorage.getItem('__FRANKEN__') || '{}');
+    const htmlElement = document.documentElement;
+
+		// TODO: DARK MODE
+    // if (
+    //   __FRANKEN__.mode === 'dark' ||
+    //   (!__FRANKEN__.mode &&
+    //     window.matchMedia('(prefers-color-scheme: dark)').matches)
+    // ) {
+    //   htmlElement.classList.add('dark');
+    // } else {
+    //   htmlElement.classList.remove('dark');
+    // }
+
+    htmlElement.classList.add(__FRANKEN__.theme || 'uk-theme-teal');
+    htmlElement.classList.add(__FRANKEN__.radii || 'uk-radii-md');
+    htmlElement.classList.add(__FRANKEN__.shadows || 'uk-shadows-sm');
+    htmlElement.classList.add(__FRANKEN__.font || 'uk-font-sm');
+    htmlElement.classList.add(__FRANKEN__.chart || 'uk-chart-default');
+  </script>
+	</head>
+}
+
+// csrf input for
+templ CSRF() {
+	<input type="hidden" name={ globals.Csrf } value={ ctx.Value("gorilla.csrf.Token").(string) }/>
+}
+
+templ ValidationMessages(msgs []locales.LKMessage) {
+	if len(msgs) > 0 {
+		<div class="">
+			<ul class="uk-anmt-shake uk-form-help text-destructive">
+				for _, msg := range msgs {
+					<li class="error">{ i18n.T(ctx, string(msg.Key), msg.Args...) }</li>
+				}
+			</ul>
+		</div>
+	}
+}
+
+templ FormError(errorMsg string) {
+	if errorMsg != "" {
+		<div class="uk-alert uk-alert-destructive">
+			{ errorMsg }
+		</div>
+	}
+}

@@ -1,0 +1,182 @@
+package components
+
+import "roomates/locales"
+import "github.com/invopop/ctxi18n/i18n"
+import "strings"
+
+templ PageLogin(model LoginModel) {
+	<html>
+		@HeaderComponent("")
+		<body class="bg-background font-geist-sans text-foreground antialiased">
+			<script>
+			function togglePasswordVisibility(button) {
+				const container = button.closest('.uk-inline');
+				const input = container.querySelector('input');
+				const icon = button.querySelector('uk-icon');
+
+				const isPasswordHidden = input.type === 'password';
+				input.type = isPasswordHidden ? 'text' : 'password';
+				icon.setAttribute('icon', isPasswordHidden ? 'eye-off' : 'eye');
+			}
+			</script>
+			<div class="md:bg-muted flex min-h-svh items-center justify-center p-4 md:p-10">
+				<div class="w-full max-w-md">
+					<div class="uk-card uk-card-body fr-widget bg-background text-foreground border-border md:border md:p-6">
+						<h1 class="uk-card-title uk-h4">{ i18n.T(ctx, string(locales.LKLoginTitle)) }</h1>
+						@LoginForm(model)
+						<div class="uk-divider-icon mt-6"></div>
+						<div class="mt-6 text-center" hx-boost="true">
+							{ i18n.T(ctx, string(locales.LKLoginNoAccount)) }
+							<a class="uk-link" href="/register">
+								{ i18n.T(ctx, string(locales.LKLoginRegister)) }
+							</a>
+						</div>
+					</div>
+				</div>
+			</div>
+		</body>
+	</html>
+}
+
+templ PageRegister(model RegisterModel) {
+	<html>
+		@HeaderComponent("")
+		<body class="bg-background font-geist-sans text-foreground antialiased">
+			<div class="md:bg-muted flex min-h-svh items-center justify-center p-4 md:p-10">
+				<div class="w-full max-w-md">
+					<div class="uk-card uk-card-body fr-widget bg-background text-foreground border-border md:border md:p-6">
+						<h1 class="uk-card-title uk-h4">{ i18n.T(ctx, string(locales.LKRegisterTitle)) }</h1>
+						@RegisterForm(model)
+						<div class="uk-divider-icon mt-6"></div>
+						<div class="mt-6 text-center" hx-boost="true">
+							{ i18n.T(ctx, string(locales.LKRegisterAlreadyHaveAccount)) }
+							<a class="uk-link" href="/login">
+								{ i18n.T(ctx, string(locales.LKLoginTitle)) }
+							</a>
+						</div>
+					</div>
+				</div>
+			</div>
+		</body>
+	</html>
+}
+
+templ LoginForm(m LoginModel) {
+	{{
+		emailErrors := m.ValidateEmail()
+		passwordErrors := m.ValidatePassword()
+	}}
+	<form
+		id="loginForm"
+		method="post"
+		hx-boost="true"
+		class="uk-form-stacked space-y-6 mt-6"
+	>
+		// @CSRF()
+		@FormError(m.Error)
+		@LfEmailInput(emailErrors, m.Email)
+		@LfPasswordInput(passwordErrors, m.Password, "")
+		<div class="mt-4">
+			<button type="submit" class="uk-btn uk-btn-primary block w-full">
+				{ strings.ToUpper(i18n.T(ctx, string(locales.LKLoginTitle))) }
+			</button>
+		</div>
+	</form>
+}
+
+templ RegisterForm(m RegisterModel) {
+	{{
+		emailErrors := m.ValidateEmail()
+		usernameErrors := m.ValidateUsername()
+		passwordErrors := m.ValidatePassword()
+		password2Errors :=m.ValidatePasswordMatch()
+	}}
+	<form
+		id="registerForm"
+		method="post"
+		hx-boost="true"
+		class="uk-form-stacked space-y-6 mt-6"
+	>
+		// @CSRF()
+		@FormError(m.Error)
+		@LfEmailInput(emailErrors, m.Email)
+		@RfUsernameInput(usernameErrors, m.Username)
+		@LfPasswordInput(passwordErrors, m.Password, "")
+		@LfPasswordInput(password2Errors, m.Password2, "password_2")
+		<div class="mt-4">
+			<button type="submit" class="uk-btn uk-btn-primary block w-full">
+				{ strings.ToUpper(i18n.T(ctx, string(locales.LKRegisterTitle))) }
+			</button>
+		</div>
+	</form>
+}
+
+templ LfEmailInput(errors []locales.LKMessage, value string) {
+	<div>
+		<div class="uk-inline w-full">
+			<span class="uk-form-icon">
+				<uk-icon icon="mail"></uk-icon>
+			</span>
+			<input
+				class="uk-input"
+				type="email"
+				name="email"
+				aria-label="Email Input"
+				placeholder={ i18n.T(ctx, string(locales.LKFormsEmailTitle)) }
+				value={ value }
+			/>
+		</div>
+		@ValidationMessages(errors)
+	</div>
+}
+
+templ LfPasswordInput(errors []locales.LKMessage, value string, name string) {
+	{{
+		if name == "" {
+			name = "password"
+		}
+	}}
+	<div>
+		<div class="uk-inline w-full">
+			<span class="uk-form-icon">
+				<uk-icon icon="lock"></uk-icon>
+			</span>
+			<input
+				class="uk-input"
+				type="password"
+				name={ name }
+				aria-label="Password Input"
+				placeholder={ i18n.T(ctx, string(locales.LKFormsPasswordTitle)) }
+				value={ value }
+			/>
+			<button
+				type="button"
+				class="uk-form-icon uk-form-icon-flip"
+				style="cursor: pointer;"
+				onclick="togglePasswordVisibility(this)"
+			>
+				<uk-icon icon="eye"></uk-icon>
+			</button>
+		</div>
+		@ValidationMessages(errors)
+	</div>
+}
+
+templ RfUsernameInput(errors []locales.LKMessage, value string) {
+	<div>
+		<div class="uk-inline w-full">
+			<span class="uk-form-icon">
+				<uk-icon icon="user"></uk-icon>
+			</span>
+			<input
+				class="uk-input"
+				type="text"
+				name="username"
+				aria-label="Username Input"
+				placeholder={ i18n.T(ctx, string(locales.LKFormsUsernameTitle)) }
+				value={ value }
+			/>
+		</div>
+		@ValidationMessages(errors)
+	</div>
+}

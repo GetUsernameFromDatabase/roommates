@@ -1,0 +1,22 @@
+# https://docs.sqlc.dev/en/latest/reference/config.html
+version: '2'
+sql:
+  - engine: 'postgresql'
+    queries: 'db/queries.sql'
+    schema: 'db/migrations'
+    gen:
+      go:
+        package: 'dbqueries'
+        out: 'db/dbqueries'
+
+        sql_package: 'pgx/v5'
+        sql_driver: github.com/jackc/pgx/v5
+
+        emit_json_tags: true
+        emit_pointers_for_null_types: true
+        emit_enum_valid_method: true
+        # emit_prepared_queries: true
+        # emit_interface: true
+        # emit_all_enum_values: true
+
+# TODO: maybe add this https://docs.sqlc.dev/en/latest/howto/vet.html#sqlc-db-prepare

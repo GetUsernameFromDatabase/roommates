@@ -1,0 +1,61 @@
+{
+  // See https://go.microsoft.com/fwlink/?LinkId=733558
+  // for the documentation about the tasks.json format
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "sqlc generate",
+      "type": "shell",
+      "command": "sqlc",
+      "args": ["generate"],
+      "group": "build",
+      "options": {
+        "cwd": "${workspaceFolder}/app"
+      },
+      "detail": "generate code that interacts with the database"
+    },
+    {
+      "label": "templ generate",
+      "type": "shell",
+      "command": "templ",
+      "args": ["generate"],
+      "group": "build",
+      "options": {
+        "cwd": "${workspaceFolder}/app"
+      },
+      "detail": "generate templ code"
+    },
+    {
+      "label": "swag init",
+      "type": "shell",
+      "command": "swag",
+      "args": ["init"],
+      "group": "build",
+      "options": {
+        "cwd": "${workspaceFolder}/app"
+      },
+      "detail": "generate swag documentation for the API"
+    },
+    {
+      "label": "locale key generation",
+      "type": "shell",
+      "command": "go",
+      "args": ["run", "main.go"],
+      "group": "build",
+      "options": {
+        "cwd": "${workspaceFolder}/app/locales/gen-keys"
+      },
+      "detail": "generate swag documentation for the API"
+    },
+    {
+      "label": "build",
+      "dependsOn": [
+        "locale key generation",
+        "sqlc generate",
+        "templ generate",
+        // try to keep swag last
+        "swag init"
+      ]
+    }
+  ]
+}
