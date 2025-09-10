@@ -2,10 +2,12 @@ package rdb
 
 import (
 	"context"
+	"errors"
 	"roommates/logger"
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/redis/go-redis/v9"
 )
 
 var log = logger.RedisLoggger
@@ -44,6 +46,9 @@ func (r *RedisHandler) GetUserSession(ctx context.Context, key string) (*UserSes
 	cmd := r.redis.Get(ctx, rKey)
 	err := cmd.Err()
 	if err != nil {
+		if errors.Is(err, redis.Nil) {
+			return nil, nil
+		}
 		log.Error().Err(err).Str("key", rKey).Caller().Msg("error during GetUserSession")
 		return nil, err
 	}
