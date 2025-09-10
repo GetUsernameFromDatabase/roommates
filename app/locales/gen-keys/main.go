@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"os/exec"
 	"regexp"
 	"sort"
 	"strings"
@@ -79,7 +80,14 @@ func main() {
 	buf.WriteString(")\n")
 
 	if err := os.WriteFile(*outputPath, buf.Bytes(), 0644); err != nil {
-		log.Fatalf("Failed to write output file: %v", err)
+		log.Fatalf("Failed to write \"%s\" file: %v", *outputPath, err)
+	}
+
+	// format generated file
+	cmd := exec.Command("go", "fmt", *outputPath)
+	err = cmd.Run()
+	if err != nil {
+		log.Fatalf("Failed to format \"%s\": %v", *outputPath, err)
 	}
 }
 
