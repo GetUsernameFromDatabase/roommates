@@ -3,7 +3,7 @@ package middleware
 import (
 	"net/http"
 	"roommates/docs"
-	"roommates/globals"
+	g "roommates/globals"
 	"roommates/rdb"
 	"roommates/utils"
 	"strings"
@@ -12,8 +12,10 @@ import (
 	"github.com/pkg/errors"
 )
 
+// will delete cookie, redirect to login (not on api endpoints) and abort future handlers
 func unauthorize(ctx *gin.Context) {
-	// my current belief is that API requests should not redirect to login when unauthorized
+	utils.DeleteCookie(ctx, string(g.CSessionToken))
+	// API requests should not redirect to login when unauthorized
 	if strings.HasPrefix(ctx.FullPath(), docs.SwaggerInfo.BasePath) {
 		utils.ErrorResponse(ctx, http.StatusUnauthorized, errors.New("unauthorized access"))
 	} else {
@@ -24,12 +26,12 @@ func unauthorize(ctx *gin.Context) {
 
 // sets auth info into gin context
 func setAuthInfo(ctx *gin.Context, value *rdb.UserSessionValue) {
-	ctx.Set(globals.GAuth, value)
+	ctx.Set(g.GAuth, value)
 }
 
 // gets auth info into gin context
 func GetAuthInfo(ctx *gin.Context) *rdb.UserSessionValue {
-	value, ok := ctx.Get(globals.GAuth)
+	value, ok := ctx.Get(g.GAuth)
 	if !ok {
 		return nil
 	}
