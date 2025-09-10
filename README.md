@@ -56,7 +56,11 @@ frontend:
 
 ---
 
-`go install github.com/air-verse/air@latest`
-`go install github.com/a-h/templ/cmd/templ@latest`
-`go install github.com/swaggo/swag/cmd/swag@latest`
-`go install github.com/sqlc-dev/sqlc/cmd/sqlc@latest`
+- `go install github.com/air-verse/air@latest`
+- `go install github.com/a-h/templ/cmd/templ@latest`
+- `go install github.com/swaggo/swag/cmd/swag@latest`
+- `go install github.com/sqlc-dev/sqlc/cmd/sqlc@latest`
+
+> [setup-dev.sh](./app/setup-dev.sh) has them all for easy install
+
+use [conventional commits](https://www.conventionalcommits.org/en/v1.0.0/#summary) with [preferred commit types](https://github.com/conventional-changelog/commitlint/tree/master/%40commitlint/config-conventional#type-enum)
