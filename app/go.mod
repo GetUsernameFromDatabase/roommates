@@ -1,4 +1,4 @@
-module roomates
+module roommates
 
 go 1.24.5
 

@@ -1,4 +1,4 @@
-# Roomates
+# Roommates
 
 If you are seeing this then that means I have not finished this project
 Enjoy the WIP state of this overengineered project -- doing this for enjoyment and something to add to portfolio

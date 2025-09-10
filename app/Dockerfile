@@ -10,7 +10,7 @@ RUN go mod download
 COPY . .
 
 RUN sh build-pre.sh
-RUN CGO_ENABLED=0 GOOS=linux go build -o /roomates-app
+RUN CGO_ENABLED=0 GOOS=linux go build -o /roommates-app
 
 
-CMD ["/roomates-app"]
+CMD ["/roommates-app"]

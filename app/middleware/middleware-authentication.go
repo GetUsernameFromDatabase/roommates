@@ -2,10 +2,10 @@ package middleware
 
 import (
 	"net/http"
-	"roomates/docs"
-	"roomates/globals"
-	"roomates/rdb"
-	"roomates/utils"
+	"roommates/docs"
+	"roommates/globals"
+	"roommates/rdb"
+	"roommates/utils"
 	"strings"
 
 	"github.com/gin-gonic/gin"

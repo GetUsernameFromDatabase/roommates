@@ -3,12 +3,12 @@ package controller
 import (
 	"errors"
 	"net/http"
-	"roomates/components"
-	"roomates/gintemplrenderer"
-	g "roomates/globals"
-	"roomates/locales"
-	"roomates/middleware"
-	"roomates/rdb"
+	"roommates/components"
+	"roommates/gintemplrenderer"
+	g "roommates/globals"
+	"roommates/locales"
+	"roommates/middleware"
+	"roommates/rdb"
 
 	"github.com/gin-gonic/gin"
 	"github.com/invopop/ctxi18n/i18n"

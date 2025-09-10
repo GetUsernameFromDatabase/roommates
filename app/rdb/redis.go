@@ -2,7 +2,7 @@ package rdb
 
 import (
 	"encoding/json"
-	"roomates/utils"
+	"roommates/utils"
 
 	"github.com/redis/go-redis/v9"
 )

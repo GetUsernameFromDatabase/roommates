@@ -2,9 +2,9 @@ package middleware
 
 import (
 	"net/http"
-	"roomates/locales"
-	"roomates/logger"
-	"roomates/utils"
+	"roommates/locales"
+	"roommates/logger"
+	"roommates/utils"
 	"strings"
 
 	"github.com/gin-gonic/gin"

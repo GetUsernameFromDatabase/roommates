@@ -2,7 +2,7 @@ package utils
 
 import (
 	"net/http"
-	g "roomates/globals"
+	g "roommates/globals"
 	"strings"
 
 	"github.com/gin-gonic/gin"

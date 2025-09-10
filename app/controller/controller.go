@@ -1,10 +1,10 @@
 package controller
 
 import (
-	"roomates/db/dbqueries"
-	"roomates/logger"
-	"roomates/rdb"
-	"roomates/utils"
+	"roommates/db/dbqueries"
+	"roommates/logger"
+	"roommates/rdb"
+	"roommates/utils"
 
 	"github.com/gin-gonic/gin"
 )

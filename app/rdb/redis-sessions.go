@@ -2,7 +2,7 @@ package rdb
 
 import (
 	"context"
-	"roomates/logger"
+	"roommates/logger"
 	"time"
 
 	"github.com/google/uuid"

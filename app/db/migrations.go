@@ -10,7 +10,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
-	"roomates/logger"
+	"roommates/logger"
 	"strconv"
 	"time"
 

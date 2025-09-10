@@ -2,10 +2,10 @@ package controller
 
 import (
 	"net/http"
-	"roomates/db/dbqueries"
-	g "roomates/globals"
-	"roomates/rdb"
-	"roomates/utils"
+	"roommates/db/dbqueries"
+	g "roommates/globals"
+	"roommates/rdb"
+	"roommates/utils"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"

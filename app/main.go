@@ -3,17 +3,17 @@ package main
 import (
 	"context"
 	"fmt"
-	"roomates/controller"
-	"roomates/db"
-	"roomates/db/dbqueries"
-	"roomates/logger"
-	"roomates/rdb"
-	"roomates/utils"
+	"roommates/controller"
+	"roommates/db"
+	"roommates/db/dbqueries"
+	"roommates/logger"
+	"roommates/rdb"
+	"roommates/utils"
 
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	_ "roomates/docs"
+	_ "roommates/docs"
 )
 
 var log = logger.Main

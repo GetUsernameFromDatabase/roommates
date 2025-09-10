@@ -1,11 +1,11 @@
 package main
 
 import (
-	"roomates/controller"
-	"roomates/docs"
-	"roomates/gintemplrenderer"
-	"roomates/locales"
-	"roomates/middleware"
+	"roommates/controller"
+	"roommates/docs"
+	"roommates/gintemplrenderer"
+	"roommates/locales"
+	"roommates/middleware"
 
 	"github.com/gin-gonic/gin"
 	"github.com/invopop/ctxi18n"

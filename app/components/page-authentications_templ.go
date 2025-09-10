@@ -8,7 +8,7 @@ package components
 import "github.com/a-h/templ"
 import templruntime "github.com/a-h/templ/runtime"
 
-import "roomates/locales"
+import "roommates/locales"
 import "github.com/invopop/ctxi18n/i18n"
 import "strings"
 

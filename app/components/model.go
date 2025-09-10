@@ -1,12 +1,12 @@
 package components
 
-import l "roomates/locales"
+import l "roommates/locales"
 
 type Validator func() []l.LKMessage
 
 type ValidatableModel interface {
 	Validate() []l.LKMessage
-	GetValidators() []Validator 
+	GetValidators() []Validator
 }
 
 func IsModelValid(m ValidatableModel) (bool, []l.LKMessage) {

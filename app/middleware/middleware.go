@@ -1,8 +1,8 @@
 package middleware
 
 import (
-	"roomates/db/dbqueries"
-	"roomates/rdb"
+	"roommates/db/dbqueries"
+	"roommates/rdb"
 )
 
 type MiddlewareHandlers interface {

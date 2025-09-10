@@ -10,8 +10,8 @@ import templruntime "github.com/a-h/templ/runtime"
 
 import (
 	"github.com/invopop/ctxi18n/i18n"
-	"roomates/globals"
-	"roomates/locales"
+	"roommates/globals"
+	"roommates/locales"
 )
 
 // title has default which is i18n-zed

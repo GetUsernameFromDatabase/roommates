@@ -2,7 +2,7 @@ package components
 
 import (
 	"net/mail"
-	l "roomates/locales"
+	l "roommates/locales"
 	"strings"
 )
 

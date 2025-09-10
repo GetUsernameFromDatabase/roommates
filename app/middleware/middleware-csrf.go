@@ -2,8 +2,8 @@ package middleware
 
 import (
 	"net/http"
-	"roomates/globals"
-	"roomates/utils"
+	"roommates/globals"
+	"roommates/utils"
 
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/csrf"
