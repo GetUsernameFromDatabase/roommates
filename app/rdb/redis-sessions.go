@@ -3,14 +3,11 @@ package rdb
 import (
 	"context"
 	"errors"
-	"roommates/logger"
 	"time"
 
 	"github.com/google/uuid"
 	"github.com/redis/go-redis/v9"
 )
-
-var log = logger.RedisLoggger
 
 // Redis key start for user sessions
 const KSession = "session:"

@@ -2,10 +2,13 @@ package rdb
 
 import (
 	"encoding/json"
+	"roommates/logger"
 	"roommates/utils"
 
 	"github.com/redis/go-redis/v9"
 )
+
+var log = logger.RedisLoggger
 
 type RedisHandler struct {
 	redis *redis.Client
