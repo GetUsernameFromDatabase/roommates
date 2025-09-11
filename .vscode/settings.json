@@ -1,5 +1,8 @@
 {
   "tailwindCSS.includeLanguages": {
     "templ": "gohtmltmpl"
+  },
+  "emmet.includeLanguages": {
+    "templ": "html"
   }
 }
