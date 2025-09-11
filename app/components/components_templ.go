@@ -9,9 +9,9 @@ import "github.com/a-h/templ"
 import templruntime "github.com/a-h/templ/runtime"
 
 import (
-	"github.com/invopop/ctxi18n/i18n"
 	"roommates/globals"
 	"roommates/locales"
+	"roommates/utils"
 	"strings"
 )
 
@@ -39,7 +39,7 @@ func HeaderComponent(title string) templ.Component {
 		ctx = templ.ClearChildren(ctx)
 
 		if title == "" {
-			title = i18n.T(ctx, string(locales.LKAppTitle), i18n.Default("Roommates"))
+			title = utils.T(ctx, locales.LKAppTitle, "Roommates")
 		}
 		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<head><title>")
 		if templ_7745c5c3_Err != nil {
@@ -150,9 +150,9 @@ func ValidationMessages(msgs []locales.LKMessage) templ.Component {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var7 string
-				templ_7745c5c3_Var7, templ_7745c5c3_Err = templ.JoinStringErrs(i18n.T(ctx, string(msg.Key), msg.Args...))
+				templ_7745c5c3_Var7, templ_7745c5c3_Err = templ.JoinStringErrs(utils.T(ctx, msg.Key, "", msg.Args...))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/components.templ`, Line: 62, Col: 66}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/components.templ`, Line: 62, Col: 63}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var7))
 				if templ_7745c5c3_Err != nil {
@@ -315,10 +315,10 @@ func navigation() templ.Component {
 
 		urlPath := ctx.Value(globals.GPath).(string)
 		routes := [][]string{
-			{globals.RHouses, i18n.T(ctx, string(locales.LKNavbarHouses), i18n.Default("Houses"))},
-			{globals.RNotes, i18n.T(ctx, string(locales.LKNavbarNotes), i18n.Default("Notes"))},
-			{globals.RPayments, i18n.T(ctx, string(locales.LKNavbarPayments), i18n.Default("Payments"))},
-			{globals.RMessaging, i18n.T(ctx, string(locales.LKNavbarMessaging), i18n.Default("Messaging"))},
+			{globals.RHouses, utils.T(ctx, locales.LKNavbarHouses, "Houses")},
+			{globals.RNotes, utils.T(ctx, locales.LKNavbarNotes, "Notes")},
+			{globals.RPayments, utils.T(ctx, locales.LKNavbarPayments, "Payments")},
+			{globals.RMessaging, utils.T(ctx, locales.LKNavbarMessaging, "Messaging")},
 		}
 		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 18, "<div class=\"flex w-full\"><div class=\"max-sm:hidden flex m-auto w-full max-w-2xl\"><ul class=\"justify-center uk-tab-alt\" data-uk-tab>")
 		if templ_7745c5c3_Err != nil {

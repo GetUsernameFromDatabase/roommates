@@ -10,9 +10,9 @@ import (
 	"roommates/middleware"
 	"roommates/models"
 	"roommates/rdb"
+	"roommates/utils"
 
 	"github.com/gin-gonic/gin"
-	"github.com/invopop/ctxi18n/i18n"
 )
 
 func (c *Controller) PageMain(ctx *gin.Context) {
@@ -86,11 +86,11 @@ func (c *Controller) PageLogin(ctx *gin.Context) {
 		})
 		if err != nil {
 			if errors.Is(err, g.ErrorInvalidCredential) {
-				model.Error = i18n.T(
+				model.Error = utils.T(
 					ctx.Request.Context(),
-					string(locales.LKFormsErrorInvalidCredential),
+					locales.LKFormsErrorInvalidCredential,
 					// this error is safe to output publically
-					i18n.Default(err.Error()),
+					err.Error(),
 				)
 				render(model)
 				return
@@ -143,11 +143,11 @@ func (c *Controller) PageRegister(ctx *gin.Context) {
 			Username: model.Username,
 		})
 		if errors.Is(err, g.ErrorAccountAlreadyExists) {
-			model.Error = i18n.T(
+			model.Error = utils.T(
 				ctx.Request.Context(),
-				string(locales.LKFormsErrorAlreadyExists),
+				locales.LKFormsErrorAlreadyExists,
 				// this error is safe to output publically
-				i18n.Default(err.Error()),
+				err.Error(),
 			)
 			render(model)
 			return

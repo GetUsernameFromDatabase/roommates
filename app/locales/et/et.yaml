@@ -24,7 +24,7 @@ et:
     no-account: 'Kas sul ei ole kontot?'
   register:
     title: 'Registreeri'
-    already-have-account: 'Konto juba olemas'
+    already-have-account: 'Konto juba olemas?'
   navbar:
     houses: 'Elamiskohad'
     notes: 'Märkmed'

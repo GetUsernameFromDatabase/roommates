@@ -1,9 +1,9 @@
 package components
 
 import (
-	"github.com/invopop/ctxi18n/i18n"
 	"roommates/globals"
 	"roommates/locales"
+	"roommates/utils"
 	"strings"
 )
 
@@ -11,7 +11,7 @@ import (
 templ HeaderComponent(title string) {
 	{{
 		if title == "" {
-			title = i18n.T(ctx, string(locales.LKAppTitle), i18n.Default("Roommates"))
+			title = utils.T(ctx, locales.LKAppTitle, "Roommates")
 		}
 	}}
 	<head>
@@ -59,7 +59,7 @@ templ ValidationMessages(msgs []locales.LKMessage) {
 		<div class="">
 			<ul class="uk-anmt-shake uk-form-help text-destructive">
 				for _, msg := range msgs {
-					<li class="error">{ i18n.T(ctx, string(msg.Key), msg.Args...) }</li>
+					<li class="error">{ utils.T(ctx, msg.Key, "", msg.Args...) }</li>
 				}
 			</ul>
 		</div>
@@ -127,10 +127,10 @@ templ navigation() {
 	{{
 		urlPath := ctx.Value(globals.GPath).(string)
 		routes := [][]string{
-			{globals.RHouses, i18n.T(ctx, string(locales.LKNavbarHouses), i18n.Default("Houses"))},
-			{globals.RNotes, i18n.T(ctx, string(locales.LKNavbarNotes), i18n.Default("Notes"))},
-			{globals.RPayments, i18n.T(ctx, string(locales.LKNavbarPayments), i18n.Default("Payments"))},
-			{globals.RMessaging, i18n.T(ctx, string(locales.LKNavbarMessaging), i18n.Default("Messaging"))},
+			{globals.RHouses, utils.T(ctx, locales.LKNavbarHouses, "Houses")},
+			{globals.RNotes, utils.T(ctx, locales.LKNavbarNotes, "Notes")},
+			{globals.RPayments, utils.T(ctx, locales.LKNavbarPayments, "Payments")},
+			{globals.RMessaging, utils.T(ctx, locales.LKNavbarMessaging, "Messaging")},
 		}
 	}}
 	<div class="flex w-full">

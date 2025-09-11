@@ -1,10 +1,11 @@
 package components
 
 import "roommates/locales"
-import "github.com/invopop/ctxi18n/i18n"
+
 import "strings"
 import "roommates/globals"
 import "roommates/models"
+import "roommates/utils"
 
 templ PageLogin(model models.Login) {
 	<!DOCTYPE html>
@@ -25,13 +26,13 @@ templ PageLogin(model models.Login) {
 			<div class="md:bg-muted flex min-h-svh items-center justify-center p-4 md:p-10">
 				<div class="w-full max-w-md">
 					<div class="uk-card uk-card-body fr-widget bg-background text-foreground border-border md:border md:p-6">
-						<h1 class="uk-card-title uk-h4">{ i18n.T(ctx, string(locales.LKLoginTitle)) }</h1>
+						<h1 class="uk-card-title uk-h4">{ utils.T(ctx, locales.LKLoginTitle, "Login") }</h1>
 						@LoginForm(model)
 						<div class="uk-divider-icon mt-6"></div>
 						<div class="mt-6 text-center" hx-boost="true">
-							{ i18n.T(ctx, string(locales.LKLoginNoAccount)) }
+							{ utils.T(ctx, locales.LKLoginNoAccount, "Have no account?") }
 							<a class="uk-link" href={ globals.RRegister }>
-								{ i18n.T(ctx, string(locales.LKLoginRegister)) }
+								{ utils.T(ctx, locales.LKLoginRegister, "Register account") }
 							</a>
 						</div>
 					</div>
@@ -49,13 +50,13 @@ templ PageRegister(model models.Register) {
 			<div class="md:bg-muted flex min-h-svh items-center justify-center p-4 md:p-10">
 				<div class="w-full max-w-md">
 					<div class="uk-card uk-card-body fr-widget bg-background text-foreground border-border md:border md:p-6">
-						<h1 class="uk-card-title uk-h4">{ i18n.T(ctx, string(locales.LKRegisterTitle)) }</h1>
+						<h1 class="uk-card-title uk-h4">{ utils.T(ctx, locales.LKRegisterTitle, "Register") }</h1>
 						@RegisterForm(model)
 						<div class="uk-divider-icon mt-6"></div>
 						<div class="mt-6 text-center" hx-boost="true">
-							{ i18n.T(ctx, string(locales.LKRegisterAlreadyHaveAccount)) }
+							{ utils.T(ctx, locales.LKRegisterAlreadyHaveAccount, "Already have account?") }
 							<a class="uk-link" href={ globals.RLogin }>
-								{ i18n.T(ctx, string(locales.LKLoginTitle)) }
+								{ utils.T(ctx, locales.LKLoginTitle, "Login") }
 							</a>
 						</div>
 					</div>
@@ -82,7 +83,7 @@ templ LoginForm(m models.Login) {
 		@LfPasswordInput(passwordErrors, m.Password, "")
 		<div class="mt-4">
 			<button type="submit" class="uk-btn uk-btn-primary block w-full">
-				{ strings.ToUpper(i18n.T(ctx, string(locales.LKLoginTitle))) }
+				{ strings.ToUpper(utils.T(ctx, locales.LKLoginTitle, "Login")) }
 			</button>
 		</div>
 	</form>
@@ -109,7 +110,7 @@ templ RegisterForm(m models.Register) {
 		@LfPasswordInput(password2Errors, m.Password2, "password_2")
 		<div class="mt-4">
 			<button type="submit" class="uk-btn uk-btn-primary block w-full">
-				{ strings.ToUpper(i18n.T(ctx, string(locales.LKRegisterTitle))) }
+				{ strings.ToUpper(utils.T(ctx, locales.LKRegisterTitle, "Register")) }
 			</button>
 		</div>
 	</form>
@@ -126,7 +127,7 @@ templ LfEmailInput(errors []locales.LKMessage, value string) {
 				type="email"
 				name="email"
 				aria-label="Email Input"
-				placeholder={ i18n.T(ctx, string(locales.LKFormsEmailTitle)) }
+				placeholder={ utils.T(ctx, locales.LKFormsEmailTitle, "E-Mail") }
 				value={ value }
 			/>
 		</div>
@@ -150,7 +151,7 @@ templ LfPasswordInput(errors []locales.LKMessage, value string, name string) {
 				type="password"
 				name={ name }
 				aria-label="Password Input"
-				placeholder={ i18n.T(ctx, string(locales.LKFormsPasswordTitle)) }
+				placeholder={ utils.T(ctx, locales.LKFormsPasswordTitle, "Password") }
 				value={ value }
 			/>
 			<button
@@ -177,7 +178,7 @@ templ RfUsernameInput(errors []locales.LKMessage, value string) {
 				type="text"
 				name="username"
 				aria-label="Username Input"
-				placeholder={ i18n.T(ctx, string(locales.LKFormsUsernameTitle)) }
+				placeholder={ utils.T(ctx, locales.LKFormsUsernameTitle, "Username") }
 				value={ value }
 			/>
 		</div>
