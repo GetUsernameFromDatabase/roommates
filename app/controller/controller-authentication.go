@@ -10,6 +10,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/pkg/errors"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -48,12 +49,14 @@ func (c *Controller) signUserIn(ctx *gin.Context, sessionValue rdb.UserSessionVa
 
 // will register user and also respond with server errors
 //
-// returns user id, if empty then 500 error occured
-func (c *Controller) registerUser(ctx *gin.Context, user RegisterAccountRequest) string {
+//   - on all errors string will be empty
+//   - if error is nil and string is empty then response has been sent
+//   - response has not been sent if error is ErrorAccountAlreadyExists
+func (c *Controller) registerUser(ctx *gin.Context, user RegisterAccountRequest) (string, error) {
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(user.Password), 12)
 	if err != nil { // this should never be an issue
 		HandleServerError(ctx, err, "error processing password")
-		return ""
+		return "", nil
 	}
 
 	userID, err := c.DB.InsertUser(ctx, dbqueries.InsertUserParams{
@@ -62,12 +65,18 @@ func (c *Controller) registerUser(ctx *gin.Context, user RegisterAccountRequest)
 		Password: string(hashedPassword),
 	})
 	if err != nil {
-		// this should never be an issue
-		HandleServerError(ctx, err, "error registering user")
-		return ""
+		switch err := err.(type) {
+		case *pgconn.PgError:
+			if err.Code == "23505" {
+				return "", g.ErrorAccountAlreadyExists
+			}
+		default:
+			HandleServerError(ctx, err, "error registering user")
+		}
+		return "", nil
 	}
 
-	return userID.String()
+	return userID.String(), nil
 }
 
 //------------------------------------------------------------------------------
@@ -183,7 +192,11 @@ func (c *Controller) RegisterAccount(ctx *gin.Context) {
 		return
 	}
 
-	userID := c.registerUser(ctx, req)
+	userID, err := c.registerUser(ctx, req)
+	if errors.Is(err, g.ErrorAccountAlreadyExists) {
+		utils.ErrorResponse(ctx, http.StatusConflict, err)
+		return
+	}
 	if userID == "" {
 		return
 	}

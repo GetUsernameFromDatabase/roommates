@@ -17,6 +17,7 @@ et:
       error-length: 'Kasutajanimi peab olema vähemalt %d tähte'
     error:
       invalid-credential: 'Vale sisselogimisinfo'
+      already-exists: 'See kasutaja eksisteerib. Kasutage muud e-maili'
   login:
     title: 'Logi sisse'
     register: 'Registreeri konto'

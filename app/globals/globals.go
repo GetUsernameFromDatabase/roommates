@@ -49,5 +49,6 @@ const (
 // -----------------------------------------------------------------------------
 
 var (
-	ErrorInvalidCredential = errors.New("invalid credentials")
+	ErrorInvalidCredential    = errors.New("invalid credentials")
+	ErrorAccountAlreadyExists = errors.New("account already exists")
 )

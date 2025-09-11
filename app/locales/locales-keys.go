@@ -15,6 +15,7 @@ const (
 	LKAppTitle                    LK = "app.title"
 	LKFormsEmailErrorGeneric      LK = "forms.email.error-generic"
 	LKFormsEmailTitle             LK = "forms.email.title"
+	LKFormsErrorAlreadyExists     LK = "forms.error.already-exists"
 	LKFormsErrorInvalidCredential LK = "forms.error.invalid-credential"
 	LKFormsPasswordConfirm        LK = "forms.password.confirm"
 	LKFormsPasswordErrorCase      LK = "forms.password.error-case"

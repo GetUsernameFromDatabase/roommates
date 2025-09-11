@@ -136,11 +136,21 @@ func (c *Controller) PageRegister(ctx *gin.Context) {
 			return
 		}
 
-		userID := c.registerUser(ctx, RegisterAccountRequest{
+		userID, err := c.registerUser(ctx, RegisterAccountRequest{
 			Email:    model.Email,
 			Password: model.Password,
 			Username: model.Username,
 		})
+		if errors.Is(err, g.ErrorAccountAlreadyExists) {
+			model.Error = i18n.T(
+				ctx.Request.Context(),
+				string(locales.LKFormsErrorAlreadyExists),
+				// this error is safe to output publically
+				i18n.Default(err.Error()),
+			)
+			render(model)
+			return
+		}
 		if userID == "" {
 			return
 		}
