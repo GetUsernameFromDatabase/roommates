@@ -8,6 +8,7 @@ import (
 	g "roommates/globals"
 	"roommates/locales"
 	"roommates/middleware"
+	"roommates/models"
 	"roommates/rdb"
 
 	"github.com/gin-gonic/gin"
@@ -60,7 +61,7 @@ func (c *Controller) PageLogin(ctx *gin.Context) {
 	}
 
 	method := ctx.Request.Method
-	render := func(model components.LoginModel) {
+	render := func(model models.Login) {
 		page := components.PageLogin(model)
 		r := gintemplrenderer.New(ctx.Request.Context(), http.StatusOK, page)
 		ctx.Render(r.Status, r)
@@ -68,9 +69,9 @@ func (c *Controller) PageLogin(ctx *gin.Context) {
 
 	switch method {
 	case http.MethodGet:
-		render(components.LoginModel{Initial: true})
+		render(models.Login{Initial: true})
 	case http.MethodPost:
-		var model components.LoginModel
+		var model models.Login
 		ctx.ShouldBind(&model)
 
 		hasError, _ := model.IsValid()
@@ -117,7 +118,7 @@ func (c *Controller) PageRegister(ctx *gin.Context) {
 	}
 
 	method := ctx.Request.Method
-	render := func(model components.RegisterModel) {
+	render := func(model models.Register) {
 		page := components.PageRegister(model)
 		r := gintemplrenderer.New(ctx.Request.Context(), http.StatusOK, page)
 		ctx.Render(r.Status, r)
@@ -125,9 +126,9 @@ func (c *Controller) PageRegister(ctx *gin.Context) {
 
 	switch method {
 	case http.MethodGet:
-		render(components.RegisterModel{LoginModel: components.LoginModel{Initial: true}})
+		render(models.Register{Login: models.Login{Initial: true}})
 	case http.MethodPost:
-		var model components.RegisterModel
+		var model models.Register
 		ctx.ShouldBind(&model)
 
 		hasError, _ := model.IsValid()

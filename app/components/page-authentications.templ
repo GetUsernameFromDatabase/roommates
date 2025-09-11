@@ -4,8 +4,9 @@ import "roommates/locales"
 import "github.com/invopop/ctxi18n/i18n"
 import "strings"
 import "roommates/globals"
+import "roommates/models"
 
-templ PageLogin(model LoginModel) {
+templ PageLogin(model models.Login) {
 	<!DOCTYPE html>
 	<html>
 		@HeaderComponent("")
@@ -40,7 +41,7 @@ templ PageLogin(model LoginModel) {
 	</html>
 }
 
-templ PageRegister(model RegisterModel) {
+templ PageRegister(model models.Register) {
 	<!DOCTYPE html>
 	<html>
 		@HeaderComponent("")
@@ -64,7 +65,7 @@ templ PageRegister(model RegisterModel) {
 	</html>
 }
 
-templ LoginForm(m LoginModel) {
+templ LoginForm(m models.Login) {
 	{{
 		emailErrors := m.ValidateEmail()
 		passwordErrors := m.ValidatePassword()
@@ -87,7 +88,7 @@ templ LoginForm(m LoginModel) {
 	</form>
 }
 
-templ RegisterForm(m RegisterModel) {
+templ RegisterForm(m models.Register) {
 	{{
 		emailErrors := m.ValidateEmail()
 		usernameErrors := m.ValidateUsername()
