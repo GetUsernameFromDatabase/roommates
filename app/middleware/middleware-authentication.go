@@ -40,7 +40,8 @@ func GetAuthInfo(ctx *gin.Context) *rdb.UserSessionValue {
 
 // sets authentication information into the context
 //
-// use block if this should unauthorize access to the endpoint
+//   - if `block == true` then this will block unauthenticated users
+//   - if `block == false` then will set auth info should the user be logged in
 func NewAuthenticationMiddleware(ah MiddlewareHandlers, block bool) gin.HandlerFunc {
 	if !block {
 		return func(ctx *gin.Context) {

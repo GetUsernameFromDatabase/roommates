@@ -33,31 +33,15 @@ func InitGinEngine(c *controller.Controller) *gin.Engine {
 func InitRoutes(r *gin.Engine, c *controller.Controller) {
 	// TODO(low prio, complexity high): read the paths, add to constants and change @Route of swagger API doc in associated controllers
 	// TODO: rate limit, if not for all then auth endpoints for sure
-	autMw := middleware.NewAuthenticationMiddleware(c, true)
-	autMwUnblocking := middleware.NewAuthenticationMiddleware(c, false)
+	authMw := middleware.NewAuthenticationMiddleware(c, true)
+	authInfoMwUnblocking := middleware.NewAuthenticationMiddleware(c, false)
 	i18nMw := middleware.NewLanguageMiddleware()
-	// --- API endpoints ---
-	v1 := r.Group(docs.SwaggerInfo.BasePath)
+
+	// API endpoints
+	var v1 = r.Group(docs.SwaggerInfo.BasePath)
 	{
 		// setup swagger API
 		v1.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
-
-		house := v1.Group("/house")
-		{
-			house.Use(autMw)
-			house.GET("", nil)
-
-			housePayments := house.Group("/payments")
-			{
-				housePayments.GET("", nil)
-				// TODO: post payment file https://gin-gonic.com/en/docs/examples/upload-file/single-file/
-			}
-
-			houseNotes := house.Group("/notes")
-			{
-				houseNotes.GET("", nil)
-			}
-		}
 
 		authentication := v1.Group("/auth")
 		{
@@ -70,36 +54,32 @@ func InitRoutes(r *gin.Engine, c *controller.Controller) {
 	}
 
 	// --- html endpoints ---
-	// protected endpoints
-	pr := r.Group("")
-	{
-		pr.Use(i18nMw)
-		pr.Use(autMw)
-
-		pr.GET("/", c.PageMain)
-	}
 
 	// public endpoints
-	pu := r.Group("")
+	var public = r.Group("")
 	{
-		pu.Use(i18nMw)
-		pu.Use(autMwUnblocking)
+		public.Use(i18nMw)
+		public.Use(authInfoMwUnblocking)
 
-		pu.GET(g.RLogin, c.PageLogin)
-		pu.POST(g.RLogin, c.PageLogin)
+		public.GET(g.RLogin, c.PageLogin)
+		public.POST(g.RLogin, c.PageLogin)
 
-		pu.GET(g.RRegister, c.PageRegister)
-		pu.POST(g.RRegister, c.PageRegister)
+		public.GET(g.RRegister, c.PageRegister)
+		public.POST(g.RRegister, c.PageRegister)
+	}
 
-		pu.GET(g.RProfile, c.PageProfile)
+	// protected endpoints
+	var p = r.Group("")
+	{
+		p.Use(i18nMw)
+		p.Use(authMw)
 
-		pu.GET(g.RPayments, c.PagePayments)
-
-		pu.GET(g.RNotes, c.PageNotes)
-
-		pu.GET(g.RMessaging, c.PageMessaging)
-
-		pu.GET(g.RHouses, c.PageHouses)
+		p.GET("/", c.PageMain)
+		p.GET(g.RProfile, c.PageProfile)
+		p.GET(g.RPayments, c.PagePayments)
+		p.GET(g.RNotes, c.PageNotes)
+		p.GET(g.RMessaging, c.PageMessaging)
+		p.GET(g.RHouses, c.PageHouses)
 	}
 
 	r.Static("/assets", "./assets/public")
