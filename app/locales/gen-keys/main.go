@@ -6,9 +6,9 @@ import (
 	"bytes"
 	"flag"
 	"fmt"
+	"go/format"
 	"log"
 	"os"
-	"os/exec"
 	"regexp"
 	"sort"
 	"strconv"
@@ -103,18 +103,15 @@ func generateOutputContent(entries map[string]string, entryKeys []string) *bytes
 }
 
 func writeOutput(buffer *bytes.Buffer) {
-	log.Println("writing content to " + strconv.Quote(*outputPath))
-	err := os.WriteFile(*outputPath, buffer.Bytes(), 0644)
+	formattedContent, err := format.Source(buffer.Bytes())
 	if err != nil {
-		log.Fatalf("FAILED to write \"%s\" file: %v", *outputPath, err)
+		log.Fatalf("FAILED to format generated code: %v", err)
 	}
 
-	// format generated file
-	log.Println("formatting generated file with go fmt")
-	cmd := exec.Command("go", "fmt", *outputPath)
-	err = cmd.Run()
+	log.Println("writing content to " + strconv.Quote(*outputPath))
+	err = os.WriteFile(*outputPath, formattedContent, 0644)
 	if err != nil {
-		log.Fatalf("FAILED to format \"%s\": %v", *outputPath, err)
+		log.Fatalf("FAILED to write \"%s\" file: %v", *outputPath, err)
 	}
 }
 
