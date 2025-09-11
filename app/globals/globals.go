@@ -14,12 +14,15 @@ type HttpHeader string
 
 // if there becomes a need to have more, could be nice to copy from
 // https://pkg.go.dev/github.com/go-http-utils/headers#pkg-constants
+// constants for headers \/
 
 const (
 	HAuthorization HttpHeader = "Authorization"
 )
 
 const Csrf = "_csrf"
+
+// constants for gin context keys \/
 
 const (
 	// key to authenticated user info in gin context

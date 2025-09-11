@@ -32,8 +32,8 @@ func ServerErrorResponse(ctx *gin.Context, publicError string) {
 	ctx.JSON(code, res)
 }
 
-func DeleteCookie(ctx *gin.Context, name string) {
-	ctx.SetCookie(name, "", -1, "/", "", false, true)
+func DeleteCookie(ctx *gin.Context, name g.CookieKey) {
+	ctx.SetCookie(string(name), "", -1, "/", "", false, true)
 }
 
 // Gets authentication from header

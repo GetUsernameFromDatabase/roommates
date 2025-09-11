@@ -141,7 +141,7 @@ func (c *Controller) SignIn(ctx *gin.Context) {
 //	@Security  ApiKeyAuth
 //	@Router    /api/v1/auth/sign-out [get]
 func (c *Controller) SignOut(ctx *gin.Context) {
-	utils.DeleteCookie(ctx, string(g.CSessionToken))
+	utils.DeleteCookie(ctx, g.CSessionToken)
 	token := utils.GetAuthTokenFromHeader(ctx)
 	c.RH.DeleteUserSession(ctx, token)
 	ctx.JSON(http.StatusOK, SimpleResponse{Message: "successfully signed out"})

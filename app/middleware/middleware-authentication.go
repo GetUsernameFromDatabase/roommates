@@ -14,7 +14,7 @@ import (
 
 // will delete cookie, redirect to login (not on api endpoints) and abort future handlers
 func unauthorize(ctx *gin.Context) {
-	utils.DeleteCookie(ctx, string(g.CSessionToken))
+	utils.DeleteCookie(ctx, g.CSessionToken)
 	// API requests should not redirect to login when unauthorized
 	if strings.HasPrefix(ctx.FullPath(), docs.SwaggerInfo.BasePath) {
 		utils.ErrorResponse(ctx, http.StatusUnauthorized, errors.New("unauthorized access"))
