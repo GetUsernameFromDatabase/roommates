@@ -1,7 +1,9 @@
 package middleware
 
 import (
+	"context"
 	"net/http"
+	"roommates/globals"
 	"roommates/locales"
 	"roommates/logger"
 	"roommates/utils"
@@ -32,6 +34,9 @@ func NewLanguageMiddleware() gin.HandlerFunc {
 			return
 		}
 
+		// this is intended to be used by templ in order to get path
+		// putting it here as I do not want to create another middleware for this
+		cc = context.WithValue(cc, globals.GPath, ctx.Request.URL.Path)
 		ctx.Request = ctx.Request.WithContext(cc)
 		ctx.Next()
 	}

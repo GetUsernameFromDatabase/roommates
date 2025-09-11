@@ -3,8 +3,10 @@ package components
 import "roommates/locales"
 import "github.com/invopop/ctxi18n/i18n"
 import "strings"
+import "roommates/globals"
 
 templ PageLogin(model LoginModel) {
+	<!DOCTYPE html>
 	<html>
 		@HeaderComponent("")
 		<body class="bg-background font-geist-sans text-foreground antialiased">
@@ -27,7 +29,7 @@ templ PageLogin(model LoginModel) {
 						<div class="uk-divider-icon mt-6"></div>
 						<div class="mt-6 text-center" hx-boost="true">
 							{ i18n.T(ctx, string(locales.LKLoginNoAccount)) }
-							<a class="uk-link" href="/register">
+							<a class="uk-link" href={ globals.RRegister }>
 								{ i18n.T(ctx, string(locales.LKLoginRegister)) }
 							</a>
 						</div>
@@ -39,6 +41,7 @@ templ PageLogin(model LoginModel) {
 }
 
 templ PageRegister(model RegisterModel) {
+	<!DOCTYPE html>
 	<html>
 		@HeaderComponent("")
 		<body class="bg-background font-geist-sans text-foreground antialiased">
@@ -50,7 +53,7 @@ templ PageRegister(model RegisterModel) {
 						<div class="uk-divider-icon mt-6"></div>
 						<div class="mt-6 text-center" hx-boost="true">
 							{ i18n.T(ctx, string(locales.LKRegisterAlreadyHaveAccount)) }
-							<a class="uk-link" href="/login">
+							<a class="uk-link" href={ globals.RLogin }>
 								{ i18n.T(ctx, string(locales.LKLoginTitle)) }
 							</a>
 						</div>
@@ -89,7 +92,7 @@ templ RegisterForm(m RegisterModel) {
 		emailErrors := m.ValidateEmail()
 		usernameErrors := m.ValidateUsername()
 		passwordErrors := m.ValidatePassword()
-		password2Errors :=m.ValidatePasswordMatch()
+		password2Errors := m.ValidatePasswordMatch()
 	}}
 	<form
 		id="registerForm"

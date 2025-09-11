@@ -4,6 +4,7 @@ import (
 	"roommates/controller"
 	"roommates/docs"
 	"roommates/gintemplrenderer"
+	g "roommates/globals"
 	"roommates/locales"
 	"roommates/middleware"
 
@@ -83,11 +84,22 @@ func InitRoutes(r *gin.Engine, c *controller.Controller) {
 	{
 		pu.Use(i18nMw)
 		pu.Use(autMwUnblocking)
-		pu.GET("/login", c.PageLogin)
-		pu.POST("/login", c.PageLogin)
 
-		pu.GET("/register", c.PageRegister)
-		pu.POST("/register", c.PageRegister)
+		pu.GET(g.RLogin, c.PageLogin)
+		pu.POST(g.RLogin, c.PageLogin)
+
+		pu.GET(g.RRegister, c.PageRegister)
+		pu.POST(g.RRegister, c.PageRegister)
+
+		pu.GET(g.RProfile, c.PageProfile)
+
+		pu.GET(g.RPayments, c.PagePayments)
+
+		pu.GET(g.RNotes, c.PageNotes)
+
+		pu.GET(g.RMessaging, c.PageMessaging)
+
+		pu.GET(g.RHouses, c.PageHouses)
 	}
 
 	r.Static("/assets", "./assets/public")

@@ -20,6 +20,36 @@ func (c *Controller) PageMain(ctx *gin.Context) {
 	ctx.Render(r.Status, r)
 }
 
+func (c *Controller) PageProfile(ctx *gin.Context) {
+	pc := components.PageProfile()
+	r := gintemplrenderer.New(ctx.Request.Context(), http.StatusOK, pc)
+	ctx.Render(r.Status, r)
+}
+
+func (c *Controller) PagePayments(ctx *gin.Context) {
+	pc := components.PagePayments()
+	r := gintemplrenderer.New(ctx.Request.Context(), http.StatusOK, pc)
+	ctx.Render(r.Status, r)
+}
+
+func (c *Controller) PageNotes(ctx *gin.Context) {
+	pc := components.PageNotes()
+	r := gintemplrenderer.New(ctx.Request.Context(), http.StatusOK, pc)
+	ctx.Render(r.Status, r)
+}
+
+func (c *Controller) PageMessaging(ctx *gin.Context) {
+	pc := components.PageMessaging()
+	r := gintemplrenderer.New(ctx.Request.Context(), http.StatusOK, pc)
+	ctx.Render(r.Status, r)
+}
+
+func (c *Controller) PageHouses(ctx *gin.Context) {
+	pc := components.PageHouses()
+	r := gintemplrenderer.New(ctx.Request.Context(), http.StatusOK, pc)
+	ctx.Render(r.Status, r)
+}
+
 // --- AUTH -- login and register ---
 
 func (c *Controller) PageLogin(ctx *gin.Context) {
@@ -58,6 +88,7 @@ func (c *Controller) PageLogin(ctx *gin.Context) {
 				model.Error = i18n.T(
 					ctx.Request.Context(),
 					string(locales.LKFormsErrorInvalidCredential),
+					// this error is safe to output publically
 					i18n.Default(err.Error()),
 				)
 				render(model)

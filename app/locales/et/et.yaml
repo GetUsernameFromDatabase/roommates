@@ -24,3 +24,9 @@ et:
   register:
     title: 'Registreeri'
     already-have-account: 'Konto juba olemas'
+  navbar:
+    houses: 'Elamiskohad'
+    notes: 'Märkmed'
+    payments: 'Maksmised'
+    messaging: 'Vestlused'
+    profile: 'Profiil'

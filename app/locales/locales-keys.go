@@ -27,6 +27,11 @@ const (
 	LKLoginNoAccount              LK = "login.no-account"
 	LKLoginRegister               LK = "login.register"
 	LKLoginTitle                  LK = "login.title"
+	LKNavbarHouses                LK = "navbar.houses"
+	LKNavbarMessaging             LK = "navbar.messaging"
+	LKNavbarNotes                 LK = "navbar.notes"
+	LKNavbarPayments              LK = "navbar.payments"
+	LKNavbarProfile               LK = "navbar.profile"
 	LKRegisterAlreadyHaveAccount  LK = "register.already-have-account"
 	LKRegisterTitle               LK = "register.title"
 )

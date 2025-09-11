@@ -4,6 +4,7 @@ import (
 	"github.com/invopop/ctxi18n/i18n"
 	"roommates/globals"
 	"roommates/locales"
+	"strings"
 )
 
 // title has default which is i18n-zed
@@ -20,6 +21,7 @@ templ HeaderComponent(title string) {
 			rel="stylesheet"
 			href="/assets/franken-ui@2.1.0-next.20.utilities.min.css"
 		/>
+		<link rel="stylesheet" href="/assets/custom.css"/>
 		<script src="/assets/franken-ui@2.1.0-next.20.core.iife.js" type="module"></script>
 		<script src="/assets/franken-ui@2.1.0-next.20.icon.iife.js" type="module"></script>
 		<script src="/assets/htmx.2.0.6.min.js" type="module"></script>
@@ -43,7 +45,7 @@ templ HeaderComponent(title string) {
     htmlElement.classList.add(__FRANKEN__.shadows || 'uk-shadows-sm');
     htmlElement.classList.add(__FRANKEN__.font || 'uk-font-sm');
     htmlElement.classList.add(__FRANKEN__.chart || 'uk-chart-default');
-  </script>
+  	</script>
 	</head>
 }
 
@@ -69,5 +71,125 @@ templ FormError(errorMsg string) {
 		<div class="uk-alert uk-alert-destructive">
 			{ errorMsg }
 		</div>
+	}
+}
+
+// wraps content with `<body>` tag and adds navigation bar on top
+templ PageWrapper(content templ.Component) {
+	<body class="bg-background text-foreground antialiased">
+		@search(stCommand)
+		<div class="border-border fixed inset-x-0 top-0 z-10 border-b">
+			<div class="bg-background text-foreground">
+				<div class="flex h-14 items-center justify-between gap-8 px-4 sm:px-6">
+					// website icon and search
+					<div class="flex space-x-2 items-center shrink-0">
+						<a hx-boost="true" href="/"><img class="size-8" src="/favicon.ico"/></a>
+						@search(stNavbar)
+					</div>
+					@navigation()
+					// avatar and light/dark mode switch
+					<div class="flex space-x-2 shrink-0">
+						// TODO: hx this, basis not yet done to properly test and I do not want to just hx-boost it
+						<a href={ globals.RProfile }>
+							<div class="uk-avatar uk-avatar-rounded text-muted-foreground bg-muted">
+								// TODO: fill in the name
+								<div class="uk-avatar-text">RM</div>
+							</div>
+						</a>
+						<uk-lsh
+							class="size-8 inline-block dark:hidden"
+							value="dark"
+							group="mode"
+							cls-custom="uk-avatar uk-avatar-rounded text-muted-foreground bg-muted"
+						>
+							<template><uk-icon icon="moon"></uk-icon></template>
+						</uk-lsh>
+						<uk-lsh
+							class="size-8 hidden dark:inline-block"
+							value="light"
+							group="mode"
+							cls-custom="uk-avatar uk-avatar-rounded text-muted-foreground bg-muted"
+						>
+							<template><uk-icon icon="sun"></uk-icon></template>
+						</uk-lsh>
+					</div>
+				</div>
+			</div>
+		</div>
+		// make sure to match pt- with the h- of the navbar
+		<div class="root-content pt-14">
+			@content
+		</div>
+	</body>
+}
+
+templ navigation() {
+	{{
+		urlPath := ctx.Value(globals.GPath).(string)
+		routes := [][]string{
+			{globals.RHouses, i18n.T(ctx, string(locales.LKNavbarHouses), i18n.Default("Houses"))},
+			{globals.RNotes, i18n.T(ctx, string(locales.LKNavbarNotes), i18n.Default("Notes"))},
+			{globals.RPayments, i18n.T(ctx, string(locales.LKNavbarPayments), i18n.Default("Payments"))},
+			{globals.RMessaging, i18n.T(ctx, string(locales.LKNavbarMessaging), i18n.Default("Messaging"))},
+		}
+	}}
+	<div class="flex w-full">
+		<div class="max-sm:hidden flex m-auto w-full max-w-2xl">
+			<ul class="justify-center uk-tab-alt" data-uk-tab>
+				for _, route := range routes {
+					{{
+						href := route[0]
+						label := route[1]
+					}}
+					<li class={ templ.KV("uk-active", strings.HasPrefix(urlPath, href)) }>
+						<a hx-boost="true" href={ href }>{ label }</a>
+					</li>
+				}
+			</ul>
+		</div>
+	</div>
+}
+
+type searchType string
+
+const (
+	stNavbar  searchType = "navbar"
+	stCommand searchType = "command"
+)
+
+templ search(element searchType) {
+	switch element {
+		case stNavbar:
+			<button
+				class="uk-avatar uk-avatar-rounded text-muted-foreground bg-muted"
+				data-uk-toggle="target: #search"
+			>
+				<span class="size-4">
+					<uk-icon icon="search"></uk-icon>
+				</span>
+			</button>
+		case stCommand:
+			<uk-command id="cmd-search" toggle="search" key="j">
+				// TODO: search feature, if the data for this becomes expensive to get
+				// then I should leverage htmlx targeted swap in navbar instead of using hx-boost
+				<select hidden>
+					<optgroup label="#TODO:">
+						<option data-icon="calendar" value="/login"><a href="/login">PLACEHOLDERA</a></option>
+						<option data-icon="smile" value="/register">
+							PLACEHOLDER
+						</option>
+						<option data-icon="calculator" disabled value="/path/to/calculator">
+							PLACEHOLDER
+						</option>
+					</optgroup>
+					<optgroup label="#TODO:">
+						<option data-icon="user" value="/profile">PLACEHOLDER</option>
+						<option data-icon="credit-card" value="/payments">PLACEHOLDER</option>
+						<option data-icon="settings" value="/">PLACEHOLDER</option>
+					</optgroup>
+				</select>
+			</uk-command>
+		default:
+			DEV FAIL -- templ search
 	}
 }

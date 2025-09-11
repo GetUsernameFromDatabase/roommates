@@ -1,0 +1,19 @@
+.dark\:block:where(.dark, .dark *) {
+  display: block;
+}
+.dark\:hidden:where(.dark, .dark *) {
+  display: none;
+}
+.dark\:inline-block:where(.dark, .dark *) {
+  display: inline-block;
+}
+.max-md\:hidden {
+  @media (width < 48rem /* 768px */) {
+    display: none;
+  }
+}
+.max-sm\:hidden {
+  @media (width < 40rem /* 640px */) {
+    display: none;
+  }
+}
