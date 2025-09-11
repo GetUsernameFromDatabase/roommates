@@ -1,6 +1,7 @@
 {
   "B-Tree Index": {
     "prefix": "indx",
+    "scope": "sql",
     "body": [
       "CREATE INDEX idx_${1}_${2} ON ${1:table_name} (${2:column_name});"
     ],
@@ -8,6 +9,7 @@
   },
   "Hash Index": {
     "prefix": "indxhash",
+    "scope": "sql",
     "body": [
       "CREATE INDEX idxh_${1}_${2} ON ${1:table_name} USING HASH (${2:column_name});"
     ],
@@ -15,6 +17,7 @@
   },
   "GIN (Generalized Inverted Index)": {
     "prefix": "indxgin",
+    "scope": "sql",
     "body": [
       "CREATE INDEX idxgin_${1}_${2} ON ${1:table_name} USING GIN (${2:column_name});"
     ],
@@ -22,6 +25,7 @@
   },
   "PostgreSQL moddatetime": {
     "prefix": "mdt",
+    "scope": "sql",
     "body": [
       "CREATE TRIGGER mdt_${1}",
       "  BEFORE UPDATE ON ${1:table_name}",

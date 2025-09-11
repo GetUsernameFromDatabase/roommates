@@ -1,6 +1,7 @@
 {
   "Error check": {
     "prefix": "err",
+    "scope": "go,templ",
     "body": [
       "if err != nil {",
       "\treturn ${1:nil}, err",
