@@ -73,8 +73,7 @@ templ profileAvatar(authInfo *rdb.UserSessionValue) {
 	}}
 	<a href={ globals.RProfile }>
 		<div class="uk-avatar uk-avatar-rounded text-muted-foreground bg-muted">
-			// TODO: fill in the name
-			<div class="uk-avatar-text">{ avatarText }</div>
+			<div class="uk-avatar-text">{ strings.ToUpper(avatarText) }</div>
 		</div>
 	</a>
 }

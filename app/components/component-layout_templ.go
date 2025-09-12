@@ -144,9 +144,9 @@ func profileAvatar(authInfo *rdb.UserSessionValue) templ.Component {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var4 string
-		templ_7745c5c3_Var4, templ_7745c5c3_Err = templ.JoinStringErrs(avatarText)
+		templ_7745c5c3_Var4, templ_7745c5c3_Err = templ.JoinStringErrs(strings.ToUpper(avatarText))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/component-layout.templ`, Line: 77, Col: 43}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/component-layout.templ`, Line: 76, Col: 60}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var4))
 		if templ_7745c5c3_Err != nil {
@@ -326,7 +326,7 @@ func navLi(routes [][]string, urlPath string) templ.Component {
 			var templ_7745c5c3_Var10 templ.SafeURL
 			templ_7745c5c3_Var10, templ_7745c5c3_Err = templ.JoinURLErrs(href)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/component-layout.templ`, Line: 185, Col: 33}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/component-layout.templ`, Line: 184, Col: 33}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var10))
 			if templ_7745c5c3_Err != nil {
@@ -339,7 +339,7 @@ func navLi(routes [][]string, urlPath string) templ.Component {
 			var templ_7745c5c3_Var11 string
 			templ_7745c5c3_Var11, templ_7745c5c3_Err = templ.JoinStringErrs(label)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/component-layout.templ`, Line: 185, Col: 43}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/component-layout.templ`, Line: 184, Col: 43}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var11))
 			if templ_7745c5c3_Err != nil {
