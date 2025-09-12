@@ -2,6 +2,7 @@ package models
 
 import (
 	l "roommates/locales"
+	"strings"
 )
 
 type Register struct {
@@ -15,7 +16,9 @@ func (m *Register) ValidateUsername() (msgs []l.LKMessage) {
 		return
 	}
 
-	// TODO: do not allow spaces with strings.TrimSpaces
+	if m.Username != strings.TrimSpace(m.Username) {
+		msgs = append(msgs, l.LKMessage{Key: l.LKFormsUsernameErrorSpaces})
+	}
 
 	const minLength = 3
 	if len(m.Username) < minLength {

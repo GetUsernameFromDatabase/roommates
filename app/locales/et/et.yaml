@@ -15,6 +15,7 @@ et:
     username:
       title: 'Kasutajanimi'
       error-length: 'Kasutajanimi peab olema vähemalt %d tähte'
+      error-spaces: "Kasutajanimi ei tohi alata ega lõppeda tühikuga"
     error:
       invalid-credential: 'Vale sisselogimisinfo'
       already-exists: 'See kasutaja eksisteerib. Kasutage muud e-maili'

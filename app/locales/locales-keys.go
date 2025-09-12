@@ -24,6 +24,7 @@ const (
 	LKFormsPasswordErrorSymbol    LK = "forms.password.error-symbol"
 	LKFormsPasswordTitle          LK = "forms.password.title"
 	LKFormsUsernameErrorLength    LK = "forms.username.error-length"
+	LKFormsUsernameErrorSpaces    LK = "forms.username.error-spaces"
 	LKFormsUsernameTitle          LK = "forms.username.title"
 	LKLoginNoAccount              LK = "login.no-account"
 	LKLoginRegister               LK = "login.register"
