@@ -31,7 +31,7 @@ func InitGinEngine(c *controller.Controller) *gin.Engine {
 }
 
 func InitRoutes(r *gin.Engine, c *controller.Controller) {
-	// TODO(low prio, complexity high): read the paths, add to constants and change @Route of swagger API doc in associated controllers
+	// TODO(low prio, effort not worth benefit): read the paths, add to constants and change @Route of swagger API doc in associated controllers
 	// TODO: rate limit, if not for all then auth endpoints for sure
 	authMw := middleware.NewAuthenticationMiddleware(c, true)
 	authInfoMwUnblocking := middleware.NewAuthenticationMiddleware(c, false)

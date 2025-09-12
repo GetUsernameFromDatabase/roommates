@@ -1,0 +1,170 @@
+package components
+
+import (
+	"roommates/globals"
+	"roommates/locales"
+	"roommates/utils"
+	"strings"
+)
+
+// wraps content with `<body>` tag and adds navigation bar on top
+templ PageWrapper(content templ.Component) {
+	<body class="bg-background text-foreground antialiased h-full">
+		@search(stCommand)
+		@navigation(ntOffcanvas)
+		<div class="border-border fixed inset-x-0 top-0 z-10 border-b">
+			<div class="bg-background text-foreground">
+				<div class="flex h-14 items-center justify-between gap-8 px-4 sm:px-6">
+					// website icon and search
+					<div class="flex space-x-2 items-center shrink-0">
+						<a hx-boost="true" href="/"><img class="size-8" src="/favicon.ico"/></a>
+						@search(stNavbar)
+					</div>
+					@navigation(ntNavbar)
+					// avatar and light/dark mode switch
+					<div class="flex space-x-2 shrink-0">
+						// TODO: hx this, basis not yet done to properly test and I do not want to just hx-boost it
+						<a href={ globals.RProfile }>
+							<div class="uk-avatar uk-avatar-rounded text-muted-foreground bg-muted">
+								// TODO: fill in the name
+								<div class="uk-avatar-text">RM</div>
+							</div>
+						</a>
+						<uk-lsh
+							class="size-8 inline-block dark:hidden"
+							value="dark"
+							group="mode"
+							cls-custom="uk-avatar uk-avatar-rounded text-muted-foreground bg-muted"
+						>
+							<template><uk-icon icon="moon"></uk-icon></template>
+						</uk-lsh>
+						<uk-lsh
+							class="size-8 hidden dark:inline-block"
+							value="light"
+							group="mode"
+							cls-custom="uk-avatar uk-avatar-rounded text-muted-foreground bg-muted"
+						>
+							<template><uk-icon icon="sun"></uk-icon></template>
+						</uk-lsh>
+					</div>
+				</div>
+			</div>
+		</div>
+		// make sure to match pt- with the h- of the navbar
+		<div id="root-content" class="pt-14 min-h-dvh">
+			@content
+		</div>
+	</body>
+}
+
+type searchType string
+
+const (
+	stNavbar  searchType = "navbar"
+	stCommand searchType = "command"
+)
+
+templ search(element searchType) {
+	switch element {
+		case stNavbar:
+			<button
+				class="uk-avatar uk-avatar-rounded text-muted-foreground bg-muted"
+				data-uk-toggle="target: #search"
+			>
+				<span class="size-4">
+					<uk-icon icon="search"></uk-icon>
+				</span>
+			</button>
+		case stCommand:
+			<uk-command id="cmd-search" toggle="search" key="j">
+				// TODO: search feature
+				// if the data for this becomes expensive to get
+				// then I should leverage htmlx targeted swap in navbar instead of using hx-boost
+				<select hidden>
+					<optgroup label="#TODO:">
+						<option data-icon="calendar" value="/login"><a href="/login">PLACEHOLDERA</a></option>
+						<option data-icon="smile" value="/register">
+							PLACEHOLDER
+						</option>
+						<option data-icon="calculator" disabled value="/path/to/calculator">
+							PLACEHOLDER
+						</option>
+					</optgroup>
+					<optgroup label="#TODO:">
+						<option data-icon="user" value="/profile">PLACEHOLDER</option>
+						<option data-icon="credit-card" value="/payments">PLACEHOLDER</option>
+						<option data-icon="settings" value="/">PLACEHOLDER</option>
+					</optgroup>
+				</select>
+			</uk-command>
+		default:
+			DEV ISSUE -- templ search
+	}
+}
+
+type navigationType string
+
+const (
+	ntNavbar    navigationType = "navbar"
+	ntOffcanvas navigationType = "offcanvas"
+)
+
+templ navigation(element navigationType) {
+	{{
+		routes := [][]string{
+			{globals.RHouses, utils.T(ctx, locales.LKNavbarHouses, "Houses")},
+			{globals.RNotes, utils.T(ctx, locales.LKNavbarNotes, "Notes")},
+			{globals.RPayments, utils.T(ctx, locales.LKNavbarPayments, "Payments")},
+			{globals.RMessaging, utils.T(ctx, locales.LKNavbarMessaging, "Messaging")},
+		}
+	}}
+	switch element {
+		case ntNavbar:
+			<div class="flex w-full" role="navigation">
+				<div class="max-sm:hidden flex m-auto w-full max-w-2xl">
+					<ul class="justify-center uk-tab-alt" data-uk-tab>
+						@navLi(routes)
+					</ul>
+				</div>
+				<div class="hidden max-sm:block m-auto">
+					// TODO: better style for this
+					<button
+						class="uk-btn uk-btn-secondary uk-btn-sm"
+						data-uk-toggle="target: #navigation"
+					>
+						<div class="size-4">
+							<uk-icon icon="menu"></uk-icon>
+						</div>
+					</button>
+				</div>
+			</div>
+		case ntOffcanvas:
+			<div
+				id="navigation"
+				class="uk-offcanvas"
+				data-uk-offcanvas="overlay: true"
+				role="menu"
+			>
+				<div class="uk-offcanvas-bar p-4">
+					<ul class="uk-nav-center uk-nav uk-nav-primary">
+						@navLi(routes)
+					</ul>
+				</div>
+			</div>
+	}
+}
+
+templ navLi(routes [][]string) {
+	{{
+				urlPath := ctx.Value(globals.GPath).(string)
+	}}
+	for _, route := range routes {
+		{{
+						href := route[0]
+						label := route[1]
+		}}
+		<li class={ templ.KV("uk-active", strings.HasPrefix(urlPath, href)) }>
+			<a hx-boost="true" href={ href }>{ label }</a>
+		</li>
+	}
+}

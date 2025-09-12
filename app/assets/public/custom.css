@@ -17,3 +17,8 @@
     display: none;
   }
 }
+.max-sm\:block {
+  @media (width < 40rem /* 640px */) {
+    display: block;
+  }
+}

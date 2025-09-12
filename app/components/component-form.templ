@@ -1,0 +1,32 @@
+package components
+
+import (
+	"roommates/globals"
+	"roommates/locales"
+	"roommates/utils"
+)
+
+// csrf input for forms
+templ CSRF() {
+	<input type="hidden" name={ globals.Csrf } value={ ctx.Value("gorilla.csrf.Token").(string) }/>
+}
+
+templ ValidationMessages(msgs []locales.LKMessage) {
+	if len(msgs) > 0 {
+		<div class="">
+			<ul class="uk-anmt-shake uk-form-help text-destructive">
+				for _, msg := range msgs {
+					<li class="error">{ utils.T(ctx, msg.Key, "", msg.Args...) }</li>
+				}
+			</ul>
+		</div>
+	}
+}
+
+templ FormError(errorMsg string) {
+	if errorMsg != "" {
+		<div class="uk-alert uk-alert-destructive">
+			{ errorMsg }
+		</div>
+	}
+}
