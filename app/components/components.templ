@@ -7,6 +7,13 @@ import (
 	"roommates/utils"
 )
 
+templ HtmlWrap(content templ.Component) {
+	<!DOCTYPE html>
+	<html>
+		@content
+	</html>
+}
+
 // title has default which is i18n-zed
 templ HeaderComponent(title string) {
 	{{

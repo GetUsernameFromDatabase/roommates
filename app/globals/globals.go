@@ -22,16 +22,11 @@ const (
 
 const Csrf = "_csrf"
 
-type ContextKey string
-
 // constants for gin context keys \/
 
 const (
 	// key to authenticated user info in gin context
 	GAuth = "authInfo" // do not see a need to add ContextKey type to this
-
-	// used to add Request.URL.Path from gin context into request context
-	GPath ContextKey = "urlPath"
 )
 
 // constants for routes, see routes.go

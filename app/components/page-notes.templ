@@ -1,11 +1,10 @@
 package components
 
-templ PageNotes() {
-	<!DOCTYPE html>
-	<html>
-		@HeaderComponent("")
-		@PageWrapper(NotesPageContent())
-	</html>
+templ PageNotes(pwi SPageWrapper) {
+	@HtmlWrap(templ.Join(
+		HeaderComponent(""),
+		PageWrapper(pwi, NotesPageContent()),
+	))
 }
 
 templ NotesPageContent() {

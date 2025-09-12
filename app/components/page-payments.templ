@@ -1,11 +1,10 @@
 package components
 
-templ PagePayments() {
-	<!DOCTYPE html>
-	<html>
-		@HeaderComponent("")
-		@PageWrapper(PaymentsPageContent())
-	</html>
+templ PagePayments(pwi SPageWrapper) {
+	@HtmlWrap(templ.Join(
+		HeaderComponent(""),
+		PageWrapper(pwi, PaymentsPageContent()),
+	))
 }
 
 templ PaymentsPageContent() {

@@ -1,11 +1,10 @@
 package components
 
-templ PageMain() {
-	<!DOCTYPE html>
-	<html>
-		@HeaderComponent("")
-		@PageWrapper(MainPageContent())
-	</html>
+templ PageMain(pwi SPageWrapper) {
+	@HtmlWrap(templ.Join(
+		HeaderComponent(""),
+		PageWrapper(pwi, MainPageContent()),
+	))
 }
 
 templ MainPageContent() {

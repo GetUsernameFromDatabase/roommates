@@ -11,12 +11,18 @@ import templruntime "github.com/a-h/templ/runtime"
 import (
 	"roommates/globals"
 	"roommates/locales"
+	"roommates/rdb"
 	"roommates/utils"
 	"strings"
 )
 
+type SPageWrapper struct {
+	AuthInfo *rdb.UserSessionValue
+	PathURL  string
+}
+
 // wraps content with `<body>` tag and adds navigation bar on top
-func PageWrapper(content templ.Component) templ.Component {
+func PageWrapper(pwi SPageWrapper, content templ.Component) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -45,7 +51,7 @@ func PageWrapper(content templ.Component) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = navigation(ntOffcanvas).Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = navigation(ntOffcanvas, pwi.PathURL).Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -61,24 +67,19 @@ func PageWrapper(content templ.Component) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = navigation(ntNavbar).Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = navigation(ntNavbar, pwi.PathURL).Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "<div class=\"flex space-x-2 shrink-0\"><a href=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "<div class=\"flex space-x-2 shrink-0\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		var templ_7745c5c3_Var2 templ.SafeURL
-		templ_7745c5c3_Var2, templ_7745c5c3_Err = templ.JoinURLErrs(globals.RProfile)
-		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/component-layout.templ`, Line: 27, Col: 32}
-		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var2))
+		templ_7745c5c3_Err = profileAvatar(pwi.AuthInfo).Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "\"><div class=\"uk-avatar uk-avatar-rounded text-muted-foreground bg-muted\"><div class=\"uk-avatar-text\">RM</div></div></a> <uk-lsh class=\"size-8 inline-block dark:hidden\" value=\"dark\" group=\"mode\" cls-custom=\"uk-avatar uk-avatar-rounded text-muted-foreground bg-muted\"><template><uk-icon icon=\"moon\"></uk-icon></template></uk-lsh> <uk-lsh class=\"size-8 hidden dark:inline-block\" value=\"light\" group=\"mode\" cls-custom=\"uk-avatar uk-avatar-rounded text-muted-foreground bg-muted\"><template><uk-icon icon=\"sun\"></uk-icon></template></uk-lsh></div></div></div></div><div id=\"root-content\" class=\"pt-14 min-h-dvh\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "<uk-lsh class=\"size-8 inline-block dark:hidden\" value=\"dark\" group=\"mode\" cls-custom=\"uk-avatar uk-avatar-rounded text-muted-foreground bg-muted\"><template><uk-icon icon=\"moon\"></uk-icon></template></uk-lsh> <uk-lsh class=\"size-8 hidden dark:inline-block\" value=\"light\" group=\"mode\" cls-custom=\"uk-avatar uk-avatar-rounded text-muted-foreground bg-muted\"><template><uk-icon icon=\"sun\"></uk-icon></template></uk-lsh></div></div></div></div><div id=\"root-content\" class=\"pt-14 min-h-dvh\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -87,6 +88,71 @@ func PageWrapper(content templ.Component) templ.Component {
 			return templ_7745c5c3_Err
 		}
 		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "</div></body>")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		return nil
+	})
+}
+
+func profileAvatar(authInfo *rdb.UserSessionValue) templ.Component {
+	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
+		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
+		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
+			return templ_7745c5c3_CtxErr
+		}
+		templ_7745c5c3_Buffer, templ_7745c5c3_IsBuffer := templruntime.GetBuffer(templ_7745c5c3_W)
+		if !templ_7745c5c3_IsBuffer {
+			defer func() {
+				templ_7745c5c3_BufErr := templruntime.ReleaseBuffer(templ_7745c5c3_Buffer)
+				if templ_7745c5c3_Err == nil {
+					templ_7745c5c3_Err = templ_7745c5c3_BufErr
+				}
+			}()
+		}
+		ctx = templ.InitializeContext(ctx)
+		templ_7745c5c3_Var2 := templ.GetChildren(ctx)
+		if templ_7745c5c3_Var2 == nil {
+			templ_7745c5c3_Var2 = templ.NopComponent
+		}
+		ctx = templ.ClearChildren(ctx)
+
+		avatarText := authInfo.Username[:2]
+		splitBySpace := strings.Fields(authInfo.Username)
+		sbsLength := len(splitBySpace)
+		if sbsLength >= 2 {
+			// first character of first word
+			first := string(splitBySpace[0][0])
+			last := string(splitBySpace[sbsLength-1][0])
+			avatarText = first + last
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 7, "<a href=\"")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		var templ_7745c5c3_Var3 templ.SafeURL
+		templ_7745c5c3_Var3, templ_7745c5c3_Err = templ.JoinURLErrs(globals.RProfile)
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/component-layout.templ`, Line: 74, Col: 27}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var3))
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 8, "\"><div class=\"uk-avatar uk-avatar-rounded text-muted-foreground bg-muted\"><div class=\"uk-avatar-text\">")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		var templ_7745c5c3_Var4 string
+		templ_7745c5c3_Var4, templ_7745c5c3_Err = templ.JoinStringErrs(avatarText)
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/component-layout.templ`, Line: 77, Col: 43}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var4))
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 9, "</div></div></a>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -117,24 +183,24 @@ func search(element searchType) templ.Component {
 			}()
 		}
 		ctx = templ.InitializeContext(ctx)
-		templ_7745c5c3_Var3 := templ.GetChildren(ctx)
-		if templ_7745c5c3_Var3 == nil {
-			templ_7745c5c3_Var3 = templ.NopComponent
+		templ_7745c5c3_Var5 := templ.GetChildren(ctx)
+		if templ_7745c5c3_Var5 == nil {
+			templ_7745c5c3_Var5 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
 		switch element {
 		case stNavbar:
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 7, "<button class=\"uk-avatar uk-avatar-rounded text-muted-foreground bg-muted\" data-uk-toggle=\"target: #search\"><span class=\"size-4\"><uk-icon icon=\"search\"></uk-icon></span></button>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 10, "<button class=\"uk-avatar uk-avatar-rounded text-muted-foreground bg-muted\" data-uk-toggle=\"target: #search\"><span class=\"size-4\"><uk-icon icon=\"search\"></uk-icon></span></button>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		case stCommand:
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 8, "<uk-command id=\"cmd-search\" toggle=\"search\" key=\"j\"><select hidden><optgroup label=\"#TODO:\"><option data-icon=\"calendar\" value=\"/login\"><a href=\"/login\">PLACEHOLDERA</a></option> <option data-icon=\"smile\" value=\"/register\">PLACEHOLDER</option> <option data-icon=\"calculator\" disabled value=\"/path/to/calculator\">PLACEHOLDER</option></optgroup> <optgroup label=\"#TODO:\"><option data-icon=\"user\" value=\"/profile\">PLACEHOLDER</option> <option data-icon=\"credit-card\" value=\"/payments\">PLACEHOLDER</option> <option data-icon=\"settings\" value=\"/\">PLACEHOLDER</option></optgroup></select></uk-command>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 11, "<uk-command id=\"cmd-search\" toggle=\"search\" key=\"j\"><select hidden><optgroup label=\"#TODO:\"><option data-icon=\"calendar\" value=\"/login\"><a href=\"/login\">PLACEHOLDERA</a></option> <option data-icon=\"smile\" value=\"/register\">PLACEHOLDER</option> <option data-icon=\"calculator\" disabled value=\"/path/to/calculator\">PLACEHOLDER</option></optgroup> <optgroup label=\"#TODO:\"><option data-icon=\"user\" value=\"/profile\">PLACEHOLDER</option> <option data-icon=\"credit-card\" value=\"/payments\">PLACEHOLDER</option> <option data-icon=\"settings\" value=\"/\">PLACEHOLDER</option></optgroup></select></uk-command>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		default:
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 9, "DEV ISSUE -- templ search")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 12, "DEV ISSUE -- templ search")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -150,7 +216,7 @@ const (
 	ntOffcanvas navigationType = "offcanvas"
 )
 
-func navigation(element navigationType) templ.Component {
+func navigation(element navigationType, urlPath string) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -166,9 +232,9 @@ func navigation(element navigationType) templ.Component {
 			}()
 		}
 		ctx = templ.InitializeContext(ctx)
-		templ_7745c5c3_Var4 := templ.GetChildren(ctx)
-		if templ_7745c5c3_Var4 == nil {
-			templ_7745c5c3_Var4 = templ.NopComponent
+		templ_7745c5c3_Var6 := templ.GetChildren(ctx)
+		if templ_7745c5c3_Var6 == nil {
+			templ_7745c5c3_Var6 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
 
@@ -180,28 +246,28 @@ func navigation(element navigationType) templ.Component {
 		}
 		switch element {
 		case ntNavbar:
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 10, "<div class=\"flex w-full\" role=\"navigation\"><div class=\"max-sm:hidden flex m-auto w-full max-w-2xl\"><ul class=\"justify-center uk-tab-alt\" data-uk-tab>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 13, "<div class=\"flex w-full\" role=\"navigation\"><div class=\"max-sm:hidden flex m-auto w-full max-w-2xl\"><ul class=\"justify-center uk-tab-alt\" data-uk-tab>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = navLi(routes).Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = navLi(routes, urlPath).Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 11, "</ul></div><div class=\"hidden max-sm:block m-auto\"><button class=\"uk-btn uk-btn-secondary uk-btn-sm\" data-uk-toggle=\"target: #navigation\"><div class=\"size-4\"><uk-icon icon=\"menu\"></uk-icon></div></button></div></div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 14, "</ul></div><div class=\"hidden max-sm:block m-auto\"><button class=\"uk-btn uk-btn-secondary uk-btn-sm\" data-uk-toggle=\"target: #navigation\"><div class=\"size-4\"><uk-icon icon=\"menu\"></uk-icon></div></button></div></div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		case ntOffcanvas:
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 12, "<div id=\"navigation\" class=\"uk-offcanvas\" data-uk-offcanvas=\"overlay: true\" role=\"menu\"><div class=\"uk-offcanvas-bar p-4\"><ul class=\"uk-nav-center uk-nav uk-nav-primary\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 15, "<div id=\"navigation\" class=\"uk-offcanvas\" data-uk-offcanvas=\"overlay: true\" role=\"menu\"><div class=\"uk-offcanvas-bar p-4\"><ul class=\"uk-nav-center uk-nav uk-nav-primary\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = navLi(routes).Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = navLi(routes, urlPath).Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 13, "</ul></div></div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 16, "</ul></div></div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -210,7 +276,7 @@ func navigation(element navigationType) templ.Component {
 	})
 }
 
-func navLi(routes [][]string) templ.Component {
+func navLi(routes [][]string, urlPath string) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -226,62 +292,60 @@ func navLi(routes [][]string) templ.Component {
 			}()
 		}
 		ctx = templ.InitializeContext(ctx)
-		templ_7745c5c3_Var5 := templ.GetChildren(ctx)
-		if templ_7745c5c3_Var5 == nil {
-			templ_7745c5c3_Var5 = templ.NopComponent
+		templ_7745c5c3_Var7 := templ.GetChildren(ctx)
+		if templ_7745c5c3_Var7 == nil {
+			templ_7745c5c3_Var7 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-
-		urlPath := ctx.Value(globals.GPath).(string)
 		for _, route := range routes {
 
 			href := route[0]
 			label := route[1]
-			var templ_7745c5c3_Var6 = []any{templ.KV("uk-active", strings.HasPrefix(urlPath, href))}
-			templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_Buffer, templ_7745c5c3_Var6...)
+			var templ_7745c5c3_Var8 = []any{templ.KV("uk-active", strings.HasPrefix(urlPath, href))}
+			templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_Buffer, templ_7745c5c3_Var8...)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 14, "<li class=\"")
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			var templ_7745c5c3_Var7 string
-			templ_7745c5c3_Var7, templ_7745c5c3_Err = templ.JoinStringErrs(templ.CSSClasses(templ_7745c5c3_Var6).String())
-			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/component-layout.templ`, Line: 1, Col: 0}
-			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var7))
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 15, "\"><a hx-boost=\"true\" href=\"")
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			var templ_7745c5c3_Var8 templ.SafeURL
-			templ_7745c5c3_Var8, templ_7745c5c3_Err = templ.JoinURLErrs(href)
-			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/component-layout.templ`, Line: 167, Col: 33}
-			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var8))
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 16, "\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 17, "<li class=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var9 string
-			templ_7745c5c3_Var9, templ_7745c5c3_Err = templ.JoinStringErrs(label)
+			templ_7745c5c3_Var9, templ_7745c5c3_Err = templ.JoinStringErrs(templ.CSSClasses(templ_7745c5c3_Var8).String())
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/component-layout.templ`, Line: 167, Col: 43}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/component-layout.templ`, Line: 1, Col: 0}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var9))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 17, "</a></li>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 18, "\"><a hx-boost=\"true\" href=\"")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			var templ_7745c5c3_Var10 templ.SafeURL
+			templ_7745c5c3_Var10, templ_7745c5c3_Err = templ.JoinURLErrs(href)
+			if templ_7745c5c3_Err != nil {
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/component-layout.templ`, Line: 185, Col: 33}
+			}
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var10))
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 19, "\">")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			var templ_7745c5c3_Var11 string
+			templ_7745c5c3_Var11, templ_7745c5c3_Err = templ.JoinStringErrs(label)
+			if templ_7745c5c3_Err != nil {
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/component-layout.templ`, Line: 185, Col: 43}
+			}
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var11))
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 20, "</a></li>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}

@@ -15,6 +15,8 @@ func (m *Register) ValidateUsername() (msgs []l.LKMessage) {
 		return
 	}
 
+	// TODO: do not allow spaces with strings.TrimSpaces
+
 	const minLength = 3
 	if len(m.Username) < minLength {
 		msgs = append(msgs, l.LKMessage{

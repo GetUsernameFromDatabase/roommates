@@ -16,37 +16,67 @@ import (
 )
 
 func (c *Controller) PageMain(ctx *gin.Context) {
-	pc := components.PageMain()
+	authInfo := middleware.GetAuthInfo(ctx)
+	pc := components.PageMain(components.SPageWrapper{
+		AuthInfo: authInfo,
+		PathURL:  ctx.Request.URL.Path,
+	})
+
 	r := gintemplrenderer.New(ctx.Request.Context(), http.StatusOK, pc)
 	ctx.Render(r.Status, r)
 }
 
 func (c *Controller) PageProfile(ctx *gin.Context) {
-	pc := components.PageProfile()
+	authInfo := middleware.GetAuthInfo(ctx)
+	pc := components.PageProfile(components.SPageWrapper{
+		AuthInfo: authInfo,
+		PathURL:  ctx.Request.URL.Path,
+	})
+
 	r := gintemplrenderer.New(ctx.Request.Context(), http.StatusOK, pc)
 	ctx.Render(r.Status, r)
 }
 
 func (c *Controller) PagePayments(ctx *gin.Context) {
-	pc := components.PagePayments()
+	authInfo := middleware.GetAuthInfo(ctx)
+	pc := components.PagePayments(components.SPageWrapper{
+		AuthInfo: authInfo,
+		PathURL:  ctx.Request.URL.Path,
+	})
+
 	r := gintemplrenderer.New(ctx.Request.Context(), http.StatusOK, pc)
 	ctx.Render(r.Status, r)
 }
 
 func (c *Controller) PageNotes(ctx *gin.Context) {
-	pc := components.PageNotes()
+	authInfo := middleware.GetAuthInfo(ctx)
+	pc := components.PageNotes(components.SPageWrapper{
+		AuthInfo: authInfo,
+		PathURL:  ctx.Request.URL.Path,
+	})
+
 	r := gintemplrenderer.New(ctx.Request.Context(), http.StatusOK, pc)
 	ctx.Render(r.Status, r)
 }
 
 func (c *Controller) PageMessaging(ctx *gin.Context) {
-	pc := components.PageMessaging()
+	authInfo := middleware.GetAuthInfo(ctx)
+	pc := components.PageMessaging(components.SPageWrapper{
+		AuthInfo: authInfo,
+		PathURL:  ctx.Request.URL.Path,
+	})
+
 	r := gintemplrenderer.New(ctx.Request.Context(), http.StatusOK, pc)
 	ctx.Render(r.Status, r)
 }
 
 func (c *Controller) PageHouses(ctx *gin.Context) {
-	pc := components.PageHouses()
+	authInfo := middleware.GetAuthInfo(ctx)
+	pc := components.PageHouses(components.SPageWrapper{
+		AuthInfo: authInfo,
+		PathURL:  ctx.Request.URL.Path,
+	})
+
 	r := gintemplrenderer.New(ctx.Request.Context(), http.StatusOK, pc)
 	ctx.Render(r.Status, r)
 }

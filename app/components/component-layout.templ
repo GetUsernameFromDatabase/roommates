@@ -3,15 +3,22 @@ package components
 import (
 	"roommates/globals"
 	"roommates/locales"
+	"roommates/rdb"
 	"roommates/utils"
 	"strings"
 )
 
+type SPageWrapper struct {
+	AuthInfo *rdb.UserSessionValue
+	PathURL  string
+}
+
 // wraps content with `<body>` tag and adds navigation bar on top
-templ PageWrapper(content templ.Component) {
+templ PageWrapper(pwi SPageWrapper, content templ.Component) {
 	<body class="bg-background text-foreground antialiased h-full">
 		@search(stCommand)
-		@navigation(ntOffcanvas)
+		@navigation(ntOffcanvas, pwi.PathURL)
+		// navbar
 		<div class="border-border fixed inset-x-0 top-0 z-10 border-b">
 			<div class="bg-background text-foreground">
 				<div class="flex h-14 items-center justify-between gap-8 px-4 sm:px-6">
@@ -20,16 +27,10 @@ templ PageWrapper(content templ.Component) {
 						<a hx-boost="true" href="/"><img class="size-8" src="/favicon.ico"/></a>
 						@search(stNavbar)
 					</div>
-					@navigation(ntNavbar)
+					@navigation(ntNavbar, pwi.PathURL)
 					// avatar and light/dark mode switch
 					<div class="flex space-x-2 shrink-0">
-						// TODO: hx this, basis not yet done to properly test and I do not want to just hx-boost it
-						<a href={ globals.RProfile }>
-							<div class="uk-avatar uk-avatar-rounded text-muted-foreground bg-muted">
-								// TODO: fill in the name
-								<div class="uk-avatar-text">RM</div>
-							</div>
-						</a>
+						@profileAvatar(pwi.AuthInfo)
 						<uk-lsh
 							class="size-8 inline-block dark:hidden"
 							value="dark"
@@ -50,11 +51,32 @@ templ PageWrapper(content templ.Component) {
 				</div>
 			</div>
 		</div>
-		// make sure to match pt- with the h- of the navbar
+		// NB: make sure to match pt- with the h- of the navbar
 		<div id="root-content" class="pt-14 min-h-dvh">
 			@content
 		</div>
 	</body>
+}
+
+templ profileAvatar(authInfo *rdb.UserSessionValue) {
+	// TODO: use image if available
+	{{
+		avatarText := authInfo.Username[:2]
+		splitBySpace := strings.Fields(authInfo.Username)
+		sbsLength := len(splitBySpace)
+		if sbsLength >= 2 {
+			// first character of first word
+			first := string(splitBySpace[0][0])
+			last := string(splitBySpace[sbsLength-1][0])
+			avatarText = first + last
+		}
+	}}
+	<a href={ globals.RProfile }>
+		<div class="uk-avatar uk-avatar-rounded text-muted-foreground bg-muted">
+			// TODO: fill in the name
+			<div class="uk-avatar-text">{ avatarText }</div>
+		</div>
+	</a>
 }
 
 type searchType string
@@ -109,7 +131,7 @@ const (
 	ntOffcanvas navigationType = "offcanvas"
 )
 
-templ navigation(element navigationType) {
+templ navigation(element navigationType, urlPath string) {
 	{{
 		routes := [][]string{
 			{globals.RHouses, utils.T(ctx, locales.LKNavbarHouses, "Houses")},
@@ -123,11 +145,10 @@ templ navigation(element navigationType) {
 			<div class="flex w-full" role="navigation">
 				<div class="max-sm:hidden flex m-auto w-full max-w-2xl">
 					<ul class="justify-center uk-tab-alt" data-uk-tab>
-						@navLi(routes)
+						@navLi(routes, urlPath)
 					</ul>
 				</div>
 				<div class="hidden max-sm:block m-auto">
-					// TODO: better style for this
 					<button
 						class="uk-btn uk-btn-secondary uk-btn-sm"
 						data-uk-toggle="target: #navigation"
@@ -147,17 +168,14 @@ templ navigation(element navigationType) {
 			>
 				<div class="uk-offcanvas-bar p-4">
 					<ul class="uk-nav-center uk-nav uk-nav-primary">
-						@navLi(routes)
+						@navLi(routes, urlPath)
 					</ul>
 				</div>
 			</div>
 	}
 }
 
-templ navLi(routes [][]string) {
-	{{
-				urlPath := ctx.Value(globals.GPath).(string)
-	}}
+templ navLi(routes [][]string, urlPath string) {
 	for _, route := range routes {
 		{{
 						href := route[0]

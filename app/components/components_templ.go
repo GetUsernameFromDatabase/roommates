@@ -15,8 +15,7 @@ import (
 	"roommates/utils"
 )
 
-// title has default which is i18n-zed
-func HeaderComponent(title string) templ.Component {
+func HtmlWrap(content templ.Component) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -37,24 +36,62 @@ func HeaderComponent(title string) templ.Component {
 			templ_7745c5c3_Var1 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<!doctype html><html>")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = content.Render(ctx, templ_7745c5c3_Buffer)
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "</html>")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		return nil
+	})
+}
+
+// title has default which is i18n-zed
+func HeaderComponent(title string) templ.Component {
+	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
+		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
+		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
+			return templ_7745c5c3_CtxErr
+		}
+		templ_7745c5c3_Buffer, templ_7745c5c3_IsBuffer := templruntime.GetBuffer(templ_7745c5c3_W)
+		if !templ_7745c5c3_IsBuffer {
+			defer func() {
+				templ_7745c5c3_BufErr := templruntime.ReleaseBuffer(templ_7745c5c3_Buffer)
+				if templ_7745c5c3_Err == nil {
+					templ_7745c5c3_Err = templ_7745c5c3_BufErr
+				}
+			}()
+		}
+		ctx = templ.InitializeContext(ctx)
+		templ_7745c5c3_Var2 := templ.GetChildren(ctx)
+		if templ_7745c5c3_Var2 == nil {
+			templ_7745c5c3_Var2 = templ.NopComponent
+		}
+		ctx = templ.ClearChildren(ctx)
 
 		if title == "" {
 			title = utils.T(ctx, locales.LKAppTitle, "Roommates")
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<head><title>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "<head><title>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		var templ_7745c5c3_Var2 string
-		templ_7745c5c3_Var2, templ_7745c5c3_Err = templ.JoinStringErrs(title)
+		var templ_7745c5c3_Var3 string
+		templ_7745c5c3_Var3, templ_7745c5c3_Err = templ.JoinStringErrs(title)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/components.templ`, Line: 18, Col: 16}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/components.templ`, Line: 25, Col: 16}
 		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var2))
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var3))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "</title><link rel=\"stylesheet\" href=\"/assets/franken-ui@2.1.0-next.20.core.min.css\"><link rel=\"stylesheet\" href=\"/assets/franken-ui@2.1.0-next.20.utilities.min.css\"><link rel=\"stylesheet\" href=\"/assets/custom.css\"><script src=\"/assets/franken-ui@2.1.0-next.20.core.iife.js\" type=\"module\"></script><script src=\"/assets/franken-ui@2.1.0-next.20.icon.iife.js\" type=\"module\"></script><script src=\"/assets/htmx.2.0.6.min.js\" type=\"module\"></script><script>\n\t\tconst __FRANKEN__ = JSON.parse(localStorage.getItem('__FRANKEN__') || '{}');\n\t\tconst htmlElement = document.documentElement;\n\n\t\t// TODO: DARK MODE\n\t\t// if (\n\t\t//   __FRANKEN__.mode === 'dark' ||\n\t\t//   (!__FRANKEN__.mode &&\n\t\t//     window.matchMedia('(prefers-color-scheme: dark)').matches)\n\t\t// ) {\n\t\t//   htmlElement.classList.add('dark');\n\t\t// } else {\n\t\t//   htmlElement.classList.remove('dark');\n\t\t// }\n\n\t\thtmlElement.classList.add(__FRANKEN__.theme || 'uk-theme-teal');\n\t\thtmlElement.classList.add(__FRANKEN__.radii || 'uk-radii-md');\n\t\thtmlElement.classList.add(__FRANKEN__.shadows || 'uk-shadows-sm');\n\t\thtmlElement.classList.add(__FRANKEN__.font || 'uk-font-sm');\n\t\thtmlElement.classList.add(__FRANKEN__.chart || 'uk-chart-default');\n\t\t</script></head>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "</title><link rel=\"stylesheet\" href=\"/assets/franken-ui@2.1.0-next.20.core.min.css\"><link rel=\"stylesheet\" href=\"/assets/franken-ui@2.1.0-next.20.utilities.min.css\"><link rel=\"stylesheet\" href=\"/assets/custom.css\"><script src=\"/assets/franken-ui@2.1.0-next.20.core.iife.js\" type=\"module\"></script><script src=\"/assets/franken-ui@2.1.0-next.20.icon.iife.js\" type=\"module\"></script><script src=\"/assets/htmx.2.0.6.min.js\" type=\"module\"></script><script>\n\t\tconst __FRANKEN__ = JSON.parse(localStorage.getItem('__FRANKEN__') || '{}');\n\t\tconst htmlElement = document.documentElement;\n\n\t\t// TODO: DARK MODE\n\t\t// if (\n\t\t//   __FRANKEN__.mode === 'dark' ||\n\t\t//   (!__FRANKEN__.mode &&\n\t\t//     window.matchMedia('(prefers-color-scheme: dark)').matches)\n\t\t// ) {\n\t\t//   htmlElement.classList.add('dark');\n\t\t// } else {\n\t\t//   htmlElement.classList.remove('dark');\n\t\t// }\n\n\t\thtmlElement.classList.add(__FRANKEN__.theme || 'uk-theme-teal');\n\t\thtmlElement.classList.add(__FRANKEN__.radii || 'uk-radii-md');\n\t\thtmlElement.classList.add(__FRANKEN__.shadows || 'uk-shadows-sm');\n\t\thtmlElement.classList.add(__FRANKEN__.font || 'uk-font-sm');\n\t\thtmlElement.classList.add(__FRANKEN__.chart || 'uk-chart-default');\n\t\t</script></head>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

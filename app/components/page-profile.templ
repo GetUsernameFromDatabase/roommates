@@ -1,11 +1,10 @@
 package components
 
-templ PageProfile() {
-	<!DOCTYPE html>
-	<html>
-		@HeaderComponent("")
-		@PageWrapper(ProfilePageContent())
-	</html>
+templ PageProfile(pwi SPageWrapper) {
+	@HtmlWrap(templ.Join(
+		HeaderComponent(""),
+		PageWrapper(pwi, ProfilePageContent()),
+	))
 }
 
 templ ProfilePageContent() {
