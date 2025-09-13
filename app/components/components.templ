@@ -30,25 +30,38 @@ if title == "" {
 		<script src="/assets/franken-ui@2.1.0-next.20.icon.iife.js" type="module"></script>
 		<script src="/assets/htmx.2.0.6.min.js" type="module"></script>
 		<script>
-		const __FRANKEN__ = JSON.parse(localStorage.getItem('__FRANKEN__') || '{}');
+		// franken accessor key
+		const __fak__ = '__FRANKEN__'
+		/**
+		* Franken UI theming
+		* @see {@link https://franken-ui.dev/docs/2.1/theming}
+		* 
+		* @type {{ 
+		*   theme?: string, 
+		*   radii?: string, 
+		*   shadows?: string, 
+		*   font?: string, 
+		*   chart?: string 
+		* }}
+		*/
+		const __FRANKEN__ = JSON.parse(localStorage.getItem(__fak__) || '{}');
 		const htmlElement = document.documentElement;
 
-		// TODO: DARK MODE
-		// if (
-		//   __FRANKEN__.mode === 'dark' ||
-		//   (!__FRANKEN__.mode &&
-		//     window.matchMedia('(prefers-color-scheme: dark)').matches)
-		// ) {
-		//   htmlElement.classList.add('dark');
-		// } else {
-		//   htmlElement.classList.remove('dark');
-		// }
+		if (
+			__FRANKEN__.mode === "dark" ||
+			(!__FRANKEN__.mode &&
+				window.matchMedia("(prefers-color-scheme: dark)").matches)
+		) {
+			htmlElement.classList.add("dark");
+		} else {
+			htmlElement.classList.remove("dark");
+		}
 
 		htmlElement.classList.add(__FRANKEN__.theme || 'uk-theme-teal');
 		htmlElement.classList.add(__FRANKEN__.radii || 'uk-radii-md');
 		htmlElement.classList.add(__FRANKEN__.shadows || 'uk-shadows-sm');
 		htmlElement.classList.add(__FRANKEN__.font || 'uk-font-sm');
 		htmlElement.classList.add(__FRANKEN__.chart || 'uk-chart-default');
-		</script>
+	</script>
 	</head>
 }

@@ -38,22 +38,7 @@ templ PageWrapper(pwi SPageWrapper, content templ.Component) {
 					// avatar and light/dark mode switch
 					<div class="flex space-x-2 shrink-0">
 						@profileAvatar(pwi.AuthInfo)
-						<uk-lsh
-							class="size-8 inline-block dark:hidden"
-							value="dark"
-							group="mode"
-							cls-custom="uk-avatar uk-avatar-rounded text-muted-foreground bg-muted"
-						>
-							<template><uk-icon icon="moon"></uk-icon></template>
-						</uk-lsh>
-						<uk-lsh
-							class="size-8 hidden dark:inline-block"
-							value="light"
-							group="mode"
-							cls-custom="uk-avatar uk-avatar-rounded text-muted-foreground bg-muted"
-						>
-							<template><uk-icon icon="sun"></uk-icon></template>
-						</uk-lsh>
+						@nbThemeSwitch()
 					</div>
 				</div>
 			</div>
@@ -63,6 +48,26 @@ templ PageWrapper(pwi SPageWrapper, content templ.Component) {
 			@content
 		</div>
 	</body>
+}
+
+// navigation bar theme switch
+templ nbThemeSwitch() {
+	<uk-lsh
+		class="size-8 inline-block dark:hidden"
+		value="dark"
+		group="mode"
+		cls-custom="uk-avatar uk-avatar-rounded text-muted-foreground bg-muted"
+	>
+		<template><uk-icon icon="moon"></uk-icon></template>
+	</uk-lsh>
+	<uk-lsh
+		class="size-8 hidden dark:inline-block"
+		value="light"
+		group="mode"
+		cls-custom="uk-avatar uk-avatar-rounded text-muted-foreground bg-muted"
+	>
+		<template><uk-icon icon="sun"></uk-icon></template>
+	</uk-lsh>
 }
 
 templ profileAvatar(authInfo *rdb.UserSessionValue) {
