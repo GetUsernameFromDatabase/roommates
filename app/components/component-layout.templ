@@ -8,6 +8,8 @@ import (
 	"strings"
 )
 
+const IdRootContent = "root-content"
+
 type SPageWrapper struct {
 	AuthInfo *rdb.UserSessionValue
 	PathURL  string
@@ -24,7 +26,12 @@ templ PageWrapper(pwi SPageWrapper, content templ.Component) {
 				<div class="flex h-14 items-center justify-between gap-8 px-4 sm:px-6">
 					// website icon and search
 					<div class="flex space-x-2 items-center shrink-0">
-						<a hx-boost="true" href="/"><img class="size-8" src="/favicon.ico"/></a>
+						<a
+							hx-boost="true"
+							hx-target={ "#" + IdRootContent }
+							hx-swap="innerHTML"
+							href="/"
+						><img class="size-8" src="/favicon.ico"/></a>
 						@search(stNavbar)
 					</div>
 					@navigation(ntNavbar, pwi.PathURL)
@@ -52,7 +59,7 @@ templ PageWrapper(pwi SPageWrapper, content templ.Component) {
 			</div>
 		</div>
 		// NB: make sure to match pt- with the h- of the navbar
-		<div id="root-content" class="pt-14 min-h-dvh">
+		<div id={ IdRootContent } class="pt-14 min-h-dvh">
 			@content
 		</div>
 	</body>
@@ -71,7 +78,12 @@ templ profileAvatar(authInfo *rdb.UserSessionValue) {
 			avatarText = first + last
 		}
 	}}
-	<a href={ globals.RProfile }>
+	<a
+		href={ globals.RProfile }
+		hx-boost="true"
+		hx-target={ "#" + IdRootContent }
+		hx-swap="innerHTML"
+	>
 		<div class="uk-avatar uk-avatar-rounded text-muted-foreground bg-muted">
 			<div class="uk-avatar-text">{ strings.ToUpper(avatarText) }</div>
 		</div>
@@ -166,7 +178,9 @@ templ navigation(element navigationType, urlPath string) {
 				role="menu"
 			>
 				<div class="uk-offcanvas-bar p-4">
-					<ul class="uk-nav-center uk-nav uk-nav-primary">
+					// uk-switcher is necessary when htmx is switching page content
+					// otherwise active status of element won't be changed
+					<ul class="uk-nav-center uk-nav uk-nav-primary" uk-switcher>
 						@navLi(routes, urlPath)
 					</ul>
 				</div>
@@ -181,7 +195,12 @@ templ navLi(routes [][]string, urlPath string) {
 						label := route[1]
 		}}
 		<li class={ templ.KV("uk-active", strings.HasPrefix(urlPath, href)) }>
-			<a hx-boost="true" href={ href }>{ label }</a>
+			<a
+				hx-boost="true"
+				hx-target={ "#" + IdRootContent }
+				hx-swap="innerHTML"
+				href={ href }
+			>{ label }</a>
 		</li>
 	}
 }

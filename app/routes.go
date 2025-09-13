@@ -47,7 +47,6 @@ func InitRoutes(r *gin.Engine, c *controller.Controller) {
 		{
 			authentication.POST("/sign-in", c.SignIn)
 			authentication.GET("/sign-out", c.SignOut)
-			authentication.POST("/register-account", c.RegisterAccount)
 		}
 
 		// TODO: API point for websocket -- https://github.com/gin-gonic/examples/blob/master/websocket/server/server.go#L16

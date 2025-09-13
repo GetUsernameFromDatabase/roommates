@@ -1,29 +1,5 @@
 basePath: /api/v1
 definitions:
-  controller.RegisterAccountRequest:
-    properties:
-      email:
-        type: string
-      password:
-        minLength: 8
-        type: string
-      username:
-        type: string
-    required:
-    - email
-    - password
-    - username
-    type: object
-  controller.RegisterAccountResponse:
-    properties:
-      token:
-        type: string
-      username:
-        type: string
-    required:
-    - token
-    - username
-    type: object
   controller.SignInRequest:
     properties:
       email:
@@ -70,38 +46,6 @@ info:
   title: Roommates API
   version: "1.0"
 paths:
-  /api/v1/auth/register-account:
-    post:
-      consumes:
-      - application/json
-      description: Creates a new user account
-      parameters:
-      - description: Info used to register account
-        in: body
-        name: RegisterAccount
-        required: true
-        schema:
-          $ref: '#/definitions/controller.RegisterAccountRequest'
-      produces:
-      - application/json
-      responses:
-        "201":
-          description: Created
-          schema:
-            $ref: '#/definitions/controller.RegisterAccountResponse'
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/utils.HTTPError'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/utils.HTTPError'
-      security:
-      - ApiKeyAuth: []
-      summary: RegisterAccount new account
-      tags:
-      - auth
   /api/v1/auth/sign-in:
     post:
       consumes:

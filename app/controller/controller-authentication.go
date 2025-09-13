@@ -2,8 +2,13 @@ package controller
 
 import (
 	"net/http"
+	"roommates/components"
 	"roommates/db/dbqueries"
+	"roommates/gintemplrenderer"
 	g "roommates/globals"
+	"roommates/locales"
+	"roommates/middleware"
+	"roommates/models"
 	"roommates/rdb"
 	"roommates/utils"
 
@@ -52,7 +57,7 @@ func (c *Controller) signUserIn(ctx *gin.Context, sessionValue rdb.UserSessionVa
 //   - on all errors string will be empty
 //   - if error is nil and string is empty then response has been sent
 //   - response has not been sent if error is ErrorAccountAlreadyExists
-func (c *Controller) registerUser(ctx *gin.Context, user RegisterAccountRequest) (string, error) {
+func (c *Controller) registerUser(ctx *gin.Context, user dbqueries.InsertUserParams) (string, error) {
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(user.Password), 12)
 	if err != nil { // this should never be an issue
 		HandleServerError(ctx, err, "error processing password")
@@ -158,55 +163,115 @@ func (c *Controller) SignOut(ctx *gin.Context) {
 
 //------------------------------------------------------------------------------
 
-type RegisterAccountRequest struct {
-	Email    string `form:"email" json:"email" binding:"required,email"`
-	Password string `form:"password" json:"password" binding:"required,min=8"`
-	Username string `form:"username" json:"username" binding:"required"`
+func (c *Controller) PageLogin(ctx *gin.Context) {
+	authInfo := middleware.GetAuthInfo(ctx)
+	if authInfo != nil {
+		ctx.Redirect(http.StatusSeeOther, "/")
+		return
+	}
+
+	method := ctx.Request.Method
+	render := func(model models.Login) {
+		page := components.PageLogin(model)
+		r := gintemplrenderer.New(ctx.Request.Context(), http.StatusOK, page)
+		ctx.Render(r.Status, r)
+	}
+
+	switch method {
+	case http.MethodGet:
+		render(models.Login{Initial: true})
+	case http.MethodPost:
+		var model models.Login
+		ctx.ShouldBind(&model)
+
+		hasError, _ := model.IsValid()
+		if hasError {
+			render(model)
+			return
+		}
+
+		credsInDb, err := c.shouldUserBeSignedIn(ctx, SignInRequest{
+			Email:    model.Email,
+			Password: model.Password,
+		})
+		if err != nil {
+			if errors.Is(err, g.ErrorInvalidCredential) {
+				model.Error = utils.T(
+					ctx.Request.Context(),
+					locales.LKFormsErrorInvalidCredential,
+					// this error is safe to output publically
+					err.Error(),
+				)
+				render(model)
+				return
+			}
+			HandleServerError(ctx, err, "error fetching user credentials")
+			return
+		}
+
+		a := c.signUserIn(ctx, rdb.UserSessionValue{
+			UserID:   credsInDb.ID.String(),
+			Username: credsInDb.Username,
+		})
+		log.Info().Msg(a.String())
+		ctx.Redirect(http.StatusSeeOther, "/")
+	default:
+		ctx.String(http.StatusMethodNotAllowed, "method %s not allowed", method)
+	}
 }
 
-type RegisterAccountResponse struct {
-	SignInResponse
-	Message string `json:"username" binding:"required"`
-}
-
-// RegisterAccount godoc
-//
-//	@Summary      RegisterAccount new account
-//	@Description  Creates a new user account
-//	@Tags         auth
-//
-//	@Accept  json
-//	@Param   RegisterAccount  body  RegisterAccountRequest  true  "Info used to register account"
-//
-//	@Produce      json
-//	@Success  201  {object}  RegisterAccountResponse
-//	@Failure  400  {object}  utils.HTTPError
-//	@Failure  500  {object}  utils.HTTPError
-//
-//	@Security  ApiKeyAuth
-//	@Router    /api/v1/auth/register-account [post]
-func (c *Controller) RegisterAccount(ctx *gin.Context) {
-	var req RegisterAccountRequest
-	if err := ctx.ShouldBindJSON(&req); err != nil {
-		utils.ErrorResponse(ctx, http.StatusBadRequest, err)
+func (c *Controller) PageRegister(ctx *gin.Context) {
+	authInfo := middleware.GetAuthInfo(ctx)
+	if authInfo != nil {
+		ctx.Redirect(http.StatusSeeOther, "/")
 		return
 	}
 
-	userID, err := c.registerUser(ctx, req)
-	if errors.Is(err, g.ErrorAccountAlreadyExists) {
-		utils.ErrorResponse(ctx, http.StatusConflict, err)
-		return
-	}
-	if userID == "" {
-		return
+	method := ctx.Request.Method
+	render := func(model models.Register) {
+		page := components.PageRegister(model)
+		r := gintemplrenderer.New(ctx.Request.Context(), http.StatusOK, page)
+		ctx.Render(r.Status, r)
 	}
 
-	token := c.signUserIn(ctx, rdb.UserSessionValue{
-		UserID:   userID,
-		Username: req.Username,
-	})
-	ctx.JSON(http.StatusCreated, RegisterAccountResponse{
-		Message:        "account created",
-		SignInResponse: SignInResponse{Token: token.String()},
-	})
+	switch method {
+	case http.MethodGet:
+		render(models.Register{Login: models.Login{Initial: true}})
+	case http.MethodPost:
+		var model models.Register
+		ctx.ShouldBind(&model)
+
+		hasError, _ := model.IsValid()
+		if hasError {
+			render(model)
+			return
+		}
+
+		userID, err := c.registerUser(ctx, dbqueries.InsertUserParams{
+			Email:    model.Email,
+			Password: model.Password,
+			Username: model.Username,
+		})
+		if errors.Is(err, g.ErrorAccountAlreadyExists) {
+			model.Error = utils.T(
+				ctx.Request.Context(),
+				locales.LKFormsErrorAlreadyExists,
+				// this error is safe to output publically
+				err.Error(),
+			)
+			render(model)
+			return
+		}
+		if userID == "" {
+			return
+		}
+
+		c.signUserIn(ctx, rdb.UserSessionValue{
+			UserID:   userID,
+			Username: model.Username,
+		})
+		ctx.Redirect(http.StatusSeeOther, "/")
+	default:
+		ctx.String(http.StatusMethodNotAllowed, "method %s not allowed", method)
+	}
 }

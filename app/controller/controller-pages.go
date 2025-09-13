@@ -1,26 +1,28 @@
 package controller
 
 import (
-	"errors"
 	"net/http"
 	"roommates/components"
 	"roommates/gintemplrenderer"
 	g "roommates/globals"
-	"roommates/locales"
 	"roommates/middleware"
-	"roommates/models"
-	"roommates/rdb"
-	"roommates/utils"
 
+	"github.com/a-h/templ"
 	"github.com/gin-gonic/gin"
 )
 
 func (c *Controller) PageMain(ctx *gin.Context) {
 	authInfo := middleware.GetAuthInfo(ctx)
-	pc := components.PageMain(components.SPageWrapper{
-		AuthInfo: authInfo,
-		PathURL:  ctx.Request.URL.Path,
-	})
+
+	var pc templ.Component
+	if ctx.GetHeader(string(g.HHXRequest)) == "" {
+		pc = components.PageMain(components.SPageWrapper{
+			AuthInfo: authInfo,
+			PathURL:  ctx.Request.URL.Path,
+		})
+	} else {
+		pc = components.MainPageContent()
+	}
 
 	r := gintemplrenderer.New(ctx.Request.Context(), http.StatusOK, pc)
 	ctx.Render(r.Status, r)
@@ -28,10 +30,16 @@ func (c *Controller) PageMain(ctx *gin.Context) {
 
 func (c *Controller) PageProfile(ctx *gin.Context) {
 	authInfo := middleware.GetAuthInfo(ctx)
-	pc := components.PageProfile(components.SPageWrapper{
-		AuthInfo: authInfo,
-		PathURL:  ctx.Request.URL.Path,
-	})
+
+	var pc templ.Component
+	if ctx.GetHeader(string(g.HHXRequest)) == "" {
+		pc = components.PageProfile(components.SPageWrapper{
+			AuthInfo: authInfo,
+			PathURL:  ctx.Request.URL.Path,
+		})
+	} else {
+		pc = components.ProfilePageContent()
+	}
 
 	r := gintemplrenderer.New(ctx.Request.Context(), http.StatusOK, pc)
 	ctx.Render(r.Status, r)
@@ -39,10 +47,16 @@ func (c *Controller) PageProfile(ctx *gin.Context) {
 
 func (c *Controller) PagePayments(ctx *gin.Context) {
 	authInfo := middleware.GetAuthInfo(ctx)
-	pc := components.PagePayments(components.SPageWrapper{
-		AuthInfo: authInfo,
-		PathURL:  ctx.Request.URL.Path,
-	})
+
+	var pc templ.Component
+	if ctx.GetHeader(string(g.HHXRequest)) == "" {
+		pc = components.PagePayments(components.SPageWrapper{
+			AuthInfo: authInfo,
+			PathURL:  ctx.Request.URL.Path,
+		})
+	} else {
+		pc = components.PaymentsPageContent()
+	}
 
 	r := gintemplrenderer.New(ctx.Request.Context(), http.StatusOK, pc)
 	ctx.Render(r.Status, r)
@@ -50,10 +64,16 @@ func (c *Controller) PagePayments(ctx *gin.Context) {
 
 func (c *Controller) PageNotes(ctx *gin.Context) {
 	authInfo := middleware.GetAuthInfo(ctx)
-	pc := components.PageNotes(components.SPageWrapper{
-		AuthInfo: authInfo,
-		PathURL:  ctx.Request.URL.Path,
-	})
+
+	var pc templ.Component
+	if ctx.GetHeader(string(g.HHXRequest)) == "" {
+		pc = components.PageNotes(components.SPageWrapper{
+			AuthInfo: authInfo,
+			PathURL:  ctx.Request.URL.Path,
+		})
+	} else {
+		pc = components.NotesPageContent()
+	}
 
 	r := gintemplrenderer.New(ctx.Request.Context(), http.StatusOK, pc)
 	ctx.Render(r.Status, r)
@@ -61,10 +81,16 @@ func (c *Controller) PageNotes(ctx *gin.Context) {
 
 func (c *Controller) PageMessaging(ctx *gin.Context) {
 	authInfo := middleware.GetAuthInfo(ctx)
-	pc := components.PageMessaging(components.SPageWrapper{
-		AuthInfo: authInfo,
-		PathURL:  ctx.Request.URL.Path,
-	})
+
+	var pc templ.Component
+	if ctx.GetHeader(string(g.HHXRequest)) == "" {
+		pc = components.PageMessaging(components.SPageWrapper{
+			AuthInfo: authInfo,
+			PathURL:  ctx.Request.URL.Path,
+		})
+	} else {
+		pc = components.MessagingPageContent()
+	}
 
 	r := gintemplrenderer.New(ctx.Request.Context(), http.StatusOK, pc)
 	ctx.Render(r.Status, r)
@@ -72,126 +98,17 @@ func (c *Controller) PageMessaging(ctx *gin.Context) {
 
 func (c *Controller) PageHouses(ctx *gin.Context) {
 	authInfo := middleware.GetAuthInfo(ctx)
-	pc := components.PageHouses(components.SPageWrapper{
-		AuthInfo: authInfo,
-		PathURL:  ctx.Request.URL.Path,
-	})
+
+	var pc templ.Component
+	if ctx.GetHeader(string(g.HHXRequest)) == "" {
+		pc = components.PageHouses(components.SPageWrapper{
+			AuthInfo: authInfo,
+			PathURL:  ctx.Request.URL.Path,
+		})
+	} else {
+		pc = components.HousesPageContent()
+	}
 
 	r := gintemplrenderer.New(ctx.Request.Context(), http.StatusOK, pc)
 	ctx.Render(r.Status, r)
-}
-
-// --- AUTH -- login and register ---
-
-func (c *Controller) PageLogin(ctx *gin.Context) {
-	authInfo := middleware.GetAuthInfo(ctx)
-	if authInfo != nil {
-		ctx.Redirect(http.StatusSeeOther, "/")
-		return
-	}
-
-	method := ctx.Request.Method
-	render := func(model models.Login) {
-		page := components.PageLogin(model)
-		r := gintemplrenderer.New(ctx.Request.Context(), http.StatusOK, page)
-		ctx.Render(r.Status, r)
-	}
-
-	switch method {
-	case http.MethodGet:
-		render(models.Login{Initial: true})
-	case http.MethodPost:
-		var model models.Login
-		ctx.ShouldBind(&model)
-
-		hasError, _ := model.IsValid()
-		if hasError {
-			render(model)
-			return
-		}
-
-		credsInDb, err := c.shouldUserBeSignedIn(ctx, SignInRequest{
-			Email:    model.Email,
-			Password: model.Password,
-		})
-		if err != nil {
-			if errors.Is(err, g.ErrorInvalidCredential) {
-				model.Error = utils.T(
-					ctx.Request.Context(),
-					locales.LKFormsErrorInvalidCredential,
-					// this error is safe to output publically
-					err.Error(),
-				)
-				render(model)
-				return
-			}
-			HandleServerError(ctx, err, "error fetching user credentials")
-			return
-		}
-
-		a := c.signUserIn(ctx, rdb.UserSessionValue{
-			UserID:   credsInDb.ID.String(),
-			Username: credsInDb.Username,
-		})
-		log.Info().Msg(a.String())
-		ctx.Redirect(http.StatusSeeOther, "/")
-	default:
-		ctx.String(http.StatusMethodNotAllowed, "method %s not allowed", method)
-	}
-}
-
-func (c *Controller) PageRegister(ctx *gin.Context) {
-	authInfo := middleware.GetAuthInfo(ctx)
-	if authInfo != nil {
-		ctx.Redirect(http.StatusSeeOther, "/")
-		return
-	}
-
-	method := ctx.Request.Method
-	render := func(model models.Register) {
-		page := components.PageRegister(model)
-		r := gintemplrenderer.New(ctx.Request.Context(), http.StatusOK, page)
-		ctx.Render(r.Status, r)
-	}
-
-	switch method {
-	case http.MethodGet:
-		render(models.Register{Login: models.Login{Initial: true}})
-	case http.MethodPost:
-		var model models.Register
-		ctx.ShouldBind(&model)
-
-		hasError, _ := model.IsValid()
-		if hasError {
-			render(model)
-			return
-		}
-
-		userID, err := c.registerUser(ctx, RegisterAccountRequest{
-			Email:    model.Email,
-			Password: model.Password,
-			Username: model.Username,
-		})
-		if errors.Is(err, g.ErrorAccountAlreadyExists) {
-			model.Error = utils.T(
-				ctx.Request.Context(),
-				locales.LKFormsErrorAlreadyExists,
-				// this error is safe to output publically
-				err.Error(),
-			)
-			render(model)
-			return
-		}
-		if userID == "" {
-			return
-		}
-
-		c.signUserIn(ctx, rdb.UserSessionValue{
-			UserID:   userID,
-			Username: model.Username,
-		})
-		ctx.Redirect(http.StatusSeeOther, "/")
-	default:
-		ctx.String(http.StatusMethodNotAllowed, "method %s not allowed", method)
-	}
 }

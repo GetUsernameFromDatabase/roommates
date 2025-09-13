@@ -14,24 +14,24 @@ type HttpHeader string
 
 // if there becomes a need to have more, could be nice to copy from
 // https://pkg.go.dev/github.com/go-http-utils/headers#pkg-constants
-// constants for headers \/
-
+// constants for headers
 const (
+	//
 	HAuthorization HttpHeader = "Authorization"
+	HHXRequest     HttpHeader = "HX-Request"
 )
 
 const Csrf = "_csrf"
 
-// constants for gin context keys \/
-
+// constants for gin context keys
 const (
 	// key to authenticated user info in gin context
 	GAuth = "authInfo" // do not see a need to add ContextKey type to this
 )
 
 // constants for routes, see routes.go
-
 const (
+	//
 	RHouses    = "/houses"
 	RLogin     = "/login"
 	RMessaging = "/messaging"
