@@ -8,21 +8,10 @@ import "roommates/models"
 import "roommates/utils"
 
 templ PageLogin(model models.Login) {
-	<!DOCTYPE html>
-	<html>
+	@HtmlWrap() {
 		@HeaderComponent("")
 		<body class="bg-background font-geist-sans text-foreground antialiased">
-			<script>
-			function togglePasswordVisibility(button) {
-				const container = button.closest('.uk-inline');
-				const input = container.querySelector('input');
-				const icon = button.querySelector('uk-icon');
-
-				const isPasswordHidden = input.type === 'password';
-				input.type = isPasswordHidden ? 'text' : 'password';
-				icon.setAttribute('icon', isPasswordHidden ? 'eye-off' : 'eye');
-			}
-			</script>
+			@togglePasswordVisibility()
 			<div class="md:bg-muted flex min-h-svh items-center justify-center p-4 md:p-10">
 				<div class="w-full max-w-md">
 					<div class="uk-card uk-card-body fr-widget bg-background text-foreground border-border md:border md:p-6">
@@ -39,14 +28,14 @@ templ PageLogin(model models.Login) {
 				</div>
 			</div>
 		</body>
-	</html>
+	}
 }
 
 templ PageRegister(model models.Register) {
-	<!DOCTYPE html>
-	<html>
+	@HtmlWrap() {
 		@HeaderComponent("")
 		<body class="bg-background font-geist-sans text-foreground antialiased">
+			@togglePasswordVisibility()
 			<div class="md:bg-muted flex min-h-svh items-center justify-center p-4 md:p-10">
 				<div class="w-full max-w-md">
 					<div class="uk-card uk-card-body fr-widget bg-background text-foreground border-border md:border md:p-6">
@@ -63,7 +52,7 @@ templ PageRegister(model models.Register) {
 				</div>
 			</div>
 		</body>
-	</html>
+	}
 }
 
 templ LoginForm(m models.Login) {
@@ -71,12 +60,7 @@ templ LoginForm(m models.Login) {
 		emailErrors := m.ValidateEmail()
 		passwordErrors := m.ValidatePassword()
 	}}
-	<form
-		id="loginForm"
-		method="post"
-		hx-boost="true"
-		class="uk-form-stacked space-y-6 mt-6"
-	>
+	<form id="loginForm" method="post" hx-boost="true" class="uk-form-stacked space-y-6 mt-6">
 		// @CSRF()
 		@FormError(m.Error)
 		@LfEmailInput(emailErrors, m.Email)
@@ -96,18 +80,48 @@ templ RegisterForm(m models.Register) {
 		passwordErrors := m.ValidatePassword()
 		password2Errors := m.ValidatePasswordMatch()
 	}}
-	<form
-		id="registerForm"
-		method="post"
-		hx-boost="true"
-		class="uk-form-stacked space-y-6 mt-6"
-	>
+	<form id="registerForm" method="post" hx-boost="true" class="uk-form-stacked space-y-6 mt-6">
 		// @CSRF()
 		@FormError(m.Error)
-		@LfEmailInput(emailErrors, m.Email)
-		@RfUsernameInput(usernameErrors, m.Username)
-		@LfPasswordInput(passwordErrors, m.Password, "")
-		@LfPasswordInput(password2Errors, m.Password2, "password_2")
+		@InputWithLabel("email", "", "email",
+			utils.T(ctx, locales.LKFormsEmailTitle, "E-Mail"),
+			LabelClass("uk-form-label uk-form-label-required"),
+			Icon("mail"),
+			ValidationMessages(emailErrors),
+			templ.Attributes{
+				"autocomplete": "email",
+				"value":        m.Email,
+			},
+		)
+		@InputWithLabel("text", "", "username",
+			utils.T(ctx, locales.LKFormsUsernameTitle, "Username"),
+			LabelClass("uk-form-label uk-form-label-required"),
+			Icon("user"),
+			ValidationMessages(usernameErrors),
+			templ.Attributes{
+				"autocomplete": "name",
+				"value":        m.Username,
+			},
+		)
+		<div class="space-y-3">
+			@InputWithLabel("text", "", "full_name",
+				utils.T(ctx, locales.LKFormsFullNameTitle, "Full Name"),
+				FormHelpBlock(utils.T(ctx, locales.LKFormsFullNameInfo, "")),
+				Icon("user"),
+				templ.Attributes{
+					"placeholder": utils.T(ctx, locales.LKFormsFullNameTitle, ""),
+					"value":       m.FullName,
+				},
+			)
+			@ToggleSwitch("", "is_full_name_public", utils.T(ctx, locales.LKFormsFullNameMarkPublic, ""), m.IsFullNamePublic)
+		</div>
+		<div class="space-y-3">
+			<label class="uk-form-label">
+				{ utils.T(ctx, locales.LKFormsPasswordTitle, "Password") }
+			</label>
+			@LfPasswordInput(passwordErrors, m.Password, "")
+			@LfPasswordInput(password2Errors, m.Password2, "password_2")
+		</div>
 		<div class="mt-4">
 			<button type="submit" class="uk-btn uk-btn-primary block w-full">
 				{ strings.ToUpper(utils.T(ctx, locales.LKRegisterTitle, "Register")) }
@@ -129,6 +143,7 @@ templ LfEmailInput(errors []locales.LKMessage, value string) {
 				aria-label="Email Input"
 				placeholder={ utils.T(ctx, locales.LKFormsEmailTitle, "E-Mail") }
 				value={ value }
+				autocomplete="email"
 			/>
 		</div>
 		@ValidationMessages(errors)
@@ -153,6 +168,7 @@ templ LfPasswordInput(errors []locales.LKMessage, value string, name string) {
 				aria-label="Password Input"
 				placeholder={ utils.T(ctx, locales.LKFormsPasswordTitle, "Password") }
 				value={ value }
+				autocomplete="current-password"
 			/>
 			<button
 				type="button"
@@ -167,21 +183,16 @@ templ LfPasswordInput(errors []locales.LKMessage, value string, name string) {
 	</div>
 }
 
-templ RfUsernameInput(errors []locales.LKMessage, value string) {
-	<div>
-		<div class="uk-inline w-full">
-			<span class="uk-form-icon">
-				<uk-icon icon="user"></uk-icon>
-			</span>
-			<input
-				class="uk-input"
-				type="text"
-				name="username"
-				aria-label="Username Input"
-				placeholder={ utils.T(ctx, locales.LKFormsUsernameTitle, "Username") }
-				value={ value }
-			/>
-		</div>
-		@ValidationMessages(errors)
-	</div>
+templ togglePasswordVisibility() {
+	<script>
+	function togglePasswordVisibility(button) {
+		const container = button.closest('.uk-inline');
+		const input = container.querySelector('input');
+		const icon = button.querySelector('uk-icon');
+
+		const isPasswordHidden = input.type === 'password';
+		input.type = isPasswordHidden ? 'text' : 'password';
+		icon.setAttribute('icon', isPasswordHidden ? 'eye-off' : 'eye');
+	}
+	</script>
 }

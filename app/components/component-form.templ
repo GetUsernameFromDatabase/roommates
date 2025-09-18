@@ -30,3 +30,103 @@ templ FormError(errorMsg string) {
 		</div>
 	}
 }
+
+templ FormTitle(title string) {
+	<h4 class="uk-card-title uk-h4">{ title }</h4>
+}
+
+// will make html input with a label
+//  - if `id` is empty then a random one will be generated
+//  - label will be used as `placeholder`, using templ.Attributes can set it empty
+//
+// args can be supplied to customize the input
+//  - LabelClass -- will be used as the class string for <label/> element
+//  - templ.Component -- will be put at the bottom of this element, after the input
+//  - Icon -- is used to generate an icon inline with input
+//  - templ.Attributes -- supply html attributes to input
+templ InputWithLabel(inputType, id, name, label string, args ...any) {
+	{{
+		labelClass := "uk-form-label"
+		var bottomComponent templ.Component
+		var icon Icon
+		var inputAttributes templ.Attributes
+		if id == "" {
+			id = utils.RandomHtmlID("input")
+		}
+
+		for _, arg := range args {
+			switch arg := arg.(type) {
+			case LabelClass:
+				labelClass = string(arg)
+			case templ.Component:
+				bottomComponent = arg
+			case Icon:
+				icon = arg
+			case templ.Attributes:
+				inputAttributes = arg
+			}
+		}
+	}}
+	<div class="">
+		<label class={ labelClass } for={ id }>
+			{ label }
+		</label>
+		<div class="uk-form-controls uk-inline w-full">
+			if icon != "" {
+				<span class="uk-form-icon">
+					<uk-icon icon={ icon }></uk-icon>
+				</span>
+			}
+			<input
+				id={ id }
+				name={ name }
+				type={ inputType }
+				{ inputAttributes... }
+				class="uk-input"
+				placeholder={ label }
+			/>
+		</div>
+		if bottomComponent != nil {
+			@bottomComponent
+		}
+	</div>
+}
+
+templ TextareaWithLabel(id, name, label string) {
+	<div class="">
+		<label class="uk-form-label uk-form-label-required" for={ id }>
+			{ label }
+		</label>
+		// TODO: markdown editor
+		<textarea
+			if id != "" {
+				id={ id }
+			}
+			name={ name }
+			class="uk-textarea"
+			rows="5"
+		></textarea>
+	</div>
+}
+
+templ FormHelpBlock(text string) {
+	<div class="uk-form-help">
+		{ text }
+	</div>
+}
+
+templ ToggleSwitch(id, name, label string, checked bool) {
+	<div class="flex items-center space-x-2">
+		<input
+			if id != "" {
+				id={ id }
+			}
+			name={ name }
+			checked?={ checked }
+			class="uk-toggle-switch uk-toggle-switch-primary"
+			type="checkbox"
+			value="true"
+		/>
+		<label class="uk-form-label" for="toggle-switch">{ label }</label>
+	</div>
+}

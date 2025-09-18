@@ -7,10 +7,15 @@ import (
 	"roommates/utils"
 )
 
-templ HtmlWrap(content templ.Component) {
+// wraps component with html tag
+//
+//  <!DOCTYPE html>
+//  <html>children...</html>
+templ HtmlWrap() {
+	// TODO: https://templ.guide/syntax-and-usage/template-composition#children
 	<!DOCTYPE html>
 	<html>
-		@content
+		{ children... }
 	</html>
 }
 
@@ -23,11 +28,14 @@ if title == "" {
 	}}
 	<head>
 		<title>{ title }</title>
+		<link rel="stylesheet" href="/assets/custom.css"/>
+		// https://franken-ui.dev/docs/2.1/installation
 		<link rel="stylesheet" href="/assets/franken-ui@2.1.0-next.20.core.min.css"/>
 		<link rel="stylesheet" href="/assets/franken-ui@2.1.0-next.20.utilities.min.css"/>
-		<link rel="stylesheet" href="/assets/custom.css"/>
+		// https://franken-ui.dev/docs/2.1/javascript
 		<script src="/assets/franken-ui@2.1.0-next.20.core.iife.js" type="module"></script>
 		<script src="/assets/franken-ui@2.1.0-next.20.icon.iife.js" type="module"></script>
+		// https://htmx.org/docs/#installing
 		<script src="/assets/htmx.2.0.6.min.js" type="module"></script>
 		<script>
 		// franken accessor key

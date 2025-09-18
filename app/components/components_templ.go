@@ -15,7 +15,11 @@ import (
 	"roommates/utils"
 )
 
-func HtmlWrap(content templ.Component) templ.Component {
+// wraps component with html tag
+//
+//	<!DOCTYPE html>
+//	<html>children...</html>
+func HtmlWrap() templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -40,7 +44,7 @@ func HtmlWrap(content templ.Component) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = content.Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = templ_7745c5c3_Var1.Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -85,13 +89,13 @@ func HeaderComponent(title string) templ.Component {
 		var templ_7745c5c3_Var3 string
 		templ_7745c5c3_Var3, templ_7745c5c3_Err = templ.JoinStringErrs(title)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/components.templ`, Line: 25, Col: 16}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/components.templ`, Line: 30, Col: 16}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var3))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "</title><link rel=\"stylesheet\" href=\"/assets/franken-ui@2.1.0-next.20.core.min.css\"><link rel=\"stylesheet\" href=\"/assets/franken-ui@2.1.0-next.20.utilities.min.css\"><link rel=\"stylesheet\" href=\"/assets/custom.css\"><script src=\"/assets/franken-ui@2.1.0-next.20.core.iife.js\" type=\"module\"></script><script src=\"/assets/franken-ui@2.1.0-next.20.icon.iife.js\" type=\"module\"></script><script src=\"/assets/htmx.2.0.6.min.js\" type=\"module\"></script><script>\n\t\t// franken accessor key\n\t\tconst __fak__ = '__FRANKEN__'\n\t\t/**\n\t\t* Franken UI theming\n\t\t* @see {@link https://franken-ui.dev/docs/2.1/theming}\n\t\t* \n\t\t* @type {{ \n\t\t*   theme?: string, \n\t\t*   radii?: string, \n\t\t*   shadows?: string, \n\t\t*   font?: string, \n\t\t*   chart?: string \n\t\t* }}\n\t\t*/\n\t\tconst __FRANKEN__ = JSON.parse(localStorage.getItem(__fak__) || '{}');\n\t\tconst htmlElement = document.documentElement;\n\n\t\tif (\n\t\t\t__FRANKEN__.mode === \"dark\" ||\n\t\t\t(!__FRANKEN__.mode &&\n\t\t\t\twindow.matchMedia(\"(prefers-color-scheme: dark)\").matches)\n\t\t) {\n\t\t\thtmlElement.classList.add(\"dark\");\n\t\t} else {\n\t\t\thtmlElement.classList.remove(\"dark\");\n\t\t}\n\n\t\thtmlElement.classList.add(__FRANKEN__.theme || 'uk-theme-teal');\n\t\thtmlElement.classList.add(__FRANKEN__.radii || 'uk-radii-md');\n\t\thtmlElement.classList.add(__FRANKEN__.shadows || 'uk-shadows-sm');\n\t\thtmlElement.classList.add(__FRANKEN__.font || 'uk-font-sm');\n\t\thtmlElement.classList.add(__FRANKEN__.chart || 'uk-chart-default');\n\t</script></head>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "</title><link rel=\"stylesheet\" href=\"/assets/custom.css\"><link rel=\"stylesheet\" href=\"/assets/franken-ui@2.1.0-next.20.core.min.css\"><link rel=\"stylesheet\" href=\"/assets/franken-ui@2.1.0-next.20.utilities.min.css\"><script src=\"/assets/franken-ui@2.1.0-next.20.core.iife.js\" type=\"module\"></script><script src=\"/assets/franken-ui@2.1.0-next.20.icon.iife.js\" type=\"module\"></script><script src=\"/assets/htmx.2.0.6.min.js\" type=\"module\"></script><script>\n\t\t// franken accessor key\n\t\tconst __fak__ = '__FRANKEN__'\n\t\t/**\n\t\t* Franken UI theming\n\t\t* @see {@link https://franken-ui.dev/docs/2.1/theming}\n\t\t* \n\t\t* @type {{ \n\t\t*   theme?: string, \n\t\t*   radii?: string, \n\t\t*   shadows?: string, \n\t\t*   font?: string, \n\t\t*   chart?: string \n\t\t* }}\n\t\t*/\n\t\tconst __FRANKEN__ = JSON.parse(localStorage.getItem(__fak__) || '{}');\n\t\tconst htmlElement = document.documentElement;\n\n\t\tif (\n\t\t\t__FRANKEN__.mode === \"dark\" ||\n\t\t\t(!__FRANKEN__.mode &&\n\t\t\t\twindow.matchMedia(\"(prefers-color-scheme: dark)\").matches)\n\t\t) {\n\t\t\thtmlElement.classList.add(\"dark\");\n\t\t} else {\n\t\t\thtmlElement.classList.remove(\"dark\");\n\t\t}\n\n\t\thtmlElement.classList.add(__FRANKEN__.theme || 'uk-theme-teal');\n\t\thtmlElement.classList.add(__FRANKEN__.radii || 'uk-radii-md');\n\t\thtmlElement.classList.add(__FRANKEN__.shadows || 'uk-shadows-sm');\n\t\thtmlElement.classList.add(__FRANKEN__.font || 'uk-font-sm');\n\t\thtmlElement.classList.add(__FRANKEN__.chart || 'uk-chart-default');\n\t</script></head>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
