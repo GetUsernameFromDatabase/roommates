@@ -8,18 +8,11 @@ import (
 	"strings"
 )
 
-const IdRootContent = "root-content"
-
-type SPageWrapper struct {
-	AuthInfo *rdb.UserSessionValue
-	PathURL  string
-}
-
 // wraps content with `<body>` tag and adds navigation bar on top
-templ PageWrapper(pwi SPageWrapper, content templ.Component) {
+templ PageWrapper(pwi SPageWrapper) {
 	<body class="bg-background text-foreground antialiased h-full">
-		@search(stCommand)
-		@navigation(ntOffcanvas, pwi.PathURL)
+		@search(EModal)
+		@navigation(EModal, pwi.PathURL)
 		// navbar
 		<div class="border-border fixed inset-x-0 top-0 z-10 border-b">
 			<div class="bg-background text-foreground">
@@ -28,13 +21,13 @@ templ PageWrapper(pwi SPageWrapper, content templ.Component) {
 					<div class="flex space-x-2 items-center shrink-0">
 						<a
 							hx-boost="true"
-							hx-target={ "#" + IdRootContent }
+							hx-target={ "#" + IdRootLayout }
 							hx-swap="innerHTML"
 							href="/"
 						><img class="size-8" src="/favicon.ico"/></a>
-						@search(stNavbar)
+						@search(EOpener)
 					</div>
-					@navigation(ntNavbar, pwi.PathURL)
+					@navigation(EOpener, pwi.PathURL)
 					// avatar and light/dark mode switch
 					<div class="flex space-x-2 shrink-0">
 						@profileAvatar(pwi.AuthInfo)
@@ -44,8 +37,8 @@ templ PageWrapper(pwi SPageWrapper, content templ.Component) {
 			</div>
 		</div>
 		// NB: make sure to match pt- with the h- of the navbar
-		<div id={ IdRootContent } class="pt-14 min-h-dvh">
-			@content
+		<div id={ IdRootLayout } class="pt-14 min-h-dvh grid">
+			{ children... }
 		</div>
 	</body>
 }
@@ -86,7 +79,7 @@ templ profileAvatar(authInfo *rdb.UserSessionValue) {
 	<a
 		href={ globals.RProfile }
 		hx-boost="true"
-		hx-target={ "#" + IdRootContent }
+		hx-target={ "#" + IdRootLayout }
 		hx-swap="innerHTML"
 	>
 		<div class="uk-avatar uk-avatar-rounded text-muted-foreground bg-muted">
@@ -95,16 +88,9 @@ templ profileAvatar(authInfo *rdb.UserSessionValue) {
 	</a>
 }
 
-type searchType string
-
-const (
-	stNavbar  searchType = "navbar"
-	stCommand searchType = "command"
-)
-
-templ search(element searchType) {
+templ search(element ElementType) {
 	switch element {
-		case stNavbar:
+		case EOpener:
 			<button
 				class="uk-avatar uk-avatar-rounded text-muted-foreground bg-muted"
 				data-uk-toggle="target: #search"
@@ -113,8 +99,8 @@ templ search(element searchType) {
 					<uk-icon icon="search"></uk-icon>
 				</span>
 			</button>
-		case stCommand:
-			<uk-command id="cmd-search" toggle="search" key="j">
+		case EModal:
+			<uk-command id="cmd-search" toggle="search" key="/">
 				// TODO: search feature
 				// if the data for this becomes expensive to get
 				// then I should leverage htmlx targeted swap in navbar instead of using hx-boost
@@ -136,18 +122,11 @@ templ search(element searchType) {
 				</select>
 			</uk-command>
 		default:
-			DEV ISSUE -- templ search
+			NOT IMPLEMENTED ({ element }) -- { utils.GetFileAndLine() }
 	}
 }
 
-type navigationType string
-
-const (
-	ntNavbar    navigationType = "navbar"
-	ntOffcanvas navigationType = "offcanvas"
-)
-
-templ navigation(element navigationType, urlPath string) {
+templ navigation(element ElementType, urlPath string) {
 	{{
 		routes := [][]string{
 			{globals.RHouses, utils.T(ctx, locales.LKNavbarHouses, "Houses")},
@@ -157,7 +136,7 @@ templ navigation(element navigationType, urlPath string) {
 		}
 	}}
 	switch element {
-		case ntNavbar:
+		case EOpener:
 			<div class="flex w-full" role="navigation">
 				<div class="max-sm:hidden flex m-auto w-full max-w-2xl">
 					<ul class="justify-center uk-tab-alt" data-uk-tab>
@@ -175,7 +154,7 @@ templ navigation(element navigationType, urlPath string) {
 					</button>
 				</div>
 			</div>
-		case ntOffcanvas:
+		case EModal:
 			<div
 				id="navigation"
 				class="uk-offcanvas"
@@ -190,6 +169,8 @@ templ navigation(element navigationType, urlPath string) {
 					</ul>
 				</div>
 			</div>
+		default:
+			NOT IMPLEMENTED ({ element }) -- { utils.GetFileAndLine() }
 	}
 }
 
@@ -202,7 +183,7 @@ templ navLi(routes [][]string, urlPath string) {
 		<li class={ templ.KV("uk-active", strings.HasPrefix(urlPath, href)) }>
 			<a
 				hx-boost="true"
-				hx-target={ "#" + IdRootContent }
+				hx-target={ "#" + IdRootLayout }
 				hx-swap="innerHTML"
 				href={ href }
 			>{ label }</a>
