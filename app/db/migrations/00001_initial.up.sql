@@ -4,10 +4,14 @@ CREATE EXTENSION IF NOT EXISTS moddatetime;
 CREATE TABLE users (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   email TEXT NOT NULL UNIQUE,
+  email_validated BOOLEAN NOT NULL DEFAULT FALSE,
   username TEXT NOT NULL,
   password TEXT NOT NULL,
-  email_validated BOOLEAN NOT NULL DEFAULT FALSE
+  full_name TEXT,
+  is_full_name_public BOOLEAN NOT NULL DEFAULT FALSE
 );
+-- if in the future switch is made from like ex% to %ex% then this index won't do
+CREATE INDEX idx_users_username ON users (username);
 CREATE INDEX idxh_users_email ON users USING HASH (email);
 --
 CREATE TABLE houses (

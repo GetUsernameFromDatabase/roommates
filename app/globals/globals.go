@@ -19,6 +19,7 @@ const (
 	//
 	HAuthorization HttpHeader = "Authorization"
 	HHXRequest     HttpHeader = "HX-Request"
+	HHXRedirect    HttpHeader = "HX-Redirect"
 )
 
 const Csrf = "_csrf"
@@ -46,4 +47,5 @@ const (
 var (
 	ErrorInvalidCredential    = errors.New("invalid credentials")
 	ErrorAccountAlreadyExists = errors.New("account already exists")
+	ErrorHtmxRequired         = errors.New("htmx required")
 )

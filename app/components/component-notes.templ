@@ -1,0 +1,32 @@
+package components
+
+import (
+	"roommates/locales"
+	"roommates/models"
+	"roommates/utils"
+)
+
+templ NoteAddForm(model models.Note, isNew bool) {
+	{{
+	nameLabel := utils.T(ctx, locales.LKFormsNameTitle, "Name")
+	contentLabel := utils.T(ctx, locales.LKFormsContentTitle, "Content")
+
+	var title string
+	if isNew {
+		title = utils.T(ctx, locales.LKFormsNoteTitleNew, "New Note", model.Name)
+	} else {
+		title = utils.T(ctx, locales.LKFormsNoteTitle, "Note", model.Name)
+	}
+	}}
+	// TODO: endpoint
+	<form class="space-y-3">
+		@FormTitle(title)
+		@InputWithLabel("text",
+			"add-note-name",
+			"name",
+			nameLabel,
+			LabelClass("uk-form-label uk-form-label-required"),
+		)
+		@TextareaWithLabel("add-note-content", "content", contentLabel)
+	</form>
+}

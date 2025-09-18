@@ -2,6 +2,11 @@ et:
   app:
     title: 'Toakaaslased'
   forms:
+    submit: 'Edasta'
+    name:
+      title: 'Nimi'
+    content:
+      title: 'Sisu'
     email:
       title: 'E-Posti Address'
       error-generic: 'Vale e-posti address'
@@ -15,10 +20,23 @@ et:
     username:
       title: 'Kasutajanimi'
       error-length: 'Kasutajanimi peab olema vähemalt %d tähte'
-      error-spaces: "Kasutajanimi ei tohi alata ega lõppeda tühikuga"
+      error-spaces: 'Kasutajanimi ei tohi alata ega lõppeda tühikuga'
+      info: 'Kasutajanimi on kõigile avalik ja selle abil saab sind otsida'
     error:
       invalid-credential: 'Vale sisselogimisinfo'
       already-exists: 'See kasutaja eksisteerib. Kasutage muud e-maili'
+    house:
+      title: 'Elamiskoht'
+      title-new: 'Uus Elamiskoht'
+      name-label: 'Elamiskohale nimi'
+      add-users: 'Lisa toakaaslasi'
+    note:
+      title: 'Elamiskoha %s märge'
+      title-new: 'Uus märge elamiskoha %s jaoks'
+    full-name:
+      title: 'Täisnimi'
+      info: 'Ainult toakaaslased saavad seda näha, välja arvatud juhul, kui märgid selle avalikuks'
+      mark-public: 'Tee täisnimi avalikuks'
   login:
     title: 'Logi sisse'
     register: 'Registreeri konto'
@@ -32,3 +50,7 @@ et:
     payments: 'Maksmised'
     messaging: 'Vestlused'
     profile: 'Profiil'
+  search-results-for: 'Otsingutulemused päringule %s'
+  houses:
+    no-houses: 'Sa pole osa ühestki elamiskohast'
+    your-houses: "Sinu elamiskohad"

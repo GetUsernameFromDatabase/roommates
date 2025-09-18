@@ -233,11 +233,13 @@ type Message struct {
 }
 
 type User struct {
-	ID             pgtype.UUID `json:"id"`
-	Email          string      `json:"email"`
-	Username       string      `json:"username"`
-	Password       string      `json:"password"`
-	EmailValidated bool        `json:"email_validated"`
+	ID               pgtype.UUID `json:"id"`
+	Email            string      `json:"email"`
+	EmailValidated   bool        `json:"email_validated"`
+	Username         string      `json:"username"`
+	Password         string      `json:"password"`
+	FullName         *string     `json:"full_name"`
+	IsFullNamePublic bool        `json:"is_full_name_public"`
 }
 
 type UserContactInformation struct {

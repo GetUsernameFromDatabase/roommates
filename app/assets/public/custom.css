@@ -7,6 +7,7 @@
 .dark\:inline-block:where(.dark, .dark *) {
   display: inline-block;
 }
+
 .max-md\:hidden {
   @media (width < 48rem /* 768px */) {
     display: none;
@@ -21,4 +22,21 @@
   @media (width < 40rem /* 640px */) {
     display: block;
   }
+}
+
+#root-layout {
+  grid-template-columns: repeat(1, minmax(0, 1fr));
+  grid-template-areas: 'content';
+}
+@media (width>=48rem) {
+  #root-layout {
+    grid-template-columns: 18rem minmax(0, 1fr);
+    grid-template-areas: 'aside content';
+  }
+}
+#root-layout > aside {
+  grid-area: aside;
+}
+#root-layout > .content {
+  grid-area: content;
 }

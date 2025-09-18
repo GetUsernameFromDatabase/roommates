@@ -16,6 +16,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/pkg/errors"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -57,11 +58,11 @@ func (c *Controller) signUserIn(ctx *gin.Context, sessionValue rdb.UserSessionVa
 //   - on all errors string will be empty
 //   - if error is nil and string is empty then response has been sent
 //   - response has not been sent if error is ErrorAccountAlreadyExists
-func (c *Controller) registerUser(ctx *gin.Context, user dbqueries.InsertUserParams) (string, error) {
+func (c *Controller) registerUser(ctx *gin.Context, user dbqueries.InsertUserParams) (pgtype.UUID, error) {
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(user.Password), 12)
 	if err != nil { // this should never be an issue
 		HandleServerError(ctx, err, "error processing password")
-		return "", nil
+		return pgtype.UUID{}, nil
 	}
 
 	userID, err := c.DB.InsertUser(ctx, dbqueries.InsertUserParams{
@@ -73,15 +74,15 @@ func (c *Controller) registerUser(ctx *gin.Context, user dbqueries.InsertUserPar
 		switch err := err.(type) {
 		case *pgconn.PgError:
 			if err.Code == "23505" {
-				return "", g.ErrorAccountAlreadyExists
+				return pgtype.UUID{}, g.ErrorAccountAlreadyExists
 			}
 		default:
 			HandleServerError(ctx, err, "error registering user")
 		}
-		return "", nil
+		return pgtype.UUID{}, nil
 	}
 
-	return userID.String(), nil
+	return userID, nil
 }
 
 //------------------------------------------------------------------------------
@@ -130,7 +131,7 @@ func (c *Controller) SignIn(ctx *gin.Context) {
 	}
 
 	token := c.signUserIn(ctx, rdb.UserSessionValue{
-		UserID:   credsInDb.ID.String(),
+		UserID:   credsInDb.ID,
 		Username: credsInDb.Username,
 	})
 	ctx.JSON(http.StatusOK, SignInResponse{Token: token.String()})
@@ -179,7 +180,7 @@ func (c *Controller) PageLogin(ctx *gin.Context) {
 
 	switch method {
 	case http.MethodGet:
-		render(models.Login{Initial: true})
+		render(models.Login{ModelBase: models.ModelBase{Initial: true}})
 	case http.MethodPost:
 		var model models.Login
 		ctx.ShouldBind(&model)
@@ -209,12 +210,12 @@ func (c *Controller) PageLogin(ctx *gin.Context) {
 			return
 		}
 
-		a := c.signUserIn(ctx, rdb.UserSessionValue{
-			UserID:   credsInDb.ID.String(),
+		c.signUserIn(ctx, rdb.UserSessionValue{
+			UserID:   credsInDb.ID,
 			Username: credsInDb.Username,
 		})
-		log.Info().Msg(a.String())
-		ctx.Redirect(http.StatusSeeOther, "/")
+
+		utils.Redirect(ctx, "/")
 	default:
 		ctx.String(http.StatusMethodNotAllowed, "method %s not allowed", method)
 	}
@@ -236,7 +237,8 @@ func (c *Controller) PageRegister(ctx *gin.Context) {
 
 	switch method {
 	case http.MethodGet:
-		render(models.Register{Login: models.Login{Initial: true}})
+		// this is ridiculous
+		render(models.Register{Login: models.Login{ModelBase: models.ModelBase{Initial: true}}})
 	case http.MethodPost:
 		var model models.Register
 		ctx.ShouldBind(&model)
@@ -248,9 +250,11 @@ func (c *Controller) PageRegister(ctx *gin.Context) {
 		}
 
 		userID, err := c.registerUser(ctx, dbqueries.InsertUserParams{
-			Email:    model.Email,
-			Password: model.Password,
-			Username: model.Username,
+			Email:            model.Email,
+			Password:         model.Password,
+			Username:         model.Username,
+			FullName:         &model.FullName,
+			IsFullNamePublic: model.IsFullNamePublic,
 		})
 		if errors.Is(err, g.ErrorAccountAlreadyExists) {
 			model.Error = utils.T(
@@ -262,7 +266,7 @@ func (c *Controller) PageRegister(ctx *gin.Context) {
 			render(model)
 			return
 		}
-		if userID == "" {
+		if !userID.Valid {
 			return
 		}
 
@@ -270,7 +274,7 @@ func (c *Controller) PageRegister(ctx *gin.Context) {
 			UserID:   userID,
 			Username: model.Username,
 		})
-		ctx.Redirect(http.StatusSeeOther, "/")
+		utils.Redirect(ctx, "/")
 	default:
 		ctx.String(http.StatusMethodNotAllowed, "method %s not allowed", method)
 	}

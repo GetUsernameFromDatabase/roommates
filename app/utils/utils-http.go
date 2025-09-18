@@ -59,3 +59,16 @@ func GetAuthToken(ctx *gin.Context) string {
 	}
 	return GetAuthTokenFromCookie(ctx)
 }
+
+func IsRequestHTMX(ctx *gin.Context) bool {
+	return ctx.GetHeader(string(g.HHXRequest)) != ""
+}
+
+// redirects htmx request with header, otherwise uses ctx.Redirect with status see other
+func Redirect(ctx *gin.Context, location string) {
+	if IsRequestHTMX(ctx) {
+		ctx.Header(string(g.HHXRedirect), "/")
+	} else {
+		ctx.Redirect(http.StatusSeeOther, "/")
+	}
+}

@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/redis/go-redis/v9"
 )
 
@@ -14,8 +15,8 @@ const KSession = "session:"
 const EUserSession = 48 * time.Hour
 
 type UserSessionValue struct {
-	UserID   string `redis:"user_id" json:"user_id"`
-	Username string `redis:"username" json:"username"`
+	UserID   pgtype.UUID `redis:"user_id" json:"user_id"`
+	Username string      `redis:"username" json:"username"`
 }
 
 // can panic
@@ -39,6 +40,7 @@ func (r *RedisHandler) CreateUserSession(ctx context.Context, sessionValue UserS
 func (r *RedisHandler) GetUserSession(ctx context.Context, key string) (*UserSessionValue, error) {
 	rKey := KSession + key
 	value := &UserSessionValue{}
+	// TODO: reset expiry after use
 
 	cmd := r.redis.Get(ctx, rKey)
 	err := cmd.Err()

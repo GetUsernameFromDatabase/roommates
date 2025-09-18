@@ -7,8 +7,10 @@ import (
 
 type Register struct {
 	Login
-	Username  string `form:"username"`
-	Password2 string `form:"password_2"`
+	Username         string `form:"username"`
+	Password2        string `form:"password_2"`
+	FullName         string `form:"full_name"`
+	IsFullNamePublic bool   `form:"is_full_name_public"`
 }
 
 func (m *Register) ValidateUsername() (msgs []l.LKMessage) {

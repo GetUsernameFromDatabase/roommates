@@ -1,0 +1,169 @@
+package components
+
+import (
+	"roommates/db/dbqueries"
+	"roommates/globals"
+	"roommates/locales"
+	"roommates/models"
+	"roommates/utils"
+)
+
+templ houseAside(houses []dbqueries.House) {
+	<aside class="max-md:hidden">
+		<div class="p-4">
+			@houseModal(EOpener)
+		</div>
+		if len(houses) > 0 {
+			<div>
+				<h4 class="uk-h4">{ utils.T(ctx, locales.LKHousesYourHouses, "Your Houses") }</h4>
+				<ul class="uk-list uk-list-disc mt-4">
+					for _, house := range houses {
+						<li>
+							<a href={ globals.RHouses + "/" + house.ID.String() }>
+								{ house.Name }
+							</a>
+						</li>
+					}
+				</ul>
+			</div>
+		}
+	</aside>
+}
+
+templ houseModal(element ElementType) {
+	{{ id := "add-new-house" }}
+	switch element {
+		case EOpener:
+			<a class="uk-btn uk-btn-default w-full" href={ "#" + id } data-uk-toggle>
+				{ utils.T(ctx, locales.LKFormsHouseTitleNew, "New House") }
+			</a>
+		case EModal:
+			<div id={ id } class="uk-flex-top uk-modal" data-uk-modal>
+				<div class="uk-modal-dialog uk-modal-body uk-margin-auto-vertical">
+					@houseForm(models.House{}, true)
+				</div>
+			</div>
+		default:
+			NOT IMPLEMENTED ({ element }) -- { utils.GetFileAndLine() }
+	}
+}
+
+templ houseForm(model models.House, isNew bool) {
+	{{
+nameLabel := utils.T(ctx, locales.LKFormsHouseNameLabel, "House Name")
+
+var title string
+if isNew {
+	title = utils.T(ctx, locales.LKFormsHouseTitleNew, "Add new house")
+} else {
+	title = utils.T(ctx, locales.LKFormsHouseTitle, "Modify house")
+}
+	}}
+	// TODO: endpoint
+	<form id="house-form" hx-post="" class="space-y-3">
+		@FormTitle(title)
+		@InputWithLabel("text",
+			"houseForm-name",
+			"name",
+			nameLabel,
+			LabelClass("uk-form-label uk-form-label-required"),
+		)
+		@houseRoomatesInput(model)
+	</form>
+}
+
+templ houseRoomatesInput(model models.House) {
+	<div class="">
+		@houseRoomatesInputSearchResultsScript()
+		@HouseRoomatesInputSearchResults("", nil)
+		<label class="uk-form-label" for="houseForm-roommates">
+			{ utils.T(ctx, locales.LKFormsHouseAddUsers, "Add Roommates") }
+		</label>
+		<div class="uk-form-controls">
+			<input
+				id="houseForm-roommates"
+				name="searched_user"
+				type="text"
+				class="uk-input"
+				hx-get="//TODO"
+				hx-target={ "#" + HfSearchResultsId }
+				hx-trigger="keyup changed delay:500ms"
+				hx-sync="closest form:abort"
+				onfocus="showHouseRoomatesInputSearchResults()"
+				onblur="hideHouseRoomatesInputSearchResults()"
+			/>
+			// TODO: indicator for search results -- https://htmx.org/docs/#indicators
+			@HouseRoomatesInputData(model)
+		</div>
+	</div>
+}
+
+templ HouseRoomatesInputData(model models.House) {
+	<div id={ HfRoomateInputDataId }>
+		<div id={ HfRoomateKeysId }>
+			for i, value := range model.RoommateKeys {
+				<input name="roommates[]" data-index={ i } value={ value } type="hidden"/>
+			}
+		</div>
+		<div id={ HfRoomateLabelsId }>
+			for i, value := range model.RoommateLabels {
+				<div data-index={ i }>
+					<input name="roommates_labels[]" type="hidden" value={ value }/>
+					<div class="uk-tag-secondary uk-tag">
+						<span>{ value }</span>
+						<uk-icon icon="close"></uk-icon>
+					</div>
+				</div>
+			}
+		</div>
+	</div>
+}
+
+templ HouseRoomatesInputSearchResults(searchedUser string, foundUsers []dbqueries.UserLikeRow) {
+	if searchedUser == "" {
+		<div id={ HfSearchResultsId } hidden></div>
+		{{ return }}
+	}
+	<div id={ HfSearchResultsId } class="uk-card uk-card-body max-w-sm">
+		<p class="uk-text-meta">{ utils.T(ctx, locales.LKSearchResultsFor, "Search results for %s", ) }</p>
+		for _, user := range foundUsers {
+			<p
+				data-key={ user.ID.String() }
+				onclick="selectFromHouseRoomatesInputSearchResults(this)"
+			>
+				{ user.Username }
+			</p>
+		}
+	</div>
+}
+
+templ houseRoomatesInputSearchResultsScript() {
+	<script>
+	function getHouseRoomatesInputSearchResults() {
+		return document.getElementById({{ HfSearchResultsId }});
+	}
+	function getHouseRoomatesInputData() {
+		return {
+			keys: document.getElementById({{ HfRoomateKeysId }}),
+			labels: document.getElementById({{ HfRoomateLabelsId }}),
+		}
+	}
+
+	function hideHouseRoomatesInputSearchResults() {
+		const element = getHouseRoomatesInputSearchResults();
+		element.hidden = true;
+	}
+	function showHouseRoomatesInputSearchResults() {
+		const element = getHouseRoomatesInputSearchResults();
+		element.hidden != true;
+	}
+
+
+	/**
+	* @param {HTMLElement} element - The HTML element representing the selected search result item.
+	*/
+	function selectFromHouseRoomatesInputSearchResults(element) {
+
+	}
+</script>
+}

@@ -8,5 +8,15 @@
       "}"
     ],
     "description": "Basic error check"
+  },
+  "Franken Icon": {
+    "prefix": "icon",
+    "scope": "templ",
+    "body": [
+      "<div class=\"size-4\">",
+      "\t<uk-icon icon=\"$1\"></uk-icon>",
+      "</div>"
+    ],
+    "description": "https://franken-ui.dev/docs/2.1/icon"
   }
 }

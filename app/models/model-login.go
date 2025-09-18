@@ -7,10 +7,7 @@ import (
 )
 
 type Login struct {
-	// validation errors are shown if false
-	Initial bool
-	Error   string
-
+	ModelBase
 	Email    string `form:"email"`
 	Password string `form:"password"`
 }

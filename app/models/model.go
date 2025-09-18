@@ -2,6 +2,12 @@ package models
 
 import l "roommates/locales"
 
+type ModelBase struct {
+	// validation errors are shown if false
+	Initial bool
+	Error   string
+}
+
 type Validator func() []l.LKMessage
 
 type Validatable interface {

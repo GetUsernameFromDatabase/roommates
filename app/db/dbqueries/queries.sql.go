@@ -18,6 +18,7 @@ SELECT id,
   password
 FROM users
 WHERE email = $1
+LIMIT 1
 `
 
 type GetUserCredentialsRow struct {
@@ -28,6 +29,9 @@ type GetUserCredentialsRow struct {
 }
 
 // This file uses SQLC -- https://docs.sqlc.dev/en/latest/tutorials/getting-started-postgresql.html#schema-and-queries
+// useful links
+// - annotations (like :one): https://docs.sqlc.dev/en/latest/reference/query-annotations.html#many
+// - named parameters: https://docs.sqlc.dev/en/latest/howto/named_parameters.html
 func (q *Queries) GetUserCredentials(ctx context.Context, email string) (GetUserCredentialsRow, error) {
 	row := q.db.QueryRow(ctx, getUserCredentials, email)
 	var i GetUserCredentialsRow
@@ -41,20 +45,92 @@ func (q *Queries) GetUserCredentials(ctx context.Context, email string) (GetUser
 }
 
 const insertUser = `-- name: InsertUser :one
-INSERT INTO users (email, username, password)
-VALUES ($1, $2, $3)
+INSERT INTO users (email, username, password, full_name, is_full_name_public)
+VALUES ($1, $2, $3, $4, $5)
 RETURNING id
 `
 
 type InsertUserParams struct {
-	Email    string `json:"email"`
-	Username string `json:"username"`
-	Password string `json:"password"`
+	Email            string  `json:"email"`
+	Username         string  `json:"username"`
+	Password         string  `json:"password"`
+	FullName         *string `json:"full_name"`
+	IsFullNamePublic bool    `json:"is_full_name_public"`
 }
 
 func (q *Queries) InsertUser(ctx context.Context, arg InsertUserParams) (pgtype.UUID, error) {
-	row := q.db.QueryRow(ctx, insertUser, arg.Email, arg.Username, arg.Password)
+	row := q.db.QueryRow(ctx, insertUser,
+		arg.Email,
+		arg.Username,
+		arg.Password,
+		arg.FullName,
+		arg.IsFullNamePublic,
+	)
 	var id pgtype.UUID
 	err := row.Scan(&id)
 	return id, err
+}
+
+const userHouses = `-- name: UserHouses :many
+SELECT h.id,
+  h.name
+FROM houses h
+WHERE id IN (
+    SELECT house_id
+    FROM user_houses uh
+    WHERE uh.user_id = $1
+  )
+`
+
+func (q *Queries) UserHouses(ctx context.Context, userID pgtype.UUID) ([]House, error) {
+	rows, err := q.db.Query(ctx, userHouses, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []House
+	for rows.Next() {
+		var i House
+		if err := rows.Scan(&i.ID, &i.Name); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const userLike = `-- name: UserLike :many
+SELECT id,
+  username
+FROM users
+WHERE id ILIKE $1::text || '%'
+LIMIT 10
+`
+
+type UserLikeRow struct {
+	ID       pgtype.UUID `json:"id"`
+	Username string      `json:"username"`
+}
+
+func (q *Queries) UserLike(ctx context.Context, username string) ([]UserLikeRow, error) {
+	rows, err := q.db.Query(ctx, userLike, username)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []UserLikeRow
+	for rows.Next() {
+		var i UserLikeRow
+		if err := rows.Scan(&i.ID, &i.Username); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }

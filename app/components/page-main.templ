@@ -1,12 +1,20 @@
 package components
 
-templ PageMain(pwi SPageWrapper) {
-	@HtmlWrap(templ.Join(
-		HeaderComponent(""),
-		PageWrapper(pwi, MainPageContent()),
-	))
+import "roommates/db/dbqueries"
+
+templ PageMain(pwi SPageWrapper, houses []dbqueries.House) {
+	@HtmlWrap() {
+		@HeaderComponent("")
+		@PageWrapper(pwi) {
+			@MainPageContent(houses)
+		}
+	}
 }
 
-templ MainPageContent() {
-	WIP -- MAIN PAGE -- WIP
+templ MainPageContent(houses []dbqueries.House) {
+	@houseModal(EModal)
+	@houseAside(houses)
+	<div class="bg-secondary content">
+		LUUKE THERE IS NOTHING
+	</div>
 }
