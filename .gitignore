@@ -22,7 +22,8 @@
 
 # End of https://www.toptal.com/developers/gitignore/api/visualstudiocode
 
+.env
 server.key
 server.pem
-logs
-.env
+logs/
+mock_data/

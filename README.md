@@ -64,3 +64,5 @@ frontend:
 > [setup-dev.sh](./app/setup-dev.sh) has them all for easy install
 
 use [conventional commits](https://www.conventionalcommits.org/en/v1.0.0/#summary) with [preferred commit types](https://github.com/conventional-changelog/commitlint/tree/master/%40commitlint/config-conventional#type-enum)
+
+mocking data with [mockaroo](https://mockaroo.com/)
