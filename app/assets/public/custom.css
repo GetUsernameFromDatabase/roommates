@@ -8,6 +8,10 @@
   display: inline-block;
 }
 
+.cursor-pointer {
+  cursor: pointer;
+}
+
 .max-md\:hidden {
   @media (width < 48rem /* 768px */) {
     display: none;

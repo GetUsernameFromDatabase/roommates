@@ -40,6 +40,8 @@ const (
 	RPayments  = "/payments"
 	RProfile   = "/profile"
 	RRegister  = "/register"
+
+	RHtmxRoomateSearch = RHouses + "/roomate-search"
 )
 
 // -----------------------------------------------------------------------------

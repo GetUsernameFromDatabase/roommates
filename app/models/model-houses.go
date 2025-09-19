@@ -2,6 +2,7 @@ package models
 
 type House struct {
 	ModelBase
+	IsNewHouse   bool     `form:"is_new_house"`
 	Name         string   `form:"name"`
 	RoommateKeys []string `form:"roommates[]"`
 	// used only by htmx to get user suggestions when adding roomates to house

@@ -1,11 +1,13 @@
 package components
 
 import (
+	"encoding/json"
 	"roommates/db/dbqueries"
 	"roommates/globals"
 	"roommates/locales"
 	"roommates/models"
 	"roommates/utils"
+	"strconv"
 )
 
 templ houseAside(houses []dbqueries.House) {
@@ -31,7 +33,7 @@ templ houseAside(houses []dbqueries.House) {
 }
 
 templ houseModal(element ElementType) {
-	{{ id := "add-new-house" }}
+	{{ id := "house-modal" }}
 	switch element {
 		case EOpener:
 			<a class="uk-btn uk-btn-default w-full" href={ "#" + id } data-uk-toggle>
@@ -39,8 +41,8 @@ templ houseModal(element ElementType) {
 			</a>
 		case EModal:
 			<div id={ id } class="uk-flex-top uk-modal" data-uk-modal>
-				<div class="uk-modal-dialog uk-modal-body uk-margin-auto-vertical">
-					@houseForm(models.House{}, true)
+				<div class="uk-modal-dialog uk-modal-body uk-margin-auto-vertical overflow-visible">
+					@HouseForm(models.House{IsNewHouse: true})
 				</div>
 			</div>
 		default:
@@ -48,19 +50,22 @@ templ houseModal(element ElementType) {
 	}
 }
 
-templ houseForm(model models.House, isNew bool) {
+templ HouseForm(model models.House) {
 	{{
-nameLabel := utils.T(ctx, locales.LKFormsHouseNameLabel, "House Name")
+		nameLabel := utils.T(ctx, locales.LKFormsHouseNameLabel, "House Name")
 
-var title string
-if isNew {
-	title = utils.T(ctx, locales.LKFormsHouseTitleNew, "Add new house")
-} else {
-	title = utils.T(ctx, locales.LKFormsHouseTitle, "Modify house")
-}
+		var title string
+		if model.IsNewHouse {
+			title = utils.T(ctx, locales.LKFormsHouseTitleNew, "Add new house")
+		} else {
+			title = utils.T(ctx, locales.LKFormsHouseTitle, "Modify house")
+		}
 	}}
 	// TODO: endpoint
-	<form id="house-form" hx-post="" class="space-y-3">
+	<form id={ HfId } hx-post="" class="space-y-3">
+		if model.IsNewHouse {
+			<input type="hidden" name="is_new_house" value="true"/>
+		}
 		@FormTitle(title)
 		@InputWithLabel("text",
 			"houseForm-name",
@@ -74,23 +79,25 @@ if isNew {
 
 templ houseRoomatesInput(model models.House) {
 	<div class="">
-		@houseRoomatesInputSearchResultsScript()
 		@HouseRoomatesInputSearchResults("", nil)
+		@houseRoomatesInputSearchResultsScript()
 		<label class="uk-form-label" for="houseForm-roommates">
 			{ utils.T(ctx, locales.LKFormsHouseAddUsers, "Add Roommates") }
 		</label>
 		<div class="uk-form-controls">
 			<input
-				id="houseForm-roommates"
+				id={ HfRoomateInputId }
 				name="searched_user"
 				type="text"
 				class="uk-input"
-				hx-get="//TODO"
-				hx-target={ "#" + HfSearchResultsId }
+				onfocus="showHRISR(this)"
+				onblur="hideHRISR()"
+				hx-get={ globals.RHtmxRoomateSearch }
 				hx-trigger="keyup changed delay:500ms"
+				hx-target={ "#" + HfSearchResultsId }
+				hx-swap="outerHTML"
 				hx-sync="closest form:abort"
-				onfocus="showHouseRoomatesInputSearchResults()"
-				onblur="hideHouseRoomatesInputSearchResults()"
+				hx-include="closest form"
 			/>
 			// TODO: indicator for search results -- https://htmx.org/docs/#indicators
 			@HouseRoomatesInputData(model)
@@ -99,37 +106,55 @@ templ houseRoomatesInput(model models.House) {
 }
 
 templ HouseRoomatesInputData(model models.House) {
-	<div id={ HfRoomateInputDataId }>
-		<div id={ HfRoomateKeysId }>
-			for i, value := range model.RoommateKeys {
-				<input name="roommates[]" data-index={ i } value={ value } type="hidden"/>
-			}
-		</div>
-		<div id={ HfRoomateLabelsId }>
-			for i, value := range model.RoommateLabels {
-				<div data-index={ i }>
-					<input name="roommates_labels[]" type="hidden" value={ value }/>
-					<div class="uk-tag-secondary uk-tag">
-						<span>{ value }</span>
-						<uk-icon icon="close"></uk-icon>
-					</div>
+	<div class="mt-2 flex flex-wrap">
+		for i, value := range model.RoommateLabels {
+			<div
+				data-index={ i }
+				class="m-1 cursor-pointer"
+				onclick="deleteHouseRoomatesInputDataElement(this)"
+			>
+				// this should be fiiiiine
+				{{ keyValue := model.RoommateKeys[i] }}
+				<input type="hidden" name="roommates[]" value={ keyValue }/>
+				<input type="hidden" name="roommates_labels[]" value={ value }/>
+				<div class="uk-tag-secondary uk-tag">
+					<span>{ value }</span>
+					<uk-icon icon="x"></uk-icon>
 				</div>
-			}
-		</div>
+			</div>
+		}
 	</div>
 }
 
-templ HouseRoomatesInputSearchResults(searchedUser string, foundUsers []dbqueries.UserLikeRow) {
+templ HouseRoomatesInputSearchResults(searchedUser string, foundUsers []dbqueries.UsersLikeExcludingExistingRow) {
+	{{ class := "uk-card uk-card-body absolute" }}
 	if searchedUser == "" {
-		<div id={ HfSearchResultsId } hidden></div>
+		<div id={ HfSearchResultsId } hidden class={ class }></div>
 		{{ return }}
 	}
-	<div id={ HfSearchResultsId } class="uk-card uk-card-body max-w-sm">
-		<p class="uk-text-meta">{ utils.T(ctx, locales.LKSearchResultsFor, "Search results for %s", ) }</p>
+	<div id={ HfSearchResultsId } class={ class }>
+		<p class="uk-text-meta mb-3">
+			{ utils.T(ctx, locales.LKSearchResultsFor, "Search results for %s", strconv.Quote(searchedUser)) }
+		</p>
+		// expected use case up to 10 users
 		for _, user := range foundUsers {
+			{{
+				hValsData, _ := json.Marshal(map[string]string{
+					"user_id":    user.ID.String(),
+					"user_label": user.Username,
+				})
+			}}
 			<p
+				role="button"
 				data-key={ user.ID.String() }
-				onclick="selectFromHouseRoomatesInputSearchResults(this)"
+				class="cursor-pointer hover:bg-secondary"
+				hx-post={ globals.RHtmxRoomateSearch }
+				hx-trigger="click"
+				hx-target={ "#" + HfId }
+				hx-swap="outerHTML"
+				hx-sync="closest form:abort"
+				hx-include="closest form"
+				hx-vals={ string(hValsData) }
 			>
 				{ user.Username }
 			</p>
@@ -139,31 +164,59 @@ templ HouseRoomatesInputSearchResults(searchedUser string, foundUsers []dbquerie
 
 templ houseRoomatesInputSearchResultsScript() {
 	<script>
-	function getHouseRoomatesInputSearchResults() {
+	function getHouseRoomatesInput() {
+		return document.getElementById({{ HfRoomateInputId }});
+	}
+	// HRISR -- HouseRoomatesInputSearchResults
+	function getHRISR() {
 		return document.getElementById({{ HfSearchResultsId }});
 	}
-	function getHouseRoomatesInputData() {
-		return {
-			keys: document.getElementById({{ HfRoomateKeysId }}),
-			labels: document.getElementById({{ HfRoomateLabelsId }}),
-		}
-	}
-
-	function hideHouseRoomatesInputSearchResults() {
-		const element = getHouseRoomatesInputSearchResults();
-		element.hidden = true;
-	}
-	function showHouseRoomatesInputSearchResults() {
-		const element = getHouseRoomatesInputSearchResults();
-		element.hidden != true;
-	}
-
 
 	/**
-	* @param {HTMLElement} element - The HTML element representing the selected search result item.
+	* @param {HTMLElement | undefined} hrisr - HouseRoomatesInputSearchResults
 	*/
-	function selectFromHouseRoomatesInputSearchResults(element) {
-
+	function positionHRISR(hrisr) {
+		const inputElement = getHouseRoomatesInput()
+		if (hrisr === undefined) {
+			hrisr = getHRISR()
+		}
+		hrisr.style.width = inputElement.offsetWidth + 'px'
+		hrisr.style.top = (inputElement.offsetTop - hrisr.offsetHeight - 24) + 'px'
 	}
+	function hideHRISR() {
+		const element = getHRISR();
+		// otherwise search results will be made hidden before click is able to be registered
+		setTimeout(() => {
+			element.hidden = true;
+		}, 200)
+	}
+	/**
+	* @param {HTMLInputElement} input
+	*/
+	function showHRISR(input) {
+		const element = getHRISR();
+		if (input.value === '') {
+			element.hidden = true
+			return
+		}
+		element.hidden = false;
+		positionHRISR(element) // redundant -- htmx:afterSettle should 'settle' the position matter
+	}
+	/**
+	* This is intended to be used on the element containing both 
+	*  label and key hidden input and the tag (visual side)
+	* @param {HTMLElement} element
+	*/
+	function deleteHouseRoomatesInputDataElement(element) {
+		element.remove()
+	}
+
+	document.body.addEventListener('htmx:afterSettle', function(evt) {
+		/** @type {HTMLElement} */
+		const element = evt.detail.elt
+		if (element.id === {{ HfSearchResultsId }}) {
+			positionHRISR(element)
+		}
+	})
 </script>
 }

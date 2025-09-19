@@ -45,7 +45,13 @@ func (q *Queries) GetUserCredentials(ctx context.Context, email string) (GetUser
 }
 
 const insertUser = `-- name: InsertUser :one
-INSERT INTO users (email, username, password, full_name, is_full_name_public)
+INSERT INTO users (
+    email,
+    username,
+    password,
+    full_name,
+    is_full_name_public
+  )
 VALUES ($1, $2, $3, $4, $5)
 RETURNING id
 `
@@ -102,28 +108,34 @@ func (q *Queries) UserHouses(ctx context.Context, userID pgtype.UUID) ([]House, 
 	return items, nil
 }
 
-const userLike = `-- name: UserLike :many
+const usersLikeExcludingExisting = `-- name: UsersLikeExcludingExisting :many
 SELECT id,
   username
 FROM users
-WHERE id ILIKE $1::text || '%'
+WHERE username ILIKE $1::text || '%'
+  AND username NOT IN (SELECT UNNEST($2::text[]))
 LIMIT 10
 `
 
-type UserLikeRow struct {
+type UsersLikeExcludingExistingParams struct {
+	Username      string   `json:"username"`
+	ExistingUsers []string `json:"existing_users"`
+}
+
+type UsersLikeExcludingExistingRow struct {
 	ID       pgtype.UUID `json:"id"`
 	Username string      `json:"username"`
 }
 
-func (q *Queries) UserLike(ctx context.Context, username string) ([]UserLikeRow, error) {
-	rows, err := q.db.Query(ctx, userLike, username)
+func (q *Queries) UsersLikeExcludingExisting(ctx context.Context, arg UsersLikeExcludingExistingParams) ([]UsersLikeExcludingExistingRow, error) {
+	rows, err := q.db.Query(ctx, usersLikeExcludingExisting, arg.Username, arg.ExistingUsers)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []UserLikeRow
+	var items []UsersLikeExcludingExistingRow
 	for rows.Next() {
-		var i UserLikeRow
+		var i UsersLikeExcludingExistingRow
 		if err := rows.Scan(&i.ID, &i.Username); err != nil {
 			return nil, err
 		}

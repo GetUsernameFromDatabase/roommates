@@ -25,10 +25,9 @@ const (
 type Icon string
 
 const (
-	HfSearchResultsId    = "HouseRoomatesInputSearchResults"
-	HfRoomateInputDataId = "houseForm-inputData"
-	HfRoomateKeysId      = "houseForm-roomateKeys"
-	HfRoomateLabelsId    = "houseForm-roomateLabels"
+	HfId              = "house-form"
+	HfSearchResultsId = "HouseRoomatesInputSearchResults"
+	HfRoomateInputId  = "houseForm-roommates-input"
 )
 
 type SPageWrapper struct {

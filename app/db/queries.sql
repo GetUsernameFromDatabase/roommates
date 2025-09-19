@@ -29,9 +29,10 @@ WHERE id IN (
     FROM user_houses uh
     WHERE uh.user_id = $1
   );
--- name: UserLike :many
+-- name: UsersLikeExcludingExisting :many
 SELECT id,
   username
 FROM users
-WHERE id ILIKE @username::text || '%'
+WHERE username ILIKE @username::text || '%'
+  AND username NOT IN (SELECT UNNEST(@existing_users::text[]))
 LIMIT 10;

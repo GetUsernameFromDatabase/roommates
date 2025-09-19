@@ -78,7 +78,10 @@ func InitRoutes(r *gin.Engine, c *controller.Controller) {
 		p.GET(g.RPayments, c.PagePayments)
 		p.GET(g.RNotes, c.PageNotes)
 		p.GET(g.RMessaging, c.PageMessaging)
+
 		p.GET(g.RHouses, c.PageHouses)
+		p.GET(g.RHtmxRoomateSearch, c.HtmxRoomateSearch)
+		p.POST(g.RHtmxRoomateSearch, c.HtmxRoomateSearch)
 	}
 
 	r.Static("/assets", "./assets/public")
