@@ -18,7 +18,7 @@ templ PageLogin(model models.Login) {
 						<h1 class="uk-card-title uk-h4">{ utils.T(ctx, locales.LKLoginTitle, "Login") }</h1>
 						@LoginForm(model)
 						<div class="uk-divider-icon mt-6"></div>
-						<div class="mt-6 text-center" hx-boost="true">
+						<div class="mt-6 text-center">
 							{ utils.T(ctx, locales.LKLoginNoAccount, "Have no account?") }
 							<a class="uk-link" href={ globals.RRegister }>
 								{ utils.T(ctx, locales.LKLoginRegister, "Register account") }
