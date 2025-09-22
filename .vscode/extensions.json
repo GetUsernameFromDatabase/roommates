@@ -9,6 +9,7 @@
     "qufiwefefwoyn.inline-sql-syntax",
     "redhat.vscode-yaml",
     "yzhang.markdown-all-in-one",
-    "a-h.templ"
+    "a-h.templ",
+    "redis.redis-for-vscode"
   ]
 }

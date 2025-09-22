@@ -18,5 +18,45 @@
       "</div>"
     ],
     "description": "https://franken-ui.dev/docs/2.1/icon"
+  },
+  "Model Validator":{
+    "prefix": "mvalidate",
+    "scope": "go",
+    "body": [
+      "func (m *$1) Validate$2() (msgs []l.LKMessage) {",
+      "\tif m.Initial {",
+      "\t\treturn",
+      "\t}",
+      "",
+      "\t$0",
+      "\treturn msgs",
+      "}"
+    ],
+    "description": "https://templ.guide/syntax-and-usage/forms#create-a-view-model"
+  },
+  "Validatable Model":{
+    "prefix": "mvalidatable",
+    "scope": "go",
+    "body": [
+      "func (m *$1) GetValidators() []Validator {",
+      "\treturn []Validator{",
+      "\t\t$0",
+      "\t}",
+      "}",
+      "",
+      "func (m *$1) Validate() []l.LKMessage {",
+      "\tif m.Initial {",
+      "\t\treturn nil",
+      "\t}",
+      "\treturn ValidateModel(m)",
+      "}",
+      "",
+      "// checks if the form is valid and sets the Initial to false",
+      "func (m *$1) IsValid() (bool, []l.LKMessage) {",
+      "\tm.Initial = false",
+      "\treturn IsModelValid(m)",
+      "}"
+    ],
+    "description": "Used to apply methods to struct that align with validatable model interface"
   }
 }
