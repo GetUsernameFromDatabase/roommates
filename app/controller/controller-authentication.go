@@ -73,6 +73,7 @@ func (c *Controller) registerUser(ctx *gin.Context, user dbqueries.InsertUserPar
 	if err != nil {
 		switch err := err.(type) {
 		case *pgconn.PgError:
+			// https://www.postgresql.org/docs/current/errcodes-appendix.html
 			if err.Code == "23505" {
 				return pgtype.UUID{}, g.ErrorAccountAlreadyExists
 			}
@@ -185,8 +186,8 @@ func (c *Controller) PageLogin(ctx *gin.Context) {
 		var model models.Login
 		ctx.ShouldBind(&model)
 
-		hasError, _ := model.IsValid()
-		if hasError {
+		isValid, _ := model.IsValid()
+		if !isValid {
 			render(model)
 			return
 		}
@@ -243,8 +244,8 @@ func (c *Controller) PageRegister(ctx *gin.Context) {
 		var model models.Register
 		ctx.ShouldBind(&model)
 
-		hasError, _ := model.IsValid()
-		if hasError {
+		isValid, _ := model.IsValid()
+		if !isValid {
 			render(model)
 			return
 		}

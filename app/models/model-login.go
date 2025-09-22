@@ -63,9 +63,8 @@ func (m *Login) Validate() []l.LKMessage {
 	return ValidateModel(m)
 }
 
-// checks if this has errors or not
-//
-// keep in mind that if Initial == true then this will not check errors
+// checks if the form is valid and sets the Initial to false
 func (m *Login) IsValid() (bool, []l.LKMessage) {
+	m.Initial = false
 	return IsModelValid(m)
 }

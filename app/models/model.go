@@ -13,14 +13,15 @@ type Validator func() []l.LKMessage
 type Validatable interface {
 	Validate() []l.LKMessage
 	GetValidators() []Validator
+	IsValid() (bool, []l.LKMessage)
 }
 
 func IsModelValid(m Validatable) (bool, []l.LKMessage) {
 	msgs := m.Validate()
-	value := false
+	value := true
 
 	if len(msgs) > 0 {
-		value = true
+		value = false
 	}
 	return value, msgs
 }
