@@ -11,6 +11,42 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const deleteHouse = `-- name: DeleteHouse :exec
+DELETE FROM houses
+WHERE id = $1
+`
+
+func (q *Queries) DeleteHouse(ctx context.Context, id pgtype.UUID) error {
+	_, err := q.db.Exec(ctx, deleteHouse, id)
+	return err
+}
+
+const deleteHouseUsers = `-- name: DeleteHouseUsers :exec
+DELETE FROM user_houses
+WHERE house_id = $1
+`
+
+func (q *Queries) DeleteHouseUsers(ctx context.Context, houseID pgtype.UUID) error {
+	_, err := q.db.Exec(ctx, deleteHouseUsers, houseID)
+	return err
+}
+
+const deleteUserFromHouse = `-- name: DeleteUserFromHouse :exec
+DELETE FROM user_houses
+WHERE user_id = $1
+  AND house_id = $2
+`
+
+type DeleteUserFromHouseParams struct {
+	UserID  pgtype.UUID `json:"user_id"`
+	HouseID pgtype.UUID `json:"house_id"`
+}
+
+func (q *Queries) DeleteUserFromHouse(ctx context.Context, arg DeleteUserFromHouseParams) error {
+	_, err := q.db.Exec(ctx, deleteUserFromHouse, arg.UserID, arg.HouseID)
+	return err
+}
+
 const getUserCredentials = `-- name: GetUserCredentials :one
 SELECT id,
   email,
@@ -18,7 +54,6 @@ SELECT id,
   password
 FROM users
 WHERE email = $1
-LIMIT 1
 `
 
 type GetUserCredentialsRow struct {
@@ -42,6 +77,19 @@ func (q *Queries) GetUserCredentials(ctx context.Context, email string) (GetUser
 		&i.Password,
 	)
 	return i, err
+}
+
+const insertHouse = `-- name: InsertHouse :one
+INSERT INTO houses (name)
+VALUES ($1)
+RETURNING id
+`
+
+func (q *Queries) InsertHouse(ctx context.Context, name string) (pgtype.UUID, error) {
+	row := q.db.QueryRow(ctx, insertHouse, name)
+	var id pgtype.UUID
+	err := row.Scan(&id)
+	return id, err
 }
 
 const insertUser = `-- name: InsertUser :one
@@ -77,27 +125,129 @@ func (q *Queries) InsertUser(ctx context.Context, arg InsertUserParams) (pgtype.
 	return id, err
 }
 
+const insertUserIntoHouse = `-- name: InsertUserIntoHouse :exec
+INSERT INTO user_houses (user_id, house_id)
+VALUES ($1, $2) ON CONFLICT DO NOTHING
+`
+
+type InsertUserIntoHouseParams struct {
+	UserID  pgtype.UUID `json:"user_id"`
+	HouseID pgtype.UUID `json:"house_id"`
+}
+
+func (q *Queries) InsertUserIntoHouse(ctx context.Context, arg InsertUserIntoHouseParams) error {
+	_, err := q.db.Exec(ctx, insertUserIntoHouse, arg.UserID, arg.HouseID)
+	return err
+}
+
+const selectHouse = `-- name: SelectHouse :one
+SELECT name
+FROM houses
+WHERE id = $1
+`
+
+func (q *Queries) SelectHouse(ctx context.Context, id pgtype.UUID) (string, error) {
+	row := q.db.QueryRow(ctx, selectHouse, id)
+	var name string
+	err := row.Scan(&name)
+	return name, err
+}
+
+const selectHouseRoommates = `-- name: SelectHouseRoommates :many
+SELECT u.id,
+  u.username
+FROM users u
+WHERE u.id IN (
+    SELECT user_id
+    FROM user_houses
+    WHERE house_id = $1
+  )
+`
+
+type SelectHouseRoommatesRow struct {
+	ID       pgtype.UUID `json:"id"`
+	Username string      `json:"username"`
+}
+
+func (q *Queries) SelectHouseRoommates(ctx context.Context, houseID pgtype.UUID) ([]SelectHouseRoommatesRow, error) {
+	rows, err := q.db.Query(ctx, selectHouseRoommates, houseID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []SelectHouseRoommatesRow
+	for rows.Next() {
+		var i SelectHouseRoommatesRow
+		if err := rows.Scan(&i.ID, &i.Username); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const selectUsername = `-- name: SelectUsername :one
+SELECT username
+FROM users
+WHERE id = $1
+`
+
+func (q *Queries) SelectUsername(ctx context.Context, id pgtype.UUID) (string, error) {
+	row := q.db.QueryRow(ctx, selectUsername, id)
+	var username string
+	err := row.Scan(&username)
+	return username, err
+}
+
+const updateHouse = `-- name: UpdateHouse :exec
+UPDATE houses
+SET name = $1
+WHERE id = $2
+`
+
+type UpdateHouseParams struct {
+	Name string      `json:"name"`
+	ID   pgtype.UUID `json:"id"`
+}
+
+func (q *Queries) UpdateHouse(ctx context.Context, arg UpdateHouseParams) error {
+	_, err := q.db.Exec(ctx, updateHouse, arg.Name, arg.ID)
+	return err
+}
+
 const userHouses = `-- name: UserHouses :many
 SELECT h.id,
-  h.name
+  h.name,
+  ARRAY_AGG(uh.user_id)::UUID [] as user_ids
 FROM houses h
-WHERE id IN (
+  LEFT JOIN user_houses uh ON uh.house_id = h.id
+WHERE h.id IN (
     SELECT house_id
     FROM user_houses uh
     WHERE uh.user_id = $1
   )
+GROUP BY h.id
 `
 
-func (q *Queries) UserHouses(ctx context.Context, userID pgtype.UUID) ([]House, error) {
+type UserHousesRow struct {
+	ID      pgtype.UUID   `json:"id"`
+	Name    string        `json:"name"`
+	UserIds []pgtype.UUID `json:"user_ids"`
+}
+
+func (q *Queries) UserHouses(ctx context.Context, userID pgtype.UUID) ([]UserHousesRow, error) {
 	rows, err := q.db.Query(ctx, userHouses, userID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []House
+	var items []UserHousesRow
 	for rows.Next() {
-		var i House
-		if err := rows.Scan(&i.ID, &i.Name); err != nil {
+		var i UserHousesRow
+		if err := rows.Scan(&i.ID, &i.Name, &i.UserIds); err != nil {
 			return nil, err
 		}
 		items = append(items, i)
@@ -113,7 +263,9 @@ SELECT id,
   username
 FROM users
 WHERE username ILIKE $1::text || '%'
-  AND username NOT IN (SELECT UNNEST($2::text[]))
+  AND username NOT IN (
+    SELECT UNNEST($2::text [])
+  )
 LIMIT 10
 `
 

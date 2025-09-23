@@ -12,11 +12,10 @@ const (
 // Key for http header
 type HttpHeader string
 
+// constants for headers
 // if there becomes a need to have more, could be nice to copy from
 // https://pkg.go.dev/github.com/go-http-utils/headers#pkg-constants
-// constants for headers
 const (
-	//
 	HAuthorization HttpHeader = "Authorization"
 	HHXRequest     HttpHeader = "HX-Request"
 	HHXRedirect    HttpHeader = "HX-Redirect"
@@ -32,7 +31,6 @@ const (
 
 // constants for routes, see routes.go
 const (
-	//
 	RHouses    = "/houses"
 	RLogin     = "/login"
 	RMessaging = "/messaging"
@@ -40,8 +38,15 @@ const (
 	RPayments  = "/payments"
 	RProfile   = "/profile"
 	RRegister  = "/register"
+	RUser      = "/user"
+
+	RHouseID = RHouses + "/:id"
+
+	RUserID       = RUser + "/:id"
+	RHtmxUsername = RUserID + "/name"
 
 	RHtmxRoomateSearch = RHouses + "/roomate-search"
+	RHtmxHouseForm     = RHouses + "/house-form"
 )
 
 // -----------------------------------------------------------------------------

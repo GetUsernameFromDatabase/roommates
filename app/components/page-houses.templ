@@ -1,14 +1,25 @@
 package components
 
-templ PageHouses(pwi SPageWrapper) {
+import "roommates/db/dbqueries"
+
+templ PageHouses(pwi SPageWrapper, houses []dbqueries.UserHousesRow) {
 	@HtmlWrap() {
 		@HeaderComponent("")
 		@PageWrapper(pwi) {
-			@HousesPageContent()
+			@HousesPageContent(houses)
 		}
 	}
 }
 
-templ HousesPageContent() {
-	WIP -- Houses PAGE -- WIP
+templ HousesPageContent(houses []dbqueries.UserHousesRow) {
+	@houseModal(EModal)
+	@houseAside(houses)
+	<div class="bg-secondary content p-8">
+		// TODO: maybe flex, currently they can look very squished when screen size small
+		<div class="grid grid-cols-4 gap-4">
+			for _, house := range houses {
+				@houseCard(house)
+			}
+		</div>
+	</div>
 }

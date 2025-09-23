@@ -103,15 +103,20 @@ func (c *Controller) PageMessaging(ctx *gin.Context) {
 
 func (c *Controller) PageHouses(ctx *gin.Context) {
 	authInfo := middleware.GetAuthInfo(ctx)
+	houses, err := c.DB.UserHouses(ctx, authInfo.UserID)
+	if err != nil {
+		HandleServerError(ctx, err, "error getting houses")
+		return
+	}
 
 	var pc templ.Component
 	if utils.IsRequestHTMX(ctx) {
-		pc = components.HousesPageContent()
+		pc = components.HousesPageContent(houses)
 	} else {
 		pc = components.PageHouses(components.SPageWrapper{
 			AuthInfo: authInfo,
 			PathURL:  ctx.Request.URL.Path,
-		})
+		}, houses)
 	}
 
 	r := gintemplrenderer.New(ctx.Request.Context(), http.StatusOK, pc)

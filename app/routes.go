@@ -82,6 +82,13 @@ func InitRoutes(r *gin.Engine, c *controller.Controller) {
 		p.GET(g.RHouses, c.PageHouses)
 		p.GET(g.RHtmxRoomateSearch, c.HtmxRoomateSearch)
 		p.POST(g.RHtmxRoomateSearch, c.HtmxRoomateSearch)
+
+		p.GET(g.RHtmxHouseForm, c.GetHtmxHouseForm)
+		p.POST(g.RHtmxHouseForm, c.PostHtmxHouseForm)
+		p.PUT(g.RHtmxHouseForm, c.PutHtmxHouseForm)
+		p.DELETE(g.RHtmxHouseForm, c.DeleteHouse)
+
+		p.GET(g.RHtmxUsername, c.HtmxHouseCardUser)
 	}
 
 	r.Static("/assets", "./assets/public")

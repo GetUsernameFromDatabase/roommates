@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"roommates/controller"
 	"roommates/db"
-	"roommates/db/dbqueries"
 	"roommates/logger"
 	"roommates/rdb"
 	"roommates/utils"
@@ -44,20 +43,25 @@ func main() {
 	serverAddr := utils.MustGetEnv("SERVER_ADDR")
 	dbURL := utils.GetDatabaseURL()
 
-	dbpool, err := pgxpool.New(context.Background(), dbURL)
+	ctx := context.Background()
+	dbpool, err := pgxpool.New(ctx, dbURL)
 	if err != nil {
 		panic(fmt.Errorf("unable to create connection pool: %w", err))
 	}
 	defer dbpool.Close()
+
+	// ensure connection
+	if err = dbpool.Ping(ctx); err != nil {
+		panic(fmt.Errorf("unable to ping database: %w", err))
+	}
 
 	migrationDir := "./db/migrations"
 	db.MigrateToLatest(dbpool, migrationDir)
 	// to reset database should it be required
 	// db.NewMigrations(dbpool, migrationDir).MigrateTo(0)
 
-	dbHandler := dbqueries.New(dbpool)
 	redisHandler := rdb.New()
-	controllers := controller.New(dbHandler, redisHandler)
+	controllers := controller.New(dbpool, redisHandler)
 
 	e := InitGinEngine(controllers)
 	e.RunTLS(serverAddr, "./certificates/server.pem", "./certificates/server.key")

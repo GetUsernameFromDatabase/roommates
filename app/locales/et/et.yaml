@@ -3,8 +3,12 @@ et:
     title: 'Toakaaslased'
   forms:
     submit: 'Edasta'
+    update: 'Uuenda'
+    delete: 'Kustuta'
+    edit: 'Muuda'
     name:
       title: 'Nimi'
+      error-empty: 'Nimi ei tohi olla tühi'
     content:
       title: 'Sisu'
     email:
@@ -30,6 +34,7 @@ et:
       title-new: 'Uus Elamiskoht'
       name-label: 'Elamiskohale nimi'
       add-users: 'Lisa toakaaslasi'
+      error-some-roomates-invalid: 'Mõned toakaaslased eemaldati. Kontrolli üle ja esita avaldus uuesti'
     note:
       title: 'Elamiskoha %s märge'
       title-new: 'Uus märge elamiskoha %s jaoks'
@@ -37,6 +42,9 @@ et:
       title: 'Täisnimi'
       info: 'Ainult toakaaslased saavad seda näha, välja arvatud juhul, kui märgid selle avalikuks'
       mark-public: 'Tee täisnimi avalikuks'
+    errors:
+      only-letters-and-digits: 'Lubatud on ainult tähed, numbrid ja tühikud'
+      no-multiple-spaces: 'Järjestikused tühikud pole lubatud'
   login:
     title: 'Logi sisse'
     register: 'Registreeri konto'
@@ -53,4 +61,5 @@ et:
   search-results-for: 'Otsingutulemused päringule %s'
   houses:
     no-houses: 'Sa pole osa ühestki elamiskohast'
-    your-houses: "Sinu elamiskohad"
+    your-houses: 'Sinu elamiskohad'
+    roomate-count: '%d toakaaslast'

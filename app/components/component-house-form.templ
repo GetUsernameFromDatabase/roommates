@@ -1,0 +1,215 @@
+package components
+
+import (
+	"encoding/json"
+	"roommates/db/dbqueries"
+	"roommates/globals"
+	"roommates/locales"
+	"roommates/models"
+	"roommates/utils"
+	"strconv"
+	"strings"
+)
+
+templ HouseForm(model models.House) {
+	{{
+		const url = globals.RHtmxHouseForm
+		htmxAttributes := templ.Attributes{
+			"hx-swap":   "outerHTML",
+			"hx-target": "#" + HfId,
+		}
+		nameLabel := utils.T(ctx, locales.LKFormsHouseNameLabel, "House Name")
+
+		var title string
+		if model.HouseID.Valid {
+			title = utils.T(ctx, locales.LKFormsHouseTitle, "Modify house")
+		} else {
+			title = utils.T(ctx, locales.LKFormsHouseTitleNew, "Add new house")
+		}
+
+		nameErrors := model.ValidateName()
+	}}
+	<form id={ HfId } class="space-y-3">
+		if model.HouseID.Valid {
+			<input type="hidden" name="house_id" value={ model.HouseID.String() }/>
+		}
+		@FormTitle(title)
+		@InputWithLabel("text",
+			"houseForm-name",
+			"name",
+			nameLabel,
+			model.Name,
+			LabelClass("uk-form-label uk-form-label-required"),
+			ValidationMessages(nameErrors),
+		)
+		@houseRoomatesInput(model)
+		<div class="mt-4" { htmxAttributes... }>
+			if !model.HouseID.Valid {
+				<button hx-post={ url } class="uk-btn uk-btn-primary block w-full">
+					{ strings.ToUpper(utils.T(ctx, locales.LKFormsSubmit, "SUBMIT")) }
+				</button>
+			} else {
+				<div class="flex justify-between">
+					// currently htmx decides
+					<button
+						hx-delete={ url + "?id=" + model.HouseID.String() }
+						hx-params="none"
+						class="uk-btn uk-btn-destructive"
+					>
+						{ strings.ToUpper(utils.T(ctx, locales.LKFormsDelete, "DELETE")) }
+					</button>
+					// WHY DOES hx-ext="json-enc" NOT SEND JSON
+					<button
+						hx-put={ url }
+						class="uk-btn uk-btn-primary"
+						hx-ext="json-enc"
+					>
+						{ strings.ToUpper(utils.T(ctx, locales.LKFormsUpdate, "UPDATE")) }
+					</button>
+				</div>
+			}
+		</div>
+	</form>
+}
+
+templ houseRoomatesInput(model models.House) {
+	<div class="">
+		@HouseRoomatesInputSearchResults("", nil)
+		<label class="uk-form-label" for="houseForm-roommates">
+			{ utils.T(ctx, locales.LKFormsHouseAddUsers, "Add Roommates") }
+		</label>
+		<div class="uk-form-controls">
+			<input
+				id={ HfRoomateInputId }
+				name="searched_user"
+				type="text"
+				class="uk-input"
+				onfocus="showHRISR(this)"
+				onblur="hideHRISR()"
+				hx-get={ globals.RHtmxRoomateSearch }
+				hx-trigger="keyup changed delay:500ms"
+				hx-target={ "#" + HfSearchResultsId }
+				hx-swap="outerHTML"
+				hx-sync="closest form:abort"
+				hx-include="closest form"
+			/>
+			// TODO: indicator for search results -- https://htmx.org/docs/#indicators
+			@HouseRoomatesInputData(model)
+		</div>
+	</div>
+}
+
+templ HouseRoomatesInputData(model models.House) {
+	<div class="mt-2 flex flex-wrap">
+		for i, value := range model.RoommateLabels {
+			<div
+				data-index={ i }
+				class="m-1 cursor-pointer"
+				onclick="deleteHouseRoomatesInputDataElement(this)"
+			>
+				// this should be fiiiiine
+				{{ keyValue := model.RoommateKeys[i] }}
+				<input type="hidden" name="roommates[]" value={ keyValue }/>
+				<input type="hidden" name="roommates_labels[]" value={ value }/>
+				<div class="uk-tag-secondary uk-tag">
+					<span>{ value }</span>
+					<uk-icon icon="x"></uk-icon>
+				</div>
+			</div>
+		}
+	</div>
+}
+
+templ HouseRoomatesInputSearchResults(searchedUser string, foundUsers []dbqueries.UsersLikeExcludingExistingRow) {
+	{{ class := "uk-card uk-card-body absolute" }}
+	if searchedUser == "" {
+		<div id={ HfSearchResultsId } hidden class={ class }></div>
+		{{ return }}
+	}
+	<div id={ HfSearchResultsId } class={ class }>
+		<p class="uk-text-meta mb-3">
+			{ utils.T(ctx, locales.LKSearchResultsFor, "Search results for %s", strconv.Quote(searchedUser)) }
+		</p>
+		// expected use case up to 10 users
+		for _, user := range foundUsers {
+			{{
+				hValsData, _ := json.Marshal(map[string]string{
+					"user_id":    user.ID.String(),
+					"user_label": user.Username,
+				})
+			}}
+			<p
+				role="button"
+				data-key={ user.ID.String() }
+				class="cursor-pointer hover:bg-secondary"
+				hx-post={ globals.RHtmxRoomateSearch }
+				hx-trigger="click"
+				hx-target={ "#" + HfId }
+				hx-swap="outerHTML"
+				hx-sync="closest form:abort"
+				hx-vals={ string(hValsData) }
+			>
+				{ user.Username }
+			</p>
+		}
+	</div>
+}
+
+templ houseRoomatesInputSearchResultsScript() {
+	<script>
+	function getHouseRoomatesInput() {
+		return document.getElementById({{ HfRoomateInputId }});
+	}
+	// HRISR -- HouseRoomatesInputSearchResults
+	function getHRISR() {
+		return document.getElementById({{ HfSearchResultsId }});
+	}
+
+	/**
+	* @param {HTMLElement | undefined} hrisr - HouseRoomatesInputSearchResults
+	*/
+	function positionHRISR(hrisr) {
+		const inputElement = getHouseRoomatesInput()
+		if (hrisr === undefined) {
+			hrisr = getHRISR()
+		}
+		hrisr.style.width = inputElement.offsetWidth + 'px'
+		hrisr.style.top = (inputElement.offsetTop - hrisr.offsetHeight - 24) + 'px'
+	}
+	function hideHRISR() {
+		const element = getHRISR();
+		// otherwise search results will be made hidden before click is able to be registered
+		setTimeout(() => {
+			element.hidden = true;
+		}, 200)
+	}
+	/**
+	* @param {HTMLInputElement} input
+	*/
+	function showHRISR(input) {
+		const element = getHRISR();
+		if (input.value === '') {
+			element.hidden = true
+			return
+		}
+		element.hidden = false;
+		positionHRISR(element) // redundant -- htmx:afterSettle should 'settle' the position matter
+	}
+	/**
+	* This is intended to be used on the element containing both 
+	*  label and key hidden input and the tag (visual side)
+	* @param {HTMLElement} element
+	*/
+	function deleteHouseRoomatesInputDataElement(element) {
+		element.remove()
+	}
+
+	document.addEventListener('htmx:afterSettle', function(evt) {
+		/** @type {HTMLElement} */
+		const element = evt.detail.elt
+		if (element.id === {{ HfSearchResultsId }}) {
+			positionHRISR(element)
+		}
+	})
+</script>
+}

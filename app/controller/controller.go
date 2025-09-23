@@ -7,12 +7,14 @@ import (
 	"roommates/utils"
 
 	"github.com/gin-gonic/gin"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 var log = logger.ControllerLoggger
 
 // logs the server error and responds with public error as message
 func HandleServerError(ctx *gin.Context, err error, publicError string) {
+	// TODO: dump request into a file for easier reproducibility
 	log.Error().Err(err).Caller().Msg(publicError)
 	utils.ServerErrorResponse(ctx, publicError)
 }
@@ -22,14 +24,17 @@ type SimpleResponse struct {
 }
 
 type Controller struct {
-	DB *dbqueries.Queries
-	RH *rdb.RedisHandler
+	DB   *dbqueries.Queries
+	RH   *rdb.RedisHandler
+	Pool *pgxpool.Pool
 }
 
-func New(db *dbqueries.Queries, rh *rdb.RedisHandler) *Controller {
+func New(dbpool *pgxpool.Pool, rh *rdb.RedisHandler) *Controller {
+	dbHandler := dbqueries.New(dbpool)
 	return &Controller{
-		DB: db,
-		RH: rh,
+		DB:   dbHandler,
+		RH:   rh,
+		Pool: dbpool,
 	}
 }
 
