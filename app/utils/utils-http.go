@@ -67,8 +67,8 @@ func IsRequestHTMX(ctx *gin.Context) bool {
 // redirects htmx request with header, otherwise uses ctx.Redirect with status see other
 func Redirect(ctx *gin.Context, location string) {
 	if IsRequestHTMX(ctx) {
-		ctx.Header(string(g.HHXRedirect), "/")
+		ctx.Header(string(g.HHXRedirect), location)
 	} else {
-		ctx.Redirect(http.StatusSeeOther, "/")
+		ctx.Redirect(http.StatusSeeOther, location)
 	}
 }

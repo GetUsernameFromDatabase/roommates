@@ -25,6 +25,7 @@ templ NoteAddForm(model models.Note, isNew bool) {
 			"add-note-name",
 			"name",
 			nameLabel,
+			model.Name,
 			LabelClass("uk-form-label uk-form-label-required"),
 		)
 		@TextareaWithLabel("add-note-content", "content", contentLabel)

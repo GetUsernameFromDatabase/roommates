@@ -57,6 +57,7 @@ func NoteAddForm(model models.Note, isNew bool) templ.Component {
 			"add-note-name",
 			"name",
 			nameLabel,
+			model.Name,
 			LabelClass("uk-form-label uk-form-label-required"),
 		).Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {

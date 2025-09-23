@@ -350,12 +350,12 @@ func RegisterForm(m models.Register) templ.Component {
 		}
 		templ_7745c5c3_Err = InputWithLabel("email", "", "email",
 			utils.T(ctx, locales.LKFormsEmailTitle, "E-Mail"),
+			m.Email,
 			LabelClass("uk-form-label uk-form-label-required"),
 			Icon("mail"),
 			ValidationMessages(emailErrors),
 			templ.Attributes{
 				"autocomplete": "email",
-				"value":        m.Email,
 			},
 		).Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
@@ -363,12 +363,12 @@ func RegisterForm(m models.Register) templ.Component {
 		}
 		templ_7745c5c3_Err = InputWithLabel("text", "", "username",
 			utils.T(ctx, locales.LKFormsUsernameTitle, "Username"),
+			m.Username,
 			LabelClass("uk-form-label uk-form-label-required"),
 			Icon("user"),
 			ValidationMessages(usernameErrors),
 			templ.Attributes{
 				"autocomplete": "name",
-				"value":        m.Username,
 			},
 		).Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
@@ -380,11 +380,11 @@ func RegisterForm(m models.Register) templ.Component {
 		}
 		templ_7745c5c3_Err = InputWithLabel("text", "", "full_name",
 			utils.T(ctx, locales.LKFormsFullNameTitle, "Full Name"),
+			m.FullName,
 			FormHelpBlock(utils.T(ctx, locales.LKFormsFullNameInfo, "")),
 			Icon("user"),
 			templ.Attributes{
 				"placeholder": utils.T(ctx, locales.LKFormsFullNameTitle, ""),
-				"value":       m.FullName,
 			},
 		).Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {

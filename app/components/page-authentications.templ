@@ -85,32 +85,32 @@ templ RegisterForm(m models.Register) {
 		@FormError(m.Error)
 		@InputWithLabel("email", "", "email",
 			utils.T(ctx, locales.LKFormsEmailTitle, "E-Mail"),
+			m.Email,
 			LabelClass("uk-form-label uk-form-label-required"),
 			Icon("mail"),
 			ValidationMessages(emailErrors),
 			templ.Attributes{
 				"autocomplete": "email",
-				"value":        m.Email,
 			},
 		)
 		@InputWithLabel("text", "", "username",
 			utils.T(ctx, locales.LKFormsUsernameTitle, "Username"),
+			m.Username,
 			LabelClass("uk-form-label uk-form-label-required"),
 			Icon("user"),
 			ValidationMessages(usernameErrors),
 			templ.Attributes{
 				"autocomplete": "name",
-				"value":        m.Username,
 			},
 		)
 		<div class="space-y-3">
 			@InputWithLabel("text", "", "full_name",
 				utils.T(ctx, locales.LKFormsFullNameTitle, "Full Name"),
+				m.FullName,
 				FormHelpBlock(utils.T(ctx, locales.LKFormsFullNameInfo, "")),
 				Icon("user"),
 				templ.Attributes{
 					"placeholder": utils.T(ctx, locales.LKFormsFullNameTitle, ""),
-					"value":       m.FullName,
 				},
 			)
 			@ToggleSwitch("", "is_full_name_public", utils.T(ctx, locales.LKFormsFullNameMarkPublic, ""), m.IsFullNamePublic)

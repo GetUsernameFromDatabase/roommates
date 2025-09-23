@@ -44,7 +44,7 @@ templ FormTitle(title string) {
 //  - templ.Component -- will be put at the bottom of this element, after the input
 //  - Icon -- is used to generate an icon inline with input
 //  - templ.Attributes -- supply html attributes to input
-templ InputWithLabel(inputType, id, name, label string, args ...any) {
+templ InputWithLabel(inputType, id, name, label, value string, args ...any) {
 	{{
 		labelClass := "uk-form-label"
 		var bottomComponent templ.Component
@@ -81,6 +81,7 @@ templ InputWithLabel(inputType, id, name, label string, args ...any) {
 				id={ id }
 				name={ name }
 				type={ inputType }
+				value={ value }
 				{ inputAttributes... }
 				class="uk-input"
 				placeholder={ label }
