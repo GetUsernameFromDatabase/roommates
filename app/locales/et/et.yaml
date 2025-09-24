@@ -34,7 +34,7 @@ et:
       title-new: 'Uus Elamiskoht'
       name-label: 'Elamiskohale nimi'
       add-users: 'Lisa toakaaslasi'
-      error-some-roomates-invalid: 'Mõned toakaaslased eemaldati. Kontrolli üle ja esita avaldus uuesti'
+      error-some-roommates-invalid: 'Mõned toakaaslased eemaldati. Kontrolli üle ja esita avaldus uuesti'
     note:
       title: 'Elamiskoha %s märge'
       title-new: 'Uus märge elamiskoha %s jaoks'

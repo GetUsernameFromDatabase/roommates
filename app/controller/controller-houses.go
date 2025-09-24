@@ -83,7 +83,7 @@ func (c *Controller) HtmxRoomateSearch(ctx *gin.Context) {
 	switch method {
 	case http.MethodGet:
 		render := func(foundUsers []dbqueries.UsersLikeExcludingExistingRow) {
-			pc := components.HouseRoomatesInputSearchResults(model.SearchedUser, foundUsers)
+			pc := components.HouseRoommatesInputSearchResults(model.SearchedUser, foundUsers)
 			r := gintemplrenderer.New(ctx.Request.Context(), http.StatusOK, pc)
 			ctx.Render(r.Status, r)
 		}

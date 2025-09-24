@@ -42,7 +42,7 @@ templ HouseForm(model models.House) {
 			LabelClass("uk-form-label uk-form-label-required"),
 			ValidationMessages(nameErrors),
 		)
-		@houseRoomatesInput(model)
+		@houseRoommatesInput(model)
 		<div class="mt-4" { htmxAttributes... }>
 			if !model.HouseID.Valid {
 				<button hx-post={ url } class="uk-btn uk-btn-primary block w-full">
@@ -72,9 +72,9 @@ templ HouseForm(model models.House) {
 	</form>
 }
 
-templ houseRoomatesInput(model models.House) {
+templ houseRoommatesInput(model models.House) {
 	<div class="">
-		@HouseRoomatesInputSearchResults("", nil)
+		@HouseRoommatesInputSearchResults("", nil)
 		<label class="uk-form-label" for="houseForm-roommates">
 			{ utils.T(ctx, locales.LKFormsHouseAddUsers, "Add Roommates") }
 		</label>
@@ -94,18 +94,18 @@ templ houseRoomatesInput(model models.House) {
 				hx-include="closest form"
 			/>
 			// TODO: indicator for search results -- https://htmx.org/docs/#indicators
-			@HouseRoomatesInputData(model)
+			@HouseRoommatesInputData(model)
 		</div>
 	</div>
 }
 
-templ HouseRoomatesInputData(model models.House) {
+templ HouseRoommatesInputData(model models.House) {
 	<div class="mt-2 flex flex-wrap">
 		for i, value := range model.RoommateLabels {
 			<div
 				data-index={ i }
 				class="m-1 cursor-pointer"
-				onclick="deleteHouseRoomatesInputDataElement(this)"
+				onclick="deleteHouseRoommatesInputDataElement(this)"
 			>
 				// this should be fiiiiine
 				{{ keyValue := model.RoommateKeys[i] }}
@@ -120,7 +120,7 @@ templ HouseRoomatesInputData(model models.House) {
 	</div>
 }
 
-templ HouseRoomatesInputSearchResults(searchedUser string, foundUsers []dbqueries.UsersLikeExcludingExistingRow) {
+templ HouseRoommatesInputSearchResults(searchedUser string, foundUsers []dbqueries.UsersLikeExcludingExistingRow) {
 	{{ class := "uk-card uk-card-body absolute" }}
 	if searchedUser == "" {
 		<div id={ HfSearchResultsId } hidden class={ class }></div>
@@ -155,21 +155,21 @@ templ HouseRoomatesInputSearchResults(searchedUser string, foundUsers []dbquerie
 	</div>
 }
 
-templ houseRoomatesInputSearchResultsScript() {
+templ houseRoommatesInputSearchResultsScript() {
 	<script>
-	function getHouseRoomatesInput() {
+	function getHouseRoommatesInput() {
 		return document.getElementById({{ HfRoomateInputId }});
 	}
-	// HRISR -- HouseRoomatesInputSearchResults
+	// HRISR -- HouseRoommatesInputSearchResults
 	function getHRISR() {
 		return document.getElementById({{ HfSearchResultsId }});
 	}
 
 	/**
-	* @param {HTMLElement | undefined} hrisr - HouseRoomatesInputSearchResults
+	* @param {HTMLElement | undefined} hrisr - HouseRoommatesInputSearchResults
 	*/
 	function positionHRISR(hrisr) {
-		const inputElement = getHouseRoomatesInput()
+		const inputElement = getHouseRoommatesInput()
 		if (hrisr === undefined) {
 			hrisr = getHRISR()
 		}
@@ -200,7 +200,7 @@ templ houseRoomatesInputSearchResultsScript() {
 	*  label and key hidden input and the tag (visual side)
 	* @param {HTMLElement} element
 	*/
-	function deleteHouseRoomatesInputDataElement(element) {
+	function deleteHouseRoommatesInputDataElement(element) {
 		element.remove()
 	}
 

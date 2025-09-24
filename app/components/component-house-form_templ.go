@@ -107,7 +107,7 @@ func HouseForm(model models.House) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = houseRoomatesInput(model).Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = houseRoommatesInput(model).Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -220,7 +220,7 @@ func HouseForm(model models.House) templ.Component {
 	})
 }
 
-func houseRoomatesInput(model models.House) templ.Component {
+func houseRoommatesInput(model models.House) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -245,7 +245,7 @@ func houseRoomatesInput(model models.House) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = HouseRoomatesInputSearchResults("", nil).Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = HouseRoommatesInputSearchResults("", nil).Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -305,7 +305,7 @@ func houseRoomatesInput(model models.House) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = HouseRoomatesInputData(model).Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = HouseRoommatesInputData(model).Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -317,7 +317,7 @@ func houseRoomatesInput(model models.House) templ.Component {
 	})
 }
 
-func HouseRoomatesInputData(model models.House) templ.Component {
+func HouseRoommatesInputData(model models.House) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -356,7 +356,7 @@ func HouseRoomatesInputData(model models.House) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 25, "\" class=\"m-1 cursor-pointer\" onclick=\"deleteHouseRoomatesInputDataElement(this)\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 25, "\" class=\"m-1 cursor-pointer\" onclick=\"deleteHouseRoommatesInputDataElement(this)\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -413,7 +413,7 @@ func HouseRoomatesInputData(model models.House) templ.Component {
 	})
 }
 
-func HouseRoomatesInputSearchResults(searchedUser string, foundUsers []dbqueries.UsersLikeExcludingExistingRow) templ.Component {
+func HouseRoommatesInputSearchResults(searchedUser string, foundUsers []dbqueries.UsersLikeExcludingExistingRow) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -605,7 +605,7 @@ func HouseRoomatesInputSearchResults(searchedUser string, foundUsers []dbqueries
 	})
 }
 
-func houseRoomatesInputSearchResultsScript() templ.Component {
+func houseRoommatesInputSearchResultsScript() templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -626,7 +626,7 @@ func houseRoomatesInputSearchResultsScript() templ.Component {
 			templ_7745c5c3_Var33 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 45, "<script>\n\tfunction getHouseRoomatesInput() {\n\t\treturn document.getElementById(")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 45, "<script>\n\tfunction getHouseRoommatesInput() {\n\t\treturn document.getElementById(")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -638,7 +638,7 @@ func houseRoomatesInputSearchResultsScript() templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 46, ");\n\t}\n\t// HRISR -- HouseRoomatesInputSearchResults\n\tfunction getHRISR() {\n\t\treturn document.getElementById(")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 46, ");\n\t}\n\t// HRISR -- HouseRoommatesInputSearchResults\n\tfunction getHRISR() {\n\t\treturn document.getElementById(")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -650,7 +650,7 @@ func houseRoomatesInputSearchResultsScript() templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 47, ");\n\t}\n\n\t/**\n\t* @param {HTMLElement | undefined} hrisr - HouseRoomatesInputSearchResults\n\t*/\n\tfunction positionHRISR(hrisr) {\n\t\tconst inputElement = getHouseRoomatesInput()\n\t\tif (hrisr === undefined) {\n\t\t\thrisr = getHRISR()\n\t\t}\n\t\thrisr.style.width = inputElement.offsetWidth + 'px'\n\t\thrisr.style.top = (inputElement.offsetTop - hrisr.offsetHeight - 24) + 'px'\n\t}\n\tfunction hideHRISR() {\n\t\tconst element = getHRISR();\n\t\t// otherwise search results will be made hidden before click is able to be registered\n\t\tsetTimeout(() => {\n\t\t\telement.hidden = true;\n\t\t}, 200)\n\t}\n\t/**\n\t* @param {HTMLInputElement} input\n\t*/\n\tfunction showHRISR(input) {\n\t\tconst element = getHRISR();\n\t\tif (input.value === '') {\n\t\t\telement.hidden = true\n\t\t\treturn\n\t\t}\n\t\telement.hidden = false;\n\t\tpositionHRISR(element) // redundant -- htmx:afterSettle should 'settle' the position matter\n\t}\n\t/**\n\t* This is intended to be used on the element containing both \n\t*  label and key hidden input and the tag (visual side)\n\t* @param {HTMLElement} element\n\t*/\n\tfunction deleteHouseRoomatesInputDataElement(element) {\n\t\telement.remove()\n\t}\n\n\tdocument.addEventListener('htmx:afterSettle', function(evt) {\n\t\t/** @type {HTMLElement} */\n\t\tconst element = evt.detail.elt\n\t\tif (element.id === ")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 47, ");\n\t}\n\n\t/**\n\t* @param {HTMLElement | undefined} hrisr - HouseRoommatesInputSearchResults\n\t*/\n\tfunction positionHRISR(hrisr) {\n\t\tconst inputElement = getHouseRoommatesInput()\n\t\tif (hrisr === undefined) {\n\t\t\thrisr = getHRISR()\n\t\t}\n\t\thrisr.style.width = inputElement.offsetWidth + 'px'\n\t\thrisr.style.top = (inputElement.offsetTop - hrisr.offsetHeight - 24) + 'px'\n\t}\n\tfunction hideHRISR() {\n\t\tconst element = getHRISR();\n\t\t// otherwise search results will be made hidden before click is able to be registered\n\t\tsetTimeout(() => {\n\t\t\telement.hidden = true;\n\t\t}, 200)\n\t}\n\t/**\n\t* @param {HTMLInputElement} input\n\t*/\n\tfunction showHRISR(input) {\n\t\tconst element = getHRISR();\n\t\tif (input.value === '') {\n\t\t\telement.hidden = true\n\t\t\treturn\n\t\t}\n\t\telement.hidden = false;\n\t\tpositionHRISR(element) // redundant -- htmx:afterSettle should 'settle' the position matter\n\t}\n\t/**\n\t* This is intended to be used on the element containing both \n\t*  label and key hidden input and the tag (visual side)\n\t* @param {HTMLElement} element\n\t*/\n\tfunction deleteHouseRoommatesInputDataElement(element) {\n\t\telement.remove()\n\t}\n\n\tdocument.addEventListener('htmx:afterSettle', function(evt) {\n\t\t/** @type {HTMLElement} */\n\t\tconst element = evt.detail.elt\n\t\tif (element.id === ")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

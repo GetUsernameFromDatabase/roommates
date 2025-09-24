@@ -19,7 +19,7 @@ type House struct {
 	RoommateLabels []string `form:"roommates_labels[]"`
 
 	Name string `form:"name"`
-	// used only by htmx to get user suggestions when adding roomates to house
+	// used only by htmx to get user suggestions when adding roommates to house
 	SearchedUser string `form:"searched_user"`
 }
 
@@ -82,7 +82,7 @@ func (m *House) FilterNonValidUUID(ctx *gin.Context) (bool, []pgtype.UUID) {
 	if hasInvalidUUID {
 		m.Error = utils.T(
 			ctx.Request.Context(),
-			l.LKFormsHouseErrorSomeRoomatesInvalid,
+			l.LKFormsHouseErrorSomeRoommatesInvalid,
 			"",
 		)
 	}

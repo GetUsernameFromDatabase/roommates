@@ -30,7 +30,7 @@ type Icon string
 // id for house form element
 const (
 	HfId              = "house-form"
-	HfSearchResultsId = "HouseRoomatesInputSearchResults"
+	HfSearchResultsId = "HouseRoommatesInputSearchResults"
 	HfRoomateInputId  = "houseForm-roommates-input"
 	HfModalId         = "house-modal"
 )
