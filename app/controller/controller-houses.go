@@ -45,17 +45,21 @@ func renderHouseForm(ctx *gin.Context, model models.House) {
 //
 // used when rendering a form for editing a house
 func (c *Controller) populateHouseModel(ctx *gin.Context, model *models.House) error {
-	if !model.HouseID.Valid {
+	var houseID pgtype.UUID
+	model.ScanHouseID(&houseID)
+	if !houseID.Valid {
+		// will signal to have new house
+		model.HouseID = ""
 		return nil
 	}
 
-	name, err := c.DB.SelectHouse(ctx, model.HouseID)
+	name, err := c.DB.SelectHouse(ctx, houseID)
 	if err != nil {
 		return err
 	}
 	model.Name = name
 
-	roommates, err := c.DB.SelectHouseRoommates(ctx, model.HouseID)
+	roommates, err := c.DB.SelectHouseRoommates(ctx, houseID)
 	if err != nil {
 		return err
 	}
@@ -68,16 +72,11 @@ func (c *Controller) populateHouseModel(ctx *gin.Context, model *models.House) e
 }
 
 func (c *Controller) HtmxRoomateSearch(ctx *gin.Context) {
-	if !utils.IsRequestHTMX(ctx) {
-		utils.ErrorResponse(ctx, http.StatusForbidden, g.ErrorHtmxRequired)
-		return
-	}
-
-	method := ctx.Request.Method
 	var model models.House
 	ctx.ShouldBind(&model)
 	model.Initial = true
 
+	method := ctx.Request.Method
 	switch method {
 	case http.MethodGet:
 		render := func(foundUsers []dbqueries.UsersLikeExcludingExistingRow) {
@@ -118,17 +117,10 @@ func (c *Controller) HtmxRoomateSearch(ctx *gin.Context) {
 }
 
 func (c *Controller) GetHtmxHouseForm(ctx *gin.Context) {
-	if !utils.IsRequestHTMX(ctx) {
-		// TODO: maybe move all of these into a middleware??
-		utils.ErrorResponse(ctx, http.StatusForbidden, g.ErrorHtmxRequired)
-		return
-	}
-
-	houseID := ctx.Query("house_id")
 	var model models.House
+	model.HouseID = ctx.Query("house_id")
 
 	model.Initial = true
-	model.HouseID.Scan(houseID) // will ignore this error
 	if err := c.populateHouseModel(ctx, &model); err != nil {
 		HandleServerError(ctx, err, "could not get house data")
 		return
@@ -137,11 +129,6 @@ func (c *Controller) GetHtmxHouseForm(ctx *gin.Context) {
 }
 
 func (c *Controller) PostHtmxHouseForm(ctx *gin.Context) {
-	if !utils.IsRequestHTMX(ctx) {
-		utils.ErrorResponse(ctx, http.StatusForbidden, g.ErrorHtmxRequired)
-		return
-	}
-
 	var model models.House
 	ctx.ShouldBind(&model)
 
@@ -158,7 +145,7 @@ func (c *Controller) PostHtmxHouseForm(ctx *gin.Context) {
 
 	tx, err := c.Pool.Begin(ctx.Request.Context())
 	if err != nil {
-		HandleServerError(ctx, err, "house builders are on vacation")
+		HandleServerError(ctx, err, "no business pool party :(")
 		return
 	}
 	defer tx.Rollback(ctx)
@@ -174,6 +161,7 @@ func (c *Controller) PostHtmxHouseForm(ctx *gin.Context) {
 	authInfo := middleware.GetAuthInfo(ctx)
 	// it is assumed the user making the house want's to be in the house
 	roomateIDs = append(roomateIDs, authInfo.UserID)
+
 	err = insertUsersToHouse(ctx, qtx, roomateIDs, houseID)
 	if err != nil {
 		HandleServerError(ctx, err, "error assigning users to house")
@@ -209,20 +197,17 @@ func (c *Controller) DeleteHouse(ctx *gin.Context) {
 
 // Delete and put for house form
 func (c *Controller) PutHtmxHouseForm(ctx *gin.Context) {
-	if !utils.IsRequestHTMX(ctx) {
-		utils.ErrorResponse(ctx, http.StatusForbidden, g.ErrorHtmxRequired)
-		return
-	}
-
 	var model models.House
-	// TODO: GET THIS TO WORK
-	// FOR SOME REASON HTMX STILL SENDS application/x-www-form-urlencoded
-	// and pgtype has difficulties being unmarshalled with that
-	ctx.ShouldBindBodyWithJSON(&model)
+	ctx.ShouldBind(&model)
 
 	isValid, _ := model.IsValid()
 	if !isValid {
 		renderHouseForm(ctx, model)
+		return
+	}
+	var houseID pgtype.UUID
+	if err := model.ScanHouseID(&houseID); err != nil {
+		utils.ErrorResponse(ctx, http.StatusForbidden, err)
 		return
 	}
 	conversionIssueOccured, roomateIDs := model.FilterNonValidUUID(ctx)
@@ -230,14 +215,10 @@ func (c *Controller) PutHtmxHouseForm(ctx *gin.Context) {
 		renderHouseForm(ctx, model)
 		return
 	}
-	if err := model.NeedsValidHouseID(); err != nil {
-		utils.ErrorResponse(ctx, http.StatusForbidden, err)
-		return
-	}
 
 	tx, err := c.Pool.Begin(ctx.Request.Context())
 	if err != nil {
-		HandleServerError(ctx, err, "house builders are on vacation")
+		HandleServerError(ctx, err, "no business pool party :(")
 		return
 	}
 	defer tx.Rollback(ctx)
@@ -245,11 +226,11 @@ func (c *Controller) PutHtmxHouseForm(ctx *gin.Context) {
 
 	qtx.UpdateHouse(ctx, dbqueries.UpdateHouseParams{
 		Name: model.Name,
-		ID:   model.HouseID,
+		ID:   houseID,
 	})
-	qtx.DeleteHouseUsers(ctx, model.HouseID)
+	qtx.DeleteHouseUsers(ctx, houseID)
 
-	err = insertUsersToHouse(ctx, qtx, roomateIDs, model.HouseID)
+	err = insertUsersToHouse(ctx, qtx, roomateIDs, houseID)
 	if err != nil {
 		HandleServerError(ctx, err, "error assigning users to house")
 		return
@@ -260,13 +241,14 @@ func (c *Controller) PutHtmxHouseForm(ctx *gin.Context) {
 		HandleServerError(ctx, err, "error commiting transaction")
 		return
 	}
-	utils.Redirect(ctx, strings.ReplaceAll(g.RHouseID, ":id", model.HouseID.String()))
+	utils.Redirect(ctx, ctx.Request.Referer())
 }
 
 func (c *Controller) HtmxHouseCardUser(ctx *gin.Context) {
+	pId := ctx.Param("id") // pgtype.UUID does not do well with uri marshalling
+
 	var userID pgtype.UUID
-	id := ctx.Param("id") // pgtype.UUID does not do well with uri marshalling
-	err := userID.Scan(id)
+	err := userID.Scan(pId)
 	if err != nil {
 		utils.ErrorResponse(ctx, http.StatusForbidden, err)
 		return

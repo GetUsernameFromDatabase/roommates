@@ -21,7 +21,7 @@ templ HouseForm(model models.House) {
 		nameLabel := utils.T(ctx, locales.LKFormsHouseNameLabel, "House Name")
 
 		var title string
-		if model.HouseID.Valid {
+		if model.HouseID != "" {
 			title = utils.T(ctx, locales.LKFormsHouseTitle, "Modify house")
 		} else {
 			title = utils.T(ctx, locales.LKFormsHouseTitleNew, "Add new house")
@@ -30,8 +30,8 @@ templ HouseForm(model models.House) {
 		nameErrors := model.ValidateName()
 	}}
 	<form id={ HfId } class="space-y-3">
-		if model.HouseID.Valid {
-			<input type="hidden" name="house_id" value={ model.HouseID.String() }/>
+		if model.HouseID != "" {
+			<input type="hidden" name="house_id" value={ model.HouseID }/>
 		}
 		@FormTitle(title)
 		@InputWithLabel("text",
@@ -44,7 +44,7 @@ templ HouseForm(model models.House) {
 		)
 		@houseRoommatesInput(model)
 		<div class="mt-4" { htmxAttributes... }>
-			if !model.HouseID.Valid {
+			if model.HouseID == "" {
 				<button hx-post={ url } class="uk-btn uk-btn-primary block w-full">
 					{ strings.ToUpper(utils.T(ctx, locales.LKFormsSubmit, "SUBMIT")) }
 				</button>
@@ -52,17 +52,15 @@ templ HouseForm(model models.House) {
 				<div class="flex justify-between">
 					// currently htmx decides
 					<button
-						hx-delete={ url + "?id=" + model.HouseID.String() }
+						hx-delete={ url + "?id=" + model.HouseID }
 						hx-params="none"
 						class="uk-btn uk-btn-destructive"
 					>
 						{ strings.ToUpper(utils.T(ctx, locales.LKFormsDelete, "DELETE")) }
 					</button>
-					// WHY DOES hx-ext="json-enc" NOT SEND JSON
 					<button
 						hx-put={ url }
 						class="uk-btn uk-btn-primary"
-						hx-ext="json-enc"
 					>
 						{ strings.ToUpper(utils.T(ctx, locales.LKFormsUpdate, "UPDATE")) }
 					</button>

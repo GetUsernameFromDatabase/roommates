@@ -1,7 +1,6 @@
 package models
 
 import (
-	"errors"
 	l "roommates/locales"
 	"roommates/utils"
 
@@ -12,8 +11,8 @@ import (
 type House struct {
 	ModelBase
 	// non-visual
-	HouseID      pgtype.UUID `form:"house_id"`
-	RoommateKeys []string    `form:"roommates[]"`
+	HouseID      string   `form:"house_id"`
+	RoommateKeys []string `form:"roommates[]"`
 	// make sure to match indices with RoommateKeys
 	//  username of the id
 	RoommateLabels []string `form:"roommates_labels[]"`
@@ -110,9 +109,7 @@ func (m *House) IsValid() (bool, []l.LKMessage) {
 	return IsModelValid(m)
 }
 
-func (m *House) NeedsValidHouseID() error {
-	if m.HouseID.Valid {
-		return nil
-	}
-	return errors.New("house_id needs to be a valid UUID")
+func (m *House) ScanHouseID(houseID *pgtype.UUID) error {
+	err := houseID.Scan(m.HouseID)
+	return err
 }
