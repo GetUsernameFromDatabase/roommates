@@ -11,7 +11,6 @@ import (
 	"net/http"
 	"roommates/components"
 	"roommates/db/dbqueries"
-	"roommates/gintemplrenderer"
 	g "roommates/globals"
 	"roommates/middleware"
 	"roommates/models"
@@ -38,9 +37,8 @@ func insertUsersToHouse(ctx *gin.Context, q *dbqueries.Queries, roomateIDs []pgt
 }
 
 func renderHouseForm(ctx *gin.Context, model models.House) {
-	pc := components.HouseForm(model)
-	r := gintemplrenderer.New(ctx.Request.Context(), http.StatusOK, pc)
-	ctx.Render(r.Status, r)
+	tc := components.HouseForm(model)
+	RenderTempl(ctx, tc)
 }
 
 // populates the house model with info from database
@@ -83,9 +81,8 @@ func (c *Controller) HtmxRoomateSearch(ctx *gin.Context) {
 	switch method {
 	case http.MethodGet:
 		render := func(foundUsers []dbqueries.UsersLikeExcludingExistingRow) {
-			pc := components.HouseRoommatesInputSearchResults(model.SearchedUser, foundUsers)
-			r := gintemplrenderer.New(ctx.Request.Context(), http.StatusOK, pc)
-			ctx.Render(r.Status, r)
+			tc := components.HouseRoommatesInputSearchResults(model.SearchedUser, foundUsers)
+			RenderTempl(ctx, tc)
 		}
 
 		if model.SearchedUser == "" {
@@ -136,7 +133,6 @@ func (c *Controller) GetHtmxHouseForm(ctx *gin.Context) {
 		HandleServerError(ctx, err, "could not get house data")
 		return
 	}
-
 	renderHouseForm(ctx, model)
 }
 
@@ -282,7 +278,6 @@ func (c *Controller) HtmxHouseCardUser(ctx *gin.Context) {
 		return
 	}
 
-	pc := components.HouseCardUserLink(userID, username)
-	r := gintemplrenderer.New(ctx.Request.Context(), http.StatusOK, pc)
-	ctx.Render(r.Status, r)
+	tc := components.HouseCardUserLink(userID, username)
+	RenderTempl(ctx, tc)
 }

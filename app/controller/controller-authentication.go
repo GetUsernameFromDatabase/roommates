@@ -4,7 +4,6 @@ import (
 	"net/http"
 	"roommates/components"
 	"roommates/db/dbqueries"
-	"roommates/gintemplrenderer"
 	g "roommates/globals"
 	"roommates/locales"
 	"roommates/middleware"
@@ -175,8 +174,7 @@ func (c *Controller) PageLogin(ctx *gin.Context) {
 	method := ctx.Request.Method
 	render := func(model models.Login) {
 		page := components.PageLogin(model)
-		r := gintemplrenderer.New(ctx.Request.Context(), http.StatusOK, page)
-		ctx.Render(r.Status, r)
+		RenderTempl(ctx, page)
 	}
 
 	switch method {
@@ -232,8 +230,7 @@ func (c *Controller) PageRegister(ctx *gin.Context) {
 	method := ctx.Request.Method
 	render := func(model models.Register) {
 		page := components.PageRegister(model)
-		r := gintemplrenderer.New(ctx.Request.Context(), http.StatusOK, page)
-		ctx.Render(r.Status, r)
+		RenderTempl(ctx, page)
 	}
 
 	switch method {

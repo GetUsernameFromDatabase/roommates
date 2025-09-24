@@ -1,11 +1,14 @@
 package controller
 
 import (
+	"net/http"
 	"roommates/db/dbqueries"
+	"roommates/gintemplrenderer"
 	"roommates/logger"
 	"roommates/rdb"
 	"roommates/utils"
 
+	"github.com/a-h/templ"
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -44,4 +47,9 @@ func (c *Controller) GetDB() *dbqueries.Queries {
 
 func (c *Controller) GetRH() *rdb.RedisHandler {
 	return c.RH
+}
+
+func RenderTempl(ctx *gin.Context, component templ.Component) {
+	r := gintemplrenderer.New(ctx.Request.Context(), http.StatusOK, component)
+	ctx.Render(r.Status, r)
 }

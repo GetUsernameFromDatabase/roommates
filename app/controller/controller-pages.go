@@ -1,9 +1,7 @@
 package controller
 
 import (
-	"net/http"
 	"roommates/components"
-	"roommates/gintemplrenderer"
 	"roommates/middleware"
 	"roommates/utils"
 
@@ -19,86 +17,76 @@ func (c *Controller) PageMain(ctx *gin.Context) {
 		return
 	}
 
-	var pc templ.Component
+	var tc templ.Component
 	if utils.IsRequestHTMX(ctx) {
-		pc = components.MainPageContent(houses)
+		tc = components.MainPageContent(houses)
 	} else {
-		pc = components.PageMain(components.SPageWrapper{
+		tc = components.PageMain(components.SPageWrapper{
 			AuthInfo: authInfo,
 			PathURL:  ctx.Request.URL.Path,
 		}, houses)
 	}
-
-	r := gintemplrenderer.New(ctx.Request.Context(), http.StatusOK, pc)
-	ctx.Render(r.Status, r)
+	RenderTempl(ctx, tc)
 }
 
 func (c *Controller) PageProfile(ctx *gin.Context) {
 	authInfo := middleware.GetAuthInfo(ctx)
 
-	var pc templ.Component
+	var tc templ.Component
 	if utils.IsRequestHTMX(ctx) {
-		pc = components.ProfilePageContent()
+		tc = components.ProfilePageContent()
 	} else {
-		pc = components.PageProfile(components.SPageWrapper{
+		tc = components.PageProfile(components.SPageWrapper{
 			AuthInfo: authInfo,
 			PathURL:  ctx.Request.URL.Path,
 		})
 	}
-
-	r := gintemplrenderer.New(ctx.Request.Context(), http.StatusOK, pc)
-	ctx.Render(r.Status, r)
+	RenderTempl(ctx, tc)
 }
 
 func (c *Controller) PagePayments(ctx *gin.Context) {
 	authInfo := middleware.GetAuthInfo(ctx)
 
-	var pc templ.Component
+	var tc templ.Component
 	if utils.IsRequestHTMX(ctx) {
-		pc = components.PaymentsPageContent()
+		tc = components.PaymentsPageContent()
 	} else {
-		pc = components.PagePayments(components.SPageWrapper{
+		tc = components.PagePayments(components.SPageWrapper{
 			AuthInfo: authInfo,
 			PathURL:  ctx.Request.URL.Path,
 		})
 	}
-
-	r := gintemplrenderer.New(ctx.Request.Context(), http.StatusOK, pc)
-	ctx.Render(r.Status, r)
+	RenderTempl(ctx, tc)
 }
 
 func (c *Controller) PageNotes(ctx *gin.Context) {
 	authInfo := middleware.GetAuthInfo(ctx)
 
-	var pc templ.Component
+	var tc templ.Component
 	if utils.IsRequestHTMX(ctx) {
-		pc = components.NotesPageContent()
+		tc = components.NotesPageContent()
 	} else {
-		pc = components.PageNotes(components.SPageWrapper{
+		tc = components.PageNotes(components.SPageWrapper{
 			AuthInfo: authInfo,
 			PathURL:  ctx.Request.URL.Path,
 		})
 	}
-
-	r := gintemplrenderer.New(ctx.Request.Context(), http.StatusOK, pc)
-	ctx.Render(r.Status, r)
+	RenderTempl(ctx, tc)
 }
 
 func (c *Controller) PageMessaging(ctx *gin.Context) {
 	authInfo := middleware.GetAuthInfo(ctx)
 
-	var pc templ.Component
+	var tc templ.Component
 	if utils.IsRequestHTMX(ctx) {
-		pc = components.MessagingPageContent()
+		tc = components.MessagingPageContent()
 	} else {
-		pc = components.PageMessaging(components.SPageWrapper{
+		tc = components.PageMessaging(components.SPageWrapper{
 			AuthInfo: authInfo,
 			PathURL:  ctx.Request.URL.Path,
 		})
 	}
-
-	r := gintemplrenderer.New(ctx.Request.Context(), http.StatusOK, pc)
-	ctx.Render(r.Status, r)
+	RenderTempl(ctx, tc)
 }
 
 func (c *Controller) PageHouses(ctx *gin.Context) {
@@ -109,16 +97,14 @@ func (c *Controller) PageHouses(ctx *gin.Context) {
 		return
 	}
 
-	var pc templ.Component
+	var tc templ.Component
 	if utils.IsRequestHTMX(ctx) {
-		pc = components.HousesPageContent(houses)
+		tc = components.HousesPageContent(houses)
 	} else {
-		pc = components.PageHouses(components.SPageWrapper{
+		tc = components.PageHouses(components.SPageWrapper{
 			AuthInfo: authInfo,
 			PathURL:  ctx.Request.URL.Path,
 		}, houses)
 	}
-
-	r := gintemplrenderer.New(ctx.Request.Context(), http.StatusOK, pc)
-	ctx.Render(r.Status, r)
+	RenderTempl(ctx, tc)
 }
