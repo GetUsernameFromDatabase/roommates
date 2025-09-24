@@ -80,6 +80,8 @@ func InitRoutes(r *gin.Engine, c *controller.Controller) {
 		p.GET(g.RMessaging, c.PageMessaging)
 
 		p.GET(g.RHouses, c.PageHouses)
+		p.GET(g.RHouseID, c.PageHouse)
+
 		p.GET(g.RHtmxRoomateSearch, c.HtmxRoomateSearch)
 		p.POST(g.RHtmxRoomateSearch, c.HtmxRoomateSearch)
 

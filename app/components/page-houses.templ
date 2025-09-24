@@ -2,6 +2,7 @@ package components
 
 import "roommates/db/dbqueries"
 
+// page for all houses
 templ PageHouses(pwi SPageWrapper, houses []dbqueries.UserHousesRow) {
 	@HtmlWrap() {
 		@HeaderComponent("")
@@ -24,4 +25,20 @@ templ HousesPageContent(houses []dbqueries.UserHousesRow) {
 			}
 		</div>
 	</div>
+}
+
+// -----------------------------------------------------------------------------
+
+// Page for a single house view
+templ PageHouse(pwi SPageWrapper) {
+	@HtmlWrap() {
+		@HeaderComponent("")
+		@PageWrapper(pwi) {
+			@HousePageContent()
+		}
+	}
+}
+
+templ HousePageContent() {
+	TODO: notes, roommates, payments
 }

@@ -175,8 +175,7 @@ func (c *Controller) PostHtmxHouseForm(ctx *gin.Context) {
 	}
 
 	// TODO: self repairing url with house name + id, where only id is of importance
-	// utils.Redirect(ctx, strings.ReplaceAll(g.RHouseID, ":id", houseID.String())) // TODO: HOUSE SPECIFIC PAGE
-	utils.Redirect(ctx, g.RHouses)
+	utils.Redirect(ctx, strings.ReplaceAll(g.RHouseID, ":id", houseID.String()))
 }
 
 func (c *Controller) DeleteHouse(ctx *gin.Context) {
