@@ -36,7 +36,9 @@ if title == "" {
 		<script src="/assets/franken-ui@2.1.0-next.20.core.iife.js" type="module"></script>
 		<script src="/assets/franken-ui@2.1.0-next.20.icon.iife.js" type="module"></script>
 		// https://htmx.org/docs/#installing
-		<script src="/assets/htmx.2.0.6.min.js" type="module"></script>
+		<script src="/assets/htmx.2.0.6.min.js"></script>
+		// https://hyperscript.org/
+		<script src="/assets/hyperscript.org@0.9.14.min.js"></script>
 		<script>
 		// franken accessor key
 		const __fak__ = '__FRANKEN__'
@@ -71,6 +73,5 @@ if title == "" {
 		htmlElement.classList.add(__FRANKEN__.font || 'uk-font-sm');
 		htmlElement.classList.add(__FRANKEN__.chart || 'uk-chart-default');
 	</script>
-		@houseRoommatesInputSearchResultsScript()
 	</head>
 }

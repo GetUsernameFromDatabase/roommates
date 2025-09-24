@@ -113,7 +113,7 @@ func HousesPageContent(houses []dbqueries.UserHousesRow) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "<div class=\"bg-secondary content p-8\"><div class=\"grid grid-cols-4 gap-4\" style=\"grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "<div class=\"bg-secondary content p-8\"><div class=\"grid grid-cols-4 gap-4\" style=\"grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

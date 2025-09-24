@@ -72,7 +72,7 @@ templ profileAvatar(authInfo *rdb.UserSessionValue) {
 			avatarText = first + last
 		}
 	}}
-	<a href={ globals.RProfile } { HtmxPageSwapAttributes... }>
+	<a href={ globals.RProfile } { AtrHtmxPageSwap... }>
 		<div class="uk-avatar uk-avatar-rounded text-muted-foreground bg-muted">
 			<div class="uk-avatar-text">{ strings.ToUpper(avatarText) }</div>
 		</div>
@@ -185,7 +185,7 @@ templ navLi(routes [][]string, urlPath string) {
 						label := route[1]
 		}}
 		<li class={ templ.KV("uk-active", shouldBeActive(href)) }>
-			<a href={ href } { HtmxPageSwapAttributes... }>
+			<a href={ href } { AtrHtmxPageSwap... }>
 				{ label }
 			</a>
 		</li>

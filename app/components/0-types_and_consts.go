@@ -45,17 +45,22 @@ const IdRootLayout = "root-layout"
 // attributes for htmx elements
 var (
 	// hx boost, swapping innerHTML of IdRootLayout
-	HtmxPageSwapAttributes = templ.Attributes{
+	AtrHtmxPageSwap = templ.Attributes{
 		"hx-boost":  "true",
 		"hx-target": "#" + IdRootLayout,
 		"hx-swap":   "innerHTML",
 	}
 	// swaps out house form element on click
 	// be sure to add house_id when editing house
-	GetHtmxHouseForm = templ.Attributes{
+	AtrHtmxGetHouseForm = templ.Attributes{
 		"hx-get":     globals.RHtmxHouseForm,
 		"hx-target":  "#" + HfId,
 		"hx-swap":    "outerHTML",
 		"hx-trigger": "click",
 	}
+)
+
+// programmatic UIkit elements
+const (
+	uiKitHRISR = "UIkit.dropdown('#" + HfSearchResultsId + "')"
 )

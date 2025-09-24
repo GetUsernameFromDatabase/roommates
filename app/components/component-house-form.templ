@@ -2,6 +2,7 @@ package components
 
 import (
 	"encoding/json"
+	"fmt"
 	"roommates/db/dbqueries"
 	"roommates/globals"
 	"roommates/locales"
@@ -72,28 +73,28 @@ templ HouseForm(model models.House) {
 
 templ houseRoommatesInput(model models.House) {
 	<div class="">
-		@HouseRoommatesInputSearchResults("", nil)
 		<label class="uk-form-label" for="houseForm-roommates">
 			{ utils.T(ctx, locales.LKFormsHouseAddUsers, "Add Roommates") }
 		</label>
 		<div class="uk-form-controls">
+			// i do not like having to use delays -- wait Xms
+			// but afterSettle and afterSwap do not work
 			<input
 				id={ HfRoomateInputId }
 				name="searched_user"
 				type="text"
 				class="uk-input"
-				onfocus="showHRISR(this)"
-				onblur="hideHRISR()"
 				hx-get={ globals.RHtmxRoomateSearch }
 				hx-trigger="keyup changed delay:500ms"
 				hx-target={ "#" + HfSearchResultsId }
 				hx-swap="outerHTML"
 				hx-sync="closest form:abort"
 				hx-include="closest form"
+				_={ "on blur call " + uiKitHRISR + ".hide()" }
 			/>
-			// TODO: indicator for search results -- https://htmx.org/docs/#indicators
-			@HouseRoommatesInputData(model)
+			@HouseRoommatesInputSearchResults("", nil)
 		</div>
+		@HouseRoommatesInputData(model)
 	</div>
 }
 
@@ -103,11 +104,11 @@ templ HouseRoommatesInputData(model models.House) {
 			<div
 				data-index={ i }
 				class="m-1 cursor-pointer"
-				onclick="deleteHouseRoommatesInputDataElement(this)"
+				_="on click remove me"
 			>
 				// this should be fiiiiine
-				{{ keyValue := model.RoommateKeys[i] }}
-				<input type="hidden" name="roommates[]" value={ keyValue }/>
+				{{ key := model.RoommateKeys[i] }}
+				<input type="hidden" name="roommates[]" value={ key }/>
 				<input type="hidden" name="roommates_labels[]" value={ value }/>
 				<div class="uk-tag-secondary uk-tag">
 					<span>{ value }</span>
@@ -119,95 +120,54 @@ templ HouseRoommatesInputData(model models.House) {
 }
 
 templ HouseRoommatesInputSearchResults(searchedUser string, foundUsers []dbqueries.UsersLikeExcludingExistingRow) {
-	{{ class := "uk-card uk-card-body absolute" }}
-	if searchedUser == "" {
-		<div id={ HfSearchResultsId } hidden class={ class }></div>
-		{{ return }}
-	}
-	<div id={ HfSearchResultsId } class={ class }>
-		<p class="uk-text-meta mb-3">
-			{ utils.T(ctx, locales.LKSearchResultsFor, "Search results for %s", strconv.Quote(searchedUser)) }
-		</p>
-		// expected use case up to 10 users
-		for _, user := range foundUsers {
-			{{
+	{{
+		dropdownConfig := []string{
+			"animation: uk-anmt-slide-top-sm",
+			"pos: top-left",
+			"stretch: x",
+			"boundary-x: #" + HfRoomateInputId,
+			"mode: click",
+		}
+
+		hyperscript := fmt.Sprintf(
+			"on htmx:afterSettle if %s then call %[2]s.hide() else call %[2]s.show() end",
+			strconv.FormatBool(searchedUser == ""),
+			uiKitHRISR,
+		)
+	}}
+	<div
+		id={ HfSearchResultsId }
+		class="uk-drop uk-dropdown min-w-52"
+		data-uk-dropdown={ strings.Join(dropdownConfig, ";") }
+		_={ hyperscript }
+	>
+		<ul class="uk-nav uk-dropdown-nav p-1">
+			<li class="uk-text-meta">
+				{ utils.T(ctx, locales.LKSearchResultsFor, "Search results for %s", strconv.Quote(searchedUser)) }
+			</li>
+			<li class="uk-nav-divider"></li>
+			for _, user := range foundUsers {
+				// expected use case up to 10 users
+				{{
 				hValsData, _ := json.Marshal(map[string]string{
 					"user_id":    user.ID.String(),
 					"user_label": user.Username,
 				})
-			}}
-			<p
-				role="button"
-				data-key={ user.ID.String() }
-				class="cursor-pointer hover:bg-secondary"
-				hx-post={ globals.RHtmxRoomateSearch }
-				hx-trigger="click"
-				hx-target={ "#" + HfId }
-				hx-swap="outerHTML"
-				hx-sync="closest form:abort"
-				hx-vals={ string(hValsData) }
-			>
-				{ user.Username }
-			</p>
-		}
+				}}
+				<li
+					role="button"
+					data-key={ user.ID.String() }
+					class="cursor-pointer hover:bg-secondary"
+					hx-post={ globals.RHtmxRoomateSearch }
+					hx-trigger="click"
+					hx-target={ "#" + HfId }
+					hx-swap="outerHTML"
+					hx-sync="closest form:abort"
+					hx-vals={ string(hValsData) }
+				>
+					{ user.Username }
+				</li>
+			}
+		</ul>
 	</div>
-}
-
-templ houseRoommatesInputSearchResultsScript() {
-	<script>
-	function getHouseRoommatesInput() {
-		return document.getElementById({{ HfRoomateInputId }});
-	}
-	// HRISR -- HouseRoommatesInputSearchResults
-	function getHRISR() {
-		return document.getElementById({{ HfSearchResultsId }});
-	}
-
-	/**
-	* @param {HTMLElement | undefined} hrisr - HouseRoommatesInputSearchResults
-	*/
-	function positionHRISR(hrisr) {
-		const inputElement = getHouseRoommatesInput()
-		if (hrisr === undefined) {
-			hrisr = getHRISR()
-		}
-		hrisr.style.width = inputElement.offsetWidth + 'px'
-		hrisr.style.top = (inputElement.offsetTop - hrisr.offsetHeight - 24) + 'px'
-	}
-	function hideHRISR() {
-		const element = getHRISR();
-		// otherwise search results will be made hidden before click is able to be registered
-		setTimeout(() => {
-			element.hidden = true;
-		}, 200)
-	}
-	/**
-	* @param {HTMLInputElement} input
-	*/
-	function showHRISR(input) {
-		const element = getHRISR();
-		if (input.value === '') {
-			element.hidden = true
-			return
-		}
-		element.hidden = false;
-		positionHRISR(element) // redundant -- htmx:afterSettle should 'settle' the position matter
-	}
-	/**
-	* This is intended to be used on the element containing both 
-	*  label and key hidden input and the tag (visual side)
-	* @param {HTMLElement} element
-	*/
-	function deleteHouseRoommatesInputDataElement(element) {
-		element.remove()
-	}
-
-	document.addEventListener('htmx:afterSettle', function(evt) {
-		/** @type {HTMLElement} */
-		const element = evt.detail.elt
-		if (element.id === {{ HfSearchResultsId }}) {
-			positionHRISR(element)
-		}
-	})
-</script>
 }
