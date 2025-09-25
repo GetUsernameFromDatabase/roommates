@@ -223,16 +223,24 @@ func (c *Controller) PutHtmxHouseForm(ctx *gin.Context) {
 	defer tx.Rollback(ctx)
 	qtx := c.DB.WithTx(tx)
 
-	qtx.UpdateHouse(ctx, dbqueries.UpdateHouseParams{
-		Name: model.Name,
-		ID:   houseID,
-	})
-	qtx.DeleteHouseUsers(ctx, houseID)
+	// pointless to keep the house around when it empty
+	if len(roomateIDs) == 0 {
+		if err := c.DB.DeleteHouse(ctx, houseID); err != nil {
+			HandleServerError(ctx, err, "error commiting transaction")
+			return
+		}
+	} else {
+		qtx.UpdateHouse(ctx, dbqueries.UpdateHouseParams{
+			Name: model.Name,
+			ID:   houseID,
+		})
+		qtx.DeleteHouseUsers(ctx, houseID)
 
-	err = insertUsersToHouse(ctx, qtx, roomateIDs, houseID)
-	if err != nil {
-		HandleServerError(ctx, err, "error assigning users to house")
-		return
+		err = insertUsersToHouse(ctx, qtx, roomateIDs, houseID)
+		if err != nil {
+			HandleServerError(ctx, err, "error assigning users to house")
+			return
+		}
 	}
 
 	err = tx.Commit(ctx)
