@@ -2,6 +2,7 @@ package components
 
 import (
 	"encoding/json"
+	"github.com/invopop/ctxi18n/i18n"
 	"github.com/jackc/pgx/v5/pgtype"
 	"roommates/db/dbqueries"
 	"roommates/globals"
@@ -70,7 +71,7 @@ templ HouseCardUserLink(userID pgtype.UUID, username string) {
 
 templ houseCardUserBadge(userIds []pgtype.UUID) {
 	<span class="uk-badge">
-		{ utils.T(ctx, locales.LKHousesRoomateCount, "", len(userIds)) }
+		{ utils.N(ctx, locales.LKHousesRoomateCount, len(userIds), i18n.M{"count": len(userIds)}) }
 	</span>
 	<div
 		class="uk-drop uk-dropdown min-w-52"

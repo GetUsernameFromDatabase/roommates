@@ -48,6 +48,8 @@ const (
 	LKFormsUsernameTitle                  LK = "forms.username.title"
 	LKHousesNoHouses                      LK = "houses.no-houses"
 	LKHousesRoomateCount                  LK = "houses.roomate-count"
+	LKHousesRoomateCountOne               LK = "houses.roomate-count.one"
+	LKHousesRoomateCountOther             LK = "houses.roomate-count.other"
 	LKHousesYourHouses                    LK = "houses.your-houses"
 	LKLoginNoAccount                      LK = "login.no-account"
 	LKLoginRegister                       LK = "login.register"
