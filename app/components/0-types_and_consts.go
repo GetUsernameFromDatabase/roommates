@@ -44,6 +44,10 @@ const IdRootLayout = "root-layout"
 
 // attributes for htmx elements
 var (
+	AtrHtmxReplaceMeOnRevealed = templ.Attributes{
+		"hx-trigger": "revealed",
+		"hx-swap": "outerHTML",
+	}
 	// hx boost, swapping innerHTML of IdRootLayout
 	AtrHtmxPageSwap = templ.Attributes{
 		"hx-boost":  "true",

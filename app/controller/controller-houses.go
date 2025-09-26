@@ -16,7 +16,6 @@ import (
 	"roommates/models"
 	"roommates/utils"
 	"strconv"
-	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5/pgtype"
@@ -177,7 +176,7 @@ func (c *Controller) PostHtmxHouseForm(ctx *gin.Context) {
 	}
 
 	// TODO: self repairing url with house name + id, where only id is of importance
-	utils.Redirect(ctx, strings.ReplaceAll(g.RHouseID, ":id", houseID.String()))
+	utils.Redirect(ctx, utils.ReplaceParam(g.RHouseID, "id", houseID.String()))
 }
 
 func (c *Controller) DeleteHouse(ctx *gin.Context) {
@@ -253,22 +252,22 @@ func (c *Controller) PutHtmxHouseForm(ctx *gin.Context) {
 	utils.Redirect(ctx, ctx.Request.Referer())
 }
 
-func (c *Controller) HtmxHouseCardUser(ctx *gin.Context) {
-	pId := ctx.Param("id") // pgtype.UUID does not do well with uri marshalling
+func (c *Controller) HtmxHouseCardResidentsBadge(ctx *gin.Context) {
+	pId := ctx.Param("id")
 
-	var userID pgtype.UUID
-	err := userID.Scan(pId)
+	var houseID pgtype.UUID
+	err := houseID.Scan(pId)
 	if err != nil {
 		utils.ErrorResponse(ctx, http.StatusForbidden, err)
 		return
 	}
 
-	username, err := c.DB.SelectUsername(ctx, userID)
+	residents, err := c.DB.SelectHouseRoommates(ctx, houseID)
 	if err != nil {
-		HandleServerError(ctx, err, "could not get username")
+		HandleServerError(ctx, err, "could not get residents")
 		return
 	}
 
-	tc := components.HouseCardUserLink(userID, username)
+	tc := components.HouseResidentBadge(residents)
 	RenderTempl(ctx, tc)
 }

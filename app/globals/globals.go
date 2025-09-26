@@ -43,10 +43,10 @@ const (
 	RHouseID = RHouses + "/:id"
 
 	RUserID       = RUser + "/:id"
-	RHtmxUsername = RUserID + "/name"
 
 	RHtmxRoomateSearch = RHouses + "/roomate-search"
 	RHtmxHouseForm     = RHouses + "/house-form"
+	RHtmxHouseResidentsBadge = RHouseID + "/residents-badge"
 )
 
 // -----------------------------------------------------------------------------

@@ -2,7 +2,7 @@ package components
 
 import "roommates/db/dbqueries"
 
-templ PageMain(pwi SPageWrapper, houses []dbqueries.UserHousesRow) {
+templ PageMain(pwi SPageWrapper, houses []dbqueries.House) {
 	@HtmlWrap() {
 		@HeaderComponent("")
 		@PageWrapper(pwi) {
@@ -11,7 +11,7 @@ templ PageMain(pwi SPageWrapper, houses []dbqueries.UserHousesRow) {
 	}
 }
 
-templ MainPageContent(houses []dbqueries.UserHousesRow) {
+templ MainPageContent(houses []dbqueries.House) {
 	@houseAside(houses)
 	<div class="bg-secondary content">
 		LUUKE THERE IS NOTHING

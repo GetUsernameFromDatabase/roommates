@@ -62,6 +62,6 @@ et:
   houses:
     no-houses: 'Sa pole osa ühestki elamiskohast'
     your-houses: 'Sinu elamiskohad'
-    roomate-count:
+    resident-count:
       one: '1 elanik'
       other: '%{count} elanikku'

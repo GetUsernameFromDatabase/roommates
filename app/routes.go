@@ -90,7 +90,7 @@ func InitRoutes(r *gin.Engine, c *controller.Controller) {
 		p.PUT(g.RHtmxHouseForm, c.PutHtmxHouseForm)
 		p.DELETE(g.RHtmxHouseForm, c.DeleteHouse)
 
-		p.GET(g.RHtmxUsername, c.HtmxHouseCardUser)
+		p.GET(g.RHtmxHouseResidentsBadge, c.HtmxHouseCardResidentsBadge)
 	}
 
 	r.Static("/assets", "./assets/public")

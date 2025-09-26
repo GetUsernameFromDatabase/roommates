@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"strconv"
+	"strings"
 )
 
 func GetFileAndLine() string {
@@ -24,4 +25,14 @@ func RandomHtmlID(prefix string) string {
 		panic(err)
 	}
 	return prefix + "-" + hex.EncodeToString(b)
+}
+
+// replaces url param with desired value, will only replace the first occurrence
+//
+// Will add : in front of the parameter automatically
+//
+//	Example: (url="example/:id/example", param="id", value="bb")
+//	 Return: "example/bb/example"
+func ReplaceParam(url, param, value string) string {
+	return strings.Replace(url, ":"+param, value, 1)
 }

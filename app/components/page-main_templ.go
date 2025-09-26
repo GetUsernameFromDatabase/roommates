@@ -10,7 +10,7 @@ import templruntime "github.com/a-h/templ/runtime"
 
 import "roommates/db/dbqueries"
 
-func PageMain(pwi SPageWrapper, houses []dbqueries.UserHousesRow) templ.Component {
+func PageMain(pwi SPageWrapper, houses []dbqueries.House) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -83,7 +83,7 @@ func PageMain(pwi SPageWrapper, houses []dbqueries.UserHousesRow) templ.Componen
 	})
 }
 
-func MainPageContent(houses []dbqueries.UserHousesRow) templ.Component {
+func MainPageContent(houses []dbqueries.House) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {

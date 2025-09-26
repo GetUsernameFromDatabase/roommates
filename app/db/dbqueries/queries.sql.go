@@ -31,22 +31,6 @@ func (q *Queries) DeleteHouseUsers(ctx context.Context, houseID pgtype.UUID) err
 	return err
 }
 
-const deleteUserFromHouse = `-- name: DeleteUserFromHouse :exec
-DELETE FROM user_houses
-WHERE user_id = $1
-  AND house_id = $2
-`
-
-type DeleteUserFromHouseParams struct {
-	UserID  pgtype.UUID `json:"user_id"`
-	HouseID pgtype.UUID `json:"house_id"`
-}
-
-func (q *Queries) DeleteUserFromHouse(ctx context.Context, arg DeleteUserFromHouseParams) error {
-	_, err := q.db.Exec(ctx, deleteUserFromHouse, arg.UserID, arg.HouseID)
-	return err
-}
-
 const getUserCredentials = `-- name: GetUserCredentials :one
 SELECT id,
   email,
@@ -162,6 +146,7 @@ WHERE u.id IN (
     FROM user_houses
     WHERE house_id = $1
   )
+ORDER BY u.username
 `
 
 type SelectHouseRoommatesRow struct {
@@ -189,19 +174,6 @@ func (q *Queries) SelectHouseRoommates(ctx context.Context, houseID pgtype.UUID)
 	return items, nil
 }
 
-const selectUsername = `-- name: SelectUsername :one
-SELECT username
-FROM users
-WHERE id = $1
-`
-
-func (q *Queries) SelectUsername(ctx context.Context, id pgtype.UUID) (string, error) {
-	row := q.db.QueryRow(ctx, selectUsername, id)
-	var username string
-	err := row.Scan(&username)
-	return username, err
-}
-
 const updateHouse = `-- name: UpdateHouse :exec
 UPDATE houses
 SET name = $1
@@ -220,34 +192,27 @@ func (q *Queries) UpdateHouse(ctx context.Context, arg UpdateHouseParams) error 
 
 const userHouses = `-- name: UserHouses :many
 SELECT h.id,
-  h.name,
-  ARRAY_AGG(uh.user_id)::UUID [] as user_ids
+  h.name
 FROM houses h
-  LEFT JOIN user_houses uh ON uh.house_id = h.id
 WHERE h.id IN (
     SELECT house_id
     FROM user_houses uh
     WHERE uh.user_id = $1
   )
 GROUP BY h.id
+ORDER BY h.name
 `
 
-type UserHousesRow struct {
-	ID      pgtype.UUID   `json:"id"`
-	Name    string        `json:"name"`
-	UserIds []pgtype.UUID `json:"user_ids"`
-}
-
-func (q *Queries) UserHouses(ctx context.Context, userID pgtype.UUID) ([]UserHousesRow, error) {
+func (q *Queries) UserHouses(ctx context.Context, userID pgtype.UUID) ([]House, error) {
 	rows, err := q.db.Query(ctx, userHouses, userID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []UserHousesRow
+	var items []House
 	for rows.Next() {
-		var i UserHousesRow
-		if err := rows.Scan(&i.ID, &i.Name, &i.UserIds); err != nil {
+		var i House
+		if err := rows.Scan(&i.ID, &i.Name); err != nil {
 			return nil, err
 		}
 		items = append(items, i)

@@ -21,16 +21,15 @@ VALUES ($1, $2, $3, $4, $5)
 RETURNING id;
 -- name: UserHouses :many
 SELECT h.id,
-  h.name,
-  ARRAY_AGG(uh.user_id)::UUID [] as user_ids
+  h.name
 FROM houses h
-  LEFT JOIN user_houses uh ON uh.house_id = h.id
 WHERE h.id IN (
     SELECT house_id
     FROM user_houses uh
     WHERE uh.user_id = $1
   )
-GROUP BY h.id;
+GROUP BY h.id
+ORDER BY h.name;
 -- name: UsersLikeExcludingExisting :many
 SELECT id,
   username
@@ -57,14 +56,6 @@ WHERE id = $1;
 -- name: DeleteHouseUsers :exec
 DELETE FROM user_houses
 WHERE house_id = $1;
--- name: DeleteUserFromHouse :exec
-DELETE FROM user_houses
-WHERE user_id = $1
-  AND house_id = $2;
--- name: SelectUsername :one
-SELECT username
-FROM users
-WHERE id = $1;
 -- name: SelectHouseRoommates :many
 SELECT u.id,
   u.username
@@ -73,7 +64,8 @@ WHERE u.id IN (
     SELECT user_id
     FROM user_houses
     WHERE house_id = $1
-  );
+  )
+ORDER BY u.username;
 -- name: SelectHouse :one
 SELECT name
 FROM houses

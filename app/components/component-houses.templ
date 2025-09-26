@@ -3,16 +3,14 @@ package components
 import (
 	"encoding/json"
 	"github.com/invopop/ctxi18n/i18n"
-	"github.com/jackc/pgx/v5/pgtype"
 	"roommates/db/dbqueries"
 	"roommates/globals"
 	"roommates/locales"
 	"roommates/models"
 	"roommates/utils"
-	"strings"
 )
 
-templ houseAside(houses []dbqueries.UserHousesRow) {
+templ houseAside(houses []dbqueries.House) {
 	<aside class="max-md:hidden p-4 space-y-6">
 		<div>
 			<button
@@ -53,35 +51,20 @@ templ HouseModal(model models.House) {
 	</div>
 }
 
-templ HouseCardUserLink(userID pgtype.UUID, username string) {
-	{{ url := strings.ReplaceAll(globals.RHtmxUsername, ":id", userID.String()) }}
-	<a href={ url } { AtrHtmxPageSwap... }>
-		{ username }
-	</a>
-}
-
-templ houseCardUserBadge(userIds []pgtype.UUID) {
+templ HouseResidentBadge(residents []dbqueries.SelectHouseRoommatesRow) {
 	<span class="uk-badge">
-		{ utils.N(ctx, locales.LKHousesRoomateCount, len(userIds), i18n.M{"count": len(userIds)}) }
+		{ utils.N(ctx, locales.LKHousesResidentCount, len(residents), i18n.M{"count": len(residents)}) }
 	</span>
 	<div
 		class="uk-drop uk-dropdown min-w-52"
 		data-uk-dropdown="animation: uk-anmt-slide-top-sm"
 	>
 		<ul class="uk-nav uk-dropdown-nav">
-			for _, userID := range userIds {
-				{{ url := strings.ReplaceAll(globals.RHtmxUsername, ":id", userID.String()) }}
+			for _, resident := range residents {
+				{{ url := utils.ReplaceParam(globals.RUserID, "id", resident.ID.String()) }}
 				<li>
-					// TODO: when htmx trigger on visible becomes then maybe change to that
-					// current way is fine
-					<a
-						hx-get={ url }
-						hx-trigger="revealed"
-						hx-target="this"
-						hx-swap="outerHTML"
-					>
-						// htmx is expected to replace this
-						UNDEFINED
+					<a href={ url } { AtrHtmxPageSwap... }>
+						{ resident.Username }
 					</a>
 				</li>
 			}
@@ -89,7 +72,7 @@ templ houseCardUserBadge(userIds []pgtype.UUID) {
 	</div>
 }
 
-templ houseCard(house dbqueries.UserHousesRow) {
+templ houseCard(house dbqueries.House) {
 	<div
 		class="uk-card uk-card-body space-y-4"
 	>
@@ -101,7 +84,10 @@ templ houseCard(house dbqueries.UserHousesRow) {
 				{ house.Name }
 			</a>
 		</h3>
-		@houseCardUserBadge(house.UserIds)
+		<div
+			hx-get={ utils.ReplaceParam(globals.RHtmxHouseResidentsBadge, "id", house.ID.String()) }
+			{ AtrHtmxReplaceMeOnRevealed... }
+		></div>
 		// <div class="uk-card-body"></div>
 		<div class="uk-card-footer flex justify-center">
 			{{
