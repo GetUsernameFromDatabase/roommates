@@ -85,7 +85,7 @@ func InitRoutes(r *gin.Engine, c *controller.Controller) {
 		p.GET(g.RHtmxRoomateSearch, c.HtmxRoomateSearch)
 		p.POST(g.RHtmxRoomateSearch, c.HtmxRoomateSearch)
 
-		p.GET(g.RHtmxHouseForm, c.GetHtmxHouseForm)
+		p.GET(g.RHtmxHouseForm, c.GetHtmxHouseModal)
 		p.POST(g.RHtmxHouseForm, c.PostHtmxHouseForm)
 		p.PUT(g.RHtmxHouseForm, c.PutHtmxHouseForm)
 		p.DELETE(g.RHtmxHouseForm, c.DeleteHouse)

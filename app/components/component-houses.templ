@@ -15,7 +15,13 @@ import (
 templ houseAside(houses []dbqueries.UserHousesRow) {
 	<aside class="max-md:hidden p-4 space-y-6">
 		<div>
-			@houseModal(EOpener)
+			<button
+				class="uk-btn uk-btn-default w-full cursor-pointer"
+				hx-get={ globals.RHtmxHouseForm }
+				{ AtrHtmxSwapModal... }
+			>
+				{ utils.T(ctx, locales.LKFormsHouseTitleNew, "New House") }
+			</button>
 		</div>
 		if len(houses) > 0 {
 			<div>
@@ -39,27 +45,12 @@ templ houseAside(houses []dbqueries.UserHousesRow) {
 	</aside>
 }
 
-// EOpener is meant for use in the aside menu and is for a new house
-templ houseModal(element ElementType) {
-	switch element {
-		case EOpener:
-			<a
-				class="uk-btn uk-btn-default w-full"
-				href={ "#" + HfModalId }
-				data-uk-toggle
-				{ AtrHtmxGetHouseForm... }
-			>
-				{ utils.T(ctx, locales.LKFormsHouseTitleNew, "New House") }
-			</a>
-		case EModal:
-			<div id={ HfModalId } class="uk-flex-top uk-modal" data-uk-modal>
-				<div class="uk-modal-dialog uk-modal-body uk-margin-auto-vertical overflow-visible">
-					@HouseForm(models.House{})
-				</div>
-			</div>
-		default:
-			NOT IMPLEMENTED ({ element }) -- { utils.GetFileAndLine() }
-	}
+templ HouseModal(model models.House) {
+	<div id={ HfModalId } class="uk-flex-top uk-modal" data-uk-modal>
+		<div class="uk-modal-dialog uk-modal-body uk-margin-auto-vertical overflow-visible">
+			@HouseForm(model)
+		</div>
+	</div>
 }
 
 templ HouseCardUserLink(userID pgtype.UUID, username string) {
@@ -120,9 +111,9 @@ templ houseCard(house dbqueries.UserHousesRow) {
 			}}
 			<button
 				class="uk-btn uk-btn-primary"
-				data-uk-toggle={ "target: #" + HfModalId }
-				{ AtrHtmxGetHouseForm... }
+				hx-get={ globals.RHtmxHouseForm }
 				hx-vals={ string(hValsData) }
+				{ AtrHtmxSwapModal... }
 			>
 				{ utils.T(ctx, locales.LKFormsEdit, "EDIT") }
 			</button>

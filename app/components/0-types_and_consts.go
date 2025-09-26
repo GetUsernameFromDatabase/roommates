@@ -2,7 +2,6 @@
 package components
 
 import (
-	"roommates/globals"
 	"roommates/rdb"
 
 	"github.com/a-h/templ"
@@ -15,6 +14,7 @@ type LabelClass string
 // used to get desired element from templ component
 //
 // useful to have related elements in one place
+//  NB: not to be used anymore, use htmx to replace modal-here and then open with hyperscript
 type ElementType string
 
 const (
@@ -50,14 +50,18 @@ var (
 		"hx-target": "#" + IdRootLayout,
 		"hx-swap":   "innerHTML",
 	}
-	// swaps out house form element on click
-	// be sure to add house_id when editing house
-	AtrHtmxGetHouseForm = templ.Attributes{
-		"hx-get":     globals.RHtmxHouseForm,
-		"hx-target":  "#" + HfId,
-		"hx-swap":    "outerHTML",
-		"hx-trigger": "click",
+	// swap inner of #modal-here with modal then open with hyperscript
+	AtrHtmxSwapModal = templ.Attributes{
+		"hx-target": "#modal-here",
+		"hx-swap": "innerHTML",
+		"_": HSOpenModal,
 	}
+)
+
+// hyperscript constants
+const (
+	// open modal after htmx load 
+	HSOpenModal = "on htmx:afterOnLoad wait 10ms then call UIkit.modal('#modal-here > *').show()"
 )
 
 // programmatic UIkit elements

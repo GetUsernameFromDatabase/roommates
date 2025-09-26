@@ -13,7 +13,6 @@ templ PageHouses(pwi SPageWrapper, houses []dbqueries.UserHousesRow) {
 }
 
 templ HousesPageContent(houses []dbqueries.UserHousesRow) {
-	@houseModal(EModal)
 	@houseAside(houses)
 	<div class="bg-secondary content p-8">
 		<div

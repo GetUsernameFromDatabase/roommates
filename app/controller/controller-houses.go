@@ -116,7 +116,7 @@ func (c *Controller) HtmxRoomateSearch(ctx *gin.Context) {
 	}
 }
 
-func (c *Controller) GetHtmxHouseForm(ctx *gin.Context) {
+func (c *Controller) GetHtmxHouseModal(ctx *gin.Context) {
 	var model models.House
 	model.HouseID = ctx.Query("house_id")
 
@@ -125,7 +125,9 @@ func (c *Controller) GetHtmxHouseForm(ctx *gin.Context) {
 		HandleServerError(ctx, err, "could not get house data")
 		return
 	}
-	renderHouseForm(ctx, model)
+
+	tc := components.HouseModal(model)
+	RenderTempl(ctx, tc)
 }
 
 func (c *Controller) PostHtmxHouseForm(ctx *gin.Context) {
