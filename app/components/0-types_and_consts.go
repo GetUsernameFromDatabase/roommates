@@ -14,7 +14,8 @@ type LabelClass string
 // used to get desired element from templ component
 //
 // useful to have related elements in one place
-//  NB: not to be used anymore, use htmx to replace modal-here and then open with hyperscript
+//
+//	NB: not to be used anymore, use htmx to replace modal-here and then open with hyperscript
 type ElementType string
 
 const (
@@ -32,7 +33,6 @@ const (
 	HfId              = "house-form"
 	HfSearchResultsId = "HouseRoommatesInputSearchResults"
 	HfRoomateInputId  = "houseForm-roommates-input"
-	HfModalId         = "house-modal"
 )
 
 type SPageWrapper struct {
@@ -46,7 +46,7 @@ const IdRootLayout = "root-layout"
 var (
 	AtrHtmxReplaceMeOnRevealed = templ.Attributes{
 		"hx-trigger": "revealed",
-		"hx-swap": "outerHTML",
+		"hx-swap":    "outerHTML",
 	}
 	// hx boost, swapping innerHTML of IdRootLayout
 	AtrHtmxPageSwap = templ.Attributes{
@@ -57,15 +57,26 @@ var (
 	// swap inner of #modal-here with modal then open with hyperscript
 	AtrHtmxSwapModal = templ.Attributes{
 		"hx-target": "#modal-here",
-		"hx-swap": "innerHTML",
-		"_": HSOpenModal,
+		"hx-swap":   "innerHTML",
+		"_":         HSOpenModal,
 	}
 )
 
 // hyperscript constants
 const (
-	// open modal after htmx load 
+	// open modal after htmx load
 	HSOpenModal = "on htmx:afterOnLoad wait 10ms then call UIkit.modal('#modal-here > *').show()"
+	// this is a solution to the problem caused by HSOpenModal putting modal outside of #modal-here
+	// and essentially endlessly duplicating the modal in the dom on modal open
+	//
+	// I do not want to change HSOpenModal as that is a solution to visual problems
+	// caused by following htmx uikit modal example https://htmx.org/examples/modal-uikit/
+	//  - no need to deal with closing it manually as uikit handles that
+	//  - will not work the same way as examples are on franken-ui
+	//
+	// wait 1s is used to allow animations to run their course, would like to get rid of it
+	// but could not find a quick way to react to visibility change
+	HSRemoveModalWhenHidden = "on mutation of @class if not me.classList.contains('uk-open') then wait 1s then remove me"
 )
 
 // programmatic UIkit elements

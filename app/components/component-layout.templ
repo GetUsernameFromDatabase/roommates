@@ -11,7 +11,7 @@ import (
 // wraps content with `<body>` tag and adds navigation bar on top
 templ PageWrapper(pwi SPageWrapper) {
 	<body class="bg-background text-foreground antialiased h-full">
-	<div id="modal-here"></div>
+		<div id="modal-here"></div>
 		@search(EModal)
 		@navigation(EModal, pwi.PathURL)
 		// navbar

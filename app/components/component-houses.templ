@@ -44,7 +44,11 @@ templ houseAside(houses []dbqueries.House) {
 }
 
 templ HouseModal(model models.House) {
-	<div id={ HfModalId } class="uk-flex-top uk-modal" data-uk-modal>
+	<div
+		data-uk-modal
+		class="uk-flex-top uk-modal"
+		_={ HSRemoveModalWhenHidden }
+	>
 		<div class="uk-modal-dialog uk-modal-body uk-margin-auto-vertical overflow-visible">
 			@HouseForm(model)
 		</div>

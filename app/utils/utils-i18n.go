@@ -20,7 +20,7 @@ func T(ctx context.Context, key locales.LK, defaultValue string, args ...any) st
 // wrapper of i18n.N
 //
 // i18nMap i18n.M is used since without it %!(EXTRA ...) is added on plural rule
-//  which does not need arguments like %s or %d
+// which does not need arguments like %s or %d
 func N(ctx context.Context, key locales.LK, count int, i18nMap i18n.M, args ...any) string {
 	return i18n.N(ctx, string(key), count, append(args, i18nMap)...)
 }
