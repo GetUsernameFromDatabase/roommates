@@ -2,6 +2,7 @@
 package components
 
 import (
+	"encoding/json"
 	"roommates/rdb"
 
 	"github.com/a-h/templ"
@@ -11,6 +12,14 @@ import (
 // will override default `uk-form-label`
 type LabelClass string
 
+// get icon from https://lucide.dev/icons/?focus
+type Icon string
+
+type SPageWrapper struct {
+	AuthInfo *rdb.UserSessionValue
+	PathURL  string
+}
+
 // used to get desired element from templ component
 //
 // useful to have related elements in one place
@@ -18,6 +27,7 @@ type LabelClass string
 //	NB: not to be used anymore, use htmx to replace modal-here and then open with hyperscript
 type ElementType string
 
+// TODO: get rid of this
 const (
 	// meant to make an element visible, modal or commannd
 	EOpener ElementType = "open"
@@ -25,8 +35,33 @@ const (
 	EModal ElementType = "modal"
 )
 
-// get icon from https://lucide.dev/icons/?focus
-type Icon string
+// ---| vars ---
+
+// attributes for htmx elements
+var (
+	AtrHxReplaceMeOnRevealed = templ.Attributes{
+		"hx-trigger": "revealed",
+		"hx-swap":    "outerHTML",
+	}
+	// hx boost, swapping innerHTML of IdRootLayout
+	AtrHxPageSwap = templ.Attributes{
+		"hx-boost":  "true",
+		"hx-target": "#" + IdRootLayout,
+		"hx-swap":   "innerHTML",
+	}
+	// swap inner of #modal-here with modal then open with hyperscript
+	AtrHxSwapModal = templ.Attributes{
+		"hx-target": "#modal-here",
+		"hx-swap":   "innerHTML",
+		"_":         HSOpenModal,
+	}
+)
+
+// --- vars |---
+
+// ---| consts ---
+
+const IdRootLayout = "root-layout"
 
 // id for house form element
 const (
@@ -35,31 +70,9 @@ const (
 	HfRoomateInputId  = "houseForm-roommates-input"
 )
 
-type SPageWrapper struct {
-	AuthInfo *rdb.UserSessionValue
-	PathURL  string
-}
-
-const IdRootLayout = "root-layout"
-
-// attributes for htmx elements
-var (
-	AtrHtmxReplaceMeOnRevealed = templ.Attributes{
-		"hx-trigger": "revealed",
-		"hx-swap":    "outerHTML",
-	}
-	// hx boost, swapping innerHTML of IdRootLayout
-	AtrHtmxPageSwap = templ.Attributes{
-		"hx-boost":  "true",
-		"hx-target": "#" + IdRootLayout,
-		"hx-swap":   "innerHTML",
-	}
-	// swap inner of #modal-here with modal then open with hyperscript
-	AtrHtmxSwapModal = templ.Attributes{
-		"hx-target": "#modal-here",
-		"hx-swap":   "innerHTML",
-		"_":         HSOpenModal,
-	}
+// id for house note element
+const (
+	HnId = "house-note"
 )
 
 // hyperscript constants
@@ -83,3 +96,22 @@ const (
 const (
 	uiKitHRISR = "UIkit.dropdown('#" + HfSearchResultsId + "')"
 )
+
+// --- consts |---
+
+// ---| funcs ---
+
+func FormSwapOuterHxAttributes(id string) templ.Attributes {
+	return templ.Attributes{
+		"hx-swap":   "outerHTML",
+		"hx-target": "#" + id,
+	}
+}
+
+// json marshals the map and converts it into string
+func HxValsData(data map[string]string) string {
+	marshalled, _ := json.Marshal(data)
+	return string(marshalled)
+}
+
+// --- funcs |---
