@@ -1,14 +1,4 @@
 {
-  "Error check": {
-    "prefix": "err",
-    "scope": "go,templ",
-    "body": [
-      "if err != nil {",
-      "\treturn ${1:nil}, err",
-      "}"
-    ],
-    "description": "Basic error check"
-  },
   "Franken Icon": {
     "prefix": "icon",
     "scope": "templ",
@@ -19,7 +9,7 @@
     ],
     "description": "https://franken-ui.dev/docs/2.1/icon"
   },
-  "Model Validator":{
+  "Model Validator": {
     "prefix": "mvalidate",
     "scope": "go",
     "body": [
@@ -34,7 +24,7 @@
     ],
     "description": "https://templ.guide/syntax-and-usage/forms#create-a-view-model"
   },
-  "Validatable Model":{
+  "Validatable Model": {
     "prefix": "mvalidatable",
     "scope": "go",
     "body": [
@@ -58,5 +48,15 @@
       "}"
     ],
     "description": "Used to apply methods to struct that align with validatable model interface"
+  },
+  "New Controller": {
+    "prefix": "ccontroller",
+    "scope": "go",
+    "body": [
+      "func (c *Controller) ${1:GetHx}(ctx *gin.Context) {",
+      "\t$0",
+      "}"
+    ],
+    "description": "Snippet for a new controller"
   }
 }
