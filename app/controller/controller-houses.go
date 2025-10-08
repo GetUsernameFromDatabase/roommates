@@ -249,7 +249,7 @@ func (c *Controller) PutHtmxHouseForm(ctx *gin.Context) {
 		HandleServerError(ctx, err, "error commiting transaction")
 		return
 	}
-	utils.Redirect(ctx, ctx.Request.Referer())
+	utils.Redirect(ctx, "")
 }
 
 func (c *Controller) HtmxHouseCardResidentsBadge(ctx *gin.Context) {

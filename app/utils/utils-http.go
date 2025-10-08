@@ -65,7 +65,13 @@ func IsRequestHTMX(ctx *gin.Context) bool {
 }
 
 // redirects htmx request with header, otherwise uses ctx.Redirect with status see other
+//
+//	if location == "" then ctx.Request.Referer() will be used
 func Redirect(ctx *gin.Context, location string) {
+	if location == "" {
+		location = ctx.Request.Referer()
+	}
+
 	if IsRequestHTMX(ctx) {
 		ctx.Header(string(g.HHXRedirect), location)
 	} else {
