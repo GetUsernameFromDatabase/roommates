@@ -131,3 +131,7 @@ templ ToggleSwitch(id, name, label string, checked bool) {
 		<label class="uk-form-label" for="toggle-switch">{ label }</label>
 	</div>
 }
+
+templ HiddenInput(name, value string) {
+	<input type="hidden" name={ name } value={ value }/>
+}

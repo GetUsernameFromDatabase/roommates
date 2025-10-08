@@ -31,9 +31,7 @@ templ HouseForm(model models.House) {
 		nameErrors := model.ValidateName()
 	}}
 	<form id={ HfId } class="space-y-3">
-		if model.HouseID != "" {
-			<input type="hidden" name="house_id" value={ model.HouseID }/>
-		}
+		@HiddenInput("house_id", model.HouseID)
 		@FormTitle(title)
 		@InputWithLabel("text",
 			"houseForm-name",
@@ -108,8 +106,8 @@ templ HouseRoommatesInputData(model models.House) {
 			>
 				// this should be fiiiiine
 				{{ key := model.RoommateKeys[i] }}
-				<input type="hidden" name="roommates[]" value={ key }/>
-				<input type="hidden" name="roommates_labels[]" value={ value }/>
+				@HiddenInput("roommates[]", key)
+				@HiddenInput("roommates_labels[]", value)
 				<div class="uk-tag-secondary uk-tag">
 					<span>{ value }</span>
 					<uk-icon icon="x"></uk-icon>
