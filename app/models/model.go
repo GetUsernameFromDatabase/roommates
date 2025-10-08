@@ -1,6 +1,9 @@
 package models
 
-import l "roommates/locales"
+import (
+	l "roommates/locales"
+	"roommates/utils"
+)
 
 type ModelBase struct {
 	// validation errors are shown if false
@@ -30,6 +33,22 @@ func ValidateModel(m Validatable) (msgs []l.LKMessage) {
 	validators := m.GetValidators()
 	for _, validator := range validators {
 		msgs = append(msgs, validator()...)
+	}
+	return msgs
+}
+
+func StringValidationMessages(validationMap map[utils.StringValidatorProblems]bool) (msgs []l.LKMessage) {
+	digitOrLetterErrorAlreadyAdded := true
+	for charProblem := range validationMap {
+		switch charProblem {
+		case utils.VSDigit, utils.VSLetter:
+			if !digitOrLetterErrorAlreadyAdded {
+				msgs = append(msgs, l.LKMessage{Key: l.LKFormsErrorsOnlyLettersAndDigits})
+			}
+			digitOrLetterErrorAlreadyAdded = true
+		case utils.VSSpaces:
+			msgs = append(msgs, l.LKMessage{Key: l.LKFormsErrorsNoMultipleSpaces})
+		}
 	}
 	return msgs
 }

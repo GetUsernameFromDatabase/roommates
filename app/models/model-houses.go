@@ -35,21 +35,9 @@ func (m *House) ValidateName() (msgs []l.LKMessage) {
 	charProblems := utils.ValidateString(m.Name, utils.RuneValidationRules{
 		LettersAllowed:       true,
 		DigitsAllowed:        true,
-		MaxConsecutiveSpaces: -1,
+		MaxConsecutiveSpaces: 1,
 	})
-
-	digitOrLetterErrorAlreadyAdded := true
-	for charProblem := range charProblems {
-		switch charProblem {
-		case utils.VSDigit, utils.VSLetter:
-			if !digitOrLetterErrorAlreadyAdded {
-				msgs = append(msgs, l.LKMessage{Key: l.LKFormsErrorsOnlyLettersAndDigits})
-			}
-			digitOrLetterErrorAlreadyAdded = true
-		case utils.VSSpaces:
-			msgs = append(msgs, l.LKMessage{Key: l.LKFormsErrorsNoMultipleSpaces})
-		}
-	}
+	msgs = append(msgs, StringValidationMessages(charProblems)...)
 
 	return msgs
 }
