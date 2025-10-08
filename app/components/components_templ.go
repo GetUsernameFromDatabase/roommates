@@ -95,7 +95,7 @@ func HeaderComponent(title string) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "</title><link rel=\"stylesheet\" href=\"/assets/custom.css\"><link rel=\"stylesheet\" href=\"/assets/franken-ui@2.1.0.core.min.css\"><link rel=\"stylesheet\" href=\"/assets/franken-ui@2.1.0.utilities.min.css\"><script src=\"/assets/franken-ui@2.1.0.core.iife.js\" type=\"module\"></script><script src=\"/assets/franken-ui@2.1.0.icon.iife.js\" type=\"module\"></script><script src=\"/assets/htmx.org@2.0.7.min.js\"></script><script src=\"/assets/hyperscript.org@0.9.14.min.js\"></script><script>\n\t\t// franken accessor key\n\t\tconst __fak__ = '__FRANKEN__'\n\t\t/**\n\t\t* Franken UI theming\n\t\t* @see {@link https://franken-ui.dev/docs/2.1/theming}\n\t\t* \n\t\t* @type {{ \n\t\t*   theme?: string, \n\t\t*   radii?: string, \n\t\t*   shadows?: string, \n\t\t*   font?: string, \n\t\t*   chart?: string \n\t\t* }}\n\t\t*/\n\t\tconst __FRANKEN__ = JSON.parse(localStorage.getItem(__fak__) || '{}');\n\t\tconst htmlElement = document.documentElement;\n\n\t\tif (\n\t\t\t__FRANKEN__.mode === \"dark\" ||\n\t\t\t(!__FRANKEN__.mode &&\n\t\t\t\twindow.matchMedia(\"(prefers-color-scheme: dark)\").matches)\n\t\t) {\n\t\t\thtmlElement.classList.add(\"dark\");\n\t\t} else {\n\t\t\thtmlElement.classList.remove(\"dark\");\n\t\t}\n\n\t\thtmlElement.classList.add(__FRANKEN__.theme || 'uk-theme-teal');\n\t\thtmlElement.classList.add(__FRANKEN__.radii || 'uk-radii-md');\n\t\thtmlElement.classList.add(__FRANKEN__.shadows || 'uk-shadows-sm');\n\t\thtmlElement.classList.add(__FRANKEN__.font || 'uk-font-sm');\n\t\thtmlElement.classList.add(__FRANKEN__.chart || 'uk-chart-default');\n\t</script></head>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "</title><link rel=\"stylesheet\" href=\"/assets/custom.css\"><link rel=\"stylesheet\" href=\"/assets/franken-ui@2.1.0.core.min.css\"><link rel=\"stylesheet\" href=\"/assets/franken-ui@2.1.0.utilities.min.css\"><script src=\"/assets/franken-ui@2.1.0.core.iife.js\" type=\"module\"></script><script src=\"/assets/franken-ui@2.1.0.icon.iife.js\" type=\"module\"></script><script src=\"/assets/htmx.org@2.0.7.min.js\"></script><script src=\"/assets/hyperscript.org@0.9.14.min.js\"></script><script id=\"franken-init-script\">\n\t\t// franken accessor key\n\t\tconst __fak__ = '__FRANKEN__'\n\t\t/**\n\t\t* Franken UI theming\n\t\t* @see {@link https://franken-ui.dev/docs/2.1/theming}\n\t\t* \n\t\t* @type {{ \n\t\t*   theme?: string, \n\t\t*   radii?: string, \n\t\t*   shadows?: string, \n\t\t*   font?: string, \n\t\t*   chart?: string \n\t\t* }}\n\t\t*/\n\t\tconst __FRANKEN__ = JSON.parse(localStorage.getItem(__fak__) || '{}');\n\t\tconst htmlElement = document.documentElement;\n\n\t\tif (\n\t\t\t__FRANKEN__.mode === \"dark\" ||\n\t\t\t(!__FRANKEN__.mode &&\n\t\t\t\twindow.matchMedia(\"(prefers-color-scheme: dark)\").matches)\n\t\t) {\n\t\t\thtmlElement.classList.add(\"dark\");\n\t\t} else {\n\t\t\thtmlElement.classList.remove(\"dark\");\n\t\t}\n\n\t\thtmlElement.classList.add(__FRANKEN__.theme || 'uk-theme-teal');\n\t\thtmlElement.classList.add(__FRANKEN__.radii || 'uk-radii-md');\n\t\thtmlElement.classList.add(__FRANKEN__.shadows || 'uk-shadows-sm');\n\t\thtmlElement.classList.add(__FRANKEN__.font || 'uk-font-sm');\n\t\thtmlElement.classList.add(__FRANKEN__.chart || 'uk-chart-default');\n\t</script><script>\n\t\tasync function sleepUntilFound(checkFn, interval = 20) {\n\t\t\twhile (!checkFn()) {\n\t\t\t\tawait new Promise(r => setTimeout(r, interval));\n\t\t\t}\n\t\t}\n\t</script></head>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -103,4 +103,119 @@ func HeaderComponent(title string) templ.Component {
 	})
 }
 
+// https://htmx.org/docs/#indicators
+func HxIndicator() templ.Component {
+	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
+		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
+		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
+			return templ_7745c5c3_CtxErr
+		}
+		templ_7745c5c3_Buffer, templ_7745c5c3_IsBuffer := templruntime.GetBuffer(templ_7745c5c3_W)
+		if !templ_7745c5c3_IsBuffer {
+			defer func() {
+				templ_7745c5c3_BufErr := templruntime.ReleaseBuffer(templ_7745c5c3_Buffer)
+				if templ_7745c5c3_Err == nil {
+					templ_7745c5c3_Err = templ_7745c5c3_BufErr
+				}
+			}()
+		}
+		ctx = templ.InitializeContext(ctx)
+		templ_7745c5c3_Var4 := templ.GetChildren(ctx)
+		if templ_7745c5c3_Var4 == nil {
+			templ_7745c5c3_Var4 = templ.NopComponent
+		}
+		ctx = templ.ClearChildren(ctx)
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "<div class=\"size-4 animate-spin htmx-indicator\"><uk-icon icon=\"loader-circle\"></uk-icon></div>")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		return nil
+	})
+}
+
+// https://franken-ui.dev/docs/2.1/modal
+func ModalWrap() templ.Component {
+	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
+		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
+		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
+			return templ_7745c5c3_CtxErr
+		}
+		templ_7745c5c3_Buffer, templ_7745c5c3_IsBuffer := templruntime.GetBuffer(templ_7745c5c3_W)
+		if !templ_7745c5c3_IsBuffer {
+			defer func() {
+				templ_7745c5c3_BufErr := templruntime.ReleaseBuffer(templ_7745c5c3_Buffer)
+				if templ_7745c5c3_Err == nil {
+					templ_7745c5c3_Err = templ_7745c5c3_BufErr
+				}
+			}()
+		}
+		ctx = templ.InitializeContext(ctx)
+		templ_7745c5c3_Var5 := templ.GetChildren(ctx)
+		if templ_7745c5c3_Var5 == nil {
+			templ_7745c5c3_Var5 = templ.NopComponent
+		}
+		ctx = templ.ClearChildren(ctx)
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "<div class=\"uk-flex-top uk-modal\" data-uk-modal _=\"")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		var templ_7745c5c3_Var6 string
+		templ_7745c5c3_Var6, templ_7745c5c3_Err = templ.JoinStringErrs(HSRemoveModalWhenHidden)
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/components.templ`, Line: 98, Col: 29}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var6))
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 7, "\"><div class=\"uk-modal-dialog uk-modal-body uk-margin-auto-vertical overflow-visible\">")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templ_7745c5c3_Var5.Render(ctx, templ_7745c5c3_Buffer)
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 8, "</div></div>")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		return nil
+	})
+}
+
+// intended to be returned as a response to remove the modal
+//
+// sets of a chain of event which will cause the modal to remove itself
+// searches for closest uk-modal and removes it's uk-open
+func RemoveModal() templ.Component {
+	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
+		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
+		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
+			return templ_7745c5c3_CtxErr
+		}
+		templ_7745c5c3_Buffer, templ_7745c5c3_IsBuffer := templruntime.GetBuffer(templ_7745c5c3_W)
+		if !templ_7745c5c3_IsBuffer {
+			defer func() {
+				templ_7745c5c3_BufErr := templruntime.ReleaseBuffer(templ_7745c5c3_Buffer)
+				if templ_7745c5c3_Err == nil {
+					templ_7745c5c3_Err = templ_7745c5c3_BufErr
+				}
+			}()
+		}
+		ctx = templ.InitializeContext(ctx)
+		templ_7745c5c3_Var7 := templ.GetChildren(ctx)
+		if templ_7745c5c3_Var7 == nil {
+			templ_7745c5c3_Var7 = templ.NopComponent
+		}
+		ctx = templ.ClearChildren(ctx)
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 9, "<div _=\"on load remove .uk-open from the closest .uk-modal\"></div>")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		return nil
+	})
+}
+
+// TODO: wrapper of utils.T, auto add context essentially
 var _ = templruntime.GeneratedTemplate
