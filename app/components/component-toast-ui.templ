@@ -1,0 +1,64 @@
+package components
+
+// keep in mind, this just keeps it once per request
+var toastUIEdditorAssetHandler = templ.NewOnceHandle()
+
+// js and css of toast ui editor
+//
+// @see https://github.com/nhn/tui.editor/tree/master/apps/editor
+templ ToastUIEditorAssets() {
+	// version is in the file (version 3.2.2 | Fri Feb 17 2023)
+	<script src="/assets/toastui-editor.min.js"></script>
+	// version is in the file (version 3.2.2 | Fri Feb 17 2023)
+	<link rel="stylesheet" href="/assets/toastui-editor.min.css"/>
+	<script>
+	// TODO: fix redeclaration shit
+	if (!("toastUIEditors" in window)) {
+		window.toastUIEditors = {}
+	}
+	</script>
+}
+
+// gets a string that gets the md value of tui
+// meant to be used with htmx
+//
+//	example: hx-vals={ "js:{content: " + TuiValue(contentElID) + "}" }
+func TuiValue(key string) string {
+	// I will keep this here since ease of keeping this in sync with the above
+	// outweighs the one off benefit of having an easier time of renaming the func
+	// plus only templ components are meant to use this anyway
+	return "toastUIEditors['" + key + "'].getMarkdown()"
+}
+
+templ TuiViewer(id, content string) {
+	@toastUIEdditorAssetHandler.Once() {
+		@ToastUIEditorAssets()
+	}
+	<div id={ id }></div>
+	<script type="module">
+		await sleepUntilFound(() => "toastui" in window);
+
+		toastUIEditors[{{ id }}] = new toastui.Editor.factory({
+			el: document.getElementById({{ id }}),
+			initialValue: {{ content }},
+			viewer: true,
+		})
+	</script>
+}
+
+templ TuiWYSIWYG(id, content string) {
+	@toastUIEdditorAssetHandler.Once() {
+		@ToastUIEditorAssets()
+	}
+	<div id={ id }></div>
+	<script type="module">
+		await sleepUntilFound(() => "toastui" in window);
+
+		toastUIEditors[{{ id }}] = new toastui.Editor({
+			el: document.getElementById({{ id }}),
+			initialValue: {{ content }},
+			height: '500px',
+			initialEditType: 'wysiwyg'
+		})
+	</script>
+}
