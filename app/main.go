@@ -56,9 +56,9 @@ func main() {
 	}
 
 	migrationDir := "./db/migrations"
-	db.MigrateToLatest(dbpool, migrationDir)
 	// to reset database should it be required
 	// db.NewMigrations(dbpool, migrationDir).MigrateTo(0)
+	db.MigrateToLatest(dbpool, migrationDir)
 
 	redisHandler := rdb.New()
 	controllers := controller.New(dbpool, redisHandler)

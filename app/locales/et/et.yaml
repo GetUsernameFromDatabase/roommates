@@ -11,6 +11,7 @@ et:
       error-empty: 'Nimi ei tohi olla tühi'
     content:
       title: 'Sisu'
+      error-empty: 'Sisu ei tohi olla tühi'
     email:
       title: 'E-Posti Address'
       error-generic: 'Vale e-posti address'
@@ -65,3 +66,5 @@ et:
     resident-count:
       one: '1 elanik'
       other: '%{count} elanikku'
+  notes:
+    new: 'Uus märge'

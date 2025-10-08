@@ -13,6 +13,7 @@ type LKMessage struct {
 
 const (
 	LKAppTitle                            LK = "app.title"
+	LKFormsContentErrorEmpty              LK = "forms.content.error-empty"
 	LKFormsContentTitle                   LK = "forms.content.title"
 	LKFormsDelete                         LK = "forms.delete"
 	LKFormsEdit                           LK = "forms.edit"
@@ -59,6 +60,7 @@ const (
 	LKNavbarNotes                         LK = "navbar.notes"
 	LKNavbarPayments                      LK = "navbar.payments"
 	LKNavbarProfile                       LK = "navbar.profile"
+	LKNotesNew                            LK = "notes.new"
 	LKRegisterAlreadyHaveAccount          LK = "register.already-have-account"
 	LKRegisterTitle                       LK = "register.title"
 	LKSearchResultsFor                    LK = "search-results-for"

@@ -34,5 +34,9 @@ func RandomHtmlID(prefix string) string {
 //	Example: (url="example/:id/example", param="id", value="bb")
 //	 Return: "example/bb/example"
 func ReplaceParam(url, param, value string) string {
+	// TODO: maybe templ sanitize the urls
+	// most likely will return templ safe url to avoiding duplicate url sanitization
+	// will be slightly tedious to type cast into string
+	// https://templ.guide/syntax-and-usage/attributes/#url-attributes
 	return strings.Replace(url, ":"+param, value, 1)
 }
