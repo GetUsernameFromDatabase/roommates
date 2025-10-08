@@ -10,7 +10,7 @@ import templruntime "github.com/a-h/templ/runtime"
 
 import "roommates/db/dbqueries"
 
-func PageMain(pwi SPageWrapper, houses []dbqueries.House) templ.Component {
+func PageMain(pwi SPageWrapper, houses []dbqueries.UserHousesRow) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -83,7 +83,7 @@ func PageMain(pwi SPageWrapper, houses []dbqueries.House) templ.Component {
 	})
 }
 
-func MainPageContent(houses []dbqueries.House) templ.Component {
+func MainPageContent(houses []dbqueries.UserHousesRow) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -104,11 +104,15 @@ func MainPageContent(houses []dbqueries.House) templ.Component {
 			templ_7745c5c3_Var4 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "<div class=\"grid-aside-content\">")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
 		templ_7745c5c3_Err = houseAside(houses).Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "<div class=\"bg-secondary content\">LUUKE THERE IS NOTHING</div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "<div class=\"bg-secondary content\">DASHBOARD VIEW OF NOTES, PAYMENTS MESSAGES UNDER HOUSEs<br><br>- I am unsure if I want to index by updated_at to get functionality of:<br>> Hey, there have been changes of a note or whatever since the last time you checked<br>> So I guess I will go with the solution of sorting by updated_at then <br>> showing what is the latest and user will have to use their own memory (terrible idea, I know)<br><br>- Definitely do want to show the amount of and latest change of each category (note, payment, etc)<br><br>- link to house gate opener, well a system that allows to add these sorts of things?<br></div></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

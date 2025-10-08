@@ -1,33 +1,142 @@
 package components
 
 import (
+	"roommates/db/dbqueries"
+	"roommates/globals"
 	"roommates/locales"
+	"roommates/middleware"
 	"roommates/models"
 	"roommates/utils"
+	"strconv"
+	"strings"
 )
 
-templ NoteAddForm(model models.Note, isNew bool) {
-	{{
-	nameLabel := utils.T(ctx, locales.LKFormsNameTitle, "Name")
-	contentLabel := utils.T(ctx, locales.LKFormsContentTitle, "Content")
-
-	var title string
-	if isNew {
-		title = utils.T(ctx, locales.LKFormsNoteTitleNew, "New Note", model.Name)
-	} else {
-		title = utils.T(ctx, locales.LKFormsNoteTitle, "Note", model.Name)
+templ NoteModal(model *models.Note) {
+	@ModalWrap() {
+		@NoteForm(model)
 	}
+}
+
+templ NoteForm(model *models.Note) {
+	{{
+		var title string
+		if model.Title == "" {
+			title = utils.T(ctx, locales.LKFormsNoteTitleNew, "New Note", strconv.Quote(model.HouseName))
+		} else {
+			title = utils.T(ctx, locales.LKFormsNoteTitle, "Note", strconv.Quote(model.HouseName))
+		}
+
+		contentElID := utils.RandomHtmlID("note_form")
 	}}
-	// TODO: endpoint
-	<form class="space-y-3">
+	<form id={ HnId } class="space-y-3">
+		@HiddenInput("house_id", model.HouseID)
+		@HiddenInput("id", strconv.Itoa(int(model.ID)))
 		@FormTitle(title)
 		@InputWithLabel("text",
 			"add-note-name",
-			"name",
-			nameLabel,
-			model.Name,
+			"title",
+			utils.T(ctx, locales.LKFormsNameTitle, "Name"),
+			model.Title,
 			LabelClass("uk-form-label uk-form-label-required"),
+			ValidationMessages(model.ValidateTitle()),
 		)
-		@TextareaWithLabel("add-note-content", "content", contentLabel)
+		<div>
+			<label class="uk-form-label uk-form-label-required" for={ contentElID }>
+				{ utils.T(ctx, locales.LKFormsContentTitle, "Content") }
+			</label>
+			@TuiWYSIWYG(contentElID, model.Content)
+			@ValidationMessages(model.ValidateContent())
+		</div>
+		<div class="mt-4" { FormSwapOuterHxAttributes(HnId)... }>
+			if model.ID == 0 {
+				<button
+					class="uk-btn uk-btn-primary block w-full"
+					hx-post={ utils.ReplaceParam(globals.RHxNoteForm, "id", model.HouseID) }
+					hx-vals={ "js:{content: " + TuiValue(contentElID) + "}" }
+				>
+					{ strings.ToUpper(utils.T(ctx, locales.LKFormsSubmit, "SUBMIT")) }
+				</button>
+			} else {
+				<div class="flex justify-between">
+					{{ url := utils.ReplaceParam(globals.RNoteID, "id", model.GetIDString()) }}
+					// currently htmx decides
+					<button
+						class="uk-btn uk-btn-destructive"
+						hx-delete={ url }
+						hx-params="none"
+					>
+						{ strings.ToUpper(utils.T(ctx, locales.LKFormsDelete, "DELETE")) }
+					</button>
+					<button
+						class="uk-btn uk-btn-primary"
+						hx-put={ url }
+						hx-vals={ "js:{content: " + TuiValue(contentElID) + "}" }
+					>
+						{ strings.ToUpper(utils.T(ctx, locales.LKFormsUpdate, "UPDATE")) }
+					</button>
+				</div>
+			}
+		</div>
 	</form>
+}
+
+templ noteHouseAccordionLi(house dbqueries.SelectUserHousesWithNotesRow) {
+	<li>
+		<a class="uk-accordion-title" href>
+			<div>
+				{ house.HouseName }
+				<span class="uk-badge">{ len(house.NoteIds) }</span>
+			</div>
+			<div class="flex items-center">
+				<button
+					class="uk-btn uk-btn-ghost"
+					hx-get={ utils.ReplaceParam(globals.RHxNoteForm, "id", house.HouseID.String()) }
+					{ AtrHxSwapModal... }
+				>
+					{ utils.T(ctx, locales.LKNotesNew, "New Note") }
+				</button>
+				<span class="uk-accordion-icon">
+					<uk-icon icon="chevron-down"></uk-icon>
+				</span>
+			</div>
+		</a>
+		<div class="uk-accordion-content">
+			for _, noteID := range house.NoteIds {
+				{{ url := utils.ReplaceParam(globals.RHxNoteInHouseAccordion, "id", strconv.Itoa(int(noteID))) }}
+				<div
+					hx-get={ url }
+					{ AtrHxReplaceMeOnRevealed... }
+				></div>
+			}
+		</div>
+	</li>
+}
+
+templ NoteInHouseAccordion(note dbqueries.SelectNoteRow) {
+	// contemplating whether to convert note type into the note model
+	{{
+		strNoteID := strconv.Itoa(int(note.NoteID))
+		tuiID := "view_note-" + strNoteID
+		isMaker := middleware.GetAuthInfoReq(ctx).UserID.String() == note.MakerID.String()
+	}}
+	<div class="uk-card max-w-sm">
+		<div class="uk-card-header">
+			<h3 class="uk-card-title">{ note.Title }</h3>
+		</div>
+		<div class="uk-card-body">
+			@TuiViewer(tuiID, note.Content)
+		</div>
+		if isMaker {
+			<div class="uk-card-footer flex justify-end">
+				<button
+					class="uk-btn uk-btn-default"
+					hx-get={ utils.ReplaceParam(globals.RHxNoteForm, "id", note.HouseID.String()) }
+					hx-vals={ HxValsData(map[string]string{"note_id": strNoteID}) }
+					{ AtrHxSwapModal... }
+				>
+					{ utils.T(ctx, locales.LKFormsEdit, "Edit") }
+				</button>
+			</div>
+		}
+	</div>
 }

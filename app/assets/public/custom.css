@@ -28,19 +28,34 @@
   }
 }
 
-#root-layout {
+#root-layout > .grid-aside-content {
   grid-template-columns: repeat(1, minmax(0, 1fr));
   grid-template-areas: 'content';
 }
 @media (width>=48rem) {
-  #root-layout {
+  #root-layout > .grid-aside-content {
+    display: grid;
     grid-template-columns: 18rem minmax(0, 1fr);
     grid-template-areas: 'aside content';
+    min-height: 100dvh;
+  }
+
+  #root-layout > .grid-aside-content > aside {
+    grid-area: aside;
+  }
+
+  #root-layout > .grid-aside-content > .content {
+    grid-area: content;
   }
 }
-#root-layout > aside {
-  grid-area: aside;
+
+/* ----- ANIMATIONS ----- */
+.animate-spin {
+  animation: spin 1s linear infinite
 }
-#root-layout > .content {
-  grid-area: content;
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
 }

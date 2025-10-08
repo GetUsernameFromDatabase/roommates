@@ -1,14 +1,22 @@
 package components
 
-templ PageNotes(pwi SPageWrapper) {
+import "roommates/db/dbqueries"
+
+templ PageNotes(pwi SPageWrapper, houses []dbqueries.SelectUserHousesWithNotesRow) {
 	@HtmlWrap() {
 		@HeaderComponent("")
 		@PageWrapper(pwi) {
-			@NotesPageContent()
+			@NotesPageContent(houses)
 		}
 	}
 }
 
-templ NotesPageContent() {
-	WIP -- Notes PAGE -- WIP
+templ NotesPageContent(houses []dbqueries.SelectUserHousesWithNotesRow) {
+	<div class="p-8">
+		<ul class="uk-accordion space-y-1" data-uk-accordion="multiple: true">
+			for _, house := range houses {
+				@noteHouseAccordionLi(house)
+			}
+		</ul>
+	</div>
 }

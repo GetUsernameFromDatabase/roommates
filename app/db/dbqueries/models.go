@@ -177,12 +177,16 @@ type Conversation struct {
 }
 
 type House struct {
-	ID   pgtype.UUID `json:"id"`
-	Name string      `json:"name"`
+	ID        pgtype.UUID        `json:"id"`
+	Name      string             `json:"name"`
+	MakerID   pgtype.UUID        `json:"maker_id"`
+	CreatedAt pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
 }
 
 type HouseNote struct {
 	ID        int32              `json:"id"`
+	Title     string             `json:"title"`
 	Content   string             `json:"content"`
 	HouseID   pgtype.UUID        `json:"house_id"`
 	MakerID   pgtype.UUID        `json:"maker_id"`
@@ -233,13 +237,15 @@ type Message struct {
 }
 
 type User struct {
-	ID               pgtype.UUID `json:"id"`
-	Email            string      `json:"email"`
-	EmailValidated   bool        `json:"email_validated"`
-	Username         string      `json:"username"`
-	Password         string      `json:"password"`
-	FullName         *string     `json:"full_name"`
-	IsFullNamePublic bool        `json:"is_full_name_public"`
+	ID               pgtype.UUID        `json:"id"`
+	Email            string             `json:"email"`
+	EmailValidated   bool               `json:"email_validated"`
+	Username         string             `json:"username"`
+	Password         string             `json:"password"`
+	FullName         *string            `json:"full_name"`
+	IsFullNamePublic bool               `json:"is_full_name_public"`
+	CreatedAt        pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt        pgtype.Timestamptz `json:"updated_at"`
 }
 
 type UserContactInformation struct {

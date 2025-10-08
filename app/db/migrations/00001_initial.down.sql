@@ -28,7 +28,10 @@ DROP TABLE IF EXISTS user_contact_information;
 --
 DROP TABLE IF EXISTS user_houses;
 --
+DROP TRIGGER IF EXISTS mdt_houses ON houses;
+DROP INDEX IF EXISTS idxh_houses_maker_id;
 DROP TABLE IF EXISTS houses;
 --
+DROP TRIGGER IF EXISTS mdt_users ON users;
 DROP INDEX IF EXISTS idxh_users_email;
 DROP TABLE IF EXISTS users;

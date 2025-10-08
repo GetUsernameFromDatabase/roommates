@@ -1,7 +1,6 @@
 package components
 
 import (
-	"encoding/json"
 	"fmt"
 	"roommates/db/dbqueries"
 	"roommates/globals"
@@ -12,13 +11,9 @@ import (
 	"strings"
 )
 
-templ HouseForm(model models.House) {
+templ HouseForm(model *models.House) {
 	{{
-		const url = globals.RHtmxHouseForm
-		htmxAttributes := templ.Attributes{
-			"hx-swap":   "outerHTML",
-			"hx-target": "#" + HfId,
-		}
+		const url = globals.RHxHouseForm
 		nameLabel := utils.T(ctx, locales.LKFormsHouseNameLabel, "House Name")
 
 		var title string
@@ -42,24 +37,24 @@ templ HouseForm(model models.House) {
 			ValidationMessages(nameErrors),
 		)
 		@houseRoommatesInput(model)
-		<div class="mt-4" { htmxAttributes... }>
+		<div class="mt-4" { FormSwapOuterHxAttributes(HfId)... }>
 			if model.HouseID == "" {
 				<button hx-post={ url } class="uk-btn uk-btn-primary block w-full">
 					{ strings.ToUpper(utils.T(ctx, locales.LKFormsSubmit, "SUBMIT")) }
 				</button>
 			} else {
 				<div class="flex justify-between">
-					// currently htmx decides
+					// TODO: test how id in hx-vals would be
 					<button
+						class="uk-btn uk-btn-destructive"
 						hx-delete={ url + "?id=" + model.HouseID }
 						hx-params="none"
-						class="uk-btn uk-btn-destructive"
 					>
 						{ strings.ToUpper(utils.T(ctx, locales.LKFormsDelete, "DELETE")) }
 					</button>
 					<button
-						hx-put={ url }
 						class="uk-btn uk-btn-primary"
+						hx-put={ url }
 					>
 						{ strings.ToUpper(utils.T(ctx, locales.LKFormsUpdate, "UPDATE")) }
 					</button>
@@ -69,7 +64,7 @@ templ HouseForm(model models.House) {
 	</form>
 }
 
-templ houseRoommatesInput(model models.House) {
+templ houseRoommatesInput(model *models.House) {
 	<div class="">
 		<label class="uk-form-label" for="houseForm-roommates">
 			{ utils.T(ctx, locales.LKFormsHouseAddUsers, "Add Roommates") }
@@ -82,7 +77,7 @@ templ houseRoommatesInput(model models.House) {
 				name="searched_user"
 				type="text"
 				class="uk-input"
-				hx-get={ globals.RHtmxRoomateSearch }
+				hx-get={ globals.RHxRoomateSearch }
 				hx-trigger="keyup changed delay:500ms"
 				hx-target={ "#" + HfSearchResultsId }
 				hx-swap="outerHTML"
@@ -96,7 +91,7 @@ templ houseRoommatesInput(model models.House) {
 	</div>
 }
 
-templ HouseRoommatesInputData(model models.House) {
+templ HouseRoommatesInputData(model *models.House) {
 	<div class="mt-2 flex flex-wrap">
 		for i, value := range model.RoommateLabels {
 			<div
@@ -147,21 +142,21 @@ templ HouseRoommatesInputSearchResults(searchedUser string, foundUsers []dbqueri
 			for _, user := range foundUsers {
 				// expected use case up to 10 users
 				{{
-				hValsData, _ := json.Marshal(map[string]string{
+				hxVals := HxValsData(map[string]string{
 					"user_id":    user.ID.String(),
-					"user_label": user.Username,
-				})
+					"user_label": user.Username},
+				)
 				}}
 				<li
 					role="button"
 					data-key={ user.ID.String() }
 					class="cursor-pointer hover:bg-secondary"
-					hx-post={ globals.RHtmxRoomateSearch }
+					hx-post={ globals.RHxRoomateSearch }
 					hx-trigger="click"
 					hx-target={ "#" + HfId }
 					hx-swap="outerHTML"
 					hx-sync="closest form:abort"
-					hx-vals={ string(hValsData) }
+					hx-vals={ hxVals }
 				>
 					{ user.Username }
 				</li>

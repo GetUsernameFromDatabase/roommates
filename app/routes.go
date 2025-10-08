@@ -82,15 +82,21 @@ func InitRoutes(r *gin.Engine, c *controller.Controller) {
 		p.GET(g.RHouses, c.PageHouses)
 		p.GET(g.RHouseID, c.PageHouse)
 
-		p.GET(g.RHtmxRoomateSearch, c.HtmxRoomateSearch)
-		p.POST(g.RHtmxRoomateSearch, c.HtmxRoomateSearch)
+		p.GET(g.RHxRoomateSearch, c.HxRoomateSearch)
+		p.POST(g.RHxRoomateSearch, c.HxRoomateSearch)
 
-		p.GET(g.RHtmxHouseForm, c.GetHtmxHouseModal)
-		p.POST(g.RHtmxHouseForm, c.PostHtmxHouseForm)
-		p.PUT(g.RHtmxHouseForm, c.PutHtmxHouseForm)
-		p.DELETE(g.RHtmxHouseForm, c.DeleteHouse)
+		p.GET(g.RHxHouseForm, c.GetHxHouseModal)
+		p.POST(g.RHxHouseForm, c.PostHxHouseForm)
+		p.PUT(g.RHxHouseForm, c.PutHxHouseForm)
+		p.DELETE(g.RHxHouseForm, c.DeleteHouse)
 
-		p.GET(g.RHtmxHouseResidentsBadge, c.HtmxHouseCardResidentsBadge)
+		p.GET(g.RHxHouseResidentsBadge, c.HxHouseCardResidentsBadge)
+		p.GET(g.RHxNoteInHouseAccordion, c.HxNoteInHouseAccordion)
+
+		p.GET(g.RHxNoteForm, c.GetHxNoteModal)
+		p.POST(g.RHxNoteForm, c.PostHxNote)
+		p.PUT(g.RNoteID, c.PutHxNote)
+		p.DELETE(g.RNoteID, c.DeleteNote)
 	}
 
 	r.Static("/assets", "./assets/public")

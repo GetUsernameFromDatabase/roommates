@@ -21,6 +21,25 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+// did the authenticated user make the house, will not ensure that house exists
+//
+// will log error if it occurs
+func isHouseMaker(ctx *gin.Context, q *dbqueries.Queries, houseID pgtype.UUID) bool {
+	authInfo := middleware.GetAuthInfo(ctx)
+	isMaker, err := q.IsUserHouseMaker(ctx, dbqueries.IsUserHouseMakerParams{
+		HouseID: houseID,
+		UserID:  authInfo.UserID,
+	})
+
+	if err != nil {
+		log.Error().Err(err).Caller().
+			Str("house_id", houseID.String()).
+			Str("user_id", authInfo.UserID.String()).
+			Msg("")
+	}
+	return isMaker
+}
+
 func insertUsersToHouse(ctx *gin.Context, q *dbqueries.Queries, roomateIDs []pgtype.UUID, houseID pgtype.UUID) error {
 	for _, roomateID := range roomateIDs {
 		// not expecting hundreds of assignements here so should be fine
@@ -35,7 +54,7 @@ func insertUsersToHouse(ctx *gin.Context, q *dbqueries.Queries, roomateIDs []pgt
 	return nil
 }
 
-func renderHouseForm(ctx *gin.Context, model models.House) {
+func renderHouseForm(ctx *gin.Context, model *models.House) {
 	tc := components.HouseForm(model)
 	RenderTempl(ctx, tc)
 }
@@ -44,19 +63,18 @@ func renderHouseForm(ctx *gin.Context, model models.House) {
 //
 // used when rendering a form for editing a house
 func (c *Controller) populateHouseModel(ctx *gin.Context, model *models.House) error {
-	var houseID pgtype.UUID
-	model.ScanHouseID(&houseID)
+	houseID := model.GetHouseID()
 	if !houseID.Valid {
 		// will signal to have new house
 		model.HouseID = ""
 		return nil
 	}
 
-	name, err := c.DB.SelectHouse(ctx, houseID)
+	house, err := c.DB.SelectHouse(ctx, houseID)
 	if err != nil {
 		return err
 	}
-	model.Name = name
+	model.Name = house.Name
 
 	roommates, err := c.DB.SelectHouseRoommates(ctx, houseID)
 	if err != nil {
@@ -70,7 +88,7 @@ func (c *Controller) populateHouseModel(ctx *gin.Context, model *models.House) e
 	return nil
 }
 
-func (c *Controller) HtmxRoomateSearch(ctx *gin.Context) {
+func (c *Controller) HxRoomateSearch(ctx *gin.Context) {
 	var model models.House
 	ctx.ShouldBind(&model)
 	model.Initial = true
@@ -109,13 +127,13 @@ func (c *Controller) HtmxRoomateSearch(ctx *gin.Context) {
 		model.RoommateKeys = append(model.RoommateKeys, userId)
 		model.RoommateLabels = append(model.RoommateLabels, userLabel)
 
-		renderHouseForm(ctx, model)
+		renderHouseForm(ctx, &model)
 	default:
 		ctx.String(http.StatusMethodNotAllowed, "method %s not allowed", method)
 	}
 }
 
-func (c *Controller) GetHtmxHouseModal(ctx *gin.Context) {
+func (c *Controller) GetHxHouseModal(ctx *gin.Context) {
 	var model models.House
 	model.HouseID = ctx.Query("house_id")
 
@@ -125,24 +143,27 @@ func (c *Controller) GetHtmxHouseModal(ctx *gin.Context) {
 		return
 	}
 
-	tc := components.HouseModal(model)
+	tc := components.HouseModal(&model)
 	RenderTempl(ctx, tc)
 }
 
-func (c *Controller) PostHtmxHouseForm(ctx *gin.Context) {
+func (c *Controller) PostHxHouseForm(ctx *gin.Context) {
 	var model models.House
 	ctx.ShouldBind(&model)
+	authInfo := middleware.GetAuthInfo(ctx)
 
 	isValid, _ := model.IsValid()
 	if !isValid {
-		renderHouseForm(ctx, model)
+		renderHouseForm(ctx, &model)
 		return
 	}
 	conversionIssueOccured, roomateIDs := model.FilterNonValidUUID(ctx)
 	if conversionIssueOccured {
-		renderHouseForm(ctx, model)
+		renderHouseForm(ctx, &model)
 		return
 	}
+	// it is assumed the user making the house wants to be in the house
+	roomateIDs = append(roomateIDs, authInfo.UserID)
 
 	tx, err := c.Pool.Begin(ctx.Request.Context())
 	if err != nil {
@@ -152,16 +173,15 @@ func (c *Controller) PostHtmxHouseForm(ctx *gin.Context) {
 	defer tx.Rollback(ctx)
 	qtx := c.DB.WithTx(tx)
 
-	houseID, err := qtx.InsertHouse(ctx, model.Name)
+	houseID, err := qtx.InsertHouse(ctx, dbqueries.InsertHouseParams{
+		Name:    model.Name,
+		MakerID: authInfo.UserID,
+	})
 	if err != nil {
 		// currently there should not be unique violation issues
 		HandleServerError(ctx, err, "unable to create this house")
 		return
 	}
-
-	authInfo := middleware.GetAuthInfo(ctx)
-	// it is assumed the user making the house want's to be in the house
-	roomateIDs = append(roomateIDs, authInfo.UserID)
 
 	err = insertUsersToHouse(ctx, qtx, roomateIDs, houseID)
 	if err != nil {
@@ -188,33 +208,47 @@ func (c *Controller) DeleteHouse(ctx *gin.Context) {
 		return
 	}
 
+	if isMaker := isHouseMaker(ctx, c.DB, houseID); !isMaker {
+		utils.ErrorResponse(ctx, http.StatusForbidden, g.ErrorNotAllowedToModify)
+		return
+	}
+
 	if err := c.DB.DeleteHouse(ctx, houseID); err != nil {
-		HandleServerError(ctx, err, "error commiting transaction")
+		HandleServerError(ctx, err, "could not delete house")
 		return
 	}
 	utils.Redirect(ctx, g.RHouses)
 }
 
-// Delete and put for house form
-func (c *Controller) PutHtmxHouseForm(ctx *gin.Context) {
+// Replaces previous state with new
+func (c *Controller) PutHxHouseForm(ctx *gin.Context) {
 	var model models.House
 	ctx.ShouldBind(&model)
+	authInfo := middleware.GetAuthInfo(ctx)
 
 	isValid, _ := model.IsValid()
 	if !isValid {
-		renderHouseForm(ctx, model)
+		renderHouseForm(ctx, &model)
 		return
 	}
-	var houseID pgtype.UUID
-	if err := model.ScanHouseID(&houseID); err != nil {
-		utils.ErrorResponse(ctx, http.StatusForbidden, err)
+	houseID := model.GetHouseID()
+	if !houseID.Valid {
+		utils.ErrorResponse(ctx, http.StatusForbidden, g.ErrorInvalidID)
 		return
 	}
+
+	if isMaker := isHouseMaker(ctx, c.DB, houseID); !isMaker {
+		utils.ErrorResponse(ctx, http.StatusForbidden, g.ErrorNotAllowedToModify)
+		return
+	}
+
 	conversionIssueOccured, roomateIDs := model.FilterNonValidUUID(ctx)
 	if conversionIssueOccured {
-		renderHouseForm(ctx, model)
+		renderHouseForm(ctx, &model)
 		return
 	}
+	// the maker shall never be free
+	roomateIDs = append(roomateIDs, authInfo.UserID)
 
 	tx, err := c.Pool.Begin(ctx.Request.Context())
 	if err != nil {
@@ -224,24 +258,22 @@ func (c *Controller) PutHtmxHouseForm(ctx *gin.Context) {
 	defer tx.Rollback(ctx)
 	qtx := c.DB.WithTx(tx)
 
-	// pointless to keep the house around when it empty
-	if len(roomateIDs) == 0 {
-		if err := c.DB.DeleteHouse(ctx, houseID); err != nil {
-			HandleServerError(ctx, err, "error commiting transaction")
-			return
-		}
-	} else {
-		qtx.UpdateHouse(ctx, dbqueries.UpdateHouseParams{
-			Name: model.Name,
-			ID:   houseID,
-		})
-		qtx.DeleteHouseUsers(ctx, houseID)
+	// if len(roomateIDs) == 0 {
+	// 	if err := c.DB.DeleteHouse(ctx, houseID); err != nil {
+	// 		HandleServerError(ctx, err, "error commiting transaction")
+	// 		return
+	// 	}
+	// } else {
+	qtx.UpdateHouse(ctx, dbqueries.UpdateHouseParams{
+		Name: model.Name,
+		ID:   houseID,
+	})
+	qtx.DeleteHouseUsers(ctx, houseID)
 
-		err = insertUsersToHouse(ctx, qtx, roomateIDs, houseID)
-		if err != nil {
-			HandleServerError(ctx, err, "error assigning users to house")
-			return
-		}
+	err = insertUsersToHouse(ctx, qtx, roomateIDs, houseID)
+	if err != nil {
+		HandleServerError(ctx, err, "error assigning users to house")
+		return
 	}
 
 	err = tx.Commit(ctx)
@@ -252,7 +284,7 @@ func (c *Controller) PutHtmxHouseForm(ctx *gin.Context) {
 	utils.Redirect(ctx, "")
 }
 
-func (c *Controller) HtmxHouseCardResidentsBadge(ctx *gin.Context) {
+func (c *Controller) HxHouseCardResidentsBadge(ctx *gin.Context) {
 	pId := ctx.Param("id")
 
 	var houseID pgtype.UUID

@@ -34,7 +34,7 @@ templ PageWrapper(pwi SPageWrapper) {
 			</div>
 		</div>
 		// NB: make sure to match pt- with the h- of the navbar
-		<div id={ IdRootLayout } class="pt-14 min-h-dvh grid">
+		<div id={ IdRootLayout } class="pt-14">
 			{ children... }
 		</div>
 	</body>
@@ -73,7 +73,7 @@ templ profileAvatar(authInfo *rdb.UserSessionValue) {
 			avatarText = first + last
 		}
 	}}
-	<a href={ globals.RProfile } { AtrHtmxPageSwap... }>
+	<a href={ globals.RProfile } { AtrHxPageSwap... }>
 		<div class="uk-avatar uk-avatar-rounded text-muted-foreground bg-muted">
 			<div class="uk-avatar-text">{ strings.ToUpper(avatarText) }</div>
 		</div>
@@ -186,7 +186,7 @@ templ navLi(routes [][]string, urlPath string) {
 						label := route[1]
 		}}
 		<li class={ templ.KV("uk-active", shouldBeActive(href)) }>
-			<a href={ href } { AtrHtmxPageSwap... }>
+			<a href={ href } { AtrHxPageSwap... }>
 				{ label }
 			</a>
 		</li>

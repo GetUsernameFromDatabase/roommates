@@ -23,10 +23,13 @@ const (
 
 const Csrf = "_csrf"
 
+// key for gin.Context
+type RequestContextKey string
+
 // constants for gin context keys
 const (
 	// key to authenticated user info in gin context
-	GAuth = "authInfo" // do not see a need to add ContextKey type to this
+	GAuth RequestContextKey = "authInfo" // do not see a need to add ContextKey type to this
 )
 
 // constants for routes, see routes.go
@@ -41,12 +44,16 @@ const (
 	RUser      = "/user"
 
 	RHouseID = RHouses + "/:id"
+	RUserID  = RUser + "/:id"
+	RNoteID  = RNotes + "/:id"
 
-	RUserID = RUser + "/:id"
+	RHxRoomateSearch = RHouses + "/roomate-search"
+	RHxHouseForm     = RHouses + "/house-form"
 
-	RHtmxRoomateSearch       = RHouses + "/roomate-search"
-	RHtmxHouseForm           = RHouses + "/house-form"
-	RHtmxHouseResidentsBadge = RHouseID + "/residents-badge"
+	RHxHouseResidentsBadge = RHouseID + "/residents-badge"
+	RHxNoteForm            = RHouseID + "/note-form"
+
+	RHxNoteInHouseAccordion = RNoteID + "/view-house-accordion"
 )
 
 // -----------------------------------------------------------------------------
@@ -54,5 +61,7 @@ const (
 var (
 	ErrorInvalidCredential    = errors.New("invalid credentials")
 	ErrorAccountAlreadyExists = errors.New("account already exists")
-	ErrorHtmxRequired         = errors.New("htmx required")
+	ErrorHxRequired           = errors.New("htmx required")
+	ErrorNotAllowedToModify   = errors.New("not allowed to modify")
+	ErrorInvalidID            = errors.New("invalid id")
 )

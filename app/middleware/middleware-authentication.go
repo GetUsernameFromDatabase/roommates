@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"context"
 	"net/http"
 	"roommates/docs"
 	g "roommates/globals"
@@ -26,13 +27,21 @@ func unauthorize(ctx *gin.Context) {
 
 // sets auth info into gin context
 func setAuthInfo(ctx *gin.Context, value *rdb.UserSessionValue) {
-	ctx.Set(g.GAuth, value)
+	// ctx.Set(g.GAuth, value)
+	newCtx := context.WithValue(ctx.Request.Context(), g.GAuth, value)
+	ctx.Request = ctx.Request.WithContext(newCtx)
 }
 
 // gets auth info into gin context
 func GetAuthInfo(ctx *gin.Context) *rdb.UserSessionValue {
-	value, ok := ctx.Get(g.GAuth)
-	if !ok {
+	reqCtx := ctx.Request.Context()
+	return GetAuthInfoReq(reqCtx)
+}
+
+// gets auth info from request context
+func GetAuthInfoReq(ctx context.Context) *rdb.UserSessionValue {
+	value := ctx.Value(g.GAuth)
+	if value == nil {
 		return nil
 	}
 	return value.(*rdb.UserSessionValue)

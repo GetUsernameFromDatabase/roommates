@@ -61,15 +61,21 @@ func (c *Controller) PagePayments(ctx *gin.Context) {
 }
 
 func (c *Controller) PageNotes(ctx *gin.Context) {
+	authInfo := middleware.GetAuthInfo(ctx)
+	userHouseNotes, err := c.DB.SelectUserHousesWithNotes(ctx, authInfo.UserID)
+	if err != nil {
+		HandleServerError(ctx, err, "error getting userHouseNotes")
+		return
+	}
+
 	var tc templ.Component
 	if utils.IsRequestHTMX(ctx) {
-		tc = components.NotesPageContent()
+		tc = components.NotesPageContent(userHouseNotes)
 	} else {
-		authInfo := middleware.GetAuthInfo(ctx)
 		tc = components.PageNotes(components.SPageWrapper{
 			AuthInfo: authInfo,
 			PathURL:  ctx.Request.URL.Path,
-		})
+		}, userHouseNotes)
 	}
 	RenderTempl(ctx, tc)
 }

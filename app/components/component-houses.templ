@@ -1,22 +1,22 @@
 package components
 
 import (
-	"encoding/json"
 	"github.com/invopop/ctxi18n/i18n"
 	"roommates/db/dbqueries"
 	"roommates/globals"
 	"roommates/locales"
+	"roommates/middleware"
 	"roommates/models"
 	"roommates/utils"
 )
 
-templ houseAside(houses []dbqueries.House) {
+templ houseAside(houses []dbqueries.UserHousesRow) {
 	<aside class="max-md:hidden p-4 space-y-6">
 		<div>
 			<button
 				class="uk-btn uk-btn-default w-full cursor-pointer"
-				hx-get={ globals.RHtmxHouseForm }
-				{ AtrHtmxSwapModal... }
+				hx-get={ globals.RHxHouseForm }
+				{ AtrHxSwapModal... }
 			>
 				{ utils.T(ctx, locales.LKFormsHouseTitleNew, "New House") }
 			</button>
@@ -43,16 +43,10 @@ templ houseAside(houses []dbqueries.House) {
 	</aside>
 }
 
-templ HouseModal(model models.House) {
-	<div
-		data-uk-modal
-		class="uk-flex-top uk-modal"
-		_={ HSRemoveModalWhenHidden }
-	>
-		<div class="uk-modal-dialog uk-modal-body uk-margin-auto-vertical overflow-visible">
-			@HouseForm(model)
-		</div>
-	</div>
+templ HouseModal(model *models.House) {
+	@ModalWrap() {
+		@HouseForm(model)
+	}
 }
 
 templ HouseResidentBadge(residents []dbqueries.SelectHouseRoommatesRow) {
@@ -67,7 +61,7 @@ templ HouseResidentBadge(residents []dbqueries.SelectHouseRoommatesRow) {
 			for _, resident := range residents {
 				{{ url := utils.ReplaceParam(globals.RUserID, "id", resident.ID.String()) }}
 				<li>
-					<a href={ url } { AtrHtmxPageSwap... }>
+					<a href={ url } { AtrHxPageSwap... }>
 						{ resident.Username }
 					</a>
 				</li>
@@ -76,37 +70,35 @@ templ HouseResidentBadge(residents []dbqueries.SelectHouseRoommatesRow) {
 	</div>
 }
 
-templ houseCard(house dbqueries.House) {
+templ houseCard(house dbqueries.UserHousesRow) {
+	{{ isMaker := middleware.GetAuthInfoReq(ctx).UserID.String() == house.MakerID.String() }}
 	<div
 		class="uk-card uk-card-body space-y-4"
 	>
 		<h3 class="uk-card-title">
 			<a
 				href={ globals.RHouses + "/" + house.ID.String() }
-				{ AtrHtmxPageSwap... }
+				{ AtrHxPageSwap... }
 			>
 				{ house.Name }
 			</a>
 		</h3>
 		<div
-			hx-get={ utils.ReplaceParam(globals.RHtmxHouseResidentsBadge, "id", house.ID.String()) }
-			{ AtrHtmxReplaceMeOnRevealed... }
+			hx-get={ utils.ReplaceParam(globals.RHxHouseResidentsBadge, "id", house.ID.String()) }
+			{ AtrHxReplaceMeOnRevealed... }
 		></div>
 		// <div class="uk-card-body"></div>
 		<div class="uk-card-footer flex justify-center">
-			{{
-				hValsData, _ := json.Marshal(map[string]string{
-					"house_id": house.ID.String(),
-				})
-			}}
-			<button
-				class="uk-btn uk-btn-primary"
-				hx-get={ globals.RHtmxHouseForm }
-				hx-vals={ string(hValsData) }
-				{ AtrHtmxSwapModal... }
-			>
-				{ utils.T(ctx, locales.LKFormsEdit, "EDIT") }
-			</button>
+			if isMaker {
+				<button
+					class="uk-btn uk-btn-primary"
+					hx-get={ globals.RHxHouseForm }
+					hx-vals={ HxValsData(map[string]string{"house_id": house.ID.String()}) }
+					{ AtrHxSwapModal... }
+				>
+					{ utils.T(ctx, locales.LKFormsEdit, "EDIT") }
+				</button>
+			}
 		</div>
 	</div>
 }

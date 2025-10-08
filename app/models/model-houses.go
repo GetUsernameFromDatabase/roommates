@@ -97,7 +97,9 @@ func (m *House) IsValid() (bool, []l.LKMessage) {
 	return IsModelValid(m)
 }
 
-func (m *House) ScanHouseID(houseID *pgtype.UUID) error {
-	err := houseID.Scan(m.HouseID)
-	return err
+func (m *House) GetHouseID() pgtype.UUID {
+	var houseID pgtype.UUID
+	// no need to check for errors as
+	houseID.Scan(m.HouseID)
+	return houseID
 }

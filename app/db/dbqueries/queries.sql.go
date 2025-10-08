@@ -31,6 +31,16 @@ func (q *Queries) DeleteHouseUsers(ctx context.Context, houseID pgtype.UUID) err
 	return err
 }
 
+const deleteNote = `-- name: DeleteNote :exec
+DELETE FROM house_notes
+WHERE id = $1
+`
+
+func (q *Queries) DeleteNote(ctx context.Context, id int32) error {
+	_, err := q.db.Exec(ctx, deleteNote, id)
+	return err
+}
+
 const getUserCredentials = `-- name: GetUserCredentials :one
 SELECT id,
   email,
@@ -64,14 +74,44 @@ func (q *Queries) GetUserCredentials(ctx context.Context, email string) (GetUser
 }
 
 const insertHouse = `-- name: InsertHouse :one
-INSERT INTO houses (name)
-VALUES ($1)
+INSERT INTO houses (name, maker_id)
+VALUES ($1, $2)
 RETURNING id
 `
 
-func (q *Queries) InsertHouse(ctx context.Context, name string) (pgtype.UUID, error) {
-	row := q.db.QueryRow(ctx, insertHouse, name)
+type InsertHouseParams struct {
+	Name    string      `json:"name"`
+	MakerID pgtype.UUID `json:"maker_id"`
+}
+
+func (q *Queries) InsertHouse(ctx context.Context, arg InsertHouseParams) (pgtype.UUID, error) {
+	row := q.db.QueryRow(ctx, insertHouse, arg.Name, arg.MakerID)
 	var id pgtype.UUID
+	err := row.Scan(&id)
+	return id, err
+}
+
+const insertNote = `-- name: InsertNote :one
+INSERT INTO house_notes (title, content, house_id, maker_id)
+VALUES ($1, $2, $3, $4)
+RETURNING id
+`
+
+type InsertNoteParams struct {
+	Title   string      `json:"title"`
+	Content string      `json:"content"`
+	HouseID pgtype.UUID `json:"house_id"`
+	MakerID pgtype.UUID `json:"maker_id"`
+}
+
+func (q *Queries) InsertNote(ctx context.Context, arg InsertNoteParams) (int32, error) {
+	row := q.db.QueryRow(ctx, insertNote,
+		arg.Title,
+		arg.Content,
+		arg.HouseID,
+		arg.MakerID,
+	)
+	var id int32
 	err := row.Scan(&id)
 	return id, err
 }
@@ -124,17 +164,65 @@ func (q *Queries) InsertUserIntoHouse(ctx context.Context, arg InsertUserIntoHou
 	return err
 }
 
+const isUserHouseMaker = `-- name: IsUserHouseMaker :one
+SELECT EXISTS (
+    SELECT 1
+    FROM houses
+    WHERE id = $1
+      AND maker_id = $2
+  )
+`
+
+type IsUserHouseMakerParams struct {
+	HouseID pgtype.UUID `json:"house_id"`
+	UserID  pgtype.UUID `json:"user_id"`
+}
+
+func (q *Queries) IsUserHouseMaker(ctx context.Context, arg IsUserHouseMakerParams) (bool, error) {
+	row := q.db.QueryRow(ctx, isUserHouseMaker, arg.HouseID, arg.UserID)
+	var exists bool
+	err := row.Scan(&exists)
+	return exists, err
+}
+
+const isUserNoteMaker = `-- name: IsUserNoteMaker :one
+SELECT EXISTS (
+    SELECT 1
+    FROM house_notes
+    WHERE id = $1
+      AND maker_id = $2
+  )
+`
+
+type IsUserNoteMakerParams struct {
+	NoteID int32       `json:"note_id"`
+	UserID pgtype.UUID `json:"user_id"`
+}
+
+func (q *Queries) IsUserNoteMaker(ctx context.Context, arg IsUserNoteMakerParams) (bool, error) {
+	row := q.db.QueryRow(ctx, isUserNoteMaker, arg.NoteID, arg.UserID)
+	var exists bool
+	err := row.Scan(&exists)
+	return exists, err
+}
+
 const selectHouse = `-- name: SelectHouse :one
-SELECT name
+SELECT id, name, maker_id, created_at, updated_at
 FROM houses
 WHERE id = $1
 `
 
-func (q *Queries) SelectHouse(ctx context.Context, id pgtype.UUID) (string, error) {
+func (q *Queries) SelectHouse(ctx context.Context, id pgtype.UUID) (House, error) {
 	row := q.db.QueryRow(ctx, selectHouse, id)
-	var name string
-	err := row.Scan(&name)
-	return name, err
+	var i House
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.MakerID,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
 }
 
 const selectHouseRoommates = `-- name: SelectHouseRoommates :many
@@ -174,6 +262,88 @@ func (q *Queries) SelectHouseRoommates(ctx context.Context, houseID pgtype.UUID)
 	return items, nil
 }
 
+const selectNote = `-- name: SelectNote :one
+SELECT hn.id note_id,
+  hn.title,
+  hn.content,
+  hn.maker_id,
+  h.id house_id,
+  h.name house_name
+FROM house_notes hn
+  INNER JOIN houses h ON hn.house_id = h.id
+WHERE hn.id = $1
+ORDER BY hn.updated_at
+`
+
+type SelectNoteRow struct {
+	NoteID    int32       `json:"note_id"`
+	Title     string      `json:"title"`
+	Content   string      `json:"content"`
+	MakerID   pgtype.UUID `json:"maker_id"`
+	HouseID   pgtype.UUID `json:"house_id"`
+	HouseName string      `json:"house_name"`
+}
+
+func (q *Queries) SelectNote(ctx context.Context, id int32) (SelectNoteRow, error) {
+	row := q.db.QueryRow(ctx, selectNote, id)
+	var i SelectNoteRow
+	err := row.Scan(
+		&i.NoteID,
+		&i.Title,
+		&i.Content,
+		&i.MakerID,
+		&i.HouseID,
+		&i.HouseName,
+	)
+	return i, err
+}
+
+const selectUserHousesWithNotes = `-- name: SelectUserHousesWithNotes :many
+SELECT h.id house_id,
+  h.name house_name,
+  COALESCE(
+    ARRAY_AGG(hn.id) FILTER (
+      WHERE hn.id IS NOT NULL
+    ),
+    '{}'
+  )::int [] note_ids
+FROM houses h
+  LEFT JOIN house_notes hn ON h.id = hn.house_id
+WHERE h.id IN (
+    SELECT house_id
+    FROM user_houses uh
+    WHERE uh.user_id = $1
+  )
+GROUP BY h.id
+ORDER BY h.name
+`
+
+type SelectUserHousesWithNotesRow struct {
+	HouseID   pgtype.UUID `json:"house_id"`
+	HouseName string      `json:"house_name"`
+	NoteIds   []int32     `json:"note_ids"`
+}
+
+func (q *Queries) SelectUserHousesWithNotes(ctx context.Context, userID pgtype.UUID) ([]SelectUserHousesWithNotesRow, error) {
+	rows, err := q.db.Query(ctx, selectUserHousesWithNotes, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []SelectUserHousesWithNotesRow
+	for rows.Next() {
+		var i SelectUserHousesWithNotesRow
+		if err := rows.Scan(&i.HouseID, &i.HouseName, &i.NoteIds); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const updateHouse = `-- name: UpdateHouse :exec
 UPDATE houses
 SET name = $1
@@ -190,29 +360,54 @@ func (q *Queries) UpdateHouse(ctx context.Context, arg UpdateHouseParams) error 
 	return err
 }
 
+const updateNote = `-- name: UpdateNote :exec
+UPDATE house_notes
+SET title = $2,
+  content = $3
+WHERE id = $1
+`
+
+type UpdateNoteParams struct {
+	ID      int32  `json:"id"`
+	Title   string `json:"title"`
+	Content string `json:"content"`
+}
+
+func (q *Queries) UpdateNote(ctx context.Context, arg UpdateNoteParams) error {
+	_, err := q.db.Exec(ctx, updateNote, arg.ID, arg.Title, arg.Content)
+	return err
+}
+
 const userHouses = `-- name: UserHouses :many
 SELECT h.id,
-  h.name
+  h.name,
+  h.maker_id
 FROM houses h
 WHERE h.id IN (
     SELECT house_id
     FROM user_houses uh
     WHERE uh.user_id = $1
   )
-GROUP BY h.id
+  OR h.maker_id = $1
 ORDER BY h.name
 `
 
-func (q *Queries) UserHouses(ctx context.Context, userID pgtype.UUID) ([]House, error) {
+type UserHousesRow struct {
+	ID      pgtype.UUID `json:"id"`
+	Name    string      `json:"name"`
+	MakerID pgtype.UUID `json:"maker_id"`
+}
+
+func (q *Queries) UserHouses(ctx context.Context, userID pgtype.UUID) ([]UserHousesRow, error) {
 	rows, err := q.db.Query(ctx, userHouses, userID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []House
+	var items []UserHousesRow
 	for rows.Next() {
-		var i House
-		if err := rows.Scan(&i.ID, &i.Name); err != nil {
+		var i UserHousesRow
+		if err := rows.Scan(&i.ID, &i.Name, &i.MakerID); err != nil {
 			return nil, err
 		}
 		items = append(items, i)

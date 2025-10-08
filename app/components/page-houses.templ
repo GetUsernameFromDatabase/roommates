@@ -3,7 +3,7 @@ package components
 import "roommates/db/dbqueries"
 
 // page for all houses
-templ PageHouses(pwi SPageWrapper, houses []dbqueries.House) {
+templ PageHouses(pwi SPageWrapper, houses []dbqueries.UserHousesRow) {
 	@HtmlWrap() {
 		@HeaderComponent("")
 		@PageWrapper(pwi) {
@@ -12,16 +12,18 @@ templ PageHouses(pwi SPageWrapper, houses []dbqueries.House) {
 	}
 }
 
-templ HousesPageContent(houses []dbqueries.House) {
-	@houseAside(houses)
-	<div class="bg-secondary content p-8">
-		<div
-			class="grid grid-cols-4 gap-4"
-			style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));"
-		>
-			for _, house := range houses {
-				@houseCard(house)
-			}
+templ HousesPageContent(houses []dbqueries.UserHousesRow) {
+	<div class="grid-aside-content">
+		@houseAside(houses)
+		<div class="bg-secondary content p-8">
+			<div
+				class="grid grid-cols-4 gap-4"
+				style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));"
+			>
+				for _, house := range houses {
+					@houseCard(house)
+				}
+			</div>
 		</div>
 	</div>
 }
