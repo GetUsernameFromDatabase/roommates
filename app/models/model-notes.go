@@ -68,7 +68,7 @@ func (m *Note) ValidateContent() (msgs []l.LKMessage) {
 		return
 	}
 
-	if m.Title == "" {
+	if m.Content == "" {
 		msgs = append(msgs, l.LKMessage{Key: l.LKFormsContentErrorEmpty})
 		return msgs
 	}
