@@ -33,6 +33,17 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+  # --- EMAIL (development) ---
+  # catches every email, inbox at http://127.0.0.1:8025
+  # for `task dev` set SMTP_HOST=localhost SMTP_PORT=1025 in .env
+  mailpit:
+    build:
+      context: ./deploy/mailpit
+      dockerfile: Dockerfile
+    restart: always
+    ports:
+      - 127.0.0.1:1025:1025 # SMTP
+      - 127.0.0.1:8025:8025 # web inbox
   # ----------------------------------------------------------------------------
   app:
     depends_on:
@@ -57,3 +68,8 @@ services:
       # match with service
       DATABASE_HOST: db # service name
       DATABASE_PORT: 5432 # service container port
+      # emails go to the mailpit service, replace for real delivery
+      SMTP_HOST: mailpit
+      SMTP_PORT: 1025
+      SMTP_FROM: Roommates <noreply@localhost>
+      APP_BASE_URL: https://127.0.0.1:8000

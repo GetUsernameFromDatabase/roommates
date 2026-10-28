@@ -43,8 +43,12 @@ func (m *Register) ValidatePassword() (msgs []l.LKMessage) {
 	if m.Initial {
 		return
 	}
+	return validateNewPassword(m.Password)
+}
 
-	if len(m.Password) < minPasswordLength {
+// validateNewPassword checks the rules for choosing a password
+func validateNewPassword(password string) (msgs []l.LKMessage) {
+	if len(password) < minPasswordLength {
 		msgs = append(msgs, l.LKMessage{
 			Key:  l.LK_ValidationErrorsPasswordLength,
 			Args: []any{minPasswordLength},
@@ -52,18 +56,18 @@ func (m *Register) ValidatePassword() (msgs []l.LKMessage) {
 	}
 
 	// bcrypt refuses longer passwords, counted in bytes
-	if len(m.Password) > maxPasswordLength {
+	if len(password) > maxPasswordLength {
 		msgs = append(msgs, l.LKMessage{
 			Key:  l.LK_ValidationErrorsPasswordMaxLength,
 			Args: []any{maxPasswordLength},
 		})
 	}
 
-	if strings.ToUpper(m.Password) == m.Password || strings.ToLower(m.Password) == m.Password {
+	if strings.ToUpper(password) == password || strings.ToLower(password) == password {
 		msgs = append(msgs, l.LKMessage{Key: l.LK_ValidationErrorsPasswordCase})
 	}
 
-	if !strings.ContainsAny(m.Password, passwordSpecialCharaters) {
+	if !strings.ContainsAny(password, passwordSpecialCharaters) {
 		msgs = append(msgs, l.LKMessage{Key: l.LK_ValidationErrorsPasswordSymbol})
 	}
 
@@ -76,10 +80,13 @@ func (m *Register) ValidatePasswordMatch() (msgs []l.LKMessage) {
 		return
 	}
 
-	if m.Password != m.Password2 {
+	return validatePasswordMatch(m.Password, m.Password2)
+}
+
+func validatePasswordMatch(password, password2 string) (msgs []l.LKMessage) {
+	if password != password2 {
 		msgs = append(msgs, l.LKMessage{Key: l.LK_ValidationErrorsPasswordMatch})
 	}
-
 	return msgs
 }
 

@@ -14,6 +14,9 @@ const (
 	// RFC 5321 limit for a forward path
 	maxEmailLength = 254
 
+	minHouseholdNameLength = 1
+	maxHouseholdNameLength = 64
+
 	passwordSpecialCharaters = "!@#$%^&*()-_=+[]{}|;:',.<>?/`~"
 )
 

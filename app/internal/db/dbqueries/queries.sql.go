@@ -11,6 +11,233 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const consumeEmailToken = `-- name: ConsumeEmailToken :one
+DELETE FROM email_tokens
+WHERE token_hash = $1
+  AND kind = $2
+  AND expires_at > CURRENT_TIMESTAMP
+RETURNING user_id
+`
+
+type ConsumeEmailTokenParams struct {
+	TokenHash []byte `json:"token_hash"`
+	Kind      string `json:"kind"`
+}
+
+// single use: the row is deleted while reading it
+func (q *Queries) ConsumeEmailToken(ctx context.Context, arg ConsumeEmailTokenParams) (pgtype.UUID, error) {
+	row := q.db.QueryRow(ctx, consumeEmailToken, arg.TokenHash, arg.Kind)
+	var user_id pgtype.UUID
+	err := row.Scan(&user_id)
+	return user_id, err
+}
+
+const countActiveMembers = `-- name: CountActiveMembers :one
+SELECT count(*) FILTER (
+    WHERE role = 'owner'
+  ) AS owners,
+  count(*) AS members
+FROM memberships
+WHERE household_id = $1
+  AND left_at IS NULL
+`
+
+type CountActiveMembersRow struct {
+	Owners  int64 `json:"owners"`
+	Members int64 `json:"members"`
+}
+
+func (q *Queries) CountActiveMembers(ctx context.Context, householdID pgtype.UUID) (CountActiveMembersRow, error) {
+	row := q.db.QueryRow(ctx, countActiveMembers, householdID)
+	var i CountActiveMembersRow
+	err := row.Scan(&i.Owners, &i.Members)
+	return i, err
+}
+
+const deleteEmailTokensOfUser = `-- name: DeleteEmailTokensOfUser :exec
+DELETE FROM email_tokens
+WHERE user_id = $1
+  AND kind = $2
+`
+
+type DeleteEmailTokensOfUserParams struct {
+	UserID pgtype.UUID `json:"user_id"`
+	Kind   string      `json:"kind"`
+}
+
+func (q *Queries) DeleteEmailTokensOfUser(ctx context.Context, arg DeleteEmailTokensOfUserParams) error {
+	_, err := q.db.Exec(ctx, deleteEmailTokensOfUser, arg.UserID, arg.Kind)
+	return err
+}
+
+const deleteInvite = `-- name: DeleteInvite :exec
+DELETE FROM invites
+WHERE id = $1
+  AND household_id = $2
+`
+
+type DeleteInviteParams struct {
+	ID          pgtype.UUID `json:"id"`
+	HouseholdID pgtype.UUID `json:"household_id"`
+}
+
+// household_id in the filter so an owner can only delete invites of their household
+func (q *Queries) DeleteInvite(ctx context.Context, arg DeleteInviteParams) error {
+	_, err := q.db.Exec(ctx, deleteInvite, arg.ID, arg.HouseholdID)
+	return err
+}
+
+const deleteInvitesOfHousehold = `-- name: DeleteInvitesOfHousehold :exec
+DELETE FROM invites
+WHERE household_id = $1
+`
+
+func (q *Queries) DeleteInvitesOfHousehold(ctx context.Context, householdID pgtype.UUID) error {
+	_, err := q.db.Exec(ctx, deleteInvitesOfHousehold, householdID)
+	return err
+}
+
+const endMembership = `-- name: EndMembership :exec
+UPDATE memberships
+SET left_at = CURRENT_TIMESTAMP
+WHERE household_id = $1
+  AND user_id = $2
+  AND left_at IS NULL
+`
+
+type EndMembershipParams struct {
+	HouseholdID pgtype.UUID `json:"household_id"`
+	UserID      pgtype.UUID `json:"user_id"`
+}
+
+func (q *Queries) EndMembership(ctx context.Context, arg EndMembershipParams) error {
+	_, err := q.db.Exec(ctx, endMembership, arg.HouseholdID, arg.UserID)
+	return err
+}
+
+const getActiveMembership = `-- name: GetActiveMembership :one
+SELECT household_id,
+  user_id,
+  role
+FROM memberships
+WHERE household_id = $1
+  AND user_id = $2
+  AND left_at IS NULL
+`
+
+type GetActiveMembershipParams struct {
+	HouseholdID pgtype.UUID `json:"household_id"`
+	UserID      pgtype.UUID `json:"user_id"`
+}
+
+type GetActiveMembershipRow struct {
+	HouseholdID pgtype.UUID `json:"household_id"`
+	UserID      pgtype.UUID `json:"user_id"`
+	Role        string      `json:"role"`
+}
+
+func (q *Queries) GetActiveMembership(ctx context.Context, arg GetActiveMembershipParams) (GetActiveMembershipRow, error) {
+	row := q.db.QueryRow(ctx, getActiveMembership, arg.HouseholdID, arg.UserID)
+	var i GetActiveMembershipRow
+	err := row.Scan(&i.HouseholdID, &i.UserID, &i.Role)
+	return i, err
+}
+
+const getEmailToken = `-- name: GetEmailToken :one
+SELECT user_id
+FROM email_tokens
+WHERE token_hash = $1
+  AND kind = $2
+  AND expires_at > CURRENT_TIMESTAMP
+`
+
+type GetEmailTokenParams struct {
+	TokenHash []byte `json:"token_hash"`
+	Kind      string `json:"kind"`
+}
+
+func (q *Queries) GetEmailToken(ctx context.Context, arg GetEmailTokenParams) (pgtype.UUID, error) {
+	row := q.db.QueryRow(ctx, getEmailToken, arg.TokenHash, arg.Kind)
+	var user_id pgtype.UUID
+	err := row.Scan(&user_id)
+	return user_id, err
+}
+
+const getHousehold = `-- name: GetHousehold :one
+SELECT id,
+  name,
+  currency
+FROM households
+WHERE id = $1
+`
+
+type GetHouseholdRow struct {
+	ID       pgtype.UUID `json:"id"`
+	Name     string      `json:"name"`
+	Currency string      `json:"currency"`
+}
+
+func (q *Queries) GetHousehold(ctx context.Context, id pgtype.UUID) (GetHouseholdRow, error) {
+	row := q.db.QueryRow(ctx, getHousehold, id)
+	var i GetHouseholdRow
+	err := row.Scan(&i.ID, &i.Name, &i.Currency)
+	return i, err
+}
+
+const getInviteByCode = `-- name: GetInviteByCode :one
+SELECT i.id,
+  i.household_id,
+  h.name AS household_name
+FROM invites i
+  JOIN households h ON h.id = i.household_id
+WHERE i.code = $1
+  AND i.expires_at > CURRENT_TIMESTAMP
+`
+
+type GetInviteByCodeRow struct {
+	ID            pgtype.UUID `json:"id"`
+	HouseholdID   pgtype.UUID `json:"household_id"`
+	HouseholdName string      `json:"household_name"`
+}
+
+func (q *Queries) GetInviteByCode(ctx context.Context, code string) (GetInviteByCodeRow, error) {
+	row := q.db.QueryRow(ctx, getInviteByCode, code)
+	var i GetInviteByCodeRow
+	err := row.Scan(&i.ID, &i.HouseholdID, &i.HouseholdName)
+	return i, err
+}
+
+const getUser = `-- name: GetUser :one
+SELECT id,
+  email,
+  username,
+  email_validated
+FROM users
+WHERE id = $1
+`
+
+type GetUserRow struct {
+	ID             pgtype.UUID `json:"id"`
+	Email          string      `json:"email"`
+	Username       string      `json:"username"`
+	EmailValidated bool        `json:"email_validated"`
+}
+
+// -----------------------------------------------------------------------------
+// users
+// -----------------------------------------------------------------------------
+func (q *Queries) GetUser(ctx context.Context, id pgtype.UUID) (GetUserRow, error) {
+	row := q.db.QueryRow(ctx, getUser, id)
+	var i GetUserRow
+	err := row.Scan(
+		&i.ID,
+		&i.Email,
+		&i.Username,
+		&i.EmailValidated,
+	)
+	return i, err
+}
+
 const getUserCredentials = `-- name: GetUserCredentials :one
 SELECT id,
   email,
@@ -39,6 +266,81 @@ func (q *Queries) GetUserCredentials(ctx context.Context, email string) (GetUser
 	return i, err
 }
 
+const insertEmailToken = `-- name: InsertEmailToken :exec
+INSERT INTO email_tokens (token_hash, user_id, kind, expires_at)
+VALUES ($1, $2, $3, $4)
+`
+
+type InsertEmailTokenParams struct {
+	TokenHash []byte             `json:"token_hash"`
+	UserID    pgtype.UUID        `json:"user_id"`
+	Kind      string             `json:"kind"`
+	ExpiresAt pgtype.Timestamptz `json:"expires_at"`
+}
+
+// -----------------------------------------------------------------------------
+// email tokens
+// -----------------------------------------------------------------------------
+// shortcut: expired rows are only removed by DeleteEmailTokensOfUser, add a periodic cleanup if the table grows
+func (q *Queries) InsertEmailToken(ctx context.Context, arg InsertEmailTokenParams) error {
+	_, err := q.db.Exec(ctx, insertEmailToken,
+		arg.TokenHash,
+		arg.UserID,
+		arg.Kind,
+		arg.ExpiresAt,
+	)
+	return err
+}
+
+const insertHousehold = `-- name: InsertHousehold :one
+INSERT INTO households (name, created_by)
+VALUES ($1, $2)
+RETURNING id
+`
+
+type InsertHouseholdParams struct {
+	Name      string      `json:"name"`
+	CreatedBy pgtype.UUID `json:"created_by"`
+}
+
+// -----------------------------------------------------------------------------
+// households
+// -----------------------------------------------------------------------------
+func (q *Queries) InsertHousehold(ctx context.Context, arg InsertHouseholdParams) (pgtype.UUID, error) {
+	row := q.db.QueryRow(ctx, insertHousehold, arg.Name, arg.CreatedBy)
+	var id pgtype.UUID
+	err := row.Scan(&id)
+	return id, err
+}
+
+const insertInvite = `-- name: InsertInvite :one
+INSERT INTO invites (household_id, code, created_by, expires_at)
+VALUES ($1, $2, $3, $4)
+RETURNING id
+`
+
+type InsertInviteParams struct {
+	HouseholdID pgtype.UUID        `json:"household_id"`
+	Code        string             `json:"code"`
+	CreatedBy   pgtype.UUID        `json:"created_by"`
+	ExpiresAt   pgtype.Timestamptz `json:"expires_at"`
+}
+
+// -----------------------------------------------------------------------------
+// invites
+// -----------------------------------------------------------------------------
+func (q *Queries) InsertInvite(ctx context.Context, arg InsertInviteParams) (pgtype.UUID, error) {
+	row := q.db.QueryRow(ctx, insertInvite,
+		arg.HouseholdID,
+		arg.Code,
+		arg.CreatedBy,
+		arg.ExpiresAt,
+	)
+	var id pgtype.UUID
+	err := row.Scan(&id)
+	return id, err
+}
+
 const insertUser = `-- name: InsertUser :one
 INSERT INTO users (
     email,
@@ -63,6 +365,136 @@ func (q *Queries) InsertUser(ctx context.Context, arg InsertUserParams) (pgtype.
 	return id, err
 }
 
+const listActiveInvites = `-- name: ListActiveInvites :many
+SELECT id,
+  code,
+  expires_at
+FROM invites
+WHERE household_id = $1
+  AND expires_at > CURRENT_TIMESTAMP
+ORDER BY created_at DESC
+`
+
+type ListActiveInvitesRow struct {
+	ID        pgtype.UUID        `json:"id"`
+	Code      string             `json:"code"`
+	ExpiresAt pgtype.Timestamptz `json:"expires_at"`
+}
+
+func (q *Queries) ListActiveInvites(ctx context.Context, householdID pgtype.UUID) ([]ListActiveInvitesRow, error) {
+	rows, err := q.db.Query(ctx, listActiveInvites, householdID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListActiveInvitesRow
+	for rows.Next() {
+		var i ListActiveInvitesRow
+		if err := rows.Scan(&i.ID, &i.Code, &i.ExpiresAt); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listActiveMembers = `-- name: ListActiveMembers :many
+SELECT m.user_id,
+  u.username,
+  m.role,
+  m.joined_at
+FROM memberships m
+  JOIN users u ON u.id = m.user_id
+WHERE m.household_id = $1
+  AND m.left_at IS NULL
+ORDER BY m.joined_at
+`
+
+type ListActiveMembersRow struct {
+	UserID   pgtype.UUID        `json:"user_id"`
+	Username string             `json:"username"`
+	Role     string             `json:"role"`
+	JoinedAt pgtype.Timestamptz `json:"joined_at"`
+}
+
+func (q *Queries) ListActiveMembers(ctx context.Context, householdID pgtype.UUID) ([]ListActiveMembersRow, error) {
+	rows, err := q.db.Query(ctx, listActiveMembers, householdID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListActiveMembersRow
+	for rows.Next() {
+		var i ListActiveMembersRow
+		if err := rows.Scan(
+			&i.UserID,
+			&i.Username,
+			&i.Role,
+			&i.JoinedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listHouseholdsOfUser = `-- name: ListHouseholdsOfUser :many
+SELECT h.id,
+  h.name,
+  m.role
+FROM households h
+  JOIN memberships m ON m.household_id = h.id
+WHERE m.user_id = $1
+  AND m.left_at IS NULL
+ORDER BY h.name
+`
+
+type ListHouseholdsOfUserRow struct {
+	ID   pgtype.UUID `json:"id"`
+	Name string      `json:"name"`
+	Role string      `json:"role"`
+}
+
+func (q *Queries) ListHouseholdsOfUser(ctx context.Context, userID pgtype.UUID) ([]ListHouseholdsOfUserRow, error) {
+	rows, err := q.db.Query(ctx, listHouseholdsOfUser, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListHouseholdsOfUserRow
+	for rows.Next() {
+		var i ListHouseholdsOfUserRow
+		if err := rows.Scan(&i.ID, &i.Name, &i.Role); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const lockHousehold = `-- name: LockHousehold :exec
+SELECT id
+FROM households
+WHERE id = $1 FOR
+UPDATE
+`
+
+// locks the household row so membership changes in it run one at a time
+func (q *Queries) LockHousehold(ctx context.Context, id pgtype.UUID) error {
+	_, err := q.db.Exec(ctx, lockHousehold, id)
+	return err
+}
+
 const neverUseThisThisIsJustSoThatFileCommentSticksToThis = `-- name: NeverUseThisThisIsJustSoThatFileCommentSticksToThis :one
 SELECT 1
 WHERE 1 = 0
@@ -78,4 +510,73 @@ func (q *Queries) NeverUseThisThisIsJustSoThatFileCommentSticksToThis(ctx contex
 	var column_1 int32
 	err := row.Scan(&column_1)
 	return column_1, err
+}
+
+const setEmailValidated = `-- name: SetEmailValidated :exec
+UPDATE users
+SET email_validated = TRUE
+WHERE id = $1
+`
+
+func (q *Queries) SetEmailValidated(ctx context.Context, id pgtype.UUID) error {
+	_, err := q.db.Exec(ctx, setEmailValidated, id)
+	return err
+}
+
+const setMembershipRole = `-- name: SetMembershipRole :exec
+UPDATE memberships
+SET role = $3
+WHERE household_id = $1
+  AND user_id = $2
+  AND left_at IS NULL
+`
+
+type SetMembershipRoleParams struct {
+	HouseholdID pgtype.UUID `json:"household_id"`
+	UserID      pgtype.UUID `json:"user_id"`
+	Role        string      `json:"role"`
+}
+
+func (q *Queries) SetMembershipRole(ctx context.Context, arg SetMembershipRoleParams) error {
+	_, err := q.db.Exec(ctx, setMembershipRole, arg.HouseholdID, arg.UserID, arg.Role)
+	return err
+}
+
+const updateUserPassword = `-- name: UpdateUserPassword :exec
+UPDATE users
+SET password = $2
+WHERE id = $1
+`
+
+type UpdateUserPasswordParams struct {
+	ID       pgtype.UUID `json:"id"`
+	Password string      `json:"password"`
+}
+
+func (q *Queries) UpdateUserPassword(ctx context.Context, arg UpdateUserPasswordParams) error {
+	_, err := q.db.Exec(ctx, updateUserPassword, arg.ID, arg.Password)
+	return err
+}
+
+const upsertMembership = `-- name: UpsertMembership :exec
+INSERT INTO memberships (household_id, user_id, role)
+VALUES ($1, $2, $3) ON CONFLICT (household_id, user_id) DO
+UPDATE
+SET role = EXCLUDED.role,
+  joined_at = CURRENT_TIMESTAMP,
+  left_at = NULL
+`
+
+type UpsertMembershipParams struct {
+	HouseholdID pgtype.UUID `json:"household_id"`
+	UserID      pgtype.UUID `json:"user_id"`
+	Role        string      `json:"role"`
+}
+
+// -----------------------------------------------------------------------------
+// memberships
+// -----------------------------------------------------------------------------
+func (q *Queries) UpsertMembership(ctx context.Context, arg UpsertMembershipParams) error {
+	_, err := q.db.Exec(ctx, upsertMembership, arg.HouseholdID, arg.UserID, arg.Role)
+	return err
 }

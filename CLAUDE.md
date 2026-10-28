@@ -26,7 +26,6 @@ From the repo root: `docker compose up --build` runs db + app (app on https://12
 
 - Commits follow [Conventional Commits 1.0.0](https://www.conventionalcommits.org/en/v1.0.0/) (`feat:`, `fix:`, `refactor:`, `chore:`, `docs:` …).
 - Work stays on the `fresh-start` branch for now.
-- Keep CRLF line endings on files that already use them (e.g. `docker-compose.yml`, `sqlc.yml`, `.vscode/launch.json`, Dockerfiles); `sed -i` strips them.
 
 ## graphify
 

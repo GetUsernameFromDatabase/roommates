@@ -1,0 +1,190 @@
+package pages
+
+import "roommates/web/components"
+import "roommates/web/components/card"
+import "roommates/web/components/button"
+import "roommates/web/components/field"
+import "roommates/web/components/input"
+import "roommates/internal/services"
+import g "roommates/internal/config"
+import "roommates/internal/locales"
+import "roommates/internal/utils"
+
+// Household shows members and, for owners, invites
+//
+// inviteBaseURL is the absolute invite link without the code,
+// infoMessage and errorMessage are the outcome of the last action
+templ Household(actor services.Membership, o services.HouseholdOverview, inviteBaseURL, infoMessage, errorMessage string) {
+	{{ isOwner := actor.Role == g.RoleOwner }}
+	@components.HtmlWrap() {
+		@components.HeaderComponent(o.Household.Name)
+		<body>
+			<main class="mx-auto flex min-h-svh w-full max-w-lg flex-col gap-6 bg-background p-6 text-foreground sm:p-10">
+				<div>
+					<a href="/" class="text-sm text-muted-foreground underline-offset-4 hover:text-foreground hover:underline">
+						@components.T(locales.LK_HouseholdBack)
+					</a>
+					<h1 class="mt-2 text-2xl font-semibold break-words">{ o.Household.Name }</h1>
+				</div>
+				@VerifyEmailBanner(o.ActorEmailValidated)
+				if infoMessage != "" {
+					<div role="status" class="rounded-md border bg-muted p-3 text-sm">
+						{ infoMessage }
+					</div>
+				}
+				if errorMessage != "" {
+					<div
+						role="alert"
+						class="rounded-md border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive"
+					>
+						{ errorMessage }
+					</div>
+				}
+				@card.Card() {
+					@card.Header() {
+						@card.Title() {
+							@components.T(locales.LK_HouseholdMembers)
+						}
+					}
+					@card.Content() {
+						<ul class="divide-y">
+							for _, m := range o.Members {
+								<li class="flex flex-wrap items-center justify-between gap-2 py-3">
+									<div class="min-w-0">
+										<span class="font-medium break-words">{ m.Username }</span>
+										if m.UserID == actor.UserID {
+											<span class="text-sm text-muted-foreground">({ utils.T(ctx, locales.LK_HouseholdYou) })</span>
+										}
+										<div class="text-sm text-muted-foreground">{ RoleName(ctx, m.Role) }</div>
+									</div>
+									if isOwner && m.Role != g.RoleOwner {
+										<div class="flex gap-2">
+											<form action={ householdURL(actor.HouseholdID, "members", m.UserID.String(), "promote") } method="post" hx-boost="true">
+												@button.Button(button.Props{
+													Type:    button.TypeSubmit,
+													Variant: button.VariantOutline,
+													Size:    button.SizeSm,
+												}) {
+													@components.T(locales.LK_HouseholdPromote)
+												}
+											</form>
+											<form
+												action={ householdURL(actor.HouseholdID, "members", m.UserID.String(), "remove") }
+												method="post"
+												hx-boost="true"
+												hx-confirm={ utils.T(ctx, locales.LK_HouseholdRemove) + " " + m.Username + "?" }
+											>
+												@button.Button(button.Props{
+													Type:    button.TypeSubmit,
+													Variant: button.VariantDestructive,
+													Size:    button.SizeSm,
+												}) {
+													@components.T(locales.LK_HouseholdRemove)
+												}
+											</form>
+										</div>
+									}
+								</li>
+							}
+						</ul>
+					}
+				}
+				if isOwner {
+					@card.Card() {
+						@card.Header() {
+							@card.Title() {
+								@components.T(locales.LK_HouseholdInvites)
+							}
+							@card.Description() {
+								@components.T(locales.LK_HouseholdInvitesDescription)
+							}
+						}
+						@card.Content() {
+							if len(o.Invites) == 0 {
+								<p class="text-sm text-muted-foreground">
+									@components.T(locales.LK_HouseholdNoInvites)
+								</p>
+							} else {
+								<ul class="divide-y">
+									for _, inv := range o.Invites {
+										<li class="space-y-2 py-3">
+											<div class="flex items-center justify-between gap-2">
+												<span class="font-mono text-lg tracking-wider">{ inv.Code }</span>
+												<form action={ householdURL(actor.HouseholdID, "invites", inv.ID.String(), "delete") } method="post" hx-boost="true">
+													@button.Button(button.Props{
+														Type:    button.TypeSubmit,
+														Variant: button.VariantGhost,
+														Size:    button.SizeSm,
+													}) {
+														@components.T(locales.LK_HouseholdRevoke)
+													}
+												</form>
+											</div>
+											<input
+												type="text"
+												readonly
+												value={ inviteBaseURL + inv.Code }
+												aria-label={ utils.T(ctx, locales.LK_HouseholdInvites) }
+												class="w-full rounded-md border bg-muted px-2 py-1 font-mono text-xs"
+											/>
+											<div class="text-xs text-muted-foreground">
+												{ utils.T(ctx, locales.LK_HouseholdExpires, formatDate(inv.ExpiresAt)) }
+											</div>
+										</li>
+									}
+								</ul>
+							}
+							if o.ActorEmailValidated {
+								<form action={ householdURL(actor.HouseholdID, "invites") } method="post" hx-boost="true" class="mt-4">
+									@button.Button(button.Props{Type: button.TypeSubmit, Variant: button.VariantSecondary}) {
+										@components.T(locales.LK_HouseholdCreateInvite)
+									}
+								</form>
+								<form
+									action={ householdURL(actor.HouseholdID, "invites", "email") }
+									method="post"
+									hx-boost="true"
+									class="mt-6 space-y-2"
+								>
+									@field.Label(field.LabelProps{For: "invite-email"}) {
+										@components.T(locales.LK_HouseholdInviteEmailTitle)
+									}
+									<div class="flex gap-2">
+										@input.Input(input.Props{
+											ID:          "invite-email",
+											Name:        "email",
+											Type:        "email",
+											Placeholder: "flatmate@example.com",
+											Required:    true,
+										})
+										@button.Button(button.Props{Type: button.TypeSubmit, Variant: button.VariantSecondary}) {
+											@components.T(locales.LK_HouseholdInviteEmailSubmit)
+										}
+									</div>
+								</form>
+							} else {
+								<p class="mt-4 text-sm text-muted-foreground">
+									@components.T(locales.LK_HouseholdVerifyToInvite)
+								</p>
+							}
+						}
+					}
+				}
+				<form
+					action={ householdURL(actor.HouseholdID, "leave") }
+					method="post"
+					hx-boost="true"
+					hx-confirm={ utils.T(ctx, locales.LK_HouseholdLeave) + "?" }
+				>
+					@button.Button(button.Props{
+						Type:    button.TypeSubmit,
+						Variant: button.VariantOutline,
+						Class:   "w-full text-destructive",
+					}) {
+						@components.T(locales.LK_HouseholdLeave)
+					}
+				</form>
+			</main>
+		</body>
+	}
+}

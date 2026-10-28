@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"net/http"
+	"net/url"
 	g "roommates/internal/config"
 	"roommates/internal/sessions"
 
@@ -17,7 +18,12 @@ func NewOnlyAuthenticated() gin.HandlerFunc {
 			return
 		}
 
-		ctx.Redirect(http.StatusSeeOther, g.RouteLogin)
+		location := g.RouteLogin
+		// only a page can be returned to, not a form submission
+		if ctx.Request.Method == http.MethodGet && ctx.Request.URL.Path != "/" {
+			location += "?" + url.Values{g.QueryNext: {ctx.Request.URL.RequestURI()}}.Encode()
+		}
+		ctx.Redirect(http.StatusSeeOther, location)
 		ctx.Abort()
 	}
 }

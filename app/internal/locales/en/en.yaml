@@ -25,7 +25,92 @@ en:
     submit: Create account
   home-page:
     greeting: Hello, %s
+    households: Your households
+    no-households: You are not in a household yet. Create one or join with an invite code.
+    create-title: Create a household
+    create-submit: Create
+    join-title: Join with an invite code
+    join-submit: Join
+  household:
+    name: Name
+    members: Members
+    role-owner: Owner
+    role-member: Member
+    you: you
+    remove: Remove
+    promote: Make owner
+    leave: Leave household
+    invites: Invites
+    invites-description: Anyone with the link or code can join until it expires.
+    no-invites: No active invites
+    create-invite: Create invite
+    expires: Expires %s
+    revoke: Revoke
+    back: All households
+    last-owner: Make someone else an owner before leaving.
+    invite-email-title: Invite by email
+    invite-email-submit: Send invite
+    invite-email-sent: Invite sent to %s
+    verify-to-invite: Confirm your email address to create invites.
+  invite-page:
+    title: Join %s
+    description: You have been invited to join this household.
+    join: Join household
+    invalid: This invite is invalid or has expired.
+    code: Invite code
   logout: Log out
+  not-found-page:
+    title: Page not found
+    description: This page does not exist or you do not have access to it. If you were invited, open the invite link again.
+  mail:
+    verify-subject: Confirm your email
+    verify-body: |-
+      Hi %s,
+
+      confirm your email address for Roommates by opening this link:
+      %s
+
+      The link is valid for 48 hours. If you did not create an account, you can ignore this email.
+    reset-subject: Reset your password
+    reset-body: |-
+      Hi %s,
+
+      someone asked to reset your Roommates password. To choose a new one, open this link:
+      %s
+
+      The link is valid for 1 hour. If it was not you, ignore this email and your password stays the same.
+    invite-subject: "%s invited you to %s"
+    invite-body: |-
+      %s invited you to join the household %s on Roommates.
+
+      Open this link to join:
+      %s
+
+      Or enter the code %s. The invite is valid for 7 days.
+  verify-email:
+    banner: Confirm your email address to create invites. We sent you a link.
+    resend: Send the link again
+    resent-title: Link sent
+    resent-description: We sent a new confirmation link to %s.
+    done-title: Email confirmed
+    done-description: Thank you, your email address is confirmed.
+    invalid-title: Link is invalid
+    invalid-description: The link is invalid, expired or already used. Sign in to send a new one.
+    continue: Continue
+  forgot-password-page:
+    title: Forgot your password?
+    description: Enter your email and we will send you a link to choose a new password.
+    submit: Send link
+    sent-title: Check your email
+    sent-description: If an account exists for %s, we sent it a link to reset the password.
+  reset-password-page:
+    title: Choose a new password
+    submit: Save password
+    done-title: Password changed
+    done-description: Your password was changed. Sign in with the new password.
+    invalid-title: Link is invalid
+    invalid-description: The link is invalid, expired or already used.
+    new-link: Ask for a new link
   error-page:
     title: Something went wrong
     description: Please try again later.
@@ -44,3 +129,5 @@ en:
       length: Username must be at least %d characters long
       max-length: Username can be at most %d characters long
       spaces: Username must not be surrounded by spaces
+    household:
+      name-length: Name must be between %d and %d characters long

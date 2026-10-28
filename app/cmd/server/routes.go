@@ -5,6 +5,7 @@ import (
 	"net/http"
 	g "roommates/internal/config"
 	"roommates/internal/handlers"
+	"roommates/internal/mailer"
 	"roommates/internal/middleware"
 	"roommates/internal/services"
 	"roommates/internal/sessions"
@@ -16,10 +17,15 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-func initRoutes(r *gin.Engine, h *handlers.DefaultHandler) {
+func initRoutes(r *gin.Engine, h *handlers.DefaultHandler, service *services.DefaultService) {
 	mwI18n := middleware.NewInternationalization()
-	// each attempt costs a bcrypt hash (~250ms), shared by login and register
+	// separate counters per kind, flatmates on one Wi-Fi share an IP
+	// each attempt costs a bcrypt hash (~250ms): login, register, new password
 	mwAuthLimit := middleware.NewRateLimit(10, time.Minute)
+	// each sends an email, so mailboxes cannot be flooded
+	mwEmailLimit := middleware.NewRateLimit(10, time.Minute)
+	// invite codes are short enough to be worth guessing
+	mwInviteLimit := middleware.NewRateLimit(20, time.Minute)
 	r.Use(middleware.NewSecurityHeader())
 	r.Use(middleware.NewCrossOriginProtection())
 
@@ -34,6 +40,22 @@ func initRoutes(r *gin.Engine, h *handlers.DefaultHandler) {
 
 		public.GET(g.RouteRegister, h.PageRegister)
 		public.POST(g.RouteRegister, mwAuthLimit, h.PageRegister)
+
+		public.GET(g.RouteForgotPassword, h.PageForgotPassword)
+		public.POST(g.RouteForgotPassword, mwEmailLimit, h.PageForgotPassword)
+	}
+
+	// --- --- ---
+
+	// email links work whether signed in or not
+	// their tokens have 130 random bits, guessing needs no rate limit
+	open := r.Group("")
+	{
+		open.Use(mwI18n)
+
+		open.GET(g.RouteVerifyEmail, h.VerifyEmail)
+		open.GET(g.RouteResetPassword, h.PageResetPassword)
+		open.POST(g.RouteResetPassword, mwAuthLimit, h.PageResetPassword)
 	}
 
 	// --- --- ---
@@ -46,7 +68,25 @@ func initRoutes(r *gin.Engine, h *handlers.DefaultHandler) {
 		priv.Use(mwI18n)
 
 		priv.GET("/", h.PageHome)
+		priv.POST(g.RouteHouseholds, h.PageHome)
 		priv.POST(g.RouteLogout, h.Logout)
+		priv.POST(g.RouteVerifyEmailResend, mwEmailLimit, h.ResendVerificationEmail)
+
+		priv.GET(g.RouteInvite, mwInviteLimit, h.PageInvite)
+		priv.POST(g.RouteInvite, mwInviteLimit, h.PageInvite)
+
+		// everything under it is scoped to one household the user is a member of
+		household := priv.Group(g.RouteHousehold + "/:" + g.ParamHouseholdID)
+		household.Use(middleware.NewHouseholdMember(service))
+		{
+			household.GET("", h.PageHousehold)
+			household.POST("/invites", h.CreateInvite)
+			household.POST("/invites/email", mwEmailLimit, h.SendInviteEmail)
+			household.POST("/invites/:"+g.ParamInviteID+"/delete", h.DeleteInvite)
+			household.POST("/members/:"+g.ParamUserID+"/remove", h.RemoveMember)
+			household.POST("/members/:"+g.ParamUserID+"/promote", h.PromoteMember)
+			household.POST("/leave", h.LeaveHousehold)
+		}
 	}
 }
 
@@ -92,8 +132,10 @@ func InitGinEngine(dbpool *pgxpool.Pool) *gin.Engine {
 	// - https://templ.guide/integrations/web-frameworks/#csrf-protection
 
 	r.Use(sessions.NewPostgreSessionStoreHandler(dbpool))
-	service := services.NewDefaultService(dbpool)
+	// panics now if APP_BASE_URL is missing in release, not on the first email
+	_ = g.GetAppBaseURL()
+	service := services.NewDefaultService(dbpool, mailer.New())
 	handler := handlers.NewDefaultHandler(service)
-	initRoutes(r, handler)
+	initRoutes(r, handler, service)
 	return r
 }

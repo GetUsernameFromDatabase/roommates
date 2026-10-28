@@ -3,9 +3,22 @@ package pages
 import "roommates/web/components"
 import "roommates/web/components/card"
 import "roommates/internal/locales"
+import "roommates/internal/utils"
 
 // Error is a generic error page, details are only logged
 templ Error() {
+	@Notice(utils.T(ctx, locales.LK_ErrorPageTitle), utils.T(ctx, locales.LK_ErrorPageDescription),
+		"/", utils.T(ctx, locales.LK_ErrorPageBack))
+}
+
+// NotFound is also shown for things the user has no access to, so their existence is not revealed
+templ NotFound() {
+	@Notice(utils.T(ctx, locales.LK_NotFoundPageTitle), utils.T(ctx, locales.LK_NotFoundPageDescription),
+		"/", utils.T(ctx, locales.LK_ErrorPageBack))
+}
+
+// Notice is a page with only a message and a link
+templ Notice(title, description string, href templ.SafeURL, linkText string) {
 	@components.HtmlWrap() {
 		@components.HeaderComponent("")
 		<body>
@@ -15,15 +28,15 @@ templ Error() {
 				}) {
 					@card.Header() {
 						@card.Title() {
-							@components.T(locales.LK_ErrorPageTitle)
+							{ title }
 						}
 						@card.Description() {
-							@components.T(locales.LK_ErrorPageDescription)
+							{ description }
 						}
 					}
 					@card.Content() {
-						<a href="/" class="text-sm font-medium underline-offset-4 hover:underline">
-							@components.T(locales.LK_ErrorPageBack)
+						<a href={ href } class="text-sm font-medium underline-offset-4 hover:underline">
+							{ linkText }
 						</a>
 					}
 				}

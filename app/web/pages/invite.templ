@@ -1,0 +1,57 @@
+package pages
+
+import "roommates/web/components"
+import "roommates/web/components/card"
+import "roommates/web/components/button"
+import "roommates/internal/locales"
+import "roommates/internal/utils"
+
+// Invite asks to join householdName, shows errorMessage and a code form instead if set
+templ Invite(code string, householdName string, errorMessage string) {
+	@components.HtmlWrap() {
+		@components.HeaderComponent("")
+		<body>
+			<main class="flex min-h-svh items-center justify-center bg-background p-6 text-foreground sm:p-10">
+				@card.Card(card.Props{Class: "w-full max-w-sm"}) {
+					if errorMessage != "" {
+						@card.Header() {
+							@card.Title() {
+								@components.T(locales.LK_HomePageJoinTitle)
+							}
+						}
+						@card.Content() {
+							<div
+								role="alert"
+								class="mb-5 rounded-md border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive"
+							>
+								{ errorMessage }
+							</div>
+							@JoinForm(code)
+						}
+					} else {
+						@card.Header() {
+							@card.Title() {
+								{ utils.T(ctx, locales.LK_InvitePageTitle, householdName) }
+							}
+							@card.Description() {
+								@components.T(locales.LK_InvitePageDescription)
+							}
+						}
+						@card.Content() {
+							<form action={ inviteURL(code) } method="post" hx-boost="true">
+								@button.Button(button.Props{Type: button.TypeSubmit, Class: "w-full"}) {
+									@components.T(locales.LK_InvitePageJoin)
+								}
+							</form>
+						}
+					}
+					@card.Footer() {
+						<a href="/" class="text-sm text-muted-foreground underline-offset-4 hover:text-foreground hover:underline">
+							@components.T(locales.LK_HouseholdBack)
+						</a>
+					}
+				}
+			</main>
+		</body>
+	}
+}

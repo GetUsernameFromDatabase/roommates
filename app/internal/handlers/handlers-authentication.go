@@ -25,7 +25,10 @@ func (h *DefaultHandler) PageLogin(ctx *gin.Context) {
 	switch method {
 	case http.MethodGet:
 		//exhaustruct:ignore
-		render(models.Login{Initial: true})
+		render(models.Login{
+			ModelBase: models.ModelBase{Initial: true},
+			Next:      ctx.Query(g.QueryNext),
+		})
 	case http.MethodPost:
 		var model models.Login
 		_ = ctx.ShouldBind(&model)
@@ -56,7 +59,7 @@ func (h *DefaultHandler) PageLogin(ctx *gin.Context) {
 			Email:    credsInDB.Email,
 			Username: credsInDB.Username,
 		})
-		Redirect(ctx, "/")
+		Redirect(ctx, safeNextPath(model.Next))
 	default:
 		ctx.String(http.StatusMethodNotAllowed, "method %s not allowed", method)
 	}
@@ -72,7 +75,10 @@ func (h *DefaultHandler) PageRegister(ctx *gin.Context) {
 	switch method {
 	case http.MethodGet:
 		//exhaustruct:ignore
-		render(models.Register{Initial: true})
+		render(models.Register{Login: models.Login{
+			ModelBase: models.ModelBase{Initial: true},
+			Next:      ctx.Query(g.QueryNext),
+		}})
 	case http.MethodPost:
 		var model models.Register
 		_ = ctx.ShouldBind(&model)
@@ -101,13 +107,18 @@ func (h *DefaultHandler) PageRegister(ctx *gin.Context) {
 			return
 		}
 
+		// the account exists already, a failed email can be resent from the banner
+		if err := h.service.SendVerificationEmail(ctx.Request.Context(), *userID); err != nil {
+			log.Error().Err(err).Msg("could not send verification email")
+		}
+
 		s := sessions.FromGinContext(ctx)
 		s.Login(sessions.SessionInfo{
 			UserID:   userID.String(),
 			Email:    services.NormalizeEmail(model.Email),
 			Username: model.Username,
 		})
-		Redirect(ctx, "/")
+		Redirect(ctx, safeNextPath(model.Next))
 	default:
 		ctx.String(http.StatusMethodNotAllowed, "method %s not allowed", method)
 	}

@@ -25,7 +25,92 @@ et:
     submit: Loo konto
   home-page:
     greeting: Tere, %s
+    households: Sinu leibkonnad
+    no-households: Sa ei kuulu veel ühtegi leibkonda. Loo uus või liitu kutsekoodiga.
+    create-title: Loo leibkond
+    create-submit: Loo
+    join-title: Liitu kutsekoodiga
+    join-submit: Liitu
+  household:
+    name: Nimi
+    members: Liikmed
+    role-owner: Omanik
+    role-member: Liige
+    you: sina
+    remove: Eemalda
+    promote: Tee omanikuks
+    leave: Lahku leibkonnast
+    invites: Kutsed
+    invites-description: Igaüks, kellel on link või kood, saab liituda kuni selle aegumiseni.
+    no-invites: Aktiivseid kutseid pole
+    create-invite: Loo kutse
+    expires: Aegub %s
+    revoke: Tühista
+    back: Kõik leibkonnad
+    last-owner: Enne lahkumist tee keegi teine omanikuks.
+    invite-email-title: Kutsu e-postiga
+    invite-email-submit: Saada kutse
+    invite-email-sent: Kutse saadetud aadressile %s
+    verify-to-invite: Kutsete loomiseks kinnita oma e-posti aadress.
+  invite-page:
+    title: Liitu leibkonnaga %s
+    description: Sind on kutsutud selle leibkonnaga liituma.
+    join: Liitu leibkonnaga
+    invalid: See kutse on vigane või aegunud.
+    code: Kutsekood
   logout: Logi välja
+  not-found-page:
+    title: Lehte ei leitud
+    description: Seda lehte pole olemas või sul pole sellele ligipääsu. Kui sind kutsuti, ava kutse link uuesti.
+  mail:
+    verify-subject: Kinnita oma e-post
+    verify-body: |-
+      Tere, %s!
+
+      Kinnita oma e-posti aadress Toakaaslaste jaoks, avades selle lingi:
+      %s
+
+      Link kehtib 48 tundi. Kui sa ei loonud kontot, võid selle kirja tähelepanuta jätta.
+    reset-subject: Parooli lähtestamine
+    reset-body: |-
+      Tere, %s!
+
+      Keegi soovis sinu Toakaaslaste parooli lähtestada. Uue parooli valimiseks ava see link:
+      %s
+
+      Link kehtib 1 tunni. Kui see polnud sina, jäta kiri tähelepanuta ja su parool jääb samaks.
+    invite-subject: "%s kutsus sind leibkonda %s"
+    invite-body: |-
+      %s kutsus sind Toakaaslastes liituma leibkonnaga %s.
+
+      Liitumiseks ava see link:
+      %s
+
+      Või sisesta kood %s. Kutse kehtib 7 päeva.
+  verify-email:
+    banner: Kutsete loomiseks kinnita oma e-posti aadress. Saatsime sulle lingi.
+    resend: Saada link uuesti
+    resent-title: Link saadetud
+    resent-description: Saatsime uue kinnituslingi aadressile %s.
+    done-title: E-post kinnitatud
+    done-description: Aitäh, sinu e-posti aadress on kinnitatud.
+    invalid-title: Link on vigane
+    invalid-description: Link on vigane, aegunud või juba kasutatud. Logi sisse, et saata uus.
+    continue: Jätka
+  forgot-password-page:
+    title: Unustasid parooli?
+    description: Sisesta oma e-post ja saadame sulle lingi uue parooli valimiseks.
+    submit: Saada link
+    sent-title: Vaata oma postkasti
+    sent-description: Kui aadressiga %s on konto olemas, saatsime sinna parooli lähtestamise lingi.
+  reset-password-page:
+    title: Vali uus parool
+    submit: Salvesta parool
+    done-title: Parool muudetud
+    done-description: Sinu parool on muudetud. Logi sisse uue parooliga.
+    invalid-title: Link on vigane
+    invalid-description: Link on vigane, aegunud või juba kasutatud.
+    new-link: Küsi uus link
   error-page:
     title: Midagi läks valesti
     description: Palun proovi hiljem uuesti.
@@ -44,3 +129,5 @@ et:
       length: Kasutajanimi peab olema vähemalt %d tähte
       max-length: Kasutajanimi võib olla kõige rohkem %d tähte
       spaces: Kasutajanime ümber ei tohi olla tühikuid
+    household:
+      name-length: Nimi peab olema %d kuni %d tähte pikk

@@ -49,7 +49,7 @@ templ Login(m models.Login) {
 								<p class="mt-6 text-center text-sm text-muted-foreground">
 									@components.T(locales.LK_LoginPageNoAccount)
 									<a
-										href={ g.RouteRegister }
+										href={ withNext(g.RouteRegister, m.Next) }
 										class="font-medium text-foreground underline-offset-4 hover:underline ml-1"
 									>
 										@components.T(locales.LK_LoginPageCreateAccount)
@@ -70,6 +70,7 @@ templ LoginForm(m models.Login) {
 		passwordValidations := m.ValidatePassword()
 	}}
 	<form action={ g.RouteLogin } method="post" hx-boost="true" class="space-y-5">
+		<input type="hidden" name="next" value={ m.Next }/>
 		@field.Group() {
 			<!-- Email -->
 			@field.Field() {
@@ -101,8 +102,7 @@ templ LoginForm(m models.Login) {
 						@components.T(locales.LK_PasswordTitle)
 					}
 					<a
-						href="/forgot-password"
-						// TODO: link for that
+						href={ g.RouteForgotPassword }
 						class="text-sm text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
 						tabindex="-1"
 					>

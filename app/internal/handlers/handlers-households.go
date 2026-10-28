@@ -1,0 +1,179 @@
+package handlers
+
+import (
+	"errors"
+	"net/http"
+	"net/url"
+	g "roommates/internal/config"
+	"roommates/internal/locales"
+	"roommates/internal/models"
+	"roommates/internal/services"
+	"roommates/internal/sessions"
+	"roommates/internal/utils"
+	"roommates/web/pages"
+
+	"github.com/gin-gonic/gin"
+	"github.com/jackc/pgx/v5/pgtype"
+)
+
+// membershipFromContext panics if [middleware.NewHouseholdMember] did not run on the route
+func membershipFromContext(ctx *gin.Context) services.Membership {
+	return ctx.MustGet(g.GinKeyMembership).(services.Membership)
+}
+
+func householdPath(id pgtype.UUID) string {
+	return g.RouteHousehold + "/" + id.String()
+}
+
+func sessionUserID(ctx *gin.Context) (pgtype.UUID, error) {
+	return utils.ParseUUID(sessions.FromGinContext(ctx).UserID)
+}
+
+// PageInvite shows the household of ?code=, POST joins it
+func (h *DefaultHandler) PageInvite(ctx *gin.Context) {
+	code := services.NormalizeInviteCode(ctx.Query("code"))
+	invite, err := h.service.GetInvite(ctx, code)
+	if err != nil {
+		if errors.Is(err, g.ErrorInviteInvalid) {
+			RenderTemplStatus(ctx, http.StatusNotFound, pages.Invite(code, "",
+				utils.T(ctx.Request.Context(), locales.LK_InvitePageInvalid)))
+			return
+		}
+		InternalError(ctx, err)
+		return
+	}
+
+	if ctx.Request.Method != http.MethodPost {
+		RenderTempl(ctx, pages.Invite(code, invite.HouseholdName, ""))
+		return
+	}
+
+	userID, err := sessionUserID(ctx)
+	if err != nil {
+		InternalError(ctx, err)
+		return
+	}
+	householdID, err := h.service.JoinWithInvite(ctx, code, userID)
+	if err != nil {
+		InternalError(ctx, err)
+		return
+	}
+	Redirect(ctx, householdPath(householdID))
+}
+
+// set after [DefaultHandler.SendInviteEmail], so a refresh does not resend
+const queryInvited = "invited"
+
+// PageHousehold shows members and, for owners, invites
+func (h *DefaultHandler) PageHousehold(ctx *gin.Context) {
+	info := ""
+	if invited := ctx.Query(queryInvited); invited != "" {
+		info = utils.T(ctx.Request.Context(), locales.LK_HouseholdInviteEmailSent, invited)
+	}
+	h.renderHousehold(ctx, http.StatusOK, info, "")
+}
+
+func (h *DefaultHandler) renderHousehold(ctx *gin.Context, status int, infoMessage, errorMessage string) {
+	actor := membershipFromContext(ctx)
+	overview, err := h.service.GetHouseholdOverview(ctx, actor)
+	if err != nil {
+		InternalError(ctx, err)
+		return
+	}
+	inviteURL := g.GetAppBaseURL() + g.RouteInvite + "?code="
+	RenderTemplStatus(ctx, status, pages.Household(actor, overview, inviteURL, infoMessage, errorMessage))
+}
+
+// householdAction runs an action of the household page and goes back to it
+func (h *DefaultHandler) householdAction(ctx *gin.Context, action func(actor services.Membership) error) {
+	actor := membershipFromContext(ctx)
+	err := action(actor)
+	switch {
+	case err == nil:
+		Redirect(ctx, householdPath(actor.HouseholdID))
+	case errors.Is(err, g.ErrorLastOwner):
+		h.renderHousehold(ctx, http.StatusConflict, "",
+			utils.T(ctx.Request.Context(), locales.LK_HouseholdLastOwner))
+	case errors.Is(err, g.ErrorEmailNotVerified):
+		h.renderHousehold(ctx, http.StatusForbidden, "",
+			utils.T(ctx.Request.Context(), locales.LK_HouseholdVerifyToInvite))
+	case errors.Is(err, g.ErrorNotFound):
+		RenderTemplStatus(ctx, http.StatusNotFound, pages.NotFound())
+	case errors.Is(err, g.ErrorForbidden):
+		RenderTemplStatus(ctx, http.StatusForbidden, pages.Error())
+	default:
+		InternalError(ctx, err)
+	}
+}
+
+// householdTargetAction is [householdAction] with the :param UUID parsed
+func (h *DefaultHandler) householdTargetAction(ctx *gin.Context, param string,
+	action func(actor services.Membership, target pgtype.UUID) error) {
+	target, err := utils.ParseUUID(ctx.Param(param))
+	if err != nil {
+		RenderTemplStatus(ctx, http.StatusNotFound, pages.NotFound())
+		return
+	}
+	h.householdAction(ctx, func(actor services.Membership) error {
+		return action(actor, target)
+	})
+}
+
+func (h *DefaultHandler) CreateInvite(ctx *gin.Context) {
+	h.householdAction(ctx, func(actor services.Membership) error {
+		return h.service.CreateInvite(ctx, actor)
+	})
+}
+
+// SendInviteEmail creates an invite and emails it, the page says to whom
+func (h *DefaultHandler) SendInviteEmail(ctx *gin.Context) {
+	var model models.EmailForm
+	_ = ctx.ShouldBind(&model)
+	if isValid, _ := model.IsValid(); !isValid {
+		h.renderHousehold(ctx, http.StatusUnprocessableEntity, "",
+			utils.T(ctx.Request.Context(), locales.LK_ValidationErrorsEmailGeneric))
+		return
+	}
+	actor := membershipFromContext(ctx)
+	// the request context carries the language of the email
+	err := h.service.SendInviteEmail(ctx.Request.Context(), actor, model.Email)
+	if err != nil {
+		h.householdAction(ctx, func(services.Membership) error { return err })
+		return
+	}
+	Redirect(ctx, householdPath(actor.HouseholdID)+"?"+url.Values{queryInvited: {model.Email}}.Encode())
+}
+
+func (h *DefaultHandler) DeleteInvite(ctx *gin.Context) {
+	h.householdTargetAction(ctx, g.ParamInviteID, func(actor services.Membership, inviteID pgtype.UUID) error {
+		return h.service.DeleteInvite(ctx, actor, inviteID)
+	})
+}
+
+func (h *DefaultHandler) RemoveMember(ctx *gin.Context) {
+	h.householdTargetAction(ctx, g.ParamUserID, func(actor services.Membership, userID pgtype.UUID) error {
+		return h.service.RemoveMember(ctx, actor, userID)
+	})
+}
+
+func (h *DefaultHandler) PromoteMember(ctx *gin.Context) {
+	h.householdTargetAction(ctx, g.ParamUserID, func(actor services.Membership, userID pgtype.UUID) error {
+		return h.service.PromoteMember(ctx, actor, userID)
+	})
+}
+
+// LeaveHousehold sends the user home, the household page is no longer theirs
+func (h *DefaultHandler) LeaveHousehold(ctx *gin.Context) {
+	actor := membershipFromContext(ctx)
+	err := h.service.Leave(ctx, actor)
+	if errors.Is(err, g.ErrorLastOwner) {
+		h.renderHousehold(ctx, http.StatusConflict, "",
+			utils.T(ctx.Request.Context(), locales.LK_HouseholdLastOwner))
+		return
+	}
+	if err != nil {
+		InternalError(ctx, err)
+		return
+	}
+	Redirect(ctx, "/")
+}

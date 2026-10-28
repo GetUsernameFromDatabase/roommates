@@ -47,7 +47,7 @@ templ Register(m models.Register) {
 								<p class="mt-6 text-center text-sm text-muted-foreground">
 									@components.T(locales.LK_RegistrationPageAlreadyHaveAccount)
 									<a
-										href={ g.RouteLogin }
+										href={ withNext(g.RouteLogin, m.Next) }
 										class="font-medium text-foreground underline-offset-4 hover:underline ml-1"
 									>
 										@components.T(locales.LK_LoginPageSignIn)
@@ -70,6 +70,7 @@ templ RegisterForm(m models.Register) {
 		passwordMatchValidations := m.ValidatePasswordMatch()
 	}}
 	<form action={ g.RouteRegister } method="post" hx-boost="true" class="space-y-5">
+		<input type="hidden" name="next" value={ m.Next }/>
 		@field.Group() {
 			<!-- Email -->
 			@field.Field() {

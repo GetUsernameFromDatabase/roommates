@@ -3,37 +3,134 @@ package pages
 import "roommates/web/components"
 import "roommates/web/components/card"
 import "roommates/web/components/button"
+import "roommates/web/components/field"
+import "roommates/web/components/input"
+import "roommates/internal/db/dbqueries"
+import "roommates/internal/models"
 import g "roommates/internal/config"
 import "roommates/internal/locales"
 import "roommates/internal/utils"
 
-// Home is shown to signed in users at "/"
-templ Home(username string) {
+// Home is shown to signed in users at "/", lists their households
+templ Home(username string, emailValidated bool, households []dbqueries.ListHouseholdsOfUserRow, m models.Household) {
 	@components.HtmlWrap() {
 		@components.HeaderComponent("")
 		<body>
-			<main class="flex min-h-svh items-center justify-center bg-background p-6 text-foreground sm:p-10">
-				@card.Card(card.Props{
-					Class: "w-full max-w-sm",
-				}) {
+			<main class="mx-auto flex min-h-svh w-full max-w-lg flex-col gap-6 bg-background p-6 text-foreground sm:p-10">
+				<div class="flex items-center justify-between gap-4">
+					<h1 class="text-xl font-semibold">
+						{ utils.T(ctx, locales.LK_HomePageGreeting, username) }
+					</h1>
+					<form action={ g.RouteLogout } method="post">
+						@button.Button(button.Props{
+							Type:    button.TypeSubmit,
+							Variant: button.VariantOutline,
+							Size:    button.SizeSm,
+						}) {
+							@components.T(locales.LK_Logout)
+						}
+					</form>
+				</div>
+				@VerifyEmailBanner(emailValidated)
+				@card.Card() {
 					@card.Header() {
 						@card.Title() {
-							{ utils.T(ctx, locales.LK_HomePageGreeting, username) }
+							@components.T(locales.LK_HomePageHouseholds)
 						}
 					}
 					@card.Content() {
-						<form action={ g.RouteLogout } method="post">
-							@button.Button(button.Props{
-								Type:    button.TypeSubmit,
-								Variant: button.VariantOutline,
-								Class:   "w-full",
-							}) {
-								@components.T(locales.LK_Logout)
-							}
-						</form>
+						if len(households) == 0 {
+							<p class="text-sm text-muted-foreground">
+								@components.T(locales.LK_HomePageNoHouseholds)
+							</p>
+						} else {
+							<ul class="divide-y">
+								for _, h := range households {
+									<li>
+										<a href={ householdURL(h.ID) } class="flex items-center justify-between py-3 hover:underline">
+											<span class="font-medium">{ h.Name }</span>
+											<span class="text-sm text-muted-foreground">{ RoleName(ctx, h.Role) }</span>
+										</a>
+									</li>
+								}
+							</ul>
+						}
+					}
+				}
+				@card.Card() {
+					@card.Header() {
+						@card.Title() {
+							@components.T(locales.LK_HomePageCreateTitle)
+						}
+					}
+					@card.Content() {
+						@CreateHouseholdForm(m)
+					}
+				}
+				@card.Card() {
+					@card.Header() {
+						@card.Title() {
+							@components.T(locales.LK_HomePageJoinTitle)
+						}
+					}
+					@card.Content() {
+						@JoinForm("")
 					}
 				}
 			</main>
 		</body>
 	}
+}
+
+templ CreateHouseholdForm(m models.Household) {
+	{{ nameValidations := m.ValidateName() }}
+	<form action={ g.RouteHouseholds } method="post" hx-boost="true" class="space-y-4">
+		@field.Field() {
+			@field.Label(field.LabelProps{For: "name"}) {
+				@components.T(locales.LK_HouseholdName)
+			}
+			@input.Input(input.Props{
+				ID:       "name",
+				Name:     "name",
+				Type:     "text",
+				Value:    m.Name,
+				Required: true,
+				Attributes: templ.Attributes{
+					"maxlength":    "64",
+					"aria-invalid": len(nameValidations) > 0,
+				},
+			})
+			@components.ValidationErrors(nameValidations)
+		}
+		@button.Button(button.Props{Type: button.TypeSubmit}) {
+			@components.T(locales.LK_HomePageCreateSubmit)
+		}
+	</form>
+}
+
+// JoinForm sends the typed code to the invite page
+templ JoinForm(code string) {
+	<form action={ g.RouteInvite } method="get" class="flex items-end gap-2">
+		@field.Field(field.Props{Class: "flex-1"}) {
+			@field.Label(field.LabelProps{For: "code"}) {
+				@components.T(locales.LK_InvitePageCode)
+			}
+			@input.Input(input.Props{
+				ID:       "code",
+				Name:     "code",
+				Type:     "text",
+				Value:    code,
+				Required: true,
+				Class:    "font-mono uppercase",
+				Attributes: templ.Attributes{
+					"autocomplete":   "off",
+					"autocapitalize": "characters",
+					"spellcheck":     "false",
+				},
+			})
+		}
+		@button.Button(button.Props{Type: button.TypeSubmit, Variant: button.VariantSecondary}) {
+			@components.T(locales.LK_HomePageJoinSubmit)
+		}
+	</form>
 }

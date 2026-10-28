@@ -14,16 +14,21 @@ type LoginRequest struct {
 type Login struct {
 	ModelBase
 	LoginRequest
+	// path to return to after signing in, see config.QueryNext
+	Next string `form:"next"`
 }
 
 func (m *Login) ValidateEmail() (msgs []l.LKMessage) {
 	if m.Initial {
 		return
 	}
+	return validateEmail(m.Email)
+}
 
+func validateEmail(email string) (msgs []l.LKMessage) {
 	// ParseAddress also accepts "Name <a@b.c>", only the bare address is allowed
-	addr, err := mail.ParseAddress(m.Email)
-	if err != nil || addr.Address != strings.TrimSpace(m.Email) || len(m.Email) > maxEmailLength {
+	addr, err := mail.ParseAddress(email)
+	if err != nil || addr.Address != strings.TrimSpace(email) || len(email) > maxEmailLength {
 		msgs = append(msgs, l.LKMessage{Key: l.LK_ValidationErrorsEmailGeneric})
 	}
 	return msgs

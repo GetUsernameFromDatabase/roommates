@@ -19,4 +19,13 @@ func (c ErrorCode) String() string {
 var (
 	ErrorInvalidCredential    = errors.New("invalid credentials")
 	ErrorAccountAlreadyExists = errors.New("account already exists")
+	// also used when the thing exists but the user is not allowed to know that
+	ErrorNotFound      = errors.New("not found")
+	ErrorForbidden     = errors.New("forbidden")
+	ErrorInviteInvalid = errors.New("invite is invalid or expired")
+	// the only owner cannot leave while other members remain
+	ErrorLastOwner = errors.New("last owner cannot leave")
+	// unknown, expired or already used email token
+	ErrorTokenInvalid     = errors.New("token is invalid or expired")
+	ErrorEmailNotVerified = errors.New("email is not verified")
 )

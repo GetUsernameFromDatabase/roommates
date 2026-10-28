@@ -19,8 +19,11 @@ func NormalizeEmail(email string) string {
 	return strings.ToLower(strings.TrimSpace(email))
 }
 
+// ~250ms per hash, see the auth rate limit in routes.go
+const bcryptCost = 12
+
 func (s *DefaultService) RegisterUser(ctx *gin.Context, user dbqueries.InsertUserParams) (*pgtype.UUID, error) {
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(user.Password), 12)
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcryptCost)
 	if err != nil { // only happens if password is longer than 72 bytes
 		log.Error().Err(err).Msg("error processing password")
 		return nil, err

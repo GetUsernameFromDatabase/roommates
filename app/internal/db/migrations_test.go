@@ -24,6 +24,7 @@ func TestMigrateUpAndDown(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer pool.Close()
+	LockTestDB(t, pool)
 
 	maxVersion := NewMigrations(pool).maxVersion
 	if maxVersion < 1 {

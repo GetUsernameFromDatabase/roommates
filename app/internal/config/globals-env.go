@@ -8,6 +8,7 @@ import (
 	"os"
 	"roommates/internal/validators"
 	"strconv"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 )
@@ -46,6 +47,30 @@ const (
 	// to rotate out with [EVK_SessionBlockKey]
 	EVK_SessionBlockKeyPrevious EnvironmentVariableKey = "SESSION_BLOCK_KEY_PREVIOUS"
 )
+
+// env keys for email, required in release mode, see [GetAppBaseURL]
+const (
+	// links in emails are built from this, never from the request Host header
+	// (it could point a password reset link at another site), e.g. https://example.com
+	EVK_AppBaseURL EnvironmentVariableKey = "APP_BASE_URL"
+	// if unset in development, emails are written to the log instead
+	EVK_SMTPHost EnvironmentVariableKey = "SMTP_HOST"
+	// STARTTLS port (587), implicit TLS (465) is not supported
+	EVK_SMTPPort     EnvironmentVariableKey = "SMTP_PORT"
+	EVK_SMTPUsername EnvironmentVariableKey = "SMTP_USERNAME"
+	EVK_SMTPPassword EnvironmentVariableKey = "SMTP_PASSWORD"
+	// e.g. Roommates <noreply@example.com>
+	EVK_SMTPFrom EnvironmentVariableKey = "SMTP_FROM"
+)
+
+// GetAppBaseURL is [EVK_AppBaseURL] without a trailing slash,
+// in development it defaults to https://localhost:[EVK_ServerPort]
+func GetAppBaseURL() string {
+	if IsDevelopment() {
+		return strings.TrimSuffix(EVK_AppBaseURL.Get("https://localhost:"+EVK_ServerPort.Get("8080")), "/")
+	}
+	return strings.TrimSuffix(EVK_AppBaseURL.MustGet(), "/")
+}
 
 func (c EnvironmentVariableKey) String() string {
 	return string(c)
