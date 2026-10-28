@@ -10,6 +10,20 @@ output.css
 shadcn-templ-*.js
 # ------------------------------------------------------------------------------
 
+### --- AI agent, Claude ---
+# Personal Claude Code settings and backups
+/.claude/settings.local.json
+/.claude/**/*.bak
+/.claude/**/*-bak
+## graphify -- https://github.com/Graphify-Labs/graphify
+# https://docs.graphify.com/guides/team-workflows#repository-workflow
+# https://github.com/orgs/Graphify-Labs/discussions/426
+/graphify-out/*
+!/graphify-out/graph.json
+!/graphify-out/GRAPH_REPORT.md
+!/graphify-out/graph.html
+# ------------------------------------------------------------------------------
+
 # Created by https://www.toptal.com/developers/gitignore/api/visualstudiocode,go
 # Edit at https://www.toptal.com/developers/gitignore?templates=visualstudiocode,go
 

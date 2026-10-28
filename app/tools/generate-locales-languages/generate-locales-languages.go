@@ -29,7 +29,7 @@ func resolve(rel string) string {
 const (
 	defaultLang = "et"
 
-	toLocaleFolder = "../../locales"
+	toLocaleFolder = "../../internal/locales"
 	outFile        = "locales-languages.go"
 )
 

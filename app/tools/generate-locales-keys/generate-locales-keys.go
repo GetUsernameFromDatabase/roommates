@@ -31,7 +31,7 @@ const (
 	// prefix for the locale enum also used as enum type
 	enumPrefix = "LK"
 	// to locale folder from this file
-	toLocaleFolder = "../../locales"
+	toLocaleFolder = "../../internal/locales"
 )
 
 var (

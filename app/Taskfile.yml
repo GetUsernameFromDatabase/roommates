@@ -13,8 +13,8 @@ vars:
   FREE_PORT:
     sh: port=8090; while nc -z localhost $port >/dev/null 2>&1; do port=$((port+1)); done; echo $port
   PORT: '{{.PORT | default .FREE_PORT}}'
-  TAILWIND_INPUT: './assets/globals.css'
-  TAILWIND_OUTPUT: './assets/public/output.css'
+  TAILWIND_INPUT: './web/assets/globals.css'
+  TAILWIND_OUTPUT: './web/assets/public/output.css'
   PROXY_TLS_CRT: './certificates/server.pem'
   PROXY_TLS_KEY: './certificates/server.key'
 
@@ -53,7 +53,7 @@ tasks:
       - tailwindcss -i {{.TAILWIND_INPUT}} -o {{.TAILWIND_OUTPUT}} --minify
       - go tool shadcn-templ bundle
       - go tool templ generate
-      - go build -o bin/app .
+      - go build -o bin/app ./cmd/server
 
   dev:
     env:

@@ -1,0 +1,136 @@
+package pages
+
+import "roommates/web/components"
+import "roommates/web/components/card"
+import "roommates/web/components/field"
+import "roommates/web/components/input"
+import "roommates/web/components/button"
+import "roommates/internal/models"
+import g "roommates/internal/config"
+import "roommates/internal/locales"
+import "roommates/internal/utils"
+
+templ Login(m models.Login) {
+	@components.HtmlWrap() {
+		@components.HeaderComponent("")
+		<body>
+			<div class="min-h-svh bg-background text-foreground md:grid">
+				<!-- Login panel -->
+				<main class="flex min-h-svh items-center justify-center p-6 sm:p-10">
+					<div class="w-full max-w-sm">
+						<a href="/" class="mb-10 flex items-center justify-center gap-2 font-semibold">
+							<span class="flex size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+								{ utils.T(ctx, locales.LK_AppTitle)[:1] }
+							</span>
+							@components.T(locales.LK_AppTitle) 
+						</a>
+						@card.Card(card.Props{
+							Class: "border-0 shadow-none",
+						}) {
+							@card.Header() {
+								@card.Title() {
+									@components.T(locales.LK_WelcomeBack)
+								}
+								@card.Description() {
+									@components.T(locales.LK_LoginPageEnterCredentialsDescription)
+								}
+							}
+							@card.Content() {
+								if m.Error != "" {
+									<div
+										role="alert"
+										class="mb-5 rounded-md border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive"
+									>
+										{ m.Error }
+									</div>
+								}
+								@LoginForm(m)
+								<!-- Signup -->
+								<p class="mt-6 text-center text-sm text-muted-foreground">
+									@components.T(locales.LK_LoginPageNoAccount)
+									<a
+										href={ g.RouteRegister }
+										class="font-medium text-foreground underline-offset-4 hover:underline ml-1"
+									>
+										@components.T(locales.LK_LoginPageCreateAccount)
+									</a>
+								</p>
+							}
+						}
+					</div>
+				</main>
+			</div>
+		</body>
+	}
+}
+
+templ LoginForm(m models.Login) {
+	{{
+		emailValidations := m.ValidateEmail()
+		passwordValidations := m.ValidatePassword()
+	}}
+	<form action={ g.RouteLogin } method="post" hx-boost="true" class="space-y-5">
+		@field.Group() {
+			<!-- Email -->
+			@field.Field() {
+				@field.Label(field.LabelProps{
+					For: "email",
+				}) {
+					@components.T(locales.LK_Email)
+				}
+				@input.Input(input.Props{
+					ID:          "email",
+					Name:        "email",
+					Type:        "email",
+					Value:       m.Email,
+					Placeholder: "you@example.com",
+					Required:    true,
+					Attributes: templ.Attributes{
+						"autocomplete": "email",
+						"aria-invalid": len(emailValidations) > 0,
+					},
+				})
+				@components.ValidationErrors(emailValidations)
+			}
+			<!-- Password -->
+			@field.Field() {
+				<div class="flex items-center justify-between gap-2">
+					@field.Label(field.LabelProps{
+						For: "password",
+					}) {
+						@components.T(locales.LK_PasswordTitle)
+					}
+					<a
+						href="/forgot-password"
+						// TODO: link for that
+						class="text-sm text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
+						tabindex="-1"
+					>
+						@components.T(locales.LK_LoginPageForgotPassword)
+					</a>
+				</div>
+				// TODO: toggle password visibility
+				@input.Input(input.Props{
+					ID:          "password",
+					Name:        "password",
+					Type:        "password",
+					Value:       m.Password,
+					Placeholder: utils.T(ctx, locales.LK_PasswordEnter),
+					Required:    true,
+					Attributes: templ.Attributes{
+						"autocomplete": "current-password",
+						"aria-invalid": len(passwordValidations) > 0,
+					},
+				})
+				@components.ValidationErrors(passwordValidations)
+			}
+			<!-- Submit -->
+			@button.Button(button.Props{
+				Type:  button.TypeSubmit,
+				Class: "w-full",
+			}) {
+				@components.T(locales.LK_LoginPageSignIn)
+			}
+		}
+	</form>
+}

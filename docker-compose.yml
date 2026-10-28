@@ -14,8 +14,8 @@ services:
   db:
     command: -c config_file=/etc/postgresql.conf
     build:
-      context: ./PostgreSQL
-      dockerfile: PostgreSQL.DockerFile
+      context: ./deploy/postgres
+      dockerfile: Dockerfile
     restart: always
     ports:
       - 127.0.0.1:5432:5432
@@ -25,7 +25,7 @@ services:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_DB: ${POSTGRES_DB}
     volumes:
-      - ./PostgreSQL/postgresql.conf:/etc/postgresql.conf # should match with command: -c config_file
+      - ./deploy/postgres/postgresql.conf:/etc/postgresql.conf # should match with command: -c config_file
       - db_data:/var/lib/postgresql # PG 18 path
       - ./logs/postgresql:/logs
     healthcheck:
@@ -42,7 +42,7 @@ services:
         restart: true
     build:
       context: ./app
-      dockerfile: app.DockerFile
+      dockerfile: Dockerfile
     ports:
       # match latter with [SERVER_PORT] env
       - 127.0.0.1:8000:8080
