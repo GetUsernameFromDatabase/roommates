@@ -28,4 +28,6 @@ var (
 	// unknown, expired or already used email token
 	ErrorTokenInvalid     = errors.New("token is invalid or expired")
 	ErrorEmailNotVerified = errors.New("email is not verified")
+	// a form value that fails validation in a service
+	ErrorInvalidInput = errors.New("invalid input")
 )

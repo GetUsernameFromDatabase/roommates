@@ -43,6 +43,48 @@ templ Household(actor services.Membership, o services.HouseholdOverview, inviteB
 				@card.Card() {
 					@card.Header() {
 						@card.Title() {
+							@components.T(locales.LK_ShoppingLists)
+						}
+					}
+					@card.Content() {
+						if len(o.ShoppingLists) == 0 {
+							<p class="text-sm text-muted-foreground">
+								@components.T(locales.LK_ShoppingNoLists)
+							</p>
+						} else {
+							<ul class="divide-y">
+								for _, l := range o.ShoppingLists {
+									<li>
+										<a href={ householdURL(actor.HouseholdID, "lists", l.ID.String()) } class="flex items-center justify-between gap-2 py-3 hover:underline">
+											<span class="font-medium break-words">{ l.Name }</span>
+											<span class="shrink-0 text-sm text-muted-foreground">
+												{ utils.T(ctx, locales.LK_ShoppingOpenItems, l.OpenItems) }
+											</span>
+										</a>
+									</li>
+								}
+							</ul>
+						}
+						<form action={ householdURL(actor.HouseholdID, "lists") } method="post" hx-boost="true" class="mt-4 flex gap-2">
+							@input.Input(input.Props{
+								Name:        "name",
+								Type:        "text",
+								Placeholder: utils.T(ctx, locales.LK_ShoppingNewList),
+								Required:    true,
+								Attributes: templ.Attributes{
+									"maxlength":  services.MaxShoppingListNameLength,
+									"aria-label": utils.T(ctx, locales.LK_ShoppingNewList),
+								},
+							})
+							@button.Button(button.Props{Type: button.TypeSubmit, Variant: button.VariantSecondary}) {
+								@components.T(locales.LK_ShoppingCreateList)
+							}
+						</form>
+					}
+				}
+				@card.Card() {
+					@card.Header() {
+						@card.Title() {
 							@components.T(locales.LK_HouseholdMembers)
 						}
 					}

@@ -4,7 +4,7 @@ Go web app: Gin + templ + htmx + Tailwind v4 / shadcn-templ + sqlc + PostgreSQL.
 
 ## Commands
 
-Run from `app/` (the Go module root):
+Run from `app/` (the Go module root). Anything that touches the database (`go test`, `task dev`, the server) needs the compose `db` service on 127.0.0.1:5433: run `docker compose up -d --wait db` first (`task dev` does it itself).
 
 - `task dev` — hot reload (tailwind watch + shadcn-templ bundle watch + `templ generate --watch` running `scripts/dev-run.sh` under dlv on :2345)
 - `task build` — full production build → `bin/app`
@@ -15,7 +15,7 @@ Run from `app/` (the Go module root):
 
 Code generation (regenerate after editing the source, never edit the output):
 
-- `sqlc generate` — `internal/db/queries.sql` + `internal/db/migrations/` → `internal/db/dbqueries/`
+- `sqlc generate` — `internal/db/queries/*.sql` + `internal/db/migrations/` → `internal/db/dbqueries/`
 - `go tool templ generate` — `*.templ` → `*_templ.go`
 - `go generate ./tools/...` — `internal/locales/{et,en}/*.yaml` → `locales-keys.go`, `locales-languages.go` (et.yaml is the baseline)
 - `go tool shadcn-templ bundle` — component scripts → `web/assets/public/js/`

@@ -41,4 +41,6 @@ const (
 	ParamHouseholdID = "householdID"
 	ParamInviteID    = "inviteID"
 	ParamUserID      = "userID"
+	ParamListID      = "listID"
+	ParamItemID      = "itemID"
 )

@@ -14,7 +14,7 @@ roommates/
    ├─ cmd/server/       entry point (main.go) and routes
    ├─ internal/         application code
    │  ├─ config/        env, routes, cookie/header keys
-   │  ├─ db/            migrations, queries.sql, sqlc output (dbqueries/)
+   │  ├─ db/            migrations, queries/, sqlc output (dbqueries/)
    │  ├─ handlers/      HTTP layer
    │  ├─ services/      business logic used by handlers
    │  ├─ middleware/ models/ validators/ sessions/ logger/ utils/

@@ -86,6 +86,16 @@ func initRoutes(r *gin.Engine, h *handlers.DefaultHandler, service *services.Def
 			household.POST("/members/:"+g.ParamUserID+"/remove", h.RemoveMember)
 			household.POST("/members/:"+g.ParamUserID+"/promote", h.PromoteMember)
 			household.POST("/leave", h.LeaveHousehold)
+
+			household.POST("/lists", h.CreateShoppingList)
+			list := household.Group("/lists/:" + g.ParamListID)
+			list.GET("", h.PageShoppingList)
+			list.POST("/delete", h.DeleteShoppingList)
+			list.POST("/items", h.AddShoppingItem)
+			list.POST("/clear", h.ClearCheckedShoppingItems)
+			list.POST("/items/:"+g.ParamItemID+"/claim", h.SetShoppingItemClaim)
+			list.POST("/items/:"+g.ParamItemID+"/check", h.SetShoppingItemChecked)
+			list.POST("/items/:"+g.ParamItemID+"/delete", h.DeleteShoppingItem)
 		}
 	}
 }

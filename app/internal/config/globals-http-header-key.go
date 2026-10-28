@@ -12,6 +12,9 @@ type HTTPHeaderKey string
 const (
 	HHK_HXRequest  HTTPHeaderKey = "HX-Request"
 	HHK_HXRedirect HTTPHeaderKey = "HX-Redirect"
+	HHK_HXRetarget HTTPHeaderKey = "HX-Retarget"
+	HHK_HXReselect HTTPHeaderKey = "HX-Reselect"
+	HHK_HXReswap   HTTPHeaderKey = "HX-Reswap"
 )
 
 const (

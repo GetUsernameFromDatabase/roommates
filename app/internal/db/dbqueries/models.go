@@ -42,6 +42,29 @@ type Membership struct {
 	LeftAt      pgtype.Timestamptz `json:"left_at"`
 }
 
+type ShoppingItem struct {
+	ID          pgtype.UUID        `json:"id"`
+	ListID      pgtype.UUID        `json:"list_id"`
+	HouseholdID pgtype.UUID        `json:"household_id"`
+	Text        string             `json:"text"`
+	Qty         string             `json:"qty"`
+	CreatedBy   pgtype.UUID        `json:"created_by"`
+	ClaimedBy   pgtype.UUID        `json:"claimed_by"`
+	CheckedBy   pgtype.UUID        `json:"checked_by"`
+	CheckedAt   pgtype.Timestamptz `json:"checked_at"`
+	CreatedAt   pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
+}
+
+type ShoppingList struct {
+	ID          pgtype.UUID        `json:"id"`
+	HouseholdID pgtype.UUID        `json:"household_id"`
+	Name        string             `json:"name"`
+	CreatedBy   pgtype.UUID        `json:"created_by"`
+	CreatedAt   pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
+}
+
 type User struct {
 	ID             pgtype.UUID        `json:"id"`
 	Email          string             `json:"email"`

@@ -107,7 +107,8 @@ type HouseholdOverview struct {
 	// invites need a confirmed email, see [DefaultService.CreateInvite]
 	ActorEmailValidated bool
 	// only filled for owners, members cannot manage invites
-	Invites []dbqueries.ListActiveInvitesRow
+	Invites       []dbqueries.ListActiveInvitesRow
+	ShoppingLists []dbqueries.ListShoppingListsRow
 }
 
 func (s *DefaultService) GetHouseholdOverview(ctx context.Context, actor Membership) (HouseholdOverview, error) {
@@ -124,6 +125,9 @@ func (s *DefaultService) GetHouseholdOverview(ctx context.Context, actor Members
 		return o, err
 	}
 	o.ActorEmailValidated = actorUser.EmailValidated
+	if o.ShoppingLists, err = s.db.ListShoppingLists(ctx, actor.HouseholdID); err != nil {
+		return o, err
+	}
 	if actor.Role == g.RoleOwner {
 		o.Invites, err = s.db.ListActiveInvites(ctx, actor.HouseholdID)
 	}

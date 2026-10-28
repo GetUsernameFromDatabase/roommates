@@ -1,0 +1,171 @@
+package pages
+
+import "roommates/web/components"
+import "roommates/web/components/card"
+import "roommates/web/components/button"
+import "roommates/web/components/input"
+import "roommates/internal/services"
+import "roommates/internal/locales"
+import "roommates/internal/utils"
+
+// ShoppingList shows the items of one list, errorMessage is the outcome of the last action
+//
+// the forms post with hx-select so only #shopping-list is swapped,
+// a check-off keeps the scroll position
+templ ShoppingList(actor services.Membership, l services.ShoppingList, errorMessage string) {
+	@components.HtmlWrap() {
+		@components.HeaderComponent(l.List.Name)
+		<body>
+			<main class="mx-auto flex min-h-svh w-full max-w-lg flex-col gap-6 bg-background p-6 text-foreground sm:p-10">
+				<div>
+					<a href={ householdURL(actor.HouseholdID) } class="text-sm text-muted-foreground underline-offset-4 hover:text-foreground hover:underline">
+						@components.T(locales.LK_HouseholdBack)
+					</a>
+					<h1 class="mt-2 text-2xl font-semibold break-words">{ l.List.Name }</h1>
+				</div>
+				@card.Card() {
+					@card.Content() {
+						@shoppingListContent(actor, l, errorMessage)
+					}
+				}
+				if l.List.CreatedBy == actor.UserID {
+					<form
+						action={ shoppingListURL(actor, l, "delete") }
+						method="post"
+						hx-boost="true"
+						hx-confirm={ utils.T(ctx, locales.LK_ShoppingDeleteList) + "?" }
+					>
+						@button.Button(button.Props{
+							Type:    button.TypeSubmit,
+							Variant: button.VariantOutline,
+							Class:   "w-full text-destructive",
+						}) {
+							@components.T(locales.LK_ShoppingDeleteList)
+						}
+					</form>
+				}
+			</main>
+		</body>
+	}
+}
+
+templ shoppingListContent(actor services.Membership, l services.ShoppingList, errorMessage string) {
+	{{ hasChecked := false }}
+	<div id="shopping-list" class="space-y-4">
+		<form
+			action={ shoppingListURL(actor, l, "items") }
+			method="post"
+			{ shoppingSwap(actor, l, "items")... }
+			class="flex gap-2"
+		>
+			@input.Input(input.Props{
+				Name:        "text",
+				Type:        "text",
+				Placeholder: utils.T(ctx, locales.LK_ShoppingItem),
+				Required:    true,
+				Attributes: templ.Attributes{
+					"maxlength":  services.MaxShoppingItemTextLength,
+					"aria-label": utils.T(ctx, locales.LK_ShoppingItem),
+				},
+			})
+			@input.Input(input.Props{
+				Name:        "qty",
+				Type:        "text",
+				Placeholder: utils.T(ctx, locales.LK_ShoppingQty),
+				Class:       "w-24",
+				Attributes: templ.Attributes{
+					"maxlength":  services.MaxShoppingItemQtyLength,
+					"aria-label": utils.T(ctx, locales.LK_ShoppingQty),
+				},
+			})
+			@button.Button(button.Props{Type: button.TypeSubmit}) {
+				@components.T(locales.LK_ShoppingAdd)
+			}
+		</form>
+		if errorMessage != "" {
+			<div
+				role="alert"
+				class="rounded-md border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive"
+			>
+				{ errorMessage }
+			</div>
+		}
+		if len(l.Items) == 0 {
+			<p class="text-sm text-muted-foreground">
+				@components.T(locales.LK_ShoppingEmpty)
+			</p>
+		}
+		<ul class="divide-y">
+			for _, it := range l.Items {
+				{{ checked := it.CheckedAt.Valid }}
+				{{ hasChecked = hasChecked || checked }}
+				{{ itemID := it.ID.String() }}
+				<li class="flex items-center gap-3 py-2">
+					<form action={ shoppingListURL(actor, l, "items", itemID, "check") } method="post" { shoppingSwap(actor, l, "items", itemID, "check")... }>
+						<input type="hidden" name="checked" value={ utils.IfElse(checked, "0", "1") }/>
+						<button
+							type="submit"
+							role="checkbox"
+							aria-checked={ utils.IfElse(checked, "true", "false") }
+							aria-label={ utils.IfElse(checked, utils.T(ctx, locales.LK_ShoppingUncheck), utils.T(ctx, locales.LK_ShoppingCheck)) + ": " + it.Text }
+							class={ utils.CN("flex size-5 shrink-0 items-center justify-center rounded border border-input",
+								utils.IfElse(checked, "bg-primary text-primary-foreground", "")) }
+						>
+							if checked {
+								✓
+							}
+						</button>
+					</form>
+					<div class="min-w-0 flex-1">
+						<span class={ utils.CN("break-words", utils.IfElse(checked, "text-muted-foreground line-through", "")) }>
+							{ it.Text }
+						</span>
+						if it.Qty != "" {
+							<span class="text-sm text-muted-foreground">· { it.Qty }</span>
+						}
+						if checked && it.CheckedByName != nil {
+							<div class="text-xs text-muted-foreground">{ utils.T(ctx, locales.LK_ShoppingBoughtBy, *it.CheckedByName) }</div>
+						} else if !checked && it.ClaimedByName != nil {
+							<div class="text-xs text-muted-foreground">{ utils.T(ctx, locales.LK_ShoppingBuyingBy, *it.ClaimedByName) }</div>
+						}
+					</div>
+					if !checked {
+						<form action={ shoppingListURL(actor, l, "items", itemID, "claim") } method="post" { shoppingSwap(actor, l, "items", itemID, "claim")... }>
+							<input type="hidden" name="claim" value={ utils.IfElse(it.ClaimedBy == actor.UserID, "0", "1") }/>
+							@button.Button(button.Props{
+								Type:    button.TypeSubmit,
+								Variant: button.VariantGhost,
+								Size:    button.SizeSm,
+							}) {
+								if it.ClaimedBy == actor.UserID {
+									@components.T(locales.LK_ShoppingStopBuying)
+								} else {
+									@components.T(locales.LK_ShoppingBuying)
+								}
+							}
+						</form>
+					}
+					if it.CreatedBy == actor.UserID {
+						<form action={ shoppingListURL(actor, l, "items", itemID, "delete") } method="post" { shoppingSwap(actor, l, "items", itemID, "delete")... }>
+							@button.Button(button.Props{
+								Type:    button.TypeSubmit,
+								Variant: button.VariantGhost,
+								Size:    button.SizeSm,
+								Class:   "text-destructive",
+							}) {
+								@components.T(locales.LK_ShoppingDelete)
+							}
+						</form>
+					}
+				</li>
+			}
+		</ul>
+		if hasChecked {
+			<form action={ shoppingListURL(actor, l, "clear") } method="post" { shoppingSwap(actor, l, "clear")... }>
+				@button.Button(button.Props{Type: button.TypeSubmit, Variant: button.VariantSecondary}) {
+					@components.T(locales.LK_ShoppingClear)
+				}
+			</form>
+		}
+	</div>
+}

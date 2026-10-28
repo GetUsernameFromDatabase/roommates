@@ -52,6 +52,27 @@ et:
     invite-email-submit: Saada kutse
     invite-email-sent: Kutse saadetud aadressile %s
     verify-to-invite: Kutsete loomiseks kinnita oma e-posti aadress.
+  shopping:
+    lists: Ostunimekirjad
+    no-lists: Ostunimekirju veel pole
+    open-items: "%d ostmata"
+    new-list: Uus nimekiri
+    create-list: Loo nimekiri
+    name-length: Nimi peab olema 1 kuni %d tähte pikk
+    item: Toode
+    qty: Kogus
+    add: Lisa
+    empty: Nimekiri on tühi
+    item-length: Toode peab olema 1 kuni %d tähte ja kogus kõige rohkem %d tähte pikk
+    buying: Ostan mina
+    stop-buying: Ei osta
+    buying-by: "%s ostab"
+    bought-by: Ostis %s
+    check: Märgi ostetuks
+    uncheck: Märgi ostmata
+    delete: Kustuta
+    delete-list: Kustuta nimekiri
+    clear: Eemalda ostetud
   invite-page:
     title: Liitu leibkonnaga %s
     description: Sind on kutsutud selle leibkonnaga liituma.

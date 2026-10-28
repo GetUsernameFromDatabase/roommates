@@ -5,6 +5,7 @@ import (
 	"net/url"
 	g "roommates/internal/config"
 	"roommates/internal/locales"
+	"roommates/internal/services"
 	"roommates/internal/utils"
 	"time"
 
@@ -36,4 +37,19 @@ func RoleName(ctx context.Context, role string) string {
 		return utils.T(ctx, locales.LK_HouseholdRoleOwner)
 	}
 	return utils.T(ctx, locales.LK_HouseholdRoleMember)
+}
+
+// shoppingListURL is /h/:householdID/lists/:listID followed by parts
+func shoppingListURL(actor services.Membership, l services.ShoppingList, parts ...string) templ.SafeURL {
+	return householdURL(actor.HouseholdID, append([]string{"lists", l.List.ID.String()}, parts...)...)
+}
+
+// shoppingSwap posts a form with htmx and swaps in only #shopping-list of the response
+func shoppingSwap(actor services.Membership, l services.ShoppingList, parts ...string) templ.Attributes {
+	return templ.Attributes{
+		"hx-post":   string(shoppingListURL(actor, l, parts...)),
+		"hx-target": "#shopping-list",
+		"hx-select": "#shopping-list",
+		"hx-swap":   "outerHTML",
+	}
 }

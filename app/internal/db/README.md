@@ -9,7 +9,7 @@ Use [sqlc.yml](../../sqlc.yml) to configure sqlc
 
 ---
 
-SQL found in [queries.sql](queries.sql) is used to generate go code that interacts with the database
+SQL found in [queries](queries) is used to generate go code that interacts with the database
 
 ---
 

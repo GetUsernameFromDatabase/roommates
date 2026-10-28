@@ -52,6 +52,27 @@ en:
     invite-email-submit: Send invite
     invite-email-sent: Invite sent to %s
     verify-to-invite: Confirm your email address to create invites.
+  shopping:
+    lists: Shopping lists
+    no-lists: No shopping lists yet
+    open-items: "%d to buy"
+    new-list: New list
+    create-list: Create list
+    name-length: Name must be between 1 and %d characters long
+    item: Item
+    qty: Quantity
+    add: Add
+    empty: The list is empty
+    item-length: The item must be 1 to %d characters long and the quantity at most %d
+    buying: "I'm buying"
+    stop-buying: Not buying
+    buying-by: "%s is buying"
+    bought-by: Bought by %s
+    check: Mark as bought
+    uncheck: Mark as not bought
+    delete: Delete
+    delete-list: Delete list
+    clear: Remove bought items
   invite-page:
     title: Join %s
     description: You have been invited to join this household.
