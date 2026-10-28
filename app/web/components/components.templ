@@ -8,9 +8,9 @@ import "roommates/internal/utils"
 //  <!DOCTYPE html>
 //  <html>children...</html>
 templ HtmlWrap() {
-	// TODO: https://templ.guide/syntax-and-usage/template-composition#children
+	{{ a := utils.GetAppearance(ctx) }}
 	<!DOCTYPE html>
-	<html lang={ utils.GetLocaleString(ctx) }>
+	<html lang={ utils.GetLocaleString(ctx) } data-theme={ a.Theme } data-mode={ a.Mode }>
 		{ children... }
 	</html>
 }
@@ -22,8 +22,28 @@ templ HeaderComponent(title string) {
 			title = utils.T(ctx, locales.LK_AppTitle)
 		}
 	}}
+	{{
+		a := utils.GetAppearance(ctx)
+		light, dark := a.Background()
+	}}
 	<head>
+		<meta charset="utf-8"/>
+		<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
 		<title>{ title }</title>
+		// the browser bar takes the page background
+		switch a.Mode {
+			case "light":
+				<meta name="theme-color" content={ light }/>
+			case "dark":
+				<meta name="theme-color" content={ dark }/>
+			default:
+				<meta name="theme-color" media="(prefers-color-scheme: light)" content={ light }/>
+				<meta name="theme-color" media="(prefers-color-scheme: dark)" content={ dark }/>
+		}
+		if a.Theme == "home" {
+			<link rel="preload" href="/assets/fonts/atkinson-hyperlegible-next-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin/>
+			<link rel="preload" href="/assets/fonts/bricolage-grotesque-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin/>
+		}
 		<link rel="stylesheet" href="/assets/output.css"/>
 		// by default htmx does not swap 4xx/5xx responses, which would leave
 		// a submitted form without feedback, so error pages are swapped in too
@@ -34,7 +54,7 @@ templ HeaderComponent(title string) {
 			content={ `{"allowEval":false,"responseHandling":[{"code":"204","swap":false},{"code":"[23]..","swap":true},{"code":"[45]..","swap":true,"error":true},{"code":"...","swap":false}]}` }
 		/>
 		// https://htmx.org/docs/#installing
-		<script src="/assets/htmx.org@2.0.11.min.js"></script>
+		<script src="/assets/lib/htmx.min.js"></script>
 		// this reccomends to use @components.Scripts()
 		// https://shadcn-templ.com/docs/installation#javascript
 		// but scripts_bundle.go just has bundleSrc

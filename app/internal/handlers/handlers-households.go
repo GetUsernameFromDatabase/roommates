@@ -21,8 +21,13 @@ func membershipFromContext(ctx *gin.Context) services.Membership {
 	return ctx.MustGet(g.GinKeyMembership).(services.Membership)
 }
 
+// householdPath is the shopping section, the first page of a household
 func householdPath(id pgtype.UUID) string {
 	return g.RouteHousehold + "/" + id.String()
+}
+
+func peoplePath(id pgtype.UUID) string {
+	return householdPath(id) + "/people"
 }
 
 func sessionUserID(ctx *gin.Context) (pgtype.UUID, error) {
@@ -64,16 +69,31 @@ func (h *DefaultHandler) PageInvite(ctx *gin.Context) {
 // set after [DefaultHandler.SendInviteEmail], so a refresh does not resend
 const queryInvited = "invited"
 
-// PageHousehold shows members and, for owners, invites
+// PageHousehold shows the shopping lists
 func (h *DefaultHandler) PageHousehold(ctx *gin.Context) {
+	h.renderShopping(ctx, http.StatusOK, "")
+}
+
+func (h *DefaultHandler) renderShopping(ctx *gin.Context, status int, errorMessage string) {
+	actor := membershipFromContext(ctx)
+	overview, err := h.service.GetHouseholdOverview(ctx, actor)
+	if err != nil {
+		InternalError(ctx, err)
+		return
+	}
+	RenderTemplStatus(ctx, status, pages.HouseholdShopping(actor, overview, errorMessage))
+}
+
+// PagePeople shows members and, for owners, invites
+func (h *DefaultHandler) PagePeople(ctx *gin.Context) {
 	info := ""
 	if invited := ctx.Query(queryInvited); invited != "" {
 		info = utils.T(ctx.Request.Context(), locales.LK_HouseholdInviteEmailSent, invited)
 	}
-	h.renderHousehold(ctx, http.StatusOK, info, "")
+	h.renderPeople(ctx, http.StatusOK, info, "")
 }
 
-func (h *DefaultHandler) renderHousehold(ctx *gin.Context, status int, infoMessage, errorMessage string) {
+func (h *DefaultHandler) renderPeople(ctx *gin.Context, status int, infoMessage, errorMessage string) {
 	actor := membershipFromContext(ctx)
 	overview, err := h.service.GetHouseholdOverview(ctx, actor)
 	if err != nil {
@@ -81,21 +101,21 @@ func (h *DefaultHandler) renderHousehold(ctx *gin.Context, status int, infoMessa
 		return
 	}
 	inviteURL := g.GetAppBaseURL() + g.RouteInvite + "?code="
-	RenderTemplStatus(ctx, status, pages.Household(actor, overview, inviteURL, infoMessage, errorMessage))
+	RenderTemplStatus(ctx, status, pages.HouseholdPeople(actor, overview, inviteURL, infoMessage, errorMessage))
 }
 
-// householdAction runs an action of the household page and goes back to it
+// householdAction runs an action of the people page and goes back to it
 func (h *DefaultHandler) householdAction(ctx *gin.Context, action func(actor services.Membership) error) {
 	actor := membershipFromContext(ctx)
 	err := action(actor)
 	switch {
 	case err == nil:
-		Redirect(ctx, householdPath(actor.HouseholdID))
+		Redirect(ctx, peoplePath(actor.HouseholdID))
 	case errors.Is(err, g.ErrorLastOwner):
-		h.renderHousehold(ctx, http.StatusConflict, "",
+		h.renderPeople(ctx, http.StatusConflict, "",
 			utils.T(ctx.Request.Context(), locales.LK_HouseholdLastOwner))
 	case errors.Is(err, g.ErrorEmailNotVerified):
-		h.renderHousehold(ctx, http.StatusForbidden, "",
+		h.renderPeople(ctx, http.StatusForbidden, "",
 			utils.T(ctx.Request.Context(), locales.LK_HouseholdVerifyToInvite))
 	case errors.Is(err, g.ErrorNotFound):
 		RenderTemplStatus(ctx, http.StatusNotFound, pages.NotFound())
@@ -130,7 +150,7 @@ func (h *DefaultHandler) SendInviteEmail(ctx *gin.Context) {
 	var model models.EmailForm
 	_ = ctx.ShouldBind(&model)
 	if isValid, _ := model.IsValid(); !isValid {
-		h.renderHousehold(ctx, http.StatusUnprocessableEntity, "",
+		h.renderPeople(ctx, http.StatusUnprocessableEntity, "",
 			utils.T(ctx.Request.Context(), locales.LK_ValidationErrorsEmailGeneric))
 		return
 	}
@@ -141,7 +161,7 @@ func (h *DefaultHandler) SendInviteEmail(ctx *gin.Context) {
 		h.householdAction(ctx, func(services.Membership) error { return err })
 		return
 	}
-	Redirect(ctx, householdPath(actor.HouseholdID)+"?"+url.Values{queryInvited: {model.Email}}.Encode())
+	Redirect(ctx, peoplePath(actor.HouseholdID)+"?"+url.Values{queryInvited: {model.Email}}.Encode())
 }
 
 func (h *DefaultHandler) DeleteInvite(ctx *gin.Context) {
@@ -167,7 +187,7 @@ func (h *DefaultHandler) LeaveHousehold(ctx *gin.Context) {
 	actor := membershipFromContext(ctx)
 	err := h.service.Leave(ctx, actor)
 	if errors.Is(err, g.ErrorLastOwner) {
-		h.renderHousehold(ctx, http.StatusConflict, "",
+		h.renderPeople(ctx, http.StatusConflict, "",
 			utils.T(ctx.Request.Context(), locales.LK_HouseholdLastOwner))
 		return
 	}

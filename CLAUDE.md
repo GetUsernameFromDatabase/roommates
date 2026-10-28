@@ -6,7 +6,7 @@ Go web app: Gin + templ + htmx + Tailwind v4 / shadcn-templ + sqlc + PostgreSQL.
 
 Run from `app/` (the Go module root). Anything that touches the database (`go test`, `task dev`, the server) needs the compose `db` service on 127.0.0.1:5433: run `docker compose up -d --wait db` first (`task dev` does it itself).
 
-- `task dev` — hot reload (tailwind watch + shadcn-templ bundle watch + `templ generate --watch` running `scripts/dev-run.sh` under dlv on :2345)
+- `task dev` — hot reload (tailwind watch + shadcn-templ bundle watch + `templ generate --watch`, whose `--cmd` `scripts/dev-signal.sh` only signals `scripts/dev-run.sh` to restart the server under dlv on :2345)
 - `task build` — full production build → `bin/app`
 - `go build ./...` / `go vet ./...` — quick check
 - `sh scripts/lint.sh` — staticcheck + golangci-lint
@@ -19,6 +19,7 @@ Code generation (regenerate after editing the source, never edit the output):
 - `go tool templ generate` — `*.templ` → `*_templ.go`
 - `go generate ./tools/...` — `internal/locales/{et,en}/*.yaml` → `locales-keys.go`, `locales-languages.go` (et.yaml is the baseline)
 - `go tool shadcn-templ bundle` — component scripts → `web/assets/public/js/`
+- `task vendor` (`go run ./tools/vendor-assets`) — downloads htmx and the fonts pinned in `web/assets/vendor.json` (hashes in `vendor.lock.json`; the files themselves are never committed); `--check` lists newer versions (exit 1 if any), `--update [pkg…]` moves to the latest
 
 From the repo root: `docker compose up --build` runs db + app (app on https://127.0.0.1:8000). Env comes from `.env` (see `.env.example`). The server loads `./certificates/server.{pem,key}` relative to the working directory, so run it from `app/`.
 

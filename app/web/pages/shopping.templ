@@ -1,7 +1,6 @@
 package pages
 
 import "roommates/web/components"
-import "roommates/web/components/card"
 import "roommates/web/components/button"
 import "roommates/web/components/input"
 import "roommates/internal/services"
@@ -13,39 +12,27 @@ import "roommates/internal/utils"
 // the forms post with hx-select so only #shopping-list is swapped,
 // a check-off keeps the scroll position
 templ ShoppingList(actor services.Membership, l services.ShoppingList, errorMessage string) {
-	@components.HtmlWrap() {
-		@components.HeaderComponent(l.List.Name)
-		<body>
-			<main class="mx-auto flex min-h-svh w-full max-w-lg flex-col gap-6 bg-background p-6 text-foreground sm:p-10">
-				<div>
-					<a href={ householdURL(actor.HouseholdID) } class="text-sm text-muted-foreground underline-offset-4 hover:text-foreground hover:underline">
-						@components.T(locales.LK_HouseholdBack)
-					</a>
-					<h1 class="mt-2 text-2xl font-semibold break-words">{ l.List.Name }</h1>
-				</div>
-				@card.Card() {
-					@card.Content() {
-						@shoppingListContent(actor, l, errorMessage)
-					}
+	@appShell(l.List.Name, &HouseholdNav{HouseholdID: actor.HouseholdID, Section: SectionShopping}) {
+		@doorplateHeader(householdURL(actor.HouseholdID), utils.T(ctx, locales.LK_ShoppingBack), l.List.Name)
+		<section class={ sheetClass }>
+			@shoppingListContent(actor, l, errorMessage)
+		</section>
+		if l.List.CreatedBy == actor.UserID {
+			<form
+				action={ shoppingListURL(actor, l, "delete") }
+				method="post"
+				hx-boost="true"
+				hx-confirm={ utils.T(ctx, locales.LK_ShoppingDeleteList) + "?" }
+			>
+				@button.Button(button.Props{
+					Type:    button.TypeSubmit,
+					Variant: button.VariantOutline,
+					Class:   "w-full text-destructive",
+				}) {
+					@components.T(locales.LK_ShoppingDeleteList)
 				}
-				if l.List.CreatedBy == actor.UserID {
-					<form
-						action={ shoppingListURL(actor, l, "delete") }
-						method="post"
-						hx-boost="true"
-						hx-confirm={ utils.T(ctx, locales.LK_ShoppingDeleteList) + "?" }
-					>
-						@button.Button(button.Props{
-							Type:    button.TypeSubmit,
-							Variant: button.VariantOutline,
-							Class:   "w-full text-destructive",
-						}) {
-							@components.T(locales.LK_ShoppingDeleteList)
-						}
-					</form>
-				}
-			</main>
-		</body>
+			</form>
+		}
 	}
 }
 
@@ -56,13 +43,14 @@ templ shoppingListContent(actor services.Membership, l services.ShoppingList, er
 			action={ shoppingListURL(actor, l, "items") }
 			method="post"
 			{ shoppingSwap(actor, l, "items")... }
-			class="flex gap-2"
+			class="grid grid-cols-[1fr_auto] gap-2 sm:grid-cols-[1fr_6rem_auto]"
 		>
 			@input.Input(input.Props{
 				Name:        "text",
 				Type:        "text",
 				Placeholder: utils.T(ctx, locales.LK_ShoppingItem),
 				Required:    true,
+				Class:       "col-span-2 h-11 sm:col-span-1",
 				Attributes: templ.Attributes{
 					"maxlength":  services.MaxShoppingItemTextLength,
 					"aria-label": utils.T(ctx, locales.LK_ShoppingItem),
@@ -72,26 +60,26 @@ templ shoppingListContent(actor services.Membership, l services.ShoppingList, er
 				Name:        "qty",
 				Type:        "text",
 				Placeholder: utils.T(ctx, locales.LK_ShoppingQty),
-				Class:       "w-24",
+				Class:       "h-11",
 				Attributes: templ.Attributes{
 					"maxlength":  services.MaxShoppingItemQtyLength,
 					"aria-label": utils.T(ctx, locales.LK_ShoppingQty),
 				},
 			})
-			@button.Button(button.Props{Type: button.TypeSubmit}) {
+			@button.Button(button.Props{Type: button.TypeSubmit, Size: button.SizeLg, Class: "h-11"}) {
 				@components.T(locales.LK_ShoppingAdd)
 			}
 		</form>
 		if errorMessage != "" {
 			<div
 				role="alert"
-				class="rounded-md border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive"
+				class="rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive"
 			>
 				{ errorMessage }
 			</div>
 		}
 		if len(l.Items) == 0 {
-			<p class="text-sm text-muted-foreground">
+			<p class="py-2 text-muted-foreground">
 				@components.T(locales.LK_ShoppingEmpty)
 			</p>
 		}
@@ -100,7 +88,12 @@ templ shoppingListContent(actor services.Membership, l services.ShoppingList, er
 				{{ checked := it.CheckedAt.Valid }}
 				{{ hasChecked = hasChecked || checked }}
 				{{ itemID := it.ID.String() }}
-				<li class="flex items-center gap-3 py-2">
+				// ids let htmx settle old into new classes, so the tick and the fade animate
+				<li
+					id={ "item-" + itemID }
+					class={ utils.CN("flex min-h-14 items-center gap-2 py-1 transition-opacity duration-150 motion-reduce:transition-none",
+						utils.IfElse(checked, "opacity-60", "")) }
+				>
 					<form action={ shoppingListURL(actor, l, "items", itemID, "check") } method="post" { shoppingSwap(actor, l, "items", itemID, "check")... }>
 						<input type="hidden" name="checked" value={ utils.IfElse(checked, "0", "1") }/>
 						<button
@@ -108,25 +101,33 @@ templ shoppingListContent(actor services.Membership, l services.ShoppingList, er
 							role="checkbox"
 							aria-checked={ utils.IfElse(checked, "true", "false") }
 							aria-label={ utils.IfElse(checked, utils.T(ctx, locales.LK_ShoppingUncheck), utils.T(ctx, locales.LK_ShoppingCheck)) + ": " + it.Text }
-							class={ utils.CN("flex size-5 shrink-0 items-center justify-center rounded border border-input",
-								utils.IfElse(checked, "bg-primary text-primary-foreground", "")) }
+							class="-ml-2 flex size-11 shrink-0 items-center justify-center rounded-full outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
 						>
-							if checked {
+							<span
+								id={ "tick-" + itemID }
+								aria-hidden="true"
+								class={ utils.CN("flex size-7 items-center justify-center rounded-full border-2 border-primary text-sm font-bold transition-colors duration-150 motion-reduce:transition-none",
+									utils.IfElse(checked, "bg-primary text-primary-foreground", "text-transparent")) }
+							>
 								✓
-							}
+							</span>
 						</button>
 					</form>
 					<div class="min-w-0 flex-1">
-						<span class={ utils.CN("break-words", utils.IfElse(checked, "text-muted-foreground line-through", "")) }>
+						<span class={ utils.CN("break-words", utils.IfElse(checked, "line-through", "")) }>
 							{ it.Text }
 						</span>
 						if it.Qty != "" {
-							<span class="text-sm text-muted-foreground">· { it.Qty }</span>
+							<span class="text-sm text-muted-foreground">{ it.Qty }</span>
 						}
 						if checked && it.CheckedByName != nil {
 							<div class="text-xs text-muted-foreground">{ utils.T(ctx, locales.LK_ShoppingBoughtBy, *it.CheckedByName) }</div>
 						} else if !checked && it.ClaimedByName != nil {
-							<div class="text-xs text-muted-foreground">{ utils.T(ctx, locales.LK_ShoppingBuyingBy, *it.ClaimedByName) }</div>
+							<div>
+								<span class="mt-0.5 inline-flex rounded-full bg-claim px-2 py-0.5 text-xs font-medium text-claim-foreground">
+									{ utils.T(ctx, locales.LK_ShoppingBuyingBy, *it.ClaimedByName) }
+								</span>
+							</div>
 						}
 					</div>
 					if !checked {
@@ -135,7 +136,7 @@ templ shoppingListContent(actor services.Membership, l services.ShoppingList, er
 							@button.Button(button.Props{
 								Type:    button.TypeSubmit,
 								Variant: button.VariantGhost,
-								Size:    button.SizeSm,
+								Class:   "h-11 px-3",
 							}) {
 								if it.ClaimedBy == actor.UserID {
 									@components.T(locales.LK_ShoppingStopBuying)
@@ -150,8 +151,7 @@ templ shoppingListContent(actor services.Membership, l services.ShoppingList, er
 							@button.Button(button.Props{
 								Type:    button.TypeSubmit,
 								Variant: button.VariantGhost,
-								Size:    button.SizeSm,
-								Class:   "text-destructive",
+								Class:   "h-11 px-3 text-destructive",
 							}) {
 								@components.T(locales.LK_ShoppingDelete)
 							}

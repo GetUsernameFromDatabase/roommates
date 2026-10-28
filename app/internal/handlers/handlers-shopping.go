@@ -22,7 +22,7 @@ func (h *DefaultHandler) CreateShoppingList(ctx *gin.Context) {
 	actor := membershipFromContext(ctx)
 	listID, err := h.service.CreateShoppingList(ctx, actor, ctx.PostForm("name"))
 	if errors.Is(err, g.ErrorInvalidInput) {
-		h.renderHousehold(ctx, http.StatusUnprocessableEntity, "",
+		h.renderShopping(ctx, http.StatusUnprocessableEntity,
 			utils.T(ctx.Request.Context(), locales.LK_ShoppingNameLength, services.MaxShoppingListNameLength))
 		return
 	}
@@ -109,11 +109,23 @@ func (h *DefaultHandler) shoppingItemAction(ctx *gin.Context,
 	})
 }
 
-// DeleteShoppingList goes back to the household page
+// DeleteShoppingList goes back to the shopping lists
 func (h *DefaultHandler) DeleteShoppingList(ctx *gin.Context) {
-	h.householdTargetAction(ctx, g.ParamListID, func(actor services.Membership, listID pgtype.UUID) error {
-		return h.service.DeleteShoppingList(ctx, actor, listID)
-	})
+	listID, err := utils.ParseUUID(ctx.Param(g.ParamListID))
+	if err != nil {
+		RenderTemplStatus(ctx, http.StatusNotFound, pages.NotFound())
+		return
+	}
+	actor := membershipFromContext(ctx)
+	err = h.service.DeleteShoppingList(ctx, actor, listID)
+	switch {
+	case err == nil:
+		Redirect(ctx, householdPath(actor.HouseholdID))
+	case errors.Is(err, g.ErrorNotFound):
+		RenderTemplStatus(ctx, http.StatusNotFound, pages.NotFound())
+	default:
+		InternalError(ctx, err)
+	}
 }
 
 func (h *DefaultHandler) AddShoppingItem(ctx *gin.Context) {

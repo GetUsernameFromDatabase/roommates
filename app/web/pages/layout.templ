@@ -1,0 +1,129 @@
+package pages
+
+import "roommates/web/components"
+import "roommates/internal/db/dbqueries"
+import "roommates/internal/locales"
+import "roommates/internal/utils"
+import "github.com/jackc/pgx/v5/pgtype"
+
+// sections of a household, the bottom bar on phones and the tab row on wide screens
+const (
+	SectionShopping = "shopping"
+	SectionPeople   = "people"
+)
+
+// HouseholdNav is where in a household a page is
+type HouseholdNav struct {
+	HouseholdID pgtype.UUID
+	Section     string
+}
+
+// guestShell is the document of pages shown signed out or without a household nav,
+// children bring their own <main>
+templ guestShell(title string) {
+	@components.HtmlWrap() {
+		@components.HeaderComponent(title)
+		<body>
+			{ children... }
+		</body>
+	}
+}
+
+// appShell is the document of signed in pages: one column, and inside a household
+// the section nav, fixed at the bottom on phones so it is in reach of a thumb
+templ appShell(title string, nav *HouseholdNav) {
+	@components.HtmlWrap() {
+		@components.HeaderComponent(title)
+		<body>
+			if nav != nil {
+				@householdNav(*nav)
+			}
+			<main class={ utils.CN(pageMainClass, utils.IfElse(nav != nil, "pb-28 md:pb-10", "")) }>
+				{ children... }
+			</main>
+		</body>
+	}
+}
+
+// pageMainClass is the single column of the signed in pages, 16px gutters on phones
+const pageMainClass = "mx-auto flex min-h-svh w-full max-w-lg flex-col gap-8 px-4 py-6 sm:p-10"
+
+// sheetClass is the one raised surface of a page, the thing used most on it
+const sheetClass = "rounded-2xl bg-card p-4 text-card-foreground ring-1 ring-foreground/10 sm:p-5"
+
+templ householdNav(nav HouseholdNav) {
+	<nav
+		aria-label={ utils.T(ctx, locales.LK_NavLabel) }
+		class="fixed inset-x-0 bottom-0 z-10 border-t bg-card pb-[env(safe-area-inset-bottom)] md:sticky md:top-0 md:bottom-auto md:border-t-0 md:border-b md:bg-background md:pb-0"
+	>
+		<ul class="mx-auto flex w-full max-w-lg gap-2 px-4 py-2 sm:px-10">
+			@householdNavItem(householdURL(nav.HouseholdID), locales.LK_NavShopping, nav.Section == SectionShopping)
+			@householdNavItem(householdURL(nav.HouseholdID, "people"), locales.LK_NavPeople, nav.Section == SectionPeople)
+		</ul>
+	</nav>
+}
+
+templ householdNavItem(href templ.SafeURL, label locales.LK, current bool) {
+	<li class="flex-1 md:flex-none">
+		<a
+			href={ href }
+			if current {
+				aria-current="page"
+			}
+			class={ utils.CN("flex h-12 items-center justify-center rounded-full px-5 font-heading font-semibold outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
+				utils.IfElse(current, "bg-primary text-primary-foreground", "text-muted-foreground hover:bg-secondary hover:text-foreground")) }
+		>
+			@components.T(label)
+		</a>
+	</li>
+}
+
+// householdSwitcher is the household name as the page's nameplate,
+// with more than one household it opens the others
+templ householdSwitcher(current pgtype.UUID, name string, households []dbqueries.ListHouseholdsOfUserRow) {
+	if len(households) < 2 {
+		<header>
+			<h1 class="doorplate">{ name }</h1>
+		</header>
+	} else {
+		<details class="group relative">
+			<summary
+				class="inline-flex cursor-pointer list-none items-baseline gap-2 rounded-lg outline-none focus-visible:ring-3 focus-visible:ring-ring/50 [&::-webkit-details-marker]:hidden"
+				aria-label={ utils.T(ctx, locales.LK_NavSwitch) + ": " + name }
+			>
+				<h1 class="doorplate">{ name }</h1>
+				<span aria-hidden="true" class="text-2xl text-muted-foreground transition-transform group-open:rotate-180 motion-reduce:transition-none">⌄</span>
+			</summary>
+			<ul class="absolute z-20 mt-2 w-full max-w-xs rounded-2xl bg-card p-2 ring-1 ring-foreground/10 shadow-lg">
+				for _, h := range households {
+					<li>
+						<a
+							href={ householdURL(h.ID) }
+							if h.ID == current {
+								aria-current="page"
+							}
+							class="flex min-h-11 items-center rounded-lg px-3 font-heading font-semibold break-words hover:bg-secondary aria-[current=page]:text-primary"
+						>
+							{ h.Name }
+						</a>
+					</li>
+				}
+				<li class="mt-1 border-t pt-1">
+					<a href="/" class="flex min-h-11 items-center rounded-lg px-3 text-sm text-muted-foreground hover:bg-secondary hover:text-foreground">
+						@components.T(locales.LK_HouseholdBack)
+					</a>
+				</li>
+			</ul>
+		</details>
+	}
+}
+
+// doorplateHeader is a back link and the name of what the page is about
+templ doorplateHeader(back templ.SafeURL, backText, name string) {
+	<header>
+		<a href={ back } class="inline-flex min-h-11 items-center text-sm text-muted-foreground underline-offset-4 hover:text-foreground hover:underline">
+			{ backText }
+		</a>
+		<h1 class="doorplate mt-1">{ name }</h1>
+	</header>
+}

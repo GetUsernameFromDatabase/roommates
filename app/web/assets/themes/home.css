@@ -1,0 +1,73 @@
+/* Home: lime plaster walls, linen sheets, houseplant green, ochre for people
+ *
+ * colours are light-dark() pairs, data-mode sets color-scheme in globals.css,
+ * contrast of every text pair is 4.5:1 or more in both modes
+ */
+@font-face {
+  font-family: "Bricolage Grotesque";
+  font-style: normal;
+  font-display: swap;
+  font-weight: 200 800;
+  src: url("/assets/fonts/bricolage-grotesque-latin-wght-normal.woff2") format("woff2-variations");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: "Bricolage Grotesque";
+  font-style: normal;
+  font-display: swap;
+  font-weight: 200 800;
+  src: url("/assets/fonts/bricolage-grotesque-latin-ext-wght-normal.woff2") format("woff2-variations");
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: "Atkinson Hyperlegible Next";
+  font-style: normal;
+  font-display: swap;
+  font-weight: 200 800;
+  src: url("/assets/fonts/atkinson-hyperlegible-next-latin-wght-normal.woff2") format("woff2-variations");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: "Atkinson Hyperlegible Next";
+  font-style: normal;
+  font-display: swap;
+  font-weight: 200 800;
+  src: url("/assets/fonts/atkinson-hyperlegible-next-latin-ext-wght-normal.woff2") format("woff2-variations");
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+:root,
+[data-theme="home"] {
+  --font-sans: "Atkinson Hyperlegible Next", ui-sans-serif, system-ui, sans-serif;
+  --theme-font-heading: "Bricolage Grotesque", ui-sans-serif, system-ui, sans-serif;
+  --radius: 0.75rem;
+  --radius-button: 9999px;
+  --radius-button-sm: 9999px;
+
+  /*                        lime plaster / evening room */
+  --background: light-dark(#e9ece4, #16201b);
+  /*                        forest ink / linen */
+  --foreground: light-dark(#1e2b24, #e8ebe3);
+  /*                        linen sheet */
+  --card: light-dark(#fbfaf5, #1f2b25);
+  --card-foreground: var(--foreground);
+  --popover: var(--card);
+  --popover-foreground: var(--foreground);
+  /*                        monstera */
+  --primary: light-dark(#2e6a4d, #74b391);
+  --primary-foreground: light-dark(#fbfaf5, #16201b);
+  --secondary: light-dark(#dde3d8, #2a3831);
+  --secondary-foreground: var(--foreground);
+  --muted: light-dark(#dfe4da, #26332c);
+  --muted-foreground: light-dark(#565f58, #a0a69f);
+  --accent: var(--secondary);
+  --accent-foreground: var(--foreground);
+  /*                        brick */
+  --destructive: light-dark(#b0473c, #e0796c);
+  --border: light-dark(rgb(30 43 36 / 14%), rgb(232 235 227 / 12%));
+  --input: light-dark(rgb(30 43 36 / 22%), rgb(232 235 227 / 18%));
+  --ring: var(--primary);
+  /*                        ochre throw, only for people (claims) */
+  --claim: light-dark(#d6a13a, #e2b65a);
+  --claim-foreground: light-dark(#1e2b24, #16201b);
+}

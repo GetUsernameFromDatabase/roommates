@@ -53,6 +53,7 @@ en:
     invite-email-sent: Invite sent to %s
     verify-to-invite: Confirm your email address to create invites.
   shopping:
+    back: All lists
     lists: Shopping lists
     no-lists: No shopping lists yet
     open-items: "%d to buy"
@@ -73,6 +74,21 @@ en:
     delete: Delete
     delete-list: Delete list
     clear: Remove bought items
+  appearance:
+    title: Appearance
+    theme: Theme
+    mode: Light or dark
+    theme-home: Home
+    theme-plain: Plain
+    mode-system: Same as device
+    mode-light: Light
+    mode-dark: Dark
+    save: Save
+  nav:
+    label: Household
+    shopping: Shopping
+    people: People
+    switch: Switch household
   invite-page:
     title: Join %s
     description: You have been invited to join this household.

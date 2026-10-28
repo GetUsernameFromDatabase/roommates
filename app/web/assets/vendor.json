@@ -1,0 +1,24 @@
+{
+  "@fontsource-variable/atkinson-hyperlegible-next": {
+    "files": {
+      "LICENSE": "public/fonts/OFL-atkinson.txt",
+      "files/atkinson-hyperlegible-next-latin-ext-wght-normal.woff2": "public/fonts/atkinson-hyperlegible-next-latin-ext-wght-normal.woff2",
+      "files/atkinson-hyperlegible-next-latin-wght-normal.woff2": "public/fonts/atkinson-hyperlegible-next-latin-wght-normal.woff2"
+    },
+    "version": "5.3.0"
+  },
+  "@fontsource-variable/bricolage-grotesque": {
+    "files": {
+      "LICENSE": "public/fonts/OFL-bricolage.txt",
+      "files/bricolage-grotesque-latin-ext-wght-normal.woff2": "public/fonts/bricolage-grotesque-latin-ext-wght-normal.woff2",
+      "files/bricolage-grotesque-latin-wght-normal.woff2": "public/fonts/bricolage-grotesque-latin-wght-normal.woff2"
+    },
+    "version": "5.3.0"
+  },
+  "htmx.org": {
+    "files": {
+      "dist/htmx.min.js": "public/lib/htmx.min.js"
+    },
+    "version": "2.0.11"
+  }
+}

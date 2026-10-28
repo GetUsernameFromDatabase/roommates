@@ -19,6 +19,8 @@ const (
 	RouteForgotPassword    = "/forgot-password"
 	// takes ?token=
 	RouteResetPassword = "/reset-password"
+	// POST theme, mode and next
+	RouteAppearance = "/appearance"
 )
 
 // QueryNext is the query and form key of the path to return to after signing in

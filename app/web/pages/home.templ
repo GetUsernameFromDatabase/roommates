@@ -13,72 +13,64 @@ import "roommates/internal/utils"
 
 // Home is shown to signed in users at "/", lists their households
 templ Home(username string, emailValidated bool, households []dbqueries.ListHouseholdsOfUserRow, m models.Household) {
-	@components.HtmlWrap() {
-		@components.HeaderComponent("")
-		<body>
-			<main class="mx-auto flex min-h-svh w-full max-w-lg flex-col gap-6 bg-background p-6 text-foreground sm:p-10">
-				<div class="flex items-center justify-between gap-4">
-					<h1 class="text-xl font-semibold">
-						{ utils.T(ctx, locales.LK_HomePageGreeting, username) }
-					</h1>
-					<form action={ g.RouteLogout } method="post">
-						@button.Button(button.Props{
-							Type:    button.TypeSubmit,
-							Variant: button.VariantOutline,
-							Size:    button.SizeSm,
-						}) {
-							@components.T(locales.LK_Logout)
-						}
-					</form>
-				</div>
-				@VerifyEmailBanner(emailValidated)
-				@card.Card() {
-					@card.Header() {
-						@card.Title() {
-							@components.T(locales.LK_HomePageHouseholds)
-						}
-					}
-					@card.Content() {
-						if len(households) == 0 {
-							<p class="text-sm text-muted-foreground">
-								@components.T(locales.LK_HomePageNoHouseholds)
-							</p>
-						} else {
-							<ul class="divide-y">
-								for _, h := range households {
-									<li>
-										<a href={ householdURL(h.ID) } class="flex items-center justify-between py-3 hover:underline">
-											<span class="font-medium">{ h.Name }</span>
-											<span class="text-sm text-muted-foreground">{ RoleName(ctx, h.Role) }</span>
-										</a>
-									</li>
-								}
-							</ul>
-						}
-					}
+	@appShell("", nil) {
+		<div class="flex items-center justify-between gap-4">
+			<h1 class="text-2xl font-semibold">
+				{ utils.T(ctx, locales.LK_HomePageGreeting, username) }
+			</h1>
+			<form action={ g.RouteLogout } method="post">
+				@button.Button(button.Props{
+					Type:    button.TypeSubmit,
+					Variant: button.VariantOutline,
+					Size:    button.SizeSm,
+				}) {
+					@components.T(locales.LK_Logout)
 				}
-				@card.Card() {
-					@card.Header() {
-						@card.Title() {
-							@components.T(locales.LK_HomePageCreateTitle)
-						}
+			</form>
+		</div>
+		@VerifyEmailBanner(emailValidated)
+		<section aria-labelledby="households-title" class={ sheetClass }>
+			<h2 id="households-title" class="text-xl font-semibold">
+				@components.T(locales.LK_HomePageHouseholds)
+			</h2>
+			if len(households) == 0 {
+				<p class="mt-2 text-muted-foreground">
+					@components.T(locales.LK_HomePageNoHouseholds)
+				</p>
+			} else {
+				<ul class="mt-2 divide-y">
+					for _, h := range households {
+						<li>
+							<a href={ householdURL(h.ID) } class="flex min-h-12 items-center justify-between gap-3 py-2 hover:underline">
+								<span class="font-heading text-lg font-semibold break-words">{ h.Name }</span>
+								<span class="shrink-0 text-sm text-muted-foreground">{ RoleName(ctx, h.Role) }</span>
+							</a>
+						</li>
 					}
-					@card.Content() {
-						@CreateHouseholdForm(m)
-					}
+				</ul>
+			}
+		</section>
+		@card.Card() {
+			@card.Header() {
+				@card.Title() {
+					@components.T(locales.LK_HomePageCreateTitle)
 				}
-				@card.Card() {
-					@card.Header() {
-						@card.Title() {
-							@components.T(locales.LK_HomePageJoinTitle)
-						}
-					}
-					@card.Content() {
-						@JoinForm("")
-					}
+			}
+			@card.Content() {
+				@CreateHouseholdForm(m)
+			}
+		}
+		@card.Card() {
+			@card.Header() {
+				@card.Title() {
+					@components.T(locales.LK_HomePageJoinTitle)
 				}
-			</main>
-		</body>
+			}
+			@card.Content() {
+				@JoinForm("")
+			}
+		}
+		@AppearanceForm("/")
 	}
 }
 

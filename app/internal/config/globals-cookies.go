@@ -6,6 +6,9 @@ type CookieKey string
 
 const (
 	CookieLanguage CookieKey = "language"
+	// see utils.Appearance
+	CookieTheme CookieKey = "theme"
+	CookieMode  CookieKey = "mode"
 )
 
 func (c CookieKey) String() string {

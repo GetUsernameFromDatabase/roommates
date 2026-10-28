@@ -11,54 +11,51 @@ import "roommates/internal/locales"
 import "roommates/internal/utils"
 
 templ Register(m models.Register) {
-	@components.HtmlWrap() {
-		@components.HeaderComponent("")
-		<body>
-			<div class="min-h-svh bg-background text-foreground md:grid">
-				<main class="flex min-h-svh items-center justify-center p-6 sm:p-10">
-					<div class="w-full max-w-sm">
-						<a href="/" class="mb-10 flex items-center justify-center gap-2 font-semibold">
-							<span class="flex size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-								{ utils.T(ctx, locales.LK_AppTitle)[:1] }
-							</span>
-							@components.T(locales.LK_AppTitle)
-						</a>
-						@card.Card(card.Props{
-							Class: "border-0 shadow-none",
-						}) {
-							@card.Header() {
-								@card.Title() {
-									@components.T(locales.LK_RegistrationPageTitle)
-								}
-								@card.Description() {
-									@components.T(locales.LK_RegistrationPageDescription)
-								}
+	@guestShell("") {
+		<div class="min-h-svh bg-background text-foreground md:grid">
+			<main class="flex min-h-svh items-center justify-center p-6 sm:p-10">
+				<div class="w-full max-w-sm">
+					<a href="/" class="mb-10 flex items-center justify-center gap-2 font-semibold">
+						<span class="flex size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+							{ utils.T(ctx, locales.LK_AppTitle)[:1] }
+						</span>
+						@components.T(locales.LK_AppTitle)
+					</a>
+					@card.Card(card.Props{
+						Class: "border-0 shadow-none",
+					}) {
+						@card.Header() {
+							@card.Title() {
+								@components.T(locales.LK_RegistrationPageTitle)
 							}
-							@card.Content() {
-								if m.Error != "" {
-									<div
-										role="alert"
-										class="mb-5 rounded-md border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive"
-									>
-										{ m.Error }
-									</div>
-								}
-								@RegisterForm(m)
-								<p class="mt-6 text-center text-sm text-muted-foreground">
-									@components.T(locales.LK_RegistrationPageAlreadyHaveAccount)
-									<a
-										href={ withNext(g.RouteLogin, m.Next) }
-										class="font-medium text-foreground underline-offset-4 hover:underline ml-1"
-									>
-										@components.T(locales.LK_LoginPageSignIn)
-									</a>
-								</p>
+							@card.Description() {
+								@components.T(locales.LK_RegistrationPageDescription)
 							}
 						}
-					</div>
-				</main>
-			</div>
-		</body>
+						@card.Content() {
+							if m.Error != "" {
+								<div
+									role="alert"
+									class="mb-5 rounded-md border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive"
+								>
+									{ m.Error }
+								</div>
+							}
+							@RegisterForm(m)
+							<p class="mt-6 text-center text-sm text-muted-foreground">
+								@components.T(locales.LK_RegistrationPageAlreadyHaveAccount)
+								<a
+									href={ withNext(g.RouteLogin, m.Next) }
+									class="font-medium text-foreground underline-offset-4 hover:underline ml-1"
+								>
+									@components.T(locales.LK_LoginPageSignIn)
+								</a>
+							</p>
+						}
+					}
+				</div>
+			</main>
+		</div>
 	}
 }
 

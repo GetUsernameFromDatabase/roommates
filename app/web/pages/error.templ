@@ -1,6 +1,5 @@
 package pages
 
-import "roommates/web/components"
 import "roommates/web/components/card"
 import "roommates/internal/locales"
 import "roommates/internal/utils"
@@ -19,28 +18,25 @@ templ NotFound() {
 
 // Notice is a page with only a message and a link
 templ Notice(title, description string, href templ.SafeURL, linkText string) {
-	@components.HtmlWrap() {
-		@components.HeaderComponent("")
-		<body>
-			<main class="flex min-h-svh items-center justify-center bg-background p-6 text-foreground sm:p-10">
-				@card.Card(card.Props{
-					Class: "w-full max-w-sm",
-				}) {
-					@card.Header() {
-						@card.Title() {
-							{ title }
-						}
-						@card.Description() {
-							{ description }
-						}
+	@guestShell("") {
+		<main class="flex min-h-svh items-center justify-center bg-background p-6 text-foreground sm:p-10">
+			@card.Card(card.Props{
+				Class: "w-full max-w-sm",
+			}) {
+				@card.Header() {
+					@card.Title() {
+						{ title }
 					}
-					@card.Content() {
-						<a href={ href } class="text-sm font-medium underline-offset-4 hover:underline">
-							{ linkText }
-						</a>
+					@card.Description() {
+						{ description }
 					}
 				}
-			</main>
-		</body>
+				@card.Content() {
+					<a href={ href } class="text-sm font-medium underline-offset-4 hover:underline">
+						{ linkText }
+					</a>
+				}
+			}
+		</main>
 	}
 }

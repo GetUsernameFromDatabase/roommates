@@ -53,6 +53,7 @@ et:
     invite-email-sent: Kutse saadetud aadressile %s
     verify-to-invite: Kutsete loomiseks kinnita oma e-posti aadress.
   shopping:
+    back: Kõik nimekirjad
     lists: Ostunimekirjad
     no-lists: Ostunimekirju veel pole
     open-items: "%d ostmata"
@@ -73,6 +74,21 @@ et:
     delete: Kustuta
     delete-list: Kustuta nimekiri
     clear: Eemalda ostetud
+  appearance:
+    title: Välimus
+    theme: Teema
+    mode: Hele või tume
+    theme-home: Kodu
+    theme-plain: Lihtne
+    mode-system: Nagu seadmes
+    mode-light: Hele
+    mode-dark: Tume
+    save: Salvesta
+  nav:
+    label: Leibkond
+    shopping: Ostud
+    people: Inimesed
+    switch: Vaheta leibkonda
   invite-page:
     title: Liitu leibkonnaga %s
     description: Sind on kutsutud selle leibkonnaga liituma.

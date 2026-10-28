@@ -109,6 +109,8 @@ type HouseholdOverview struct {
 	// only filled for owners, members cannot manage invites
 	Invites       []dbqueries.ListActiveInvitesRow
 	ShoppingLists []dbqueries.ListShoppingListsRow
+	// all households of the actor, for the switcher
+	Households []dbqueries.ListHouseholdsOfUserRow
 }
 
 func (s *DefaultService) GetHouseholdOverview(ctx context.Context, actor Membership) (HouseholdOverview, error) {
@@ -126,6 +128,9 @@ func (s *DefaultService) GetHouseholdOverview(ctx context.Context, actor Members
 	}
 	o.ActorEmailValidated = actorUser.EmailValidated
 	if o.ShoppingLists, err = s.db.ListShoppingLists(ctx, actor.HouseholdID); err != nil {
+		return o, err
+	}
+	if o.Households, err = s.db.ListHouseholdsOfUser(ctx, actor.UserID); err != nil {
 		return o, err
 	}
 	if actor.Role == g.RoleOwner {

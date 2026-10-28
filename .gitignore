@@ -8,6 +8,9 @@ logs/
 bin/
 output.css
 shadcn-templ-*.js
+# downloaded by `task vendor` from app/web/assets/vendor.json
+app/web/assets/public/lib/
+app/web/assets/public/fonts/
 # ------------------------------------------------------------------------------
 
 ### --- AI agent, Claude ---

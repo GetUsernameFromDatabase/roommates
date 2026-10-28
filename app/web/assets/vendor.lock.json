@@ -1,0 +1,24 @@
+{
+  "@fontsource-variable/atkinson-hyperlegible-next": {
+    "version": "5.3.0",
+    "sha256": {
+      "LICENSE": "474a034e99845062f661855caaa505880d0e9009deddc2727a92795eab374955",
+      "files/atkinson-hyperlegible-next-latin-ext-wght-normal.woff2": "7dae0c6c66af1aec82e096186aeb1f0e6fa36ab8061ed65422f2b7daf4dd93f3",
+      "files/atkinson-hyperlegible-next-latin-wght-normal.woff2": "18b2a1a39a2fa298b0ba5390aca68462669826c90925656f1c1f6796e0e1bbaf"
+    }
+  },
+  "@fontsource-variable/bricolage-grotesque": {
+    "version": "5.3.0",
+    "sha256": {
+      "LICENSE": "923f4ddf0fd39f9b7794ab0df7332f3d95dc43e8ad7ec2289d6d9e8491177f51",
+      "files/bricolage-grotesque-latin-ext-wght-normal.woff2": "e808f16b56f84dc7933e498cc8a41d4a5cd853adc6eef154584baa5de1008b15",
+      "files/bricolage-grotesque-latin-wght-normal.woff2": "a97804dc9fbe5fc972a08018c5eda4dab7ef2346f64c57e61419d05e6de4ea1c"
+    }
+  },
+  "htmx.org": {
+    "version": "2.0.11",
+    "sha256": {
+      "dist/htmx.min.js": "d6fdc75f204e6bdefa99b69bf1e6d4ac69b8a364f77929f45c13476b4000f717"
+    }
+  }
+}

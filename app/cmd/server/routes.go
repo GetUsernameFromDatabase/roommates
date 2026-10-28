@@ -28,6 +28,8 @@ func initRoutes(r *gin.Engine, h *handlers.DefaultHandler, service *services.Def
 	mwInviteLimit := middleware.NewRateLimit(20, time.Minute)
 	r.Use(middleware.NewSecurityHeader())
 	r.Use(middleware.NewCrossOriginProtection())
+	// before every page, error pages too, so all of them render in the chosen theme
+	r.Use(middleware.NewAppearance())
 
 	registerAssets(r)
 	public := r.Group("")
@@ -56,6 +58,7 @@ func initRoutes(r *gin.Engine, h *handlers.DefaultHandler, service *services.Def
 		open.GET(g.RouteVerifyEmail, h.VerifyEmail)
 		open.GET(g.RouteResetPassword, h.PageResetPassword)
 		open.POST(g.RouteResetPassword, mwAuthLimit, h.PageResetPassword)
+		open.POST(g.RouteAppearance, h.SetAppearance)
 	}
 
 	// --- --- ---
@@ -80,6 +83,7 @@ func initRoutes(r *gin.Engine, h *handlers.DefaultHandler, service *services.Def
 		household.Use(middleware.NewHouseholdMember(service))
 		{
 			household.GET("", h.PageHousehold)
+			household.GET("/people", h.PagePeople)
 			household.POST("/invites", h.CreateInvite)
 			household.POST("/invites/email", mwEmailLimit, h.SendInviteEmail)
 			household.POST("/invites/:"+g.ParamInviteID+"/delete", h.DeleteInvite)
