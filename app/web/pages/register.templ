@@ -117,7 +117,6 @@ templ RegisterForm(m models.Register) {
 					ID:          "password",
 					Name:        "password",
 					Type:        "password",
-					Value:       m.Password,
 					Placeholder: utils.T(ctx, locales.LK_PasswordEnter),
 					Required:    true,
 					Attributes: templ.Attributes{
@@ -136,7 +135,6 @@ templ RegisterForm(m models.Register) {
 					ID:       "password_2",
 					Name:     "password_2",
 					Type:     "password",
-					Value:    m.Password2,
 					Required: true,
 					Attributes: templ.Attributes{
 						"autocomplete": "new-password",

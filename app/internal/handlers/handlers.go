@@ -3,13 +3,15 @@ package handlers
 
 import (
 	"net/http"
-	"roommates/web/renderer"
 	g "roommates/internal/config"
 	"roommates/internal/logger"
 	"roommates/internal/services"
+	"roommates/web/pages"
+	"roommates/web/renderer"
 
 	"github.com/a-h/templ"
 	"github.com/gin-gonic/gin"
+	"github.com/pkg/errors"
 )
 
 var log = logger.Main.With().Str("package", "handlers").Logger()
@@ -28,51 +30,22 @@ func NewDefaultHandler(service *services.DefaultService) *DefaultHandler {
 
 // -----------------------------------------------------------------------------
 
-type BaseResponse struct {
-	Success bool `json:"success"`
-	//exhaustruct:optional
-	Data any `json:"data,omitempty"`
-	//exhaustruct:optional
-	Error *ErrorInfo `json:"error,omitempty"`
-}
-
-type ErrorInfo struct {
-	Code    g.ErrorCode `json:"code"`
-	Message string      `json:"message"`
-}
-
-// -----------------------------------------------------------------------------
-
-// OK json [BaseResponse] with
-//
-//	Success: true,
-//	Data:    data,
-func OK(ctx *gin.Context, data any) {
-	ctx.JSON(http.StatusOK, BaseResponse{
-		Success: true,
-		Data:    data,
-	})
-}
-
-// Fail json [BaseResponse] with
-//
-//	Success: false
-//	Error: [ErrorInfo]
-func Fail(ctx *gin.Context, httpStatus int, code g.ErrorCode) {
-	// TODO: translate Message based on code
-	errInfo := &ErrorInfo{Code: code, Message: code.String()}
-	ctx.JSON(httpStatus, BaseResponse{Success: false, Error: errInfo})
-}
-
-// InternalError logs the error with stack and sends [Fail]
+// InternalError logs the error with stack and renders [pages.Error] with status 500
 func InternalError(ctx *gin.Context, err error) {
-	log.Error().Stack().Ctx(ctx).Err(err).Msg(g.EC_InternalError.String())
-	Fail(ctx, http.StatusInternalServerError, g.EC_InternalError)
+	// WithStack records the stack here, errors from pgx, bcrypt etc. carry none
+	log.Error().Stack().Ctx(ctx).Err(errors.WithStack(err)).Msg(g.EC_InternalError.String())
+	RenderTemplStatus(ctx, http.StatusInternalServerError, pages.Error())
+	ctx.Abort()
 }
 
-// RenderTempl renders templ component
+// RenderTempl renders templ component with status 200
 func RenderTempl(ctx *gin.Context, component templ.Component) {
-	r := renderer.New(ctx.Request.Context(), http.StatusOK, component)
+	RenderTemplStatus(ctx, http.StatusOK, component)
+}
+
+// RenderTemplStatus renders templ component with given status
+func RenderTemplStatus(ctx *gin.Context, status int, component templ.Component) {
+	r := renderer.New(ctx.Request.Context(), status, component)
 	ctx.Render(r.Status, r)
 }
 

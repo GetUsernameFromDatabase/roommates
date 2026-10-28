@@ -3,13 +3,14 @@ package handlers
 import (
 	"errors"
 	"net/http"
-	"roommates/web/pages"
-	"roommates/internal/db/dbqueries"
 	g "roommates/internal/config"
+	"roommates/internal/db/dbqueries"
 	"roommates/internal/locales"
 	"roommates/internal/models"
+	"roommates/internal/services"
 	"roommates/internal/sessions"
 	"roommates/internal/utils"
+	"roommates/web/pages"
 
 	"github.com/gin-gonic/gin"
 )
@@ -51,7 +52,7 @@ func (h *DefaultHandler) PageLogin(ctx *gin.Context) {
 
 		s := sessions.FromGinContext(ctx)
 		s.Login(sessions.SessionInfo{
-			UserID: credsInDB.ID.String(),
+			UserID:   credsInDB.ID.String(),
 			Email:    credsInDB.Email,
 			Username: credsInDB.Username,
 		})
@@ -87,23 +88,34 @@ func (h *DefaultHandler) PageRegister(ctx *gin.Context) {
 			Username: model.Username,
 			Password: model.Password,
 		})
-		if errors.Is(err, g.ErrorAccountAlreadyExists) {
-			model.Error = utils.T(
-				ctx.Request.Context(),
-				locales.LK_RegistrationPageAccountExists,
-			)
-			render(model)
+		if err != nil {
+			if errors.Is(err, g.ErrorAccountAlreadyExists) {
+				model.Error = utils.T(
+					ctx.Request.Context(),
+					locales.LK_RegistrationPageAccountExists,
+				)
+				render(model)
+				return
+			}
+			InternalError(ctx, err)
 			return
 		}
 
 		s := sessions.FromGinContext(ctx)
 		s.Login(sessions.SessionInfo{
 			UserID:   userID.String(),
-			Email:    model.Email,
+			Email:    services.NormalizeEmail(model.Email),
 			Username: model.Username,
 		})
-		ctx.Redirect(http.StatusSeeOther, "/")
+		Redirect(ctx, "/")
 	default:
 		ctx.String(http.StatusMethodNotAllowed, "method %s not allowed", method)
 	}
+}
+
+// Logout ends the session and sends the user to the login page
+func (h *DefaultHandler) Logout(ctx *gin.Context) {
+	s := sessions.FromGinContext(ctx)
+	s.Logout()
+	Redirect(ctx, g.RouteLogin)
 }

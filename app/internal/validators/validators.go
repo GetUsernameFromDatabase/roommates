@@ -21,7 +21,6 @@ func LogValidationErrors(log zerolog.Logger, err error) {
 	// https://github.com/go-playground/validator#error-return-value
 	for _, err := range err.(validator.ValidationErrors) {
 		log.Err(err).
-			Stack().
 			Str("field", err.Field()).
 			Any("value", err.Value()).
 			Str("tag", err.Tag()).

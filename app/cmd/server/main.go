@@ -3,8 +3,8 @@ package main
 import (
 	"context"
 	_ "embed"
-	"roommates/internal/db"
 	g "roommates/internal/config"
+	"roommates/internal/db"
 	"roommates/internal/locales"
 	"roommates/internal/logger"
 
@@ -42,13 +42,13 @@ func ensureDatabasePool(ctx context.Context) *pgxpool.Pool {
 	dbURL := g.GetDatabaseURL()
 	dbpool, err := pgxpool.New(ctx, dbURL)
 	if err != nil {
-		log.Fatal().Stack().Err(err).
+		log.Fatal().Err(err).
 			Msg("unable to create connection pool")
 	}
 	// ensure connection
 	if err = dbpool.Ping(ctx); err != nil {
 		dbpool.Close()
-		log.Fatal().Stack().Err(err).
+		log.Fatal().Err(err).
 			Msg("unable to ping database")
 	}
 

@@ -424,7 +424,6 @@ func LoginForm(m models.Login) templ.Component {
 					ID:          "password",
 					Name:        "password",
 					Type:        "password",
-					Value:       m.Password,
 					Placeholder: utils.T(ctx, locales.LK_PasswordEnter),
 					Required:    true,
 					Attributes: templ.Attributes{

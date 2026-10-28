@@ -3,6 +3,7 @@ package models
 import (
 	l "roommates/internal/locales"
 	"strings"
+	"unicode/utf8"
 )
 
 type Register struct {
@@ -20,11 +21,50 @@ func (m *Register) ValidateUsername() (msgs []l.LKMessage) {
 		msgs = append(msgs, l.LKMessage{Key: l.LK_ValidationErrorsUsernameSpaces})
 	}
 
-	if len(m.Username) < minUsernameLength {
+	usernameLength := utf8.RuneCountInString(m.Username)
+	if usernameLength < minUsernameLength {
 		msgs = append(msgs, l.LKMessage{
 			Key:  l.LK_ValidationErrorsUsernameLength,
 			Args: []any{minUsernameLength},
 		})
+	}
+	if usernameLength > maxUsernameLength {
+		msgs = append(msgs, l.LKMessage{
+			Key:  l.LK_ValidationErrorsUsernameMaxLength,
+			Args: []any{maxUsernameLength},
+		})
+	}
+
+	return msgs
+}
+
+// ValidatePassword checks the password rules for a new password
+func (m *Register) ValidatePassword() (msgs []l.LKMessage) {
+	if m.Initial {
+		return
+	}
+
+	if len(m.Password) < minPasswordLength {
+		msgs = append(msgs, l.LKMessage{
+			Key:  l.LK_ValidationErrorsPasswordLength,
+			Args: []any{minPasswordLength},
+		})
+	}
+
+	// bcrypt refuses longer passwords, counted in bytes
+	if len(m.Password) > maxPasswordLength {
+		msgs = append(msgs, l.LKMessage{
+			Key:  l.LK_ValidationErrorsPasswordMaxLength,
+			Args: []any{maxPasswordLength},
+		})
+	}
+
+	if strings.ToUpper(m.Password) == m.Password || strings.ToLower(m.Password) == m.Password {
+		msgs = append(msgs, l.LKMessage{Key: l.LK_ValidationErrorsPasswordCase})
+	}
+
+	if !strings.ContainsAny(m.Password, passwordSpecialCharaters) {
+		msgs = append(msgs, l.LKMessage{Key: l.LK_ValidationErrorsPasswordSymbol})
 	}
 
 	return msgs

@@ -25,6 +25,14 @@ templ HeaderComponent(title string) {
 	<head>
 		<title>{ title }</title>
 		<link rel="stylesheet" href="/assets/output.css"/>
+		// by default htmx does not swap 4xx/5xx responses, which would leave
+		// a submitted form without feedback, so error pages are swapped in too
+		// allowEval is off as the CSP blocks eval anyway
+		// https://htmx.org/docs/#response-handling
+		<meta
+			name="htmx-config"
+			content={ `{"allowEval":false,"responseHandling":[{"code":"204","swap":false},{"code":"[23]..","swap":true},{"code":"[45]..","swap":true,"error":true},{"code":"...","swap":false}]}` }
+		/>
 		// https://htmx.org/docs/#installing
 		<script src="/assets/htmx.org@2.0.11.min.js"></script>
 		// this reccomends to use @components.Scripts()

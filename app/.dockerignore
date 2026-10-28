@@ -1,0 +1,4 @@
+# keep the TLS key out of the image, compose mounts it instead
+certificates/
+bin/
+test/

@@ -11,6 +11,7 @@ Run from `app/` (the Go module root):
 - `go build ./...` / `go vet ./...` — quick check
 - `sh scripts/lint.sh` — staticcheck + golangci-lint
 - `sh scripts/format.sh` — `templ fmt` + `gofmt`
+- `go test ./...` — DB tests are skipped unless `TEST_POSTGRES_DB` names a throwaway database (the migration test drops all tables); never point it at the dev database
 
 Code generation (regenerate after editing the source, never edit the output):
 

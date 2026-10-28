@@ -3,7 +3,8 @@ package config
 //lint:file-ignore ST1003 goal is to ignore underscore issues
 
 import (
-	"fmt"
+	"net"
+	"net/url"
 	"os"
 	"roommates/internal/validators"
 	"strconv"
@@ -25,8 +26,6 @@ const (
 // REQUIRED env key for server
 const (
 	EVK_ServerPort EnvironmentVariableKey = "SERVER_PORT"
-	// used to send emails via resend
-	EVK_ResendApiKey EnvironmentVariableKey = "RESEND_API_KEY"
 
 	// hash key https://github.com/gorilla/securecookie#examples
 	// generate one with
@@ -82,23 +81,28 @@ func MustGetEnv(key EnvironmentVariableKey) string {
 	if value, ok := os.LookupEnv(keyAsString); ok {
 		return value
 	}
-	
+
 	panic("environment variable " + strconv.Quote(keyAsString) + " needs to be set")
 }
 
 // GetDatabaseURL constructs a database url using environment
 //
 //	sslmode=disable
+//
+// a URL so that values with spaces, quotes etc. are escaped
 func GetDatabaseURL() string {
-	host := MustGetEnv(EVK_DatabaseHost)
-	port := MustGetEnv(EVK_DatabasePort)
-	dbname := MustGetEnv(EVK_DatabaseName)
-	user := MustGetEnv(EVK_DatabaseUser)
-	password := MustGetEnv(EVK_DatabasePassword)
-
-	return fmt.Sprintf("host=%s port=%s dbname=%s "+
-		"user=%s password=%s sslmode=disable",
-		host, port, dbname, user, password)
+	//exhaustruct:ignore
+	u := url.URL{
+		Scheme: "postgres",
+		User: url.UserPassword(
+			MustGetEnv(EVK_DatabaseUser),
+			MustGetEnv(EVK_DatabasePassword),
+		),
+		Host:     net.JoinHostPort(MustGetEnv(EVK_DatabaseHost), MustGetEnv(EVK_DatabasePort)),
+		Path:     MustGetEnv(EVK_DatabaseName),
+		RawQuery: "sslmode=disable",
+	}
+	return u.String()
 }
 
 // GetSessionKeyPairs must get current hash/block pair
@@ -120,6 +124,10 @@ func GetSessionKeyPairs() ([][]byte, error) {
 
 	prevHash := []byte(EVK_SessionHashKeyPrevious.Get(""))
 	prevBlock := []byte(EVK_SessionBlockKeyPrevious.Get(""))
+	// previous pair is optional, only needed while rotating keys
+	if len(prevHash) == 0 && len(prevBlock) == 0 {
+		return pairs, nil
+	}
 	err = validators.ValidateCookieHashBlockPair(prevHash, prevBlock)
 	if err != nil {
 		return pairs, err

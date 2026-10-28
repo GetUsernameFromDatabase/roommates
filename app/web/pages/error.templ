@@ -1,0 +1,33 @@
+package pages
+
+import "roommates/web/components"
+import "roommates/web/components/card"
+import "roommates/internal/locales"
+
+// Error is a generic error page, details are only logged
+templ Error() {
+	@components.HtmlWrap() {
+		@components.HeaderComponent("")
+		<body>
+			<main class="flex min-h-svh items-center justify-center bg-background p-6 text-foreground sm:p-10">
+				@card.Card(card.Props{
+					Class: "w-full max-w-sm",
+				}) {
+					@card.Header() {
+						@card.Title() {
+							@components.T(locales.LK_ErrorPageTitle)
+						}
+						@card.Description() {
+							@components.T(locales.LK_ErrorPageDescription)
+						}
+					}
+					@card.Content() {
+						<a href="/" class="text-sm font-medium underline-offset-4 hover:underline">
+							@components.T(locales.LK_ErrorPageBack)
+						</a>
+					}
+				}
+			</main>
+		</body>
+	}
+}

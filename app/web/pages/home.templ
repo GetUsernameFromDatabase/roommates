@@ -1,0 +1,39 @@
+package pages
+
+import "roommates/web/components"
+import "roommates/web/components/card"
+import "roommates/web/components/button"
+import g "roommates/internal/config"
+import "roommates/internal/locales"
+import "roommates/internal/utils"
+
+// Home is shown to signed in users at "/"
+templ Home(username string) {
+	@components.HtmlWrap() {
+		@components.HeaderComponent("")
+		<body>
+			<main class="flex min-h-svh items-center justify-center bg-background p-6 text-foreground sm:p-10">
+				@card.Card(card.Props{
+					Class: "w-full max-w-sm",
+				}) {
+					@card.Header() {
+						@card.Title() {
+							{ utils.T(ctx, locales.LK_HomePageGreeting, username) }
+						}
+					}
+					@card.Content() {
+						<form action={ g.RouteLogout } method="post">
+							@button.Button(button.Props{
+								Type:    button.TypeSubmit,
+								Variant: button.VariantOutline,
+								Class:   "w-full",
+							}) {
+								@components.T(locales.LK_Logout)
+							}
+						</form>
+					}
+				}
+			</main>
+		</body>
+	}
+}

@@ -7,8 +7,8 @@ import (
 )
 
 type LoginRequest struct {
-	Email    string `form:"email" json:"email" binding:"required,email"`
-	Password string `form:"password" json:"password" binding:"required"`
+	Email    string `form:"email" json:"email"`
+	Password string `form:"password" json:"password"`
 }
 
 type Login struct {
@@ -21,33 +21,25 @@ func (m *Login) ValidateEmail() (msgs []l.LKMessage) {
 		return
 	}
 
-	_, err := mail.ParseAddress(m.Email)
-	if err != nil {
+	// ParseAddress also accepts "Name <a@b.c>", only the bare address is allowed
+	addr, err := mail.ParseAddress(m.Email)
+	if err != nil || addr.Address != strings.TrimSpace(m.Email) || len(m.Email) > maxEmailLength {
 		msgs = append(msgs, l.LKMessage{Key: l.LK_ValidationErrorsEmailGeneric})
 	}
 	return msgs
 }
 
+// ValidatePassword only checks that a password was given,
+// password rules are for creating one (see [Register.ValidatePassword])
+// and should not be shown to someone trying to sign in
 func (m *Login) ValidatePassword() (msgs []l.LKMessage) {
 	if m.Initial {
 		return
 	}
 
-	if len(m.Password) < minPasswordLength {
-		msgs = append(msgs, l.LKMessage{
-			Key:  l.LK_ValidationErrorsPasswordLength,
-			Args: []any{minPasswordLength},
-		})
+	if m.Password == "" {
+		msgs = append(msgs, l.LKMessage{Key: l.LK_ValidationErrorsPasswordRequired})
 	}
-
-	if strings.ToUpper(m.Password) == m.Password || strings.ToLower(m.Password) == m.Password {
-		msgs = append(msgs, l.LKMessage{Key: l.LK_ValidationErrorsPasswordCase})
-	}
-
-	if !strings.ContainsAny(m.Password, passwordSpecialCharaters) {
-		msgs = append(msgs, l.LKMessage{Key: l.LK_ValidationErrorsPasswordSymbol})
-	}
-
 	return msgs
 }
 

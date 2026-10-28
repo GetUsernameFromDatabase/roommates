@@ -7,15 +7,21 @@ import (
 
 const (
 	minUsernameLength = 3
+	maxUsernameLength = 32
 	minPasswordLength = 8
+	// bcrypt (golang.org/x/crypto/bcrypt) refuses passwords longer than 72 bytes
+	maxPasswordLength = 72
+	// RFC 5321 limit for a forward path
+	maxEmailLength = 254
 
 	passwordSpecialCharaters = "!@#$%^&*()-_=+[]{}|;:',.<>?/`~"
 )
 
+// ModelBase fields are form:"-" so a posted form cannot set them
 type ModelBase struct {
 	// validation errors are shown if false
-	Initial bool
-	Error   string
+	Initial bool   `form:"-"`
+	Error   string `form:"-"`
 }
 
 type Validator func() []l.LKMessage

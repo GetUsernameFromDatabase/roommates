@@ -468,7 +468,6 @@ func RegisterForm(m models.Register) templ.Component {
 					ID:          "password",
 					Name:        "password",
 					Type:        "password",
-					Value:       m.Password,
 					Placeholder: utils.T(ctx, locales.LK_PasswordEnter),
 					Required:    true,
 					Attributes: templ.Attributes{
@@ -531,7 +530,6 @@ func RegisterForm(m models.Register) templ.Component {
 					ID:       "password_2",
 					Name:     "password_2",
 					Type:     "password",
-					Value:    m.Password2,
 					Required: true,
 					Attributes: templ.Attributes{
 						"autocomplete": "new-password",

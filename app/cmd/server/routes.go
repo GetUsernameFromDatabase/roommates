@@ -3,13 +3,14 @@ package main
 import (
 	"io/fs"
 	"net/http"
-	"roommates/web/assets"
-	"roommates/web/renderer"
 	g "roommates/internal/config"
 	"roommates/internal/handlers"
 	"roommates/internal/middleware"
 	"roommates/internal/services"
 	"roommates/internal/sessions"
+	"roommates/web/assets"
+	"roommates/web/renderer"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -17,7 +18,10 @@ import (
 
 func initRoutes(r *gin.Engine, h *handlers.DefaultHandler) {
 	mwI18n := middleware.NewInternationalization()
+	// each attempt costs a bcrypt hash (~250ms), shared by login and register
+	mwAuthLimit := middleware.NewRateLimit(10, time.Minute)
 	r.Use(middleware.NewSecurityHeader())
+	r.Use(middleware.NewCrossOriginProtection())
 
 	registerAssets(r)
 	public := r.Group("")
@@ -26,10 +30,10 @@ func initRoutes(r *gin.Engine, h *handlers.DefaultHandler) {
 		public.Use(mwI18n)
 
 		public.GET(g.RouteLogin, h.PageLogin)
-		public.POST(g.RouteLogin, h.PageLogin)
+		public.POST(g.RouteLogin, mwAuthLimit, h.PageLogin)
 
 		public.GET(g.RouteRegister, h.PageRegister)
-		public.POST(g.RouteRegister, h.PageRegister)
+		public.POST(g.RouteRegister, mwAuthLimit, h.PageRegister)
 	}
 
 	// --- --- ---
@@ -41,7 +45,8 @@ func initRoutes(r *gin.Engine, h *handlers.DefaultHandler) {
 		priv.Use(middleware.NewOnlyAuthenticated())
 		priv.Use(mwI18n)
 
-		priv.GET("/")
+		priv.GET("/", h.PageHome)
+		priv.POST(g.RouteLogout, h.Logout)
 	}
 }
 
@@ -64,14 +69,6 @@ func registerAssets(r *gin.Engine) {
 
 // -----------------------------------------------------------------------------
 
-// https://github.com/a-h/templ/blob/main/examples/integration-gin/main.go#L16
-func ginTemplIntegration(r *gin.Engine) {
-	ginHTMLRenderer := r.HTMLRender // store previous one
-	r.HTMLRender = &renderer.HTMLTemplRenderer{FallbackHTMLRenderer: ginHTMLRenderer}
-}
-
-// -----------------------------------------------------------------------------
-
 func InitGinEngine(dbpool *pgxpool.Pool) *gin.Engine {
 	var r *gin.Engine
 	if g.IsDevelopment() {
@@ -89,7 +86,6 @@ func InitGinEngine(dbpool *pgxpool.Pool) *gin.Engine {
 		log.Fatal().Err(err).Msg("error with SetTrustedProxies")
 	}
 	renderer.ReplaceGinRenderer(r)
-	ginTemplIntegration(r)
 
 	// TODOS:
 	// - https://gin-gonic.com/en/docs/logging/write-log/#log-rotation-in-production

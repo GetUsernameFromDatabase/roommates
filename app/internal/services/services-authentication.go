@@ -2,9 +2,10 @@ package services
 
 import (
 	"errors"
-	"roommates/internal/db/dbqueries"
 	g "roommates/internal/config"
+	"roommates/internal/db/dbqueries"
 	"roommates/internal/models"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5"
@@ -13,25 +14,28 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+// NormalizeEmail emails are stored lowercase (enforced by the users table)
+func NormalizeEmail(email string) string {
+	return strings.ToLower(strings.TrimSpace(email))
+}
+
 func (s *DefaultService) RegisterUser(ctx *gin.Context, user dbqueries.InsertUserParams) (*pgtype.UUID, error) {
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(user.Password), 12)
-	if err != nil { // this should never be an issue
+	if err != nil { // only happens if password is longer than 72 bytes
 		log.Error().Err(err).Msg("error processing password")
 		return nil, err
 	}
 
 	returnValue, err := s.db.InsertUser(ctx, dbqueries.InsertUserParams{
-		Email:    user.Email,
+		Email:    NormalizeEmail(user.Email),
 		Username: user.Username,
 		Password: string(hashedPassword),
 	})
 	if err != nil {
-		switch err := err.(type) {
-		case *pgconn.PgError:
-			// https://www.postgresql.org/docs/current/errcodes-appendix.html
-			if err.Code == "23505" {
-				return nil, g.ErrorAccountAlreadyExists
-			}
+		var pgErr *pgconn.PgError
+		// https://www.postgresql.org/docs/current/errcodes-appendix.html
+		if errors.As(err, &pgErr) && pgErr.Code == "23505" {
+			return nil, g.ErrorAccountAlreadyExists
 		}
 		return nil, err
 	}
@@ -40,7 +44,7 @@ func (s *DefaultService) RegisterUser(ctx *gin.Context, user dbqueries.InsertUse
 }
 
 func (s *DefaultService) ShouldUserBeSignedIn(ctx *gin.Context, req models.LoginRequest) (*dbqueries.GetUserCredentialsRow, error) {
-	credsInDB, err := s.db.GetUserCredentials(ctx, req.Email)
+	credsInDB, err := s.db.GetUserCredentials(ctx, NormalizeEmail(req.Email))
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, g.ErrorInvalidCredential

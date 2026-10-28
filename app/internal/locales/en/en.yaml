@@ -16,21 +16,31 @@ en:
     no-account: "Don't have an account?"
     create-account: Create an account
     sign-in: Sign in
-    invalid-credentials: Vale sisselogimisinfo
+    invalid-credentials: Invalid email or password
   registration-page:
     title: Create an account
     description: Enter your details to create your account
     already-have-account: Already have an account?
     account-exists: This account already exists
     submit: Create account
+  home-page:
+    greeting: Hello, %s
+  logout: Log out
+  error-page:
+    title: Something went wrong
+    description: Please try again later.
+    back: Back to home
   validation-errors:
     email:
       generic: Invalid email address
     password:
+      required: Password is required
       length: Password must be at least %d characters long
+      max-length: Password can be at most %d characters long
       case: The password must contain both uppercase and lowercase letters
       symbol: The password must contain at least one special character
       match: Both passwords must match
     username:
-      length: Username must be at leats %d characters long
+      length: Username must be at least %d characters long
+      max-length: Username can be at most %d characters long
       spaces: Username must not be surrounded by spaces

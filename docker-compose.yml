@@ -46,6 +46,9 @@ services:
     ports:
       # match latter with [SERVER_PORT] env
       - 127.0.0.1:8000:8080
+    volumes:
+      # the TLS key stays out of the image, see app/.dockerignore
+      - ./app/certificates:/app/certificates:ro
     env_file: .env
     environment:
       SERVER_PORT: 8080

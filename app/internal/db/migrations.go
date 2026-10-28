@@ -16,6 +16,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/pkg/errors"
 )
@@ -102,33 +103,18 @@ func SelectMigrationVersion(db *pgxpool.Pool) int {
 	return migrationVersion
 }
 
-// ensure that at least one migration row exists since we will only be updating it
+// ensure that one migration row exists since we will only be updating it
 func ensureMigrationRow(db *pgxpool.Pool) {
-	insertMigrationRow := func() {
-		query := fmt.Sprintf(
-			`INSERT INTO %s (%s, %s) VALUES ($1, $2);`,
-			TableMigrations, ColumnFilename, ColumnVersion,
-		)
-		_, err := db.Exec(ctx, query, "NO_FILE", 0)
-		if err != nil {
-			log.Fatal().Err(err).
-				Str("query", query).
-				Msg("error initializing migration")
-		}
-	}
-
-	migrationVersion := 0
 	query := fmt.Sprintf(
-		`SELECT %s FROM %s LIMIT 1;`,
-		ColumnVersion, TableMigrations,
+		`INSERT INTO %[1]s (%[2]s, %[3]s) SELECT 'NO_FILE', 0
+		WHERE NOT EXISTS (SELECT 1 FROM %[1]s);`,
+		TableMigrations, ColumnFilename, ColumnVersion,
 	)
-	err := db.QueryRow(ctx, query).Scan(&migrationVersion)
-	if errors.Is(err, sql.ErrNoRows) {
-		insertMigrationRow()
-	} else if err != nil {
+	_, err := db.Exec(ctx, query)
+	if err != nil {
 		log.Fatal().Err(err).
 			Str("query", query).
-			Msg("error getting migration version")
+			Msg("error initializing migration")
 	}
 }
 
@@ -151,7 +137,7 @@ func ensureMigrationTable(db *pgxpool.Pool) {
 	ensureMigrationRow(db)
 }
 
-func updateMigrationVersion(db *pgxpool.Pool, migrationVersion int, file string) {
+func updateMigrationVersion(db pgx.Tx, migrationVersion int, file string) {
 	query := fmt.Sprintf(`UPDATE %s SET
 	%s = $1,
 	%s = $2,
@@ -187,49 +173,22 @@ func (m *migrations) MigrateTo(desiredVersion int) {
 		return
 	}
 
-	loopIncrement := 1
-	loopFileGet := func(i int) string {
-		files := m.migrationFileMap[i]
-		return files.up
+	// version N is reached by running N.up from N-1
+	// and left by running N.down back to N-1
+	for m.currentVersion < desiredVersion {
+		next := m.currentVersion + 1
+		m.runMigrationStep(m.migrationFileMap[next].up, next)
 	}
-	// change previous if migration direction is down
-	if desiredVersion < m.currentVersion {
-		loopIncrement = -1
-		loopFileGet = func(i int) string {
-			// when we want to migrate down we should use the previos migration file
-			files := m.migrationFileMap[i+1]
-			return files.down
-		}
-	}
-
-	// migrations files only start from 1
-	loopStart := max(m.currentVersion, 1)
-	if loopIncrement < 0 && len(m.migrationFileMap) == loopStart {
-		// down migrations use the i+1 to get migration file that migrates to i
-		loopStart -= 1
-	}
-	for i := loopStart; ; i = i + loopIncrement {
-		file := loopFileGet(i)
-		m.runMigrationFile(file)
-		m.currentVersion = i
-		m.updateCurrentMigrationVersion(file)
-		if i == desiredVersion {
-			break
-		}
+	for m.currentVersion > desiredVersion {
+		m.runMigrationStep(m.migrationFileMap[m.currentVersion].down, m.currentVersion-1)
 	}
 }
 
-// file is used just to make info gathering easier later
-func (m *migrations) updateCurrentMigrationVersion(file string) {
-	updateMigrationVersion(m.db, m.currentVersion, file)
-	log.Info().
-		Int("migrationVersion", m.currentVersion).
-		Str("file", file).
-		Msg("successful migration")
-}
-
+// runs the migration file and records newVersion in a single transaction,
+// so a failing file leaves neither the schema nor the version half-updated
+//
 // file is used with [migrationFS.ReadFile]
-func (m *migrations) runMigrationFile(file string) {
+func (m *migrations) runMigrationStep(file string, newVersion int) {
 	fContent, err := migrationFS.ReadFile(file)
 	if err != nil {
 		log.Fatal().Err(err).
@@ -238,13 +197,31 @@ func (m *migrations) runMigrationFile(file string) {
 			Msg("error reading file")
 	}
 
-	sqlContent := string(fContent)
-	_, err = m.db.Exec(context.Background(), sqlContent)
+	tx, err := m.db.Begin(ctx)
 	if err != nil {
+		log.Fatal().Err(err).Str("fileName", file).
+			Msg("could not begin migration transaction")
+	}
+	// no-op after a successful commit
+	defer func() { _ = tx.Rollback(ctx) }()
+
+	// no arguments so pgx uses the simple protocol, which allows multiple statements
+	if _, err = tx.Exec(ctx, string(fContent)); err != nil {
 		log.Fatal().Err(err).
 			Str("fileName", file).
 			Msg("failed to run migration file")
 	}
+	updateMigrationVersion(tx, newVersion, file)
+	if err = tx.Commit(ctx); err != nil {
+		log.Fatal().Err(err).Str("fileName", file).
+			Msg("could not commit migration transaction")
+	}
+
+	m.currentVersion = newVersion
+	log.Info().
+		Int("migrationVersion", m.currentVersion).
+		Str("file", file).
+		Msg("successful migration")
 }
 
 // Reads migration files from [migrationFS]
@@ -272,12 +249,11 @@ func (m *migrations) loadMigrationFiles() {
 // Validates migrations and sets max migration version:
 //  1. migrations must start from 1 and increment by 1 (growing order)
 //  2. migrations must have up sql and down sql
+//
+// len(map) keys checked as 1..len means no key can be outside that range
 func (m *migrations) validateMigrations() error {
 	migrationLength := len(m.migrationFileMap)
-	migrationsValidated := 0
 
-	// TODO: would be nice to aggregate these errors together
-	// low priority however so won't spend time on it
 	for i := 1; i <= migrationLength; i++ {
 		migration, ok := m.migrationFileMap[i]
 		if !ok {
@@ -290,13 +266,6 @@ func (m *migrations) validateMigrations() error {
 		} else if migration.down == "" {
 			return fmt.Errorf("migration down file missing for version %v", i)
 		}
-		migrationsValidated += 1
-	}
-
-	// if starting from 1 did not validate all migrations
-	// then there are migrations that are below 0 version
-	if migrationLength != migrationsValidated {
-		return errors.New("migrations must start from 1" + mee)
 	}
 
 	m.maxVersion = migrationLength
@@ -314,7 +283,7 @@ func (m *migrations) modifyAddMigration(migrationFilePath string) {
 			Msg("could not get migration info; ignoring it")
 		return
 	}
-	parsedVersion, err := strconv.ParseInt(matches[1], 10, 8)
+	mVersion, err := strconv.Atoi(matches[1])
 	if err != nil {
 		log.Fatal().Err(err).
 			Str("versionFromRegex", matches[1]).
@@ -323,7 +292,6 @@ func (m *migrations) modifyAddMigration(migrationFilePath string) {
 	}
 
 	isUpSQL := matches[3] == "up"
-	mVersion := int(parsedVersion)
 
 	migration, ok := m.migrationFileMap[mVersion]
 	if !ok {

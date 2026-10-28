@@ -22,15 +22,25 @@ et:
     description: Sisesta oma andmed konto loomiseks
     already-have-account: Konto juba olemas?
     account-exists: See konto on juba olemas
-    submit: Create account
+    submit: Loo konto
+  home-page:
+    greeting: Tere, %s
+  logout: Logi välja
+  error-page:
+    title: Midagi läks valesti
+    description: Palun proovi hiljem uuesti.
+    back: Tagasi avalehele
   validation-errors:
     email:
       generic: Ebasobiv e-maili address
     password:
+      required: Parool on kohustuslik
       length: Parool peab olema vähemalt %d tähte
+      max-length: Parool võib olla kõige rohkem %d tähte
       case: Parool peab sisaldama nii suuri kui ka väikeseid tähti
       symbol: Parool peab sisaldama vähemalt ühte erimärki
       match: Mõlemad paroolid peavad samad olema
     username:
       length: Kasutajanimi peab olema vähemalt %d tähte
+      max-length: Kasutajanimi võib olla kõige rohkem %d tähte
       spaces: Kasutajanime ümber ei tohi olla tühikuid

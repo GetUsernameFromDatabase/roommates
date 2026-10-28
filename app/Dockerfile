@@ -13,6 +13,8 @@ COPY . .
 RUN go mod download
 
 RUN go install github.com/go-task/task/v3/cmd/task@latest
+# match with the version in internal/db/dbqueries/*.go headers
+RUN go install github.com/sqlc-dev/sqlc/cmd/sqlc@v1.31.1
 # make sure this matches with the version from
 # `tailwindcss --help | head -n 1`
 RUN curl -fsSL -o /usr/local/bin/tailwindcss \
@@ -26,7 +28,6 @@ FROM alpine:latest AS release-stage
 WORKDIR /app
 
 COPY --from=build-stage /app/web/assets web/assets
-COPY --from=build-stage /app/certificates certificates
 # output from `task build`
 COPY --from=build-stage /app/bin/app bin/app
 CMD ["bin/app"]

@@ -42,13 +42,15 @@ func NewInternationalization() gin.HandlerFunc {
 	}
 }
 
-// logs the error and sends response with [handlers.Fail]
+// logs the error and sends a plain text 500
 // and aborts pending handlers with [gin.Context.Abort]
+//
+// plain text since without a locale the error page cannot be translated
 func localeMissing(ctx *gin.Context, err error, locale string) {
-	logger.Main.Error().Stack().Err(err).
+	logger.Main.Error().Err(err).
 		Str("locale", locale).Str("DefaultLocale", ctxi18n.DefaultLocale.String()).
 		Msg(g.EC_MissingLocale.String())
-	handlers.Fail(ctx, http.StatusInternalServerError, g.EC_MissingLocale)
+	ctx.String(http.StatusInternalServerError, g.EC_MissingLocale.String())
 	ctx.Abort()
 }
 

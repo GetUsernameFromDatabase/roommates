@@ -15,7 +15,6 @@ const (
 )
 
 const (
-	HHK_Authorization  HTTPHeaderKey = "Authorization"
 	HHK_AcceptLanguage HTTPHeaderKey = "Accept-Language"
 )
 
