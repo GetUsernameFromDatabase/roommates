@@ -1,0 +1,8 @@
+version: '2'
+
+linters:
+  enable:
+    - exhaustruct_v5
+  settings:
+    exhaustruct_v5:
+      allow-empty: true

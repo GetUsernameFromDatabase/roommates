@@ -1,0 +1,83 @@
+{
+  // See https://go.microsoft.com/fwlink/?LinkId=733558
+  // for the documentation about the tasks.json format
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "format all",
+      "type": "shell",
+      "command": "sh",
+      "args": ["format.sh"],
+      "options": {
+        "cwd": "${workspaceFolder}/app/scripts"
+      },
+      "problemMatcher": [],
+      "detail": "formats all templ and go files"
+    },
+    {
+      "label": "lint script",
+      "type": "shell",
+      "command": "sh",
+      "args": ["lint.sh"],
+      "options": {
+        "cwd": "${workspaceFolder}/app/scripts"
+      },
+      "problemMatcher": [],
+      "detail": "run lint script"
+    },
+    {
+      "label": "sqlc generate",
+      "type": "shell",
+      "command": "sqlc",
+      "args": ["generate", "-f", "${workspaceFolder}/app/sqlc.yml"],
+      "group": "build",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "detail": "generate code that interacts with the database"
+    },
+    {
+      "label": "templ generate",
+      "type": "shell",
+      "command": "templ",
+      "args": ["generate"],
+      "group": "build",
+      "options": {
+        "cwd": "${workspaceFolder}/app"
+      },
+      "detail": "generate templ code"
+    },
+    {
+      "label": "go generate ./tools/...",
+      "type": "shell",
+      "command": "go",
+      "args": ["generate", "./tools/..."],
+      "group": "build",
+      "options": {
+        "cwd": "${workspaceFolder}/app"
+      },
+      "detail": "generates locale keys and languages, also checks that language files have same keys"
+    },
+    {
+      "label": "build",
+      "dependsOrder": "sequence",
+      "dependsOn": [
+        "go generate ./tools/...",
+        "sqlc generate",
+        "templ generate"
+      ]
+    },
+
+    {
+      "label": "task dev",
+      "type": "shell",
+      "command": "task",
+      "args": ["dev"],
+      "options": {
+        "cwd": "${workspaceFolder}/app"
+      },
+      "detail": "run dev task in taskfile",
+      "problemMatcher": []
+    }
+  ]
+}

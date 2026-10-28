@@ -1,0 +1,156 @@
+package components
+
+import "roommates/components/card"
+import "roommates/components/field"
+import "roommates/components/input"
+import "roommates/components/button"
+import "roommates/models"
+import "roommates/globals"
+import "roommates/locales"
+import "roommates/utils"
+
+templ PageRegister(m models.Register) {
+	@HtmlWrap() {
+		@HeaderComponent("")
+		<body>
+			<div class="min-h-svh bg-background text-foreground md:grid">
+				<main class="flex min-h-svh items-center justify-center p-6 sm:p-10">
+					<div class="w-full max-w-sm">
+						<a href="/" class="mb-10 flex items-center justify-center gap-2 font-semibold">
+							<span class="flex size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+								{ utils.T(ctx, locales.LK_AppTitle)[:1] }
+							</span>
+							@T(locales.LK_AppTitle)
+						</a>
+						@card.Card(card.Props{
+							Class: "border-0 shadow-none",
+						}) {
+							@card.Header() {
+								@card.Title() {
+									@T(locales.LK_RegistrationPageTitle)
+								}
+								@card.Description() {
+									@T(locales.LK_RegistrationPageDescription)
+								}
+							}
+							@card.Content() {
+								if m.Error != "" {
+									<div
+										role="alert"
+										class="mb-5 rounded-md border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive"
+									>
+										{ m.Error }
+									</div>
+								}
+								@RegisterForm(m)
+								<p class="mt-6 text-center text-sm text-muted-foreground">
+									@T(locales.LK_RegistrationPageAlreadyHaveAccount)
+									<a
+										href={ globals.RouteLogin }
+										class="font-medium text-foreground underline-offset-4 hover:underline ml-1"
+									>
+										@T(locales.LK_LoginPageSignIn)
+									</a>
+								</p>
+							}
+						}
+					</div>
+				</main>
+			</div>
+		</body>
+	}
+}
+
+templ RegisterForm(m models.Register) {
+	{{
+		emailValidations := m.ValidateEmail()
+		usernameValidations := m.ValidateUsername()
+		passwordValidations := m.ValidatePassword()
+		passwordMatchValidations := m.ValidatePasswordMatch()
+	}}
+	<form action={ globals.RouteRegister } method="post" hx-boost="true" class="space-y-5">
+		@field.Group() {
+			<!-- Email -->
+			@field.Field() {
+				@field.Label(field.LabelProps{For: "email"}) {
+					@T(locales.LK_Email)
+				}
+				@input.Input(input.Props{
+					ID:          "email",
+					Name:        "email",
+					Type:        "email",
+					Value:       m.Email,
+					Placeholder: "you@example.com",
+					Required:    true,
+					Attributes: templ.Attributes{
+						"autocomplete": "email",
+						"aria-invalid": len(emailValidations) > 0,
+					},
+				})
+				@ValidationErrors(emailValidations)
+			}
+			<!-- Username -->
+			@field.Field() {
+				@field.Label(field.LabelProps{For: "username"}) {
+					@T(locales.LK_UsernameTitle)
+				}
+				@input.Input(input.Props{
+					ID:       "username",
+					Name:     "username",
+					Type:     "text",
+					Value:    m.Username,
+					Required: true,
+					Attributes: templ.Attributes{
+						"autocomplete": "username",
+						"aria-invalid": len(usernameValidations) > 0,
+					},
+				})
+				@ValidationErrors(usernameValidations)
+			}
+			<!-- Password -->
+			@field.Field() {
+				@field.Label(field.LabelProps{For: "password"}) {
+					@T(locales.LK_PasswordTitle)
+				}
+				@input.Input(input.Props{
+					ID:          "password",
+					Name:        "password",
+					Type:        "password",
+					Value:       m.Password,
+					Placeholder: utils.T(ctx, locales.LK_PasswordEnter),
+					Required:    true,
+					Attributes: templ.Attributes{
+						"autocomplete": "new-password",
+						"aria-invalid": len(passwordValidations) > 0,
+					},
+				})
+				@ValidationErrors(passwordValidations)
+			}
+			<!-- Confirm password -->
+			@field.Field() {
+				@field.Label(field.LabelProps{For: "password_2"}) {
+					@T(locales.LK_PasswordConfirm)
+				}
+				@input.Input(input.Props{
+					ID:       "password_2",
+					Name:     "password_2",
+					Type:     "password",
+					Value:    m.Password2,
+					Required: true,
+					Attributes: templ.Attributes{
+						"autocomplete": "new-password",
+						"aria-invalid": len(passwordMatchValidations) > 0,
+					},
+				})
+				@ValidationErrors(passwordMatchValidations)
+			}
+			<!-- Submit -->
+			@button.Button(button.Props{
+				Type:  button.TypeSubmit,
+				Class: "w-full",
+			}) {
+				@T(locales.LK_RegistrationPageSubmit)
+			}
+		}
+	</form>
+}

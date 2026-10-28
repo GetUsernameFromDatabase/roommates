@@ -1,0 +1,18 @@
+{
+  "Go Page Handler": {
+    "prefix": "pagehandler",
+    "scope": "go",
+    "body": [
+      "func (h *DefaultHandler) ${1:Name}(ctx *gin.Context) {",
+      "\t$0",
+      "}"
+    ],
+    "description": "Generate a Gin page handler"
+  },
+  "Go comment links": {
+    "description": "https://go.dev/doc/comment#links",
+    "scope": "go",
+    "prefix": "link",
+    "body": "[${1:Name}]: $0"
+  }
+}

@@ -1,0 +1,36 @@
+en:
+  app:
+    title: Roommates
+  welcome-back: Welcome back
+  email: Email
+  username:
+    title: Username
+  password: 
+    title: Password
+    enter: Enter your password
+    # second password for register page
+    confirm: Confirm password
+  login-page:
+    enter-credentials-description: Enter your credentials to sign in to your account
+    forgot-password: Forgot password?
+    no-account: "Don't have an account?"
+    create-account: Create an account
+    sign-in: Sign in
+    invalid-credentials: Vale sisselogimisinfo
+  registration-page:
+    title: Create an account
+    description: Enter your details to create your account
+    already-have-account: Already have an account?
+    account-exists: This account already exists
+    submit: Create account
+  validation-errors:
+    email:
+      generic: Invalid email address
+    password:
+      length: Password must be at least %d characters long
+      case: The password must contain both uppercase and lowercase letters
+      symbol: The password must contain at least one special character
+      match: Both passwords must match
+    username:
+      length: Username must be at leats %d characters long
+      spaces: Username must not be surrounded by spaces

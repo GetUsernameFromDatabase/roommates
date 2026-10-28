@@ -1,0 +1,63 @@
+# yaml-language-server: $schema=https://taskfile.dev/schema.json
+
+# mainly taken from https://shadcn-templ.com/docs/installation#create-taskfile
+
+version: '3'
+
+use_gitignore: true
+
+vars:
+  # The app port: an explicit 'task dev PORT=8091' wins, otherwise the next
+  # free port from 8090 up. The templ proxy and the app share the result,
+  # so hot reload never points at a foreign app.
+  FREE_PORT:
+    sh: port=8090; while nc -z localhost $port >/dev/null 2>&1; do port=$((port+1)); done; echo $port
+  PORT: '{{.PORT | default .FREE_PORT}}'
+  TAILWIND_INPUT: './assets/globals.css'
+  TAILWIND_OUTPUT: './assets/public/output.css'
+  PROXY_TLS_CRT: './certificates/server.pem'
+  PROXY_TLS_KEY: './certificates/server.key'
+
+tasks:
+  templ:
+    desc: Run templ with integrated server and hot reload
+    cmds:
+      # I could not get this to work properly
+      # https://templ.guide/developer-tools/live-reload#templ-uses-a-proxy-to-auto-reload-the-browser
+      - go tool templ generate --watch --open-browser=false --cmd="sh ./scripts/dev-run.sh"
+    env:
+      SERVER_PORT: '{{.PORT}}'
+    dotenv:
+      - ../.env
+
+  tailwind:
+    desc: Watch Tailwind CSS changes
+    cmds:
+      - 'tailwindcss -i {{.TAILWIND_INPUT}} -o {{.TAILWIND_OUTPUT}} --watch'
+
+  scripts-watch:
+    desc: Watch component scripts
+    cmds:
+      - go tool shadcn-templ bundle --watch
+
+  # TODO: add sqlc https://docs.sqlc.dev/en/latest/reference/cli.html
+  # does not seem to have simple --watch like templ generate
+  # ust running it manualy should suffice, go files are watched
+  # sqlc generate --help
+
+  build:
+    desc: Build the application with production assets
+    cmds:
+      - sqlc generate
+      - go generate ./tools/...
+      - tailwindcss -i {{.TAILWIND_INPUT}} -o {{.TAILWIND_OUTPUT}} --minify
+      - go tool shadcn-templ bundle
+      - go tool templ generate
+      - go build -o bin/app .
+
+  dev:
+    env:
+      SHADCN_TEMPL_DEV: 'true'
+    desc: Start development server with hot reload
+    cmds:
+      - task --parallel tailwind scripts-watch templ

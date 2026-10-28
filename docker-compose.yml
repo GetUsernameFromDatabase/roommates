@@ -1,0 +1,56 @@
+# https://docs.docker.com/compose/
+# Reminders for myself so I won't need to check every time (panic mode during error)
+# ports: first port is for outside container use, the other inside container
+# env is automatically loaded, you can just use interpolation
+#  if you don't want to bind the entire file to service
+#  https://docs.docker.com/compose/how-tos/environment-variables/variable-interpolation/#env-file
+version: "3"
+
+volumes:
+  db_data:
+
+services:
+  # --- STORAGE ---
+  db:
+    command: -c config_file=/etc/postgresql.conf
+    build:
+      context: ./PostgreSQL
+      dockerfile: PostgreSQL.DockerFile
+    restart: always
+    ports:
+      - 127.0.0.1:5432:5432
+    environment:
+      # https://hub.docker.com/_/postgres/#environment-variables
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD} # REQUIRED
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - ./PostgreSQL/postgresql.conf:/etc/postgresql.conf # should match with command: -c config_file
+      - db_data:/var/lib/postgresql # PG 18 path
+      - ./logs/postgresql:/logs
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+  # ----------------------------------------------------------------------------
+  app:
+    depends_on:
+      db:
+        condition: service_healthy
+        required: true
+        restart: true
+    build:
+      context: ./app
+      dockerfile: app.DockerFile
+    ports:
+      # match latter with [SERVER_PORT] env
+      - 127.0.0.1:8000:8080
+    env_file: .env
+    environment:
+      SERVER_PORT: 8080
+      # https://gin-gonic.com/en/docs/faq/#how-do-i-run-gin-in-production-mode
+      GIN_MODE: release
+      # match with service
+      DATABASE_HOST: db # service name
+      DATABASE_PORT: 5432 # service container port

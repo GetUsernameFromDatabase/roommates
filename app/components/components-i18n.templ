@@ -1,0 +1,18 @@
+package components
+
+import "roommates/locales"
+import "roommates/utils"
+import "github.com/invopop/ctxi18n/i18n"
+
+// source of inspiration
+// https://github.com/invopop/gobl.html/blob/main/components/t/i18n.templ
+
+// T wrapper of our i18n T wrapper [utils.T]
+templ T(key locales.LK, args ...any) {
+	{ utils.T(ctx, key, args...) }
+}
+
+// N wrapper of our i18n N wrapper [utils.N]
+templ N(key locales.LK, count int, i18nMap i18n.M, args ...any) {
+	{ utils.N(ctx, key, count, i18nMap, args...) }
+}

@@ -1,0 +1,14 @@
+{
+  "recommendations": [
+    "bradlc.vscode-tailwindcss",
+    "davidanson.vscode-markdownlint",
+    "docker.docker",
+    "esbenp.prettier-vscode",
+    "golang.go",
+    "ms-azuretools.vscode-docker",
+    "qufiwefefwoyn.inline-sql-syntax",
+    "redhat.vscode-yaml",
+    "yzhang.markdown-all-in-one",
+    "a-h.templ"
+  ]
+}

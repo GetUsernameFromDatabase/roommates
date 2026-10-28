@@ -1,0 +1,30 @@
+{
+  // https://templ.guide/developer-tools/ide-support#tailwind-css-intellisense
+  "tailwindCSS.includeLanguages": {
+    "templ": "html"
+  },
+  // https://templ.guide/developer-tools/ide-support#emmet-html-completion
+  "emmet.includeLanguages": {
+    "templ": "html"
+  },
+  // https://github.com/golang/vscode-go/wiki/features#lint-errors
+  "gopls": {
+    // https://github.com/golang/vscode-go/wiki/settings#uidiagnosticstaticcheck
+    "ui.diagnostic.staticcheck": true,
+    "ui.diagnostic.analyses": {
+      // I use underscore in some places to get code suggestions easier
+      "ST1003": false,
+      // some are automatically generated
+      "ST1000": false
+    }
+  },
+  // https://golangci-lint.run/docs/welcome/integrations/#visual-studio-code
+  "go.lintTool": "golangci-lint-v2",
+  // add "--fast-only" if this freezes, currently I want exhaustruct_v5 to run
+  "go.lintFlags": ["--path-mode=abs"], 
+  "go.formatTool": "custom",
+  "go.alternateTools": {
+    "customFormatter": "golangci-lint-v2"
+  },
+  "go.formatFlags": ["fmt", "--stdin"]
+}
