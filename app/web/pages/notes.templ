@@ -1,0 +1,197 @@
+package pages
+
+import "roommates/web/components"
+import "roommates/web/components/button"
+import "roommates/web/components/input"
+import "roommates/web/components/textarea"
+import "roommates/internal/db/dbqueries"
+import "roommates/internal/services"
+import g "roommates/internal/config"
+import "roommates/internal/locales"
+import "roommates/internal/utils"
+import "github.com/jackc/pgx/v5/pgtype"
+
+// NoteForm is the note editor, a zero NoteID is a new note
+//
+// IsAuthor shows the private switch, only the author changes who sees a note
+type NoteForm struct {
+	NoteID       pgtype.UUID
+	Input        services.NoteInput
+	IsAuthor     bool
+	ErrorMessage string
+}
+
+// HouseholdNotes lists the household's notes and the actor's private ones, pinned first
+templ HouseholdNotes(actor services.Membership, notes []dbqueries.ListNotesRow) {
+	@appShell(utils.T(ctx, locales.LK_NotesTitle), &HouseholdNav{HouseholdID: actor.HouseholdID, Section: SectionNotes}) {
+		<header class="flex items-end justify-between gap-3">
+			<h1 class="doorplate">
+				@components.T(locales.LK_NotesTitle)
+			</h1>
+			@button.Button(button.Props{Href: string(householdURL(actor.HouseholdID, "notes", "new")), Size: button.SizeLg, Class: "h-10 shrink-0"}) {
+				@components.T(locales.LK_NotesNew)
+			}
+		</header>
+		<section class={ sheetClass }>
+			if len(notes) == 0 {
+				<p class="text-muted-foreground">
+					@components.T(locales.LK_NotesNone)
+				</p>
+			} else {
+				<ul class="divide-y">
+					for _, n := range notes {
+						<li>
+							<a href={ householdURL(actor.HouseholdID, "notes", n.ID.String()) } class="block min-h-12 py-2 hover:underline">
+								<span class="font-heading text-lg font-semibold break-words">{ n.Title }</span>
+								@noteBadges(n.Pinned, n.Visibility)
+								<span class="block text-xs text-muted-foreground">
+									{ utils.T(ctx, locales.LK_NotesEditedBy, n.EditedByName, formatDate(n.EditedAt)) }
+								</span>
+							</a>
+						</li>
+					}
+				</ul>
+			}
+		</section>
+	}
+}
+
+templ noteBadges(pinned bool, visibility string) {
+	if pinned {
+		<span class="ml-1 inline-flex rounded-full bg-secondary px-2 py-0.5 align-middle text-xs font-medium text-secondary-foreground">
+			@components.T(locales.LK_NotesPinnedBadge)
+		</span>
+	}
+	if visibility == g.NoteVisibilityPrivate {
+		<span class="ml-1 inline-flex rounded-full border px-2 py-0.5 align-middle text-xs font-medium text-muted-foreground">
+			@components.T(locales.LK_NotesPrivateBadge)
+		</span>
+	}
+}
+
+// NotePage shows one note with its markdown rendered
+templ NotePage(actor services.Membership, n services.Note) {
+	{{ noteURL := householdURL(actor.HouseholdID, "notes", n.ID.String()) }}
+	@appShell(n.Title, &HouseholdNav{HouseholdID: actor.HouseholdID, Section: SectionNotes}) {
+		@doorplateHeader(householdURL(actor.HouseholdID, "notes"), utils.T(ctx, locales.LK_NotesBack), n.Title)
+		<div class="-mt-6">
+			@noteBadges(n.Pinned, n.Visibility)
+			<p class="mt-1 text-xs text-muted-foreground">
+				{ utils.T(ctx, locales.LK_NotesEditedBy, n.EditedByName, formatDate(n.EditedAt)) }
+			</p>
+		</div>
+		<article class={ utils.CN(sheetClass, "note-body") }>
+			if n.BodyMd == "" {
+				<p class="text-muted-foreground">
+					@components.T(locales.LK_NotesEmpty)
+				</p>
+			} else {
+				@noteHTML(n.BodyMd)
+			}
+		</article>
+		<div class="flex flex-wrap gap-2">
+			@button.Button(button.Props{Href: string(noteURL) + "/edit", Size: button.SizeLg}) {
+				@components.T(locales.LK_NotesEdit)
+			}
+			<form action={ noteURL + "/pin" } method="post" hx-boost="true">
+				<input type="hidden" name="pinned" value={ utils.IfElse(n.Pinned, "0", "1") }/>
+				@button.Button(button.Props{Type: button.TypeSubmit, Variant: button.VariantSecondary, Size: button.SizeLg}) {
+					if n.Pinned {
+						@components.T(locales.LK_NotesUnpin)
+					} else {
+						@components.T(locales.LK_NotesPin)
+					}
+				}
+			</form>
+			if n.AuthorID == actor.UserID {
+				<form
+					action={ noteURL + "/delete" }
+					method="post"
+					hx-boost="true"
+					hx-confirm={ utils.T(ctx, locales.LK_NotesDelete) + "?" }
+					class="ml-auto"
+				>
+					@button.Button(button.Props{
+						Type:    button.TypeSubmit,
+						Variant: button.VariantOutline,
+						Size:    button.SizeLg,
+						Class:   "text-destructive",
+					}) {
+						@components.T(locales.LK_NotesDelete)
+					}
+				</form>
+			}
+		</div>
+	}
+}
+
+// NoteEditor creates a note, or edits one when f.NoteID is set
+templ NoteEditor(actor services.Membership, f NoteForm) {
+	{{ notesURL := householdURL(actor.HouseholdID, "notes") }}
+	{{ action, cancel := notesURL, notesURL }}
+	if f.NoteID.Valid {
+		{{ cancel = householdURL(actor.HouseholdID, "notes", f.NoteID.String()) }}
+		{{ action = cancel + "/edit" }}
+	}
+	@appShell(utils.IfElse(f.Input.Title != "", f.Input.Title, utils.T(ctx, locales.LK_NotesNew)), &HouseholdNav{HouseholdID: actor.HouseholdID, Section: SectionNotes}) {
+		@doorplateHeader(cancel, utils.T(ctx, locales.LK_NotesCancel), utils.IfElse(f.NoteID.Valid, f.Input.Title, utils.T(ctx, locales.LK_NotesNew)))
+		<form action={ action } method="post" hx-boost="true" class={ utils.CN(sheetClass, "space-y-4") }>
+			if f.ErrorMessage != "" {
+				<div
+					role="alert"
+					class="rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive"
+				>
+					{ f.ErrorMessage }
+				</div>
+			}
+			<label class="block space-y-1.5">
+				<span class="text-sm font-medium">
+					@components.T(locales.LK_NotesNoteTitle)
+				</span>
+				@input.Input(input.Props{
+					Name:     "title",
+					Type:     "text",
+					Value:    f.Input.Title,
+					Required: true,
+					Class:    "h-11",
+					Attributes: templ.Attributes{
+						"maxlength": services.MaxNoteTitleLength,
+					},
+				})
+			</label>
+			<label class="block space-y-1.5">
+				<span class="text-sm font-medium">
+					@components.T(locales.LK_NotesBody)
+				</span>
+				@textarea.Textarea(textarea.Props{
+					Name:  "body",
+					Value: f.Input.BodyMD,
+					Rows:  12,
+					Class: "font-mono text-sm",
+					Attributes: templ.Attributes{
+						"maxlength":        services.MaxNoteBodyLength,
+						"aria-describedby": "note-body-hint",
+					},
+				})
+				<span id="note-body-hint" class="block text-xs text-muted-foreground">
+					@components.T(locales.LK_NotesBodyHint)
+				</span>
+			</label>
+			if f.IsAuthor {
+				<label class="flex min-h-11 items-center gap-3">
+					<input
+						type="checkbox"
+						name="private"
+						value="1"
+						checked?={ f.Input.Private }
+						class="size-5 accent-primary"
+					/>
+					@components.T(locales.LK_NotesPrivate)
+				</label>
+			}
+			@button.Button(button.Props{Type: button.TypeSubmit, Size: button.SizeLg, Class: "w-full"}) {
+				@components.T(locales.LK_NotesSave)
+			}
+		</form>
+	}
+}

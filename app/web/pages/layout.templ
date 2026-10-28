@@ -9,6 +9,7 @@ import "github.com/jackc/pgx/v5/pgtype"
 // sections of a household, the bottom bar on phones and the tab row on wide screens
 const (
 	SectionShopping = "shopping"
+	SectionNotes    = "notes"
 	SectionPeople   = "people"
 )
 
@@ -58,6 +59,7 @@ templ householdNav(nav HouseholdNav) {
 	>
 		<ul class="mx-auto flex w-full max-w-lg gap-2 px-4 py-2 sm:px-10">
 			@householdNavItem(householdURL(nav.HouseholdID), locales.LK_NavShopping, nav.Section == SectionShopping)
+			@householdNavItem(householdURL(nav.HouseholdID, "notes"), locales.LK_NavNotes, nav.Section == SectionNotes)
 			@householdNavItem(householdURL(nav.HouseholdID, "people"), locales.LK_NavPeople, nav.Section == SectionPeople)
 		</ul>
 	</nav>

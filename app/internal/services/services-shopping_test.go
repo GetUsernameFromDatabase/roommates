@@ -10,30 +10,8 @@ import (
 func TestShoppingList(t *testing.T) {
 	s := newTestService(t)
 	ctx := context.Background()
-	owner, member, stranger := newVerifiedTestUser(t, s), newTestUser(t, s), newTestUser(t, s)
-
-	householdID, err := s.CreateHousehold(ctx, owner, "Flat")
-	if err != nil {
-		t.Fatal(err)
-	}
-	ownerM := mustMembership(t, s, householdID, owner)
-	if err := s.CreateInvite(ctx, ownerM); err != nil {
-		t.Fatal(err)
-	}
-	overview, err := s.GetHouseholdOverview(ctx, ownerM)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if _, err := s.JoinWithInvite(ctx, overview.Invites[0].Code, member); err != nil {
-		t.Fatal(err)
-	}
-	memberM := mustMembership(t, s, householdID, member)
-
-	otherID, err := s.CreateHousehold(ctx, stranger, "Other")
-	if err != nil {
-		t.Fatal(err)
-	}
-	strangerM := mustMembership(t, s, otherID, stranger)
+	ownerM, memberM, strangerM := newTestHousehold(t, s)
+	var err error
 
 	_, err = s.CreateShoppingList(ctx, ownerM, "   ")
 	wantErr(t, "empty list name", err, g.ErrorInvalidInput)
@@ -83,7 +61,7 @@ func TestShoppingList(t *testing.T) {
 		t.Fatal(err)
 	}
 	l, _ = s.GetShoppingList(ctx, ownerM, listID)
-	if l.Items[0].ID != bread || l.Items[0].ClaimedBy != owner ||
+	if l.Items[0].ID != bread || l.Items[0].ClaimedBy != ownerM.UserID ||
 		!l.Items[1].CheckedAt.Valid || l.Items[1].CheckedByName == nil {
 		t.Fatalf("unexpected items after claim and check %+v", l.Items)
 	}
@@ -96,7 +74,7 @@ func TestShoppingList(t *testing.T) {
 		t.Fatal(err)
 	}
 	l, _ = s.GetShoppingList(ctx, ownerM, listID)
-	if l.Items[0].ClaimedBy != member {
+	if l.Items[0].ClaimedBy != memberM.UserID {
 		t.Fatalf("stale unclaim dropped someone else's claim %+v", l.Items[0])
 	}
 	if err := s.SetShoppingItemClaim(ctx, memberM, listID, bread, false); err != nil {

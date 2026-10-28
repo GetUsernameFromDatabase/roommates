@@ -32,6 +32,12 @@ const (
 	RoleMember = "member"
 )
 
+// notes.visibility values, the table CHECKs these
+const (
+	NoteVisibilityHousehold = "household"
+	NoteVisibilityPrivate   = "private"
+)
+
 // keys of values set on [gin.Context] by middleware
 const (
 	// services.Membership set by middleware.NewHouseholdMember
@@ -45,4 +51,5 @@ const (
 	ParamUserID      = "userID"
 	ParamListID      = "listID"
 	ParamItemID      = "itemID"
+	ParamNoteID      = "noteID"
 )

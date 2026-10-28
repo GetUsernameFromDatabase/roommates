@@ -74,6 +74,26 @@ en:
     delete: Delete
     delete-list: Delete list
     clear: Remove bought items
+  notes:
+    title: Notes
+    none: No notes yet
+    new: New note
+    back: All notes
+    note-title: Title
+    body: Text
+    body-hint: "Markdown works: **bold**, - lists, [links](https://example.com)"
+    private: Only visible to me
+    private-badge: Private
+    pinned-badge: Pinned
+    save: Save
+    cancel: Cancel
+    edit: Edit
+    delete: Delete note
+    pin: Pin
+    unpin: Unpin
+    edited-by: Edited by %s on %s
+    length: The title must be 1 to %d characters long and the text at most %d
+    empty: This note is empty
   appearance:
     title: Appearance
     theme: Theme
@@ -87,6 +107,7 @@ en:
   nav:
     label: Household
     shopping: Shopping
+    notes: Notes
     people: People
     switch: Switch household
   invite-page:

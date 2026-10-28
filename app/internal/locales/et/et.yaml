@@ -74,6 +74,26 @@ et:
     delete: Kustuta
     delete-list: Kustuta nimekiri
     clear: Eemalda ostetud
+  notes:
+    title: Märkmed
+    none: Märkmeid veel pole
+    new: Uus märge
+    back: Kõik märkmed
+    note-title: Pealkiri
+    body: Tekst
+    body-hint: "Markdown töötab: **paks**, - loendid, [lingid](https://example.com)"
+    private: Näha ainult mulle
+    private-badge: Privaatne
+    pinned-badge: Kinnitatud
+    save: Salvesta
+    cancel: Loobu
+    edit: Muuda
+    delete: Kustuta märge
+    pin: Kinnita
+    unpin: Eemalda kinnitus
+    edited-by: Muutis %s, %s
+    length: Pealkiri peab olema 1 kuni %d märki ja tekst kuni %d märki
+    empty: See märge on tühi
   appearance:
     title: Välimus
     theme: Teema
@@ -87,6 +107,7 @@ et:
   nav:
     label: Leibkond
     shopping: Ostud
+    notes: Märkmed
     people: Inimesed
     switch: Vaheta leibkonda
   invite-page:

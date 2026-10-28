@@ -42,6 +42,20 @@ type Membership struct {
 	LeftAt      pgtype.Timestamptz `json:"left_at"`
 }
 
+type Note struct {
+	ID          pgtype.UUID        `json:"id"`
+	HouseholdID pgtype.UUID        `json:"household_id"`
+	AuthorID    pgtype.UUID        `json:"author_id"`
+	Title       string             `json:"title"`
+	BodyMd      string             `json:"body_md"`
+	Visibility  string             `json:"visibility"`
+	Pinned      bool               `json:"pinned"`
+	EditedBy    pgtype.UUID        `json:"edited_by"`
+	EditedAt    pgtype.Timestamptz `json:"edited_at"`
+	CreatedAt   pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
+}
+
 type ShoppingItem struct {
 	ID          pgtype.UUID        `json:"id"`
 	ListID      pgtype.UUID        `json:"list_id"`

@@ -100,6 +100,16 @@ func initRoutes(r *gin.Engine, h *handlers.DefaultHandler, service *services.Def
 			list.POST("/items/:"+g.ParamItemID+"/claim", h.SetShoppingItemClaim)
 			list.POST("/items/:"+g.ParamItemID+"/check", h.SetShoppingItemChecked)
 			list.POST("/items/:"+g.ParamItemID+"/delete", h.DeleteShoppingItem)
+
+			household.GET("/notes", h.PageNotes)
+			household.GET("/notes/new", h.PageNewNote)
+			household.POST("/notes", h.CreateNote)
+			note := household.Group("/notes/:" + g.ParamNoteID)
+			note.GET("", h.PageNote)
+			note.GET("/edit", h.PageEditNote)
+			note.POST("/edit", h.UpdateNote)
+			note.POST("/pin", h.SetNotePinned)
+			note.POST("/delete", h.DeleteNote)
 		}
 	}
 }

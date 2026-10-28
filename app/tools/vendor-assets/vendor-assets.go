@@ -117,7 +117,7 @@ func runCheck(dir string, out io.Writer) (outdated bool, err error) {
 	}
 	// write errors come back from Flush
 	w := tabwriter.NewWriter(out, 0, 0, 2, ' ', 0)
-	_, _ = fmt.Fprintln(w,"package\tpinned\tlatest\t")
+	_, _ = fmt.Fprintln(w, "package\tpinned\tlatest\t")
 	for _, name := range sortedKeys(m) {
 		latest, err := latestVersion(name)
 		if err != nil {
@@ -127,7 +127,7 @@ func runCheck(dir string, out io.Writer) (outdated bool, err error) {
 		if latest != m[name].Version {
 			mark, outdated = "outdated", true
 		}
-		_, _ = fmt.Fprintf(w,"%s\t%s\t%s\t%s\n", name, m[name].Version, latest, mark)
+		_, _ = fmt.Fprintf(w, "%s\t%s\t%s\t%s\n", name, m[name].Version, latest, mark)
 	}
 	return outdated, w.Flush()
 }

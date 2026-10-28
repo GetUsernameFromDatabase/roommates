@@ -91,6 +91,38 @@ func newTestUser(t *testing.T, s *DefaultService) pgtype.UUID {
 	return id
 }
 
+// newTestHousehold is an owner, a member who joined by invite,
+// and a stranger who owns another household
+func newTestHousehold(t *testing.T, s *DefaultService) (ownerM, memberM, strangerM Membership) {
+	t.Helper()
+	ctx := t.Context()
+	owner, member, stranger := newVerifiedTestUser(t, s), newTestUser(t, s), newTestUser(t, s)
+
+	householdID, err := s.CreateHousehold(ctx, owner, "Flat")
+	if err != nil {
+		t.Fatal(err)
+	}
+	ownerM = mustMembership(t, s, householdID, owner)
+	if err := s.CreateInvite(ctx, ownerM); err != nil {
+		t.Fatal(err)
+	}
+	overview, err := s.GetHouseholdOverview(ctx, ownerM)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := s.JoinWithInvite(ctx, overview.Invites[0].Code, member); err != nil {
+		t.Fatal(err)
+	}
+	memberM = mustMembership(t, s, householdID, member)
+
+	otherID, err := s.CreateHousehold(ctx, stranger, "Other")
+	if err != nil {
+		t.Fatal(err)
+	}
+	strangerM = mustMembership(t, s, otherID, stranger)
+	return ownerM, memberM, strangerM
+}
+
 func mustMembership(t *testing.T, s *DefaultService, householdID, userID pgtype.UUID) Membership {
 	t.Helper()
 	m, err := s.GetMembership(t.Context(), householdID, userID)
