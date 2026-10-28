@@ -39,7 +39,12 @@ SELECT i.id,
   i.claimed_by,
   claimer.username AS claimed_by_name,
   i.checked_at,
-  checker.username AS checked_by_name
+  checker.username AS checked_by_name,
+  (
+    SELECT count(*)
+    FROM files f
+    WHERE f.shopping_item_id = i.id
+  ) AS file_count
 FROM shopping_items i
   LEFT JOIN users claimer ON claimer.id = i.claimed_by
   LEFT JOIN users checker ON checker.id = i.checked_by
@@ -48,6 +53,14 @@ WHERE i.list_id = $1
 ORDER BY i.checked_at IS NOT NULL,
   i.checked_at DESC,
   i.created_at;
+-- name: GetShoppingItem :one
+SELECT id,
+  text,
+  qty
+FROM shopping_items
+WHERE id = $1
+  AND list_id = $2
+  AND household_id = $3;
 -- claim true claims the item for user_id, false drops only user_id's own claim,
 -- a stale page cannot undo what someone else did
 -- name: SetShoppingItemClaim :execrows

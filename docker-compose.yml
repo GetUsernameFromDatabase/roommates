@@ -8,6 +8,7 @@ version: "3"
 
 volumes:
   db_data:
+  rustfs_data:
 
 services:
   # --- STORAGE ---
@@ -34,6 +35,29 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+  # files, an S3 API on :9000, console at http://127.0.0.1:9001
+  rustfs:
+    build:
+      context: ./deploy/rustfs
+      dockerfile: Dockerfile
+    restart: always
+    ports:
+      - 127.0.0.1:9000:9000 # S3 API
+      - 127.0.0.1:9001:9001 # console
+    environment:
+      RUSTFS_VOLUMES: /data
+      RUSTFS_ADDRESS: :9000
+      RUSTFS_CONSOLE_ADDRESS: :9001
+      RUSTFS_CONSOLE_ENABLE: "true"
+      RUSTFS_ACCESS_KEY: ${S3_ACCESS_KEY} # REQUIRED
+      RUSTFS_SECRET_KEY: ${S3_SECRET_KEY} # REQUIRED
+    volumes:
+      - rustfs_data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fs http://localhost:9000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
   # --- EMAIL (development) ---
   # catches every email, inbox at http://127.0.0.1:8025
   # for `task dev` set SMTP_HOST=localhost SMTP_PORT=1025 in .env
@@ -52,6 +76,9 @@ services:
         condition: service_healthy
         required: true
         restart: true
+      rustfs:
+        condition: service_healthy
+        required: true
     build:
       context: ./app
       dockerfile: Dockerfile
@@ -70,6 +97,7 @@ services:
       DATABASE_HOST: db # service name
       DATABASE_PORT: 5432 # service container port
       # emails go to the mailpit service, replace for real delivery
+      S3_ENDPOINT: http://rustfs:9000 # service name and container port
       SMTP_HOST: mailpit
       SMTP_PORT: 1025
       SMTP_FROM: Roommates <noreply@localhost>

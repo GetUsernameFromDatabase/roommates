@@ -17,8 +17,7 @@
       "Bash(templ *)",
       "Bash(go tool templ *)",
       "Bash(shadcn-templ *)",
-      "Bash(go tool shadcn-templ *)",
-      "Bash(node --check web/assets/js/app.js)"
+      "Bash(go tool shadcn-templ *)"
     ],
     "ask": [
       "Bash(gh pr create:*)",

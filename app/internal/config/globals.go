@@ -52,4 +52,5 @@ const (
 	ParamListID      = "listID"
 	ParamItemID      = "itemID"
 	ParamNoteID      = "noteID"
+	ParamFileID      = "fileID"
 )

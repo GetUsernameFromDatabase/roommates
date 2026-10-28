@@ -114,11 +114,18 @@ templ shoppingListContent(actor services.Membership, l services.ShoppingList, er
 						</button>
 					</form>
 					<div class="min-w-0 flex-1">
-						<span class={ utils.CN("break-words", utils.IfElse(checked, "line-through", "")) }>
+						// the item's own page holds its files
+						<a href={ shoppingListURL(actor, l, "items", itemID) } class={ utils.CN("break-words underline-offset-4 hover:underline", utils.IfElse(checked, "line-through", "")) }>
 							{ it.Text }
-						</span>
+						</a>
 						if it.Qty != "" {
 							<span class="text-sm text-muted-foreground">{ it.Qty }</span>
+						}
+						if it.FileCount > 0 {
+							<span class="text-sm text-muted-foreground">
+								<span aria-hidden="true">📎 { it.FileCount }</span>
+								<span class="sr-only">{ utils.T(ctx, locales.LK_FilesCount, it.FileCount) }</span>
+							</span>
 						}
 						if checked && it.CheckedByName != nil {
 							<div class="text-xs text-muted-foreground">{ utils.T(ctx, locales.LK_ShoppingBoughtBy, *it.CheckedByName) }</div>

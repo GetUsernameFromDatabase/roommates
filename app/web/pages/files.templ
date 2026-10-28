@@ -1,0 +1,185 @@
+package pages
+
+import "roommates/web/components"
+import "roommates/web/components/button"
+import "roommates/internal/db/dbqueries"
+import "roommates/internal/services"
+import g "roommates/internal/config"
+import "roommates/internal/locales"
+import "roommates/internal/utils"
+import "github.com/jackc/pgx/v5/pgtype"
+
+// HouseholdFiles lists every file the actor may see, newest first, errorMessage is the outcome of an upload
+templ HouseholdFiles(actor services.Membership, files []dbqueries.ListFilesRow, errorMessage string) {
+	@appShell(utils.T(ctx, locales.LK_FilesTitle), &HouseholdNav{HouseholdID: actor.HouseholdID, Section: SectionFiles}) {
+		<header>
+			<h1 class="doorplate">
+				@components.T(locales.LK_FilesTitle)
+			</h1>
+		</header>
+		<section class={ utils.CN(sheetClass, "space-y-4") }>
+			@fileUploadForm(householdURL(actor.HouseholdID, "files"), errorMessage)
+			if len(files) == 0 {
+				<p class="text-muted-foreground">
+					@components.T(locales.LK_FilesNone)
+				</p>
+			} else {
+				<ul class="divide-y">
+					for _, f := range files {
+						@fileRow(actor, householdURL(actor.HouseholdID, "files"), f.ID, f.Name, f.HasThumb, f.SizeBytes, f.UploaderID, f.UploaderName, f.CreatedAt) {
+							if f.NoteTitle != nil {
+								<a href={ householdURL(actor.HouseholdID, "notes", f.NoteID.String()) } class={ fileContextClass }>
+									{ utils.T(ctx, locales.LK_FilesOnNote, *f.NoteTitle) }
+								</a>
+							} else if f.ItemText != nil {
+								<a href={ householdURL(actor.HouseholdID, "lists", f.ItemListID.String(), "items", f.ShoppingItemID.String()) } class={ fileContextClass }>
+									{ utils.T(ctx, locales.LK_FilesOnItem, *f.ItemText) }
+								</a>
+							}
+						}
+					}
+				</ul>
+			}
+		</section>
+	}
+}
+
+const fileContextClass = "block text-xs text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
+
+// attachedFiles are the files of a note or shopping item on page back, and a form to add one
+templ attachedFiles(actor services.Membership, back templ.SafeURL, files []services.AttachedFile, errorMessage string) {
+	{{ uploadAction := back + "/files" }}
+	<section class={ utils.CN(sheetClass, "space-y-3") } aria-labelledby="attachments-title">
+		<h2 id="attachments-title" class="text-xl font-semibold">
+			@components.T(locales.LK_FilesAttachments)
+		</h2>
+		if len(files) > 0 {
+			<ul class="divide-y">
+				for _, f := range files {
+					@fileRow(actor, back, f.ID, f.Name, f.HasThumb, f.SizeBytes, f.UploaderID, f.UploaderName, f.CreatedAt)
+				}
+			</ul>
+		}
+		@fileUploadForm(uploadAction, errorMessage)
+	</section>
+}
+
+// fileUploadForm is a plain form, not boosted, the page reloads after an upload
+templ fileUploadForm(action templ.SafeURL, errorMessage string) {
+	<form action={ action } method="post" enctype="multipart/form-data" class="space-y-2">
+		if errorMessage != "" {
+			<div
+				role="alert"
+				class="rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive"
+			>
+				{ errorMessage }
+			</div>
+		}
+		<div class="flex flex-wrap items-center gap-2">
+			<input
+				type="file"
+				name="file"
+				required
+				aria-label={ utils.T(ctx, locales.LK_FilesFile) }
+				class="min-h-11 min-w-0 flex-1 text-sm file:mr-3 file:h-11 file:cursor-pointer file:rounded-full file:border-0 file:bg-secondary file:px-4 file:font-medium file:text-secondary-foreground"
+			/>
+			@button.Button(button.Props{Type: button.TypeSubmit, Size: button.SizeLg, Class: "h-11"}) {
+				@components.T(locales.LK_FilesUpload)
+			}
+		</div>
+	</form>
+}
+
+// fileRow links the file, an image with its thumbnail, children say where it is attached;
+// a delete goes back to page back
+templ fileRow(actor services.Membership, back templ.SafeURL, id pgtype.UUID, name string, hasThumb bool, size int64,
+	uploaderID pgtype.UUID, uploaderName string, createdAt pgtype.Timestamptz) {
+	{{ href := householdURL(actor.HouseholdID, "files", id.String()) }}
+	<li class="flex min-h-14 items-center gap-3 py-2">
+		if hasThumb {
+			<a href={ href } class="shrink-0" tabindex="-1" aria-hidden="true">
+				<img src={ string(href) + "/thumb" } alt="" loading="lazy" class="size-12 rounded-lg object-cover ring-1 ring-foreground/10"/>
+			</a>
+		}
+		<div class="min-w-0 flex-1">
+			<a href={ href } class="font-medium break-words hover:underline">{ name }</a>
+			<div class="text-xs text-muted-foreground">
+				{ utils.T(ctx, locales.LK_FilesAddedBy, uploaderName, formatDate(createdAt), formatSize(size)) }
+			</div>
+			{ children... }
+		</div>
+		if uploaderID == actor.UserID {
+			<form action={ href + "/delete" } method="post" hx-boost="true" hx-confirm={ utils.T(ctx, locales.LK_FilesDelete) + " " + name + "?" }>
+				<input type="hidden" name={ g.QueryNext } value={ string(back) }/>
+				@button.Button(button.Props{
+					Type:    button.TypeSubmit,
+					Variant: button.VariantGhost,
+					Class:   "h-11 px-3 text-destructive",
+				}) {
+					@components.T(locales.LK_FilesDelete)
+				}
+			</form>
+		}
+	</li>
+}
+
+// FilePage shows one file inside the app, an image large, with a way back to where it is attached;
+// the raw file at /raw has no way back
+templ FilePage(actor services.Membership, f services.FileMeta) {
+	{{ fileURL := householdURL(actor.HouseholdID, "files", f.ID.String()) }}
+	{{ back, backText, section := householdURL(actor.HouseholdID, "files"), utils.T(ctx, locales.LK_FilesAll), SectionFiles }}
+	if f.NoteTitle != nil {
+		{{ back, backText, section = householdURL(actor.HouseholdID, "notes", f.NoteID.String()), utils.T(ctx, locales.LK_FilesOnNote, *f.NoteTitle), SectionNotes }}
+	} else if f.ItemText != nil {
+		{{ back = householdURL(actor.HouseholdID, "lists", f.ItemListID.String(), "items", f.ShoppingItemID.String()) }}
+		{{ backText, section = utils.T(ctx, locales.LK_FilesOnItem, *f.ItemText), SectionShopping }}
+	}
+	@appShell(f.Name, &HouseholdNav{HouseholdID: actor.HouseholdID, Section: section}) {
+		@doorplateHeader(back, backText, f.Name)
+		<p class="-mt-6 text-xs text-muted-foreground">
+			{ utils.T(ctx, locales.LK_FilesAddedBy, f.UploaderName, formatDate(f.CreatedAt), formatSize(f.SizeBytes)) }
+		</p>
+		if services.ImageMimes[f.Mime] {
+			<img src={ string(fileURL) + "/raw" } alt={ f.Name } class="w-full rounded-2xl ring-1 ring-foreground/10"/>
+		}
+		<div class="flex flex-wrap gap-2">
+			@button.Button(button.Props{
+				Href:       string(fileURL) + "/raw",
+				Size:       button.SizeLg,
+				Attributes: templ.Attributes{"download": f.Name},
+			}) {
+				@components.T(locales.LK_FilesDownload)
+			}
+			if f.UploaderID == actor.UserID {
+				<form
+					action={ fileURL + "/delete" }
+					method="post"
+					hx-boost="true"
+					hx-confirm={ utils.T(ctx, locales.LK_FilesDelete) + " " + f.Name + "?" }
+					class="ml-auto"
+				>
+					<input type="hidden" name={ g.QueryNext } value={ string(back) }/>
+					@button.Button(button.Props{
+						Type:    button.TypeSubmit,
+						Variant: button.VariantOutline,
+						Size:    button.SizeLg,
+						Class:   "text-destructive",
+					}) {
+						@components.T(locales.LK_FilesDelete)
+					}
+				</form>
+			}
+		</div>
+	}
+}
+
+// ShoppingItemPage is one item of a list with its files, a photo of the right product say
+templ ShoppingItemPage(actor services.Membership, listID pgtype.UUID, it services.ShoppingItem, files []services.AttachedFile, errorMessage string) {
+	@appShell(it.Text, &HouseholdNav{HouseholdID: actor.HouseholdID, Section: SectionShopping}) {
+		@doorplateHeader(householdURL(actor.HouseholdID, "lists", listID.String()), utils.T(ctx, locales.LK_ShoppingItemBack), it.Text)
+		if it.Qty != "" {
+			<p class="-mt-6 text-muted-foreground">{ it.Qty }</p>
+		}
+		@attachedFiles(actor, householdURL(actor.HouseholdID, "lists", listID.String(), "items", it.ID.String()), files, errorMessage)
+	}
+}

@@ -8,8 +8,8 @@
 
 ```txt
 roommates/
-├─ docker-compose.yml   db + app services
-├─ deploy/postgres/     PostgreSQL image and config
+├─ docker-compose.yml   db, rustfs, mailpit and app services
+├─ deploy/             PostgreSQL, RustFS and Mailpit images
 └─ app/                 Go module (run go/task commands from here)
    ├─ cmd/server/       entry point (main.go) and routes
    ├─ internal/         application code
@@ -17,6 +17,7 @@ roommates/
    │  ├─ db/            migrations, queries/, sqlc output (dbqueries/)
    │  ├─ handlers/      HTTP layer
    │  ├─ services/      business logic used by handlers
+   │  ├─ storage/       file contents in an S3 API (RustFS)
    │  ├─ middleware/ models/ validators/ sessions/ logger/ utils/
    │  └─ locales/       translations (en, et) and generated keys
    ├─ web/

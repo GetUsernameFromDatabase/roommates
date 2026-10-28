@@ -74,6 +74,7 @@ et:
     delete: Kustuta
     delete-list: Kustuta nimekiri
     clear: Eemalda ostetud
+    item-back: Tagasi nimekirja
   notes:
     title: Märkmed
     none: Märkmeid veel pole
@@ -94,6 +95,21 @@ et:
     edited-by: Muutis %s, %s
     length: Pealkiri peab olema 1 kuni %d märki ja tekst kuni %d märki
     empty: See märge on tühi
+  files:
+    title: Failid
+    none: Faile veel pole
+    file: Fail
+    upload: Lae üles
+    attachments: Manused
+    count: "%d manust"
+    too-large: Fail võib olla kõige rohkem %d MB
+    invalid: Vali fail, mis pole tühi ja mille nimi on kuni %d märki
+    added-by: Lisas %s, %s · %s
+    on-note: "Märkmes: %s"
+    on-item: "Ostus: %s"
+    delete: Kustuta
+    download: Laadi alla
+    all: Kõik failid
   appearance:
     title: Välimus
     theme: Teema
@@ -108,6 +124,7 @@ et:
     label: Leibkond
     shopping: Ostud
     notes: Märkmed
+    files: Failid
     people: Inimesed
     switch: Vaheta leibkonda
   invite-page:

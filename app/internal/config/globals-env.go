@@ -63,6 +63,17 @@ const (
 	EVK_SMTPFrom EnvironmentVariableKey = "SMTP_FROM"
 )
 
+// REQUIRED env keys for file storage, an S3 API (RustFS in docker compose)
+const (
+	// e.g. http://127.0.0.1:9000, buckets are addressed path-style
+	EVK_S3Endpoint  EnvironmentVariableKey = "S3_ENDPOINT"
+	EVK_S3Bucket    EnvironmentVariableKey = "S3_BUCKET"
+	EVK_S3AccessKey EnvironmentVariableKey = "S3_ACCESS_KEY"
+	EVK_S3SecretKey EnvironmentVariableKey = "S3_SECRET_KEY"
+	// defaults to us-east-1, RustFS ignores it
+	EVK_S3Region EnvironmentVariableKey = "S3_REGION"
+)
+
 // GetAppBaseURL is [EVK_AppBaseURL] without a trailing slash,
 // in development it defaults to https://localhost:[EVK_ServerPort]
 func GetAppBaseURL() string {

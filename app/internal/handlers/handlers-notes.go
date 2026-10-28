@@ -29,8 +29,8 @@ func noteFromForm(ctx *gin.Context) services.NoteInput {
 	}
 }
 
-// noteError shows the page for an error of the notes service
-func noteError(ctx *gin.Context, err error) {
+// pageError shows the not found page for [g.ErrorNotFound], otherwise the internal error page
+func pageError(ctx *gin.Context, err error) {
 	if errors.Is(err, g.ErrorNotFound) {
 		RenderTemplStatus(ctx, http.StatusNotFound, pages.NotFound())
 		return
@@ -81,7 +81,7 @@ func (h *DefaultHandler) loadNote(ctx *gin.Context) (services.Note, bool) {
 	}
 	n, err := h.service.GetNote(ctx, membershipFromContext(ctx), noteID)
 	if err != nil {
-		noteError(ctx, err)
+		pageError(ctx, err)
 		return n, false
 	}
 	return n, true
@@ -89,8 +89,20 @@ func (h *DefaultHandler) loadNote(ctx *gin.Context) (services.Note, bool) {
 
 func (h *DefaultHandler) PageNote(ctx *gin.Context) {
 	if n, ok := h.loadNote(ctx); ok {
-		RenderTempl(ctx, pages.NotePage(membershipFromContext(ctx), n))
+		h.renderNote(ctx, http.StatusOK, n, "")
 	}
+}
+
+// renderNote shows the note with its files, errorMessage is the outcome of an upload
+func (h *DefaultHandler) renderNote(ctx *gin.Context, status int, n services.Note, errorMessage string) {
+	actor := membershipFromContext(ctx)
+	files, err := h.service.AttachedFiles(ctx, actor,
+		services.FileTarget{NoteID: n.ID, ListID: pgtype.UUID{}, ShoppingItemID: pgtype.UUID{}})
+	if err != nil {
+		InternalError(ctx, err)
+		return
+	}
+	RenderTemplStatus(ctx, status, pages.NotePage(actor, n, files, errorMessage))
 }
 
 func (h *DefaultHandler) PageEditNote(ctx *gin.Context) {
@@ -137,7 +149,7 @@ func (h *DefaultHandler) UpdateNote(ctx *gin.Context) {
 			ErrorMessage: noteLengthMessage(ctx),
 		}))
 	default:
-		noteError(ctx, err)
+		pageError(ctx, err)
 	}
 }
 
@@ -151,7 +163,7 @@ func (h *DefaultHandler) noteAction(ctx *gin.Context, next func(householdID, not
 	}
 	actor := membershipFromContext(ctx)
 	if err := action(actor, noteID); err != nil {
-		noteError(ctx, err)
+		pageError(ctx, err)
 		return
 	}
 	Redirect(ctx, next(actor.HouseholdID, noteID))

@@ -100,6 +100,18 @@ func (s *DefaultService) AddShoppingItem(ctx context.Context, actor Membership, 
 	})
 }
 
+type ShoppingItem = dbqueries.GetShoppingItemRow
+
+// GetShoppingItem returns [g.ErrorNotFound] unless the item is on the actor's household list listID
+func (s *DefaultService) GetShoppingItem(ctx context.Context, actor Membership, listID, itemID pgtype.UUID) (ShoppingItem, error) {
+	it, err := s.db.GetShoppingItem(ctx, dbqueries.GetShoppingItemParams{
+		ID:          itemID,
+		ListID:      listID,
+		HouseholdID: actor.HouseholdID,
+	})
+	return it, noRowsAs(err, g.ErrorNotFound)
+}
+
 // SetShoppingItemClaim is "I'm buying", claim false drops only the actor's own claim
 func (s *DefaultService) SetShoppingItemClaim(ctx context.Context, actor Membership, listID, itemID pgtype.UUID, claim bool) error {
 	return rowsAffected(s.db.SetShoppingItemClaim(ctx, dbqueries.SetShoppingItemClaimParams{

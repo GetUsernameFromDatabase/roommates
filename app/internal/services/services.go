@@ -5,6 +5,7 @@ import (
 	"roommates/internal/db/dbqueries"
 	"roommates/internal/logger"
 	"roommates/internal/mailer"
+	"roommates/internal/storage"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -17,13 +18,15 @@ type DefaultService struct {
 	// https://docs.sqlc.dev/en/latest/howto/transactions.html
 	pool   *pgxpool.Pool
 	mailer mailer.Mailer
+	store  storage.Store
 }
 
-func NewDefaultService(dbpool *pgxpool.Pool, m mailer.Mailer) *DefaultService {
+func NewDefaultService(dbpool *pgxpool.Pool, m mailer.Mailer, store storage.Store) *DefaultService {
 	dbHandler := dbqueries.New(dbpool)
 	return &DefaultService{
 		db:     dbHandler,
 		pool:   dbpool,
 		mailer: m,
+		store:  store,
 	}
 }

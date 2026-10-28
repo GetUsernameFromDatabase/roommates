@@ -69,8 +69,8 @@ templ noteBadges(pinned bool, visibility string) {
 	}
 }
 
-// NotePage shows one note with its markdown rendered
-templ NotePage(actor services.Membership, n services.Note) {
+// NotePage shows one note with its markdown rendered and its files, uploadError is the outcome of an upload
+templ NotePage(actor services.Membership, n services.Note, files []services.AttachedFile, uploadError string) {
 	{{ noteURL := householdURL(actor.HouseholdID, "notes", n.ID.String()) }}
 	@appShell(n.Title, &HouseholdNav{HouseholdID: actor.HouseholdID, Section: SectionNotes}) {
 		@doorplateHeader(householdURL(actor.HouseholdID, "notes"), utils.T(ctx, locales.LK_NotesBack), n.Title)
@@ -89,6 +89,7 @@ templ NotePage(actor services.Membership, n services.Note) {
 				@noteHTML(n.BodyMd)
 			}
 		</article>
+		@attachedFiles(actor, noteURL, files, uploadError)
 		<div class="flex flex-wrap gap-2">
 			@button.Button(button.Props{Href: string(noteURL) + "/edit", Size: button.SizeLg}) {
 				@components.T(locales.LK_NotesEdit)

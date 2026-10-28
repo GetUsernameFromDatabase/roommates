@@ -72,5 +72,5 @@ tasks:
       SHADCN_TEMPL_DEV: 'true'
     desc: Start development server with hot reload
     cmds:
-      - docker compose -f ../docker-compose.yml up -d --wait db
+      - docker compose -f ../docker-compose.yml up -d --wait db rustfs
       - task --parallel tailwind scripts-watch templ server

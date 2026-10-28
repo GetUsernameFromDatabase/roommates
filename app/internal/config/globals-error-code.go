@@ -30,4 +30,5 @@ var (
 	ErrorEmailNotVerified = errors.New("email is not verified")
 	// a form value that fails validation in a service
 	ErrorInvalidInput = errors.New("invalid input")
+	ErrorFileTooLarge = errors.New("file is too large")
 )

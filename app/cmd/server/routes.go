@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"io/fs"
 	"net/http"
 	g "roommates/internal/config"
@@ -9,6 +10,7 @@ import (
 	"roommates/internal/middleware"
 	"roommates/internal/services"
 	"roommates/internal/sessions"
+	"roommates/internal/storage"
 	"roommates/web/assets"
 	"roommates/web/renderer"
 	"time"
@@ -100,6 +102,8 @@ func initRoutes(r *gin.Engine, h *handlers.DefaultHandler, service *services.Def
 			list.POST("/items/:"+g.ParamItemID+"/claim", h.SetShoppingItemClaim)
 			list.POST("/items/:"+g.ParamItemID+"/check", h.SetShoppingItemChecked)
 			list.POST("/items/:"+g.ParamItemID+"/delete", h.DeleteShoppingItem)
+			list.GET("/items/:"+g.ParamItemID, h.PageShoppingItem)
+			list.POST("/items/:"+g.ParamItemID+"/files", h.UploadShoppingItemFile)
 
 			household.GET("/notes", h.PageNotes)
 			household.GET("/notes/new", h.PageNewNote)
@@ -110,6 +114,14 @@ func initRoutes(r *gin.Engine, h *handlers.DefaultHandler, service *services.Def
 			note.POST("/edit", h.UpdateNote)
 			note.POST("/pin", h.SetNotePinned)
 			note.POST("/delete", h.DeleteNote)
+			note.POST("/files", h.UploadNoteFile)
+
+			household.GET("/files", h.PageFiles)
+			household.POST("/files", h.UploadFile)
+			household.GET("/files/:"+g.ParamFileID, h.PageFile)
+			household.GET("/files/:"+g.ParamFileID+"/raw", h.DownloadFile)
+			household.GET("/files/:"+g.ParamFileID+"/thumb", h.DownloadFileThumb)
+			household.POST("/files/:"+g.ParamFileID+"/delete", h.DeleteFile)
 		}
 	}
 }
@@ -158,7 +170,9 @@ func InitGinEngine(dbpool *pgxpool.Pool) *gin.Engine {
 	r.Use(sessions.NewPostgreSessionStoreHandler(dbpool))
 	// panics now if APP_BASE_URL is missing in release, not on the first email
 	_ = g.GetAppBaseURL()
-	service := services.NewDefaultService(dbpool, mailer.New())
+	// panics now if the object storage is missing, not on the first upload
+	service := services.NewDefaultService(dbpool, mailer.New(), storage.New(context.Background()))
+	go service.RunFilePurger(context.Background(), time.Minute)
 	handler := handlers.NewDefaultHandler(service)
 	initRoutes(r, handler, service)
 	return r

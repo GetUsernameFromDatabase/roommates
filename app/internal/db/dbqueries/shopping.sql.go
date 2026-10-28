@@ -79,6 +79,35 @@ func (q *Queries) DeleteShoppingList(ctx context.Context, arg DeleteShoppingList
 	return result.RowsAffected(), nil
 }
 
+const getShoppingItem = `-- name: GetShoppingItem :one
+SELECT id,
+  text,
+  qty
+FROM shopping_items
+WHERE id = $1
+  AND list_id = $2
+  AND household_id = $3
+`
+
+type GetShoppingItemParams struct {
+	ID          pgtype.UUID `json:"id"`
+	ListID      pgtype.UUID `json:"list_id"`
+	HouseholdID pgtype.UUID `json:"household_id"`
+}
+
+type GetShoppingItemRow struct {
+	ID   pgtype.UUID `json:"id"`
+	Text string      `json:"text"`
+	Qty  string      `json:"qty"`
+}
+
+func (q *Queries) GetShoppingItem(ctx context.Context, arg GetShoppingItemParams) (GetShoppingItemRow, error) {
+	row := q.db.QueryRow(ctx, getShoppingItem, arg.ID, arg.ListID, arg.HouseholdID)
+	var i GetShoppingItemRow
+	err := row.Scan(&i.ID, &i.Text, &i.Qty)
+	return i, err
+}
+
 const getShoppingList = `-- name: GetShoppingList :one
 SELECT id,
   name,
@@ -158,7 +187,12 @@ SELECT i.id,
   i.claimed_by,
   claimer.username AS claimed_by_name,
   i.checked_at,
-  checker.username AS checked_by_name
+  checker.username AS checked_by_name,
+  (
+    SELECT count(*)
+    FROM files f
+    WHERE f.shopping_item_id = i.id
+  ) AS file_count
 FROM shopping_items i
   LEFT JOIN users claimer ON claimer.id = i.claimed_by
   LEFT JOIN users checker ON checker.id = i.checked_by
@@ -183,6 +217,7 @@ type ListShoppingItemsRow struct {
 	ClaimedByName *string            `json:"claimed_by_name"`
 	CheckedAt     pgtype.Timestamptz `json:"checked_at"`
 	CheckedByName *string            `json:"checked_by_name"`
+	FileCount     int64              `json:"file_count"`
 }
 
 // open items first in the order added, then the most recently checked
@@ -204,6 +239,7 @@ func (q *Queries) ListShoppingItems(ctx context.Context, arg ListShoppingItemsPa
 			&i.ClaimedByName,
 			&i.CheckedAt,
 			&i.CheckedByName,
+			&i.FileCount,
 		); err != nil {
 			return nil, err
 		}

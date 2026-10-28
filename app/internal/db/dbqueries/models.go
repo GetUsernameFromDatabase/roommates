@@ -16,6 +16,25 @@ type EmailToken struct {
 	CreatedAt pgtype.Timestamptz `json:"created_at"`
 }
 
+type File struct {
+	ID             pgtype.UUID        `json:"id"`
+	HouseholdID    pgtype.UUID        `json:"household_id"`
+	UploaderID     pgtype.UUID        `json:"uploader_id"`
+	ObjectKey      string             `json:"object_key"`
+	ThumbKey       *string            `json:"thumb_key"`
+	Name           string             `json:"name"`
+	Mime           string             `json:"mime"`
+	SizeBytes      int64              `json:"size_bytes"`
+	NoteID         pgtype.UUID        `json:"note_id"`
+	ShoppingItemID pgtype.UUID        `json:"shopping_item_id"`
+	CreatedAt      pgtype.Timestamptz `json:"created_at"`
+}
+
+type FilePurge struct {
+	ObjectKey string             `json:"object_key"`
+	CreatedAt pgtype.Timestamptz `json:"created_at"`
+}
+
 type Household struct {
 	ID        pgtype.UUID        `json:"id"`
 	Name      string             `json:"name"`
