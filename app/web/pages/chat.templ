@@ -14,6 +14,8 @@ import "roommates/internal/utils"
 import "github.com/jackc/pgx/v5/pgtype"
 import "time"
 
+var chatScript = templ.NewOnceHandle()
+
 // ChatPage is the household's chat, draft and errorMessage are a message that could not be sent,
 // a non-nil reply is the message the composer answers
 //
@@ -21,6 +23,12 @@ import "time"
 // the messages refetch on their own when someone writes
 templ ChatPage(actor services.Membership, c services.Chat, older bool, reply *services.ReplyPreview, draft, errorMessage string) {
 	@appShell(utils.T(ctx, locales.LK_ChatTitle), &HouseholdNav{HouseholdID: actor.HouseholdID, Section: SectionChat}) {
+		@chatScript.Once() {
+			<script src="/assets/chat-hold.js"></script>
+			<script src="/assets/chat-keyboard.js"></script>
+			// here, not in localTime: an empty chat has none, and a script swapped in later misses its htmx.onLoad
+			<script src="/assets/local-time.js"></script>
+		}
 		// with the keyboard open (chat-keyboard.js) the page is only the chat, sized to what the keyboard leaves,
 		// on phones the top bar and the tab bar already say where you are
 		<header class="max-lg:sr-only in-data-keyboard:hidden">

@@ -61,16 +61,10 @@ templ HeaderComponent(title string) {
 		<script src="/assets/lib/htmx.min.js"></script>
 		// live updates, see appShell
 		<script src="/assets/lib/sse.min.js"></script>
-		<script src="/assets/local-time.js"></script>
 		<script src="/assets/live-resync.js"></script>
-		<script src="/assets/chat-hold.js"></script>
-		<script src="/assets/chat-keyboard.js"></script>
+		// a page or component renders its own scripts, with a templ.OnceHandle
 		<script src="/assets/push.js"></script>
-		<script src="/assets/copy.js"></script>
-		<script src="/assets/reveal-password.js"></script>
 		<script src="/assets/menus.js"></script>
-		<script src="/assets/avatar-crop.js"></script>
-		<script src="/assets/appearance-preview.js"></script>
 		@Scripts()
 	</head>
 }

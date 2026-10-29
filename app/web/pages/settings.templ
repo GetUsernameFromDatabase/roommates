@@ -78,9 +78,14 @@ templ avatarForm(path string, user dbqueries.GetUserRow, errorMessage string) {
 	</section>
 }
 
+var avatarCropScript = templ.NewOnceHandle()
+
 // avatarCrop frames the chosen picture in the circle before it is uploaded, at full size
 // and at the sizes of people and the chat, web/assets/public/avatar-crop.js shows it
 templ avatarCrop() {
+	@avatarCropScript.Once() {
+		<script src="/assets/avatar-crop.js"></script>
+	}
 	<div data-avatar-crop class="flex w-full flex-col gap-3" hidden>
 		// sized to the picture by the script
 		<canvas

@@ -18,8 +18,13 @@ var modeNames = map[string]locales.LK{
 	"dark":   locales.LK_AppearanceModeDark,
 }
 
+var appearancePreviewScript = templ.NewOnceHandle()
+
 // AppearanceForm picks the theme and mode of this device, next is where to go after saving
 templ AppearanceForm(next string) {
+	@appearancePreviewScript.Once() {
+		<script src="/assets/appearance-preview.js"></script>
+	}
 	{{ a := utils.GetAppearance(ctx) }}
 	// autocomplete off: a reload must not keep a picked but unsaved theme the page no longer shows
 	<form action={ g.RouteAppearance } method="post" autocomplete="off" data-appearance class="flex flex-col gap-5">
