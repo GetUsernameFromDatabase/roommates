@@ -238,3 +238,124 @@
     padding: 0.25rem 0.5rem;
   }
 }
+
+/* the front door of the sign in pages: a monstera leaf in its frame under an ochre
+ * transom, the app name on its plate, it swings open on its hinge while a sign in
+ * form posts, on phones only its top shows above the form
+ */
+@layer components {
+  .front-door-wall {
+    --door-w: 8.5rem;
+    --door-frame: color-mix(in oklab, var(--primary) 55%, var(--foreground));
+    display: flex;
+    justify-content: center;
+    height: 13rem;
+    padding-top: 2rem;
+    overflow: hidden;
+    background: var(--background);
+  }
+  @media (width >= 64rem) {
+    .front-door-wall {
+      --door-w: 13rem;
+      align-items: center;
+      height: auto;
+      padding: 2.5rem;
+    }
+  }
+  .front-door {
+    display: flex;
+    flex: none;
+    flex-direction: column;
+    align-items: center;
+    width: var(--door-w);
+    border-radius: 0.5rem;
+    outline-offset: 0.5rem;
+  }
+  .front-door:focus-visible {
+    outline: 3px solid var(--ring);
+  }
+  .front-door-transom {
+    width: 100%;
+    height: calc(var(--door-w) * 0.22);
+    border: calc(var(--door-w) * 0.045) solid var(--door-frame);
+    border-bottom-width: calc(var(--door-w) * 0.03);
+    border-radius: 0.5rem 0.5rem 0 0;
+    /* glazing bars across the lit glass */
+    background:
+      repeating-linear-gradient(
+        to right,
+        transparent 0 calc(25% - 1.5px),
+        var(--door-frame) calc(25% - 1.5px) 25%
+      ),
+      var(--claim);
+  }
+  .front-door-opening {
+    width: 100%;
+    aspect-ratio: 10 / 19;
+    border: calc(var(--door-w) * 0.045) solid var(--door-frame);
+    border-top: 0;
+    /* the hall inside: dark by day, lit at night */
+    background: var(--foreground);
+    perspective: 40rem;
+  }
+  .front-door-leaf {
+    position: relative;
+    display: block;
+    height: 100%;
+    background: var(--primary);
+    transform-origin: left center;
+    transition: transform 0.45s cubic-bezier(0.3, 0.7, 0.3, 1);
+  }
+  .front-door-leaf::after {
+    content: "";
+    position: absolute;
+    inset: 62% 14% 8%;
+    border: 2px solid var(--door-frame);
+    border-radius: 0.25rem;
+  }
+  body:has(form.htmx-request) .front-door-leaf {
+    transform: rotateY(-28deg);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .front-door-leaf {
+      transition: none;
+    }
+    body:has(form.htmx-request) .front-door-leaf {
+      transform: none;
+    }
+  }
+  .front-door-plate {
+    position: absolute;
+    top: 20%;
+    left: 8%;
+    right: 8%;
+    padding: 0.4em 0.5em;
+    border-radius: 0.3em;
+    background: var(--card);
+    color: var(--card-foreground);
+    font-family: var(--theme-font-heading);
+    font-size: calc(var(--door-w) * 0.095);
+    font-weight: 650;
+    line-height: 1.1;
+    letter-spacing: -0.01em;
+    text-align: center;
+    overflow-wrap: anywhere;
+    box-shadow: 0 2px 0 var(--door-frame);
+  }
+  .front-door-handle {
+    position: absolute;
+    top: 48%;
+    right: 9%;
+    width: calc(var(--door-w) * 0.08);
+    aspect-ratio: 1;
+    border-radius: 9999px;
+    background: var(--claim);
+    box-shadow: 0 2px 0 var(--door-frame);
+  }
+  .front-door-step {
+    width: 130%;
+    height: calc(var(--door-w) * 0.06);
+    border-radius: 2px;
+    background: var(--door-frame);
+  }
+}

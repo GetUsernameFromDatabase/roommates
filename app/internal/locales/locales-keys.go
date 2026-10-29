@@ -204,6 +204,7 @@ const (
 	LK_OfflineTitle                         LK = "offline.title"
 	LK_PasswordConfirm                      LK = "password.confirm"
 	LK_PasswordEnter                        LK = "password.enter"
+	LK_PasswordShow                         LK = "password.show"
 	LK_PasswordTitle                        LK = "password.title"
 	LK_PushChatFile                         LK = "push.chat-file"
 	LK_PushChatTitle                        LK = "push.chat-title"

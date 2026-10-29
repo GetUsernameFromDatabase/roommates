@@ -2,7 +2,6 @@ package pages
 
 import "roommates/web/components"
 import "roommates/web/components/alert"
-import "roommates/web/components/card"
 import "roommates/web/components/field"
 import "roommates/web/components/input"
 import "roommates/web/components/button"
@@ -12,48 +11,23 @@ import "roommates/internal/locales"
 import "roommates/internal/utils"
 
 templ Login(m models.Login) {
-	@guestShell("") {
-		<div class="min-h-svh bg-background text-foreground md:grid">
-			<!-- Login panel -->
-			<main class="flex min-h-svh items-center justify-center p-6 sm:p-10">
-				<div class="w-full max-w-sm">
-					<a href="/" class="mb-10 flex items-center justify-center gap-2 font-semibold">
-						<img src="/icons/favicon.svg" alt="" class="size-8"/>
-						@components.T(locales.LK_AppTitle)
-					</a>
-					@card.Card(card.Props{
-						Class: "border-0 shadow-none",
-					}) {
-						@card.Header() {
-							@card.Title() {
-								@components.T(locales.LK_WelcomeBack)
-							}
-							@card.Description() {
-								@components.T(locales.LK_LoginPageEnterCredentialsDescription)
-							}
-						}
-						@card.Content() {
-							if m.Error != "" {
-								@alert.Alert(alert.Props{Variant: alert.VariantDestructive, Class: "mb-5"}) {
-									{ m.Error }
-								}
-							}
-							@LoginForm(m)
-							<!-- Signup -->
-							<p class="mt-6 text-center text-sm text-muted-foreground">
-								@components.T(locales.LK_LoginPageNoAccount)
-								<a
-									href={ withNext(g.RouteRegister, m.Next) }
-									class="font-medium text-foreground underline-offset-4 hover:underline ml-1"
-								>
-									@components.T(locales.LK_LoginPageCreateAccount)
-								</a>
-							</p>
-						}
-					}
-				</div>
-			</main>
-		</div>
+	@authCard(utils.T(ctx, locales.LK_WelcomeBack), utils.T(ctx, locales.LK_LoginPageEnterCredentialsDescription)) {
+		if m.Error != "" {
+			@alert.Alert(alert.Props{Variant: alert.VariantDestructive, Class: "mb-5"}) {
+				{ m.Error }
+			}
+		}
+		@LoginForm(m)
+		<!-- Signup -->
+		<p class="mt-6 text-sm text-muted-foreground">
+			@components.T(locales.LK_LoginPageNoAccount)
+			<a
+				href={ withNext(g.RouteRegister, m.Next) }
+				class="font-medium text-foreground underline-offset-4 hover:underline ml-1"
+			>
+				@components.T(locales.LK_LoginPageCreateAccount)
+			</a>
+		</p>
 	}
 }
 
@@ -102,11 +76,9 @@ templ LoginForm(m models.Login) {
 						@components.T(locales.LK_LoginPageForgotPassword)
 					</a>
 				</div>
-				// TODO: toggle password visibility
-				@input.Input(input.Props{
+				@passwordInput(input.Props{
 					ID:          "password",
 					Name:        "password",
-					Type:        "password",
 					Placeholder: utils.T(ctx, locales.LK_PasswordEnter),
 					Required:    true,
 					Attributes: templ.Attributes{

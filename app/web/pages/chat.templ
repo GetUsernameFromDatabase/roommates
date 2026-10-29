@@ -51,23 +51,23 @@ templ ChatPage(actor services.Membership, c services.Chat, older bool, reply *se
 				<div id="chat-reply" class="empty:hidden">
 					if reply != nil {
 						<input type="hidden" name="reply_to" value={ reply.ID.String() }/>
-					<div class="flex items-center gap-2 rounded-lg border-l-4 border-primary bg-muted py-1 pr-1 pl-3 text-sm">
-						<div class="min-w-0 flex-1">
-							<p class="font-medium">{ utils.T(ctx, locales.LK_ChatReplyingTo, reply.AuthorName) }</p>
-							@replySnippet(reply.Body)
+						<div class="flex items-center gap-2 rounded-lg border-l-4 border-primary bg-muted py-1 pr-1 pl-3 text-sm">
+							<div class="min-w-0 flex-1">
+								<p class="font-medium">{ utils.T(ctx, locales.LK_ChatReplyingTo, reply.AuthorName) }</p>
+								@replySnippet(reply.Body)
+							</div>
+							@button.Button(button.Props{
+								Href:    string(householdURL(actor.HouseholdID, "chat")),
+								Variant: button.VariantGhost,
+								Size:    button.SizeIconLg,
+								Class:   "size-11",
+								Attributes: utils.MergeAttributes(chatReplySwap(householdURL(actor.HouseholdID, "chat")), templ.Attributes{
+									"aria-label": utils.T(ctx, locales.LK_ChatCancelReply),
+								}),
+							}) {
+								<span aria-hidden="true">✕</span>
+							}
 						</div>
-						@button.Button(button.Props{
-							Href:    string(householdURL(actor.HouseholdID, "chat")),
-							Variant: button.VariantGhost,
-							Size:    button.SizeIconLg,
-							Class:   "size-11",
-							Attributes: utils.MergeAttributes(chatReplySwap(householdURL(actor.HouseholdID, "chat")), templ.Attributes{
-								"aria-label": utils.T(ctx, locales.LK_ChatCancelReply),
-							}),
-						}) {
-							<span aria-hidden="true">✕</span>
-						}
-					</div>
 					}
 				</div>
 				// one row: attach, the message growing with its text, send; on touch screens attach sends

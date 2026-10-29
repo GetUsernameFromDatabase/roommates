@@ -5,25 +5,26 @@ et:
     link-invalid: Link on vigane
   app:
     title: Toakaaslased
-  welcome-back: Tere tulemast tagasi
+  welcome-back: Tere tulemast koju
   email: Email
   username:
     title: Kasutajanimi
   password: 
     title: Parool
     enter: Sisesta oma parool
+    show: Näita parooli
     # second password for register page
     confirm: Korda parooli
   login-page:
-    enter-credentials-description: Sisesta oma andmed, et sisse logida
+    enter-credentials-description: Logi sisse e-postiga, millega konto lõid.
     forgot-password: Unustasid oma parooli?
-    no-account: Puudub konto?
+    no-account: Oled siin esimest korda?
     create-account: Tee konto
     sign-in: Logi sisse
     invalid-credentials: Vale sisselogimisinfo
   registration-page:
     title: Loo konto
-    description: Sisesta oma andmed konto loomiseks
+    description: Seejärel lood leibkonna või liitud olemasolevaga kutsekoodiga.
     already-have-account: Konto juba olemas?
     account-exists: See konto on juba olemas
     submit: Loo konto

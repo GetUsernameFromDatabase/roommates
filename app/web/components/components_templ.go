@@ -218,7 +218,7 @@ func HeaderComponent(title string) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 17, "\"><script src=\"/assets/lib/htmx.min.js\"></script><script src=\"/assets/lib/sse.min.js\"></script><script src=\"/assets/local-time.js\"></script><script src=\"/assets/live-resync.js\"></script><script src=\"/assets/chat-hold.js\"></script><script src=\"/assets/chat-keyboard.js\"></script><script src=\"/assets/push.js\"></script><script src=\"/assets/copy.js\"></script><script src=\"/assets/menus.js\"></script><script src=\"/assets/avatar-crop.js\"></script><script src=\"/assets/appearance-preview.js\"></script>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 17, "\"><script src=\"/assets/lib/htmx.min.js\"></script><script src=\"/assets/lib/sse.min.js\"></script><script src=\"/assets/local-time.js\"></script><script src=\"/assets/live-resync.js\"></script><script src=\"/assets/chat-hold.js\"></script><script src=\"/assets/chat-keyboard.js\"></script><script src=\"/assets/push.js\"></script><script src=\"/assets/copy.js\"></script><script src=\"/assets/reveal-password.js\"></script><script src=\"/assets/menus.js\"></script><script src=\"/assets/avatar-crop.js\"></script><script src=\"/assets/appearance-preview.js\"></script>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

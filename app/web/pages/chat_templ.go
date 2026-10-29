@@ -190,7 +190,7 @@ func ChatPage(actor services.Membership, c services.Chat, older bool, reply *ser
 				var templ_7745c5c3_Var9 string
 				templ_7745c5c3_Var9, templ_7745c5c3_Err = templ.JoinStringErrs(utils.T(ctx, locales.LK_ChatReplyingTo, reply.AuthorName))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/chat.templ`, Line: 56, Col: 89}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/chat.templ`, Line: 56, Col: 90}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var9))
 				if templ_7745c5c3_Err != nil {

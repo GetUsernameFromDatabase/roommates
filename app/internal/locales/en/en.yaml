@@ -5,25 +5,26 @@ en:
     link-invalid: Link is invalid
   app:
     title: Roommates
-  welcome-back: Welcome back
+  welcome-back: Welcome home
   email: Email
   username:
     title: Username
   password: 
     title: Password
     enter: Enter your password
+    show: Show password
     # second password for register page
     confirm: Confirm password
   login-page:
-    enter-credentials-description: Enter your credentials to sign in to your account
+    enter-credentials-description: Sign in with the email you registered with.
     forgot-password: Forgot password?
-    no-account: "Don't have an account?"
+    no-account: New here?
     create-account: Create an account
     sign-in: Sign in
     invalid-credentials: Invalid email or password
   registration-page:
     title: Create an account
-    description: Enter your details to create your account
+    description: Next you'll start a household or join one with an invite code.
     already-have-account: Already have an account?
     account-exists: This account already exists
     submit: Create account
