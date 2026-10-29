@@ -5,5 +5,5 @@ import (
 	"embed"
 )
 
-//go:embed all:public favicon/favicon.ico favicon/*.png pwa
+//go:embed all:public favicon/favicon.ico favicon/favicon.svg favicon/*.png pwa
 var PublicAssetsFS embed.FS

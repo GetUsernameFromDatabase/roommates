@@ -161,7 +161,7 @@ func initRoutes(r *gin.Engine, h *handlers.DefaultHandler, service *services.Def
 //
 //	"/assets/public" is served at "/assets"
 //	"/favicon/favicon.ico" is served at "/favicon.ico"
-//	"/favicon/*.png" are served at "/icons"
+//	"/favicon/*.png" and "/favicon/favicon.svg" are served at "/icons"
 //	"/pwa/sw.js" is served at "/sw.js", a service worker only controls pages under its path
 func registerAssets(r *gin.Engine) {
 	// TODO: maybe change this at some point
@@ -174,7 +174,7 @@ func registerAssets(r *gin.Engine) {
 
 	r.StaticFS("/assets", http.FS(publicFS))
 	r.StaticFileFS("/favicon.ico", "favicon/favicon.ico", http.FS(assetFS))
-	for _, icon := range []string{"android-chrome-192x192.png", "android-chrome-512x512.png", "apple-touch-icon.png"} {
+	for _, icon := range []string{"web-app-manifest-192x192.png", "web-app-manifest-512x512.png", "apple-touch-icon.png", "favicon.svg"} {
 		r.StaticFileFS("/icons/"+icon, "favicon/"+icon, http.FS(assetFS))
 	}
 	r.StaticFileFS("/sw.js", "pwa/sw.js", http.FS(assetFS))

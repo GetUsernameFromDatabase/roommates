@@ -18,9 +18,7 @@ templ Login(m models.Login) {
 			<main class="flex min-h-svh items-center justify-center p-6 sm:p-10">
 				<div class="w-full max-w-sm">
 					<a href="/" class="mb-10 flex items-center justify-center gap-2 font-semibold">
-						<span class="flex size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-							{ utils.T(ctx, locales.LK_AppTitle)[:1] }
-						</span>
+						<img src="/icons/favicon.svg" alt="" class="size-8"/>
 						@components.T(locales.LK_AppTitle)
 					</a>
 					@card.Card(card.Props{

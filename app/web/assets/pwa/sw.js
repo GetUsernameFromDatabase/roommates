@@ -58,7 +58,7 @@ self.addEventListener("push", (event) => {
         return self.registration.showNotification(msg.title, {
           body: msg.body,
           tag: msg.tag,
-          icon: "/icons/android-chrome-192x192.png",
+          icon: "/icons/web-app-manifest-192x192.png",
           data: { url: msg.url },
         });
       }),

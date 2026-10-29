@@ -1,17 +1,17 @@
 # Graph Report - roommates  (2026-10-30)
 
 ## Corpus Check
-- 239 files · ~150,558 words
+- 239 files · ~150,590 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 47 file(s) not represented in the graph (top: .templ 30, (none) 6, .css 5)
 
 ## Summary
-- 2319 nodes · 7625 edges · 151 communities (120 shown, 31 thin omitted)
+- 2319 nodes · 7623 edges · 150 communities (119 shown, 31 thin omitted)
 - Extraction: 93% EXTRACTED · 7% INFERRED · 0% AMBIGUOUS · INFERRED: 551 edges (avg confidence: 0.85)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `ca2f3d44`
+- Built from commit: `e37e0cb3`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -61,9 +61,9 @@
 - home-page
 - home-page
 - login-page
-- models.go
+- github.com/jackc/pgx/v5/pgtype.UUID
 - notes
-- go_pkg_fmt
+- models.go
 - io.ReadSeeker
 - floating_ui_dom.js
 - T
@@ -78,7 +78,7 @@
 - reset-password-page
 - use_hover.js
 - github.com/gin-gonic/gin.Context
-- github.com/jackc/pgx/v5/pgtype.UUID
+- go_pkg_fmt
 - CN
 - github.com/a-h/templ.Component
 - files
@@ -117,7 +117,7 @@
 - chat
 - use_transition_status.js
 - Props
-- ExpensePage
+- TestPushNotifications
 - composite.js
 - .clean
 - radiogroup.js
@@ -128,17 +128,17 @@
 - chat-keyboard.js
 - Message
 - invite-page
-- ChatBadge
+- .notifyChat
 - Renderer
 - GetAppBaseURL
 - bubble_templ.go
 - mounted
-- .notifyChat
+- Badge
 - registration-page
 - .UpdateNote
 - mail
 - generate-locales-languages.go
-- RadioGroup
+- LK
 - .handleUpload
 - DefaultService
 - login-page
@@ -146,7 +146,6 @@
 - vendor-assets_test.go
 - Assets
 - avatar.js
-- TestPushNotifications
 - common
 - avatar
 - offline
@@ -158,7 +157,7 @@
 - ListNotesRow
 
 ## God Nodes (most connected - your core abstractions)
-1. `T()` - 74 edges
+1. `T()` - 72 edges
 2. `CN()` - 67 edges
 3. `T()` - 50 edges
 4. `membershipFromContext()` - 46 edges
@@ -184,7 +183,7 @@
 ## Import Cycles
 - None detected.
 
-## Communities (151 total, 31 thin omitted)
+## Communities (150 total, 31 thin omitted)
 
 ### Community 0 - "testing.T"
 Cohesion: 0.19
@@ -219,8 +218,8 @@ Cohesion: 0.04
 Nodes (47): cmds, desc, preconditions, task, cmds, desc, env, SERVER_PORT (+39 more)
 
 ### Community 8 - "Membership"
-Cohesion: 0.13
-Nodes (41): AttachedFile, HouseholdOverview, Membership, ShoppingList, IfElse(), attachedFiles(), FilePage(), fileRow() (+33 more)
+Cohesion: 0.10
+Nodes (57): GetExpenseRow, Expense, AttachedFile, HouseholdOverview, Membership, ShoppingList, IfElse(), T() (+49 more)
 
 ### Community 9 - "LKMessage"
 Cohesion: 0.10
@@ -322,13 +321,17 @@ Nodes (8): home-page, create-submit, create-title, greeting, households, join-su
 Cohesion: 0.29
 Nodes (7): login-page, create-account, enter-credentials-description, forgot-password, invalid-credentials, no-account, sign-in
 
-### Community 45 - "models.go"
-Cohesion: 0.08
-Nodes (26): ListMessagesRow, ListShoppingItemsRow, EmailToken, Expense, ExpenseShare, File, FilePurge, GetFileParams (+18 more)
+### Community 45 - "github.com/jackc/pgx/v5/pgtype.UUID"
+Cohesion: 0.05
+Nodes (29): ListExpenseSharesRow, GetHouseholdRow, ListActiveInvitesRow, GetShoppingListRow, ListShoppingListsRow, avatarURL(), ConfirmSettlementParams, CountActiveMembersRow (+21 more)
 
 ### Community 46 - "notes"
 Cohesion: 0.11
 Nodes (18): notes, back, body, body-hint, cancel, delete, edit, edited-by (+10 more)
+
+### Community 47 - "models.go"
+Cohesion: 0.08
+Nodes (26): ListMessagesRow, ListShoppingItemsRow, EmailToken, Expense, ExpenseShare, File, FilePurge, GetFileParams (+18 more)
 
 ### Community 48 - "io.ReadSeeker"
 Cohesion: 0.13
@@ -339,8 +342,8 @@ Cohesion: 0.13
 Nodes (51): autoUpdate(), frameLoop(), convertOffsetParentRelativeRectToViewportRelativeRect(), getBoundingClientRect(), getClientRectFromClippingAncestor(), getClippingElementAncestors(), getClippingRect(), getComputedStyle$1() (+43 more)
 
 ### Community 50 - "T"
-Cohesion: 0.24
-Nodes (29): GetUserRow, T(), Button(), T(), ValidationErrors(), Field(), Group(), Label() (+21 more)
+Cohesion: 0.26
+Nodes (24): GetUserRow, Button(), T(), ValidationErrors(), Field(), Group(), Label(), Input() (+16 more)
 
 ### Community 51 - "files"
 Cohesion: 0.13
@@ -386,17 +389,13 @@ Nodes (41): applySafePolygonPointerEventsMutation(), clearSafePolygonPointerEven
 Cohesion: 0.12
 Nodes (3): notice(), RenderTempl(), stayInPlace()
 
-### Community 62 - "github.com/jackc/pgx/v5/pgtype.UUID"
-Cohesion: 0.05
-Nodes (29): ListExpenseSharesRow, GetHouseholdRow, ListActiveInvitesRow, GetShoppingListRow, ListShoppingListsRow, avatarURL(), ConfirmSettlementParams, CountActiveMembersRow (+21 more)
-
 ### Community 63 - "CN"
 Cohesion: 0.07
-Nodes (50): Chat, Message, MessageFile, CN(), flattenClasses(), MergeAttributes(), RandomID(), twMapTokens() (+42 more)
+Nodes (49): Chat, Message, MessageFile, CN(), flattenClasses(), MergeAttributes(), RandomID(), twMapTokens() (+41 more)
 
 ### Community 64 - "github.com/a-h/templ.Component"
-Cohesion: 0.31
-Nodes (19): Alert(), Card(), Content(), Description(), Footer(), Header(), Title(), HeaderComponent() (+11 more)
+Cohesion: 0.25
+Nodes (23): Alert(), Card(), Content(), Description(), Footer(), Header(), Title(), HeaderComponent() (+15 more)
 
 ### Community 65 - "files"
 Cohesion: 0.13
@@ -530,9 +529,9 @@ Nodes (7): animationsFinished(), close(), open(), reset(), resolve(), setOpen(),
 Cohesion: 0.38
 Nodes (5): Variants(), Props, Size, Type, Variant
 
-### Community 101 - "ExpensePage"
-Cohesion: 0.20
-Nodes (14): GetExpenseRow, Expense, FormatMoney(), debtBreakdown(), ExpensePage(), HouseholdExpenses(), sharePaidBadge(), CategoryName() (+6 more)
+### Community 101 - "TestPushNotifications"
+Cohesion: 0.33
+Nodes (7): LoadLocales(), subscribeTestDevice(), takePushes(), TestPushNotifications(), wantPushes(), TestTUnescapesTextButNotArgs(), sentPush
 
 ### Community 102 - "composite.js"
 Cohesion: 0.18
@@ -570,10 +569,6 @@ Nodes (6): buildMessage(), Message, TestBuildMessage(), LogMailer, SMTPMailer, f
 Cohesion: 0.33
 Nodes (6): invite-page, code, description, invalid, join, title
 
-### Community 113 - "ChatBadge"
-Cohesion: 0.48
-Nodes (5): Badge(), badgeClasses(), noteBadges(), Props, Variant
-
 ### Community 114 - "Renderer"
 Cohesion: 0.38
 Nodes (4): NewHouseholdMember(), notFound(), New(), Renderer
@@ -589,6 +584,10 @@ Nodes (13): Bubble(), Content(), ContentClass(), Group(), Reactions(), variantCl
 ### Community 120 - "mounted"
 Cohesion: 0.83
 Nodes (3): mounted(), register(), sync()
+
+### Community 123 - "Badge"
+Cohesion: 0.48
+Nodes (5): Badge(), badgeClasses(), noteBadges(), Props, Variant
 
 ### Community 124 - "registration-page"
 Cohesion: 0.33
@@ -606,7 +605,7 @@ Nodes (7): mail, invite-body, invite-subject, reset-body, reset-subject, verify-
 Cohesion: 0.22
 Nodes (7): discoverLanguages(), generateLocales(), loadYAML(), main(), mapping(), missingKeys(), unwrapLocale()
 
-### Community 128 - "RadioGroup"
+### Community 128 - "LK"
 Cohesion: 0.13
 Nodes (15): LK, DirectionAttributes(), N(), unescapeJSON(), N(), initialValue(), RadioGroup(), Content() (+7 more)
 
@@ -629,10 +628,6 @@ Nodes (6): invite-page, code, description, invalid, join, title
 ### Community 136 - "vendor-assets_test.go"
 Cohesion: 0.36
 Nodes (6): runSync(), fakeNPM(), readFile(), TestCheckAndUpdate(), TestSync(), writeManifest()
-
-### Community 139 - "TestPushNotifications"
-Cohesion: 0.33
-Nodes (7): LoadLocales(), subscribeTestDevice(), takePushes(), TestPushNotifications(), wantPushes(), TestTUnescapesTextButNotArgs(), sentPush
 
 ### Community 140 - "common"
 Cohesion: 0.50
@@ -680,11 +675,11 @@ _Questions this graph is uniquely positioned to answer:_
   _1 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `handlers.go` be split into smaller, more focused modules?**
   _Cohesion score 0.14777758610775688 - nodes in this community are weakly interconnected._
-- **Why does `T()` connect `T` to `RadioGroup`, `handlers.go`, `github.com/a-h/templ.Component`, `.handleUpload`, `ExpensePage`, `.clean`, `Membership`, `newEmailToken`, `TestPushNotifications`, `membershipFromContext`, `context.Context`, `github.com/gin-gonic/gin.Context`, `Redirect`, `InternalError`, `.notifyChat`, `.UpdateNote`, `CN`?**
-  _High betweenness centrality (0.016) - this node is a cross-community bridge._
+- **Why does `T()` connect `Membership` to `LK`, `handlers.go`, `github.com/a-h/templ.Component`, `.handleUpload`, `TestPushNotifications`, `.clean`, `newEmailToken`, `membershipFromContext`, `context.Context`, `.notifyChat`, `T`, `github.com/gin-gonic/gin.Context`, `Redirect`, `InternalError`, `.UpdateNote`, `CN`?**
+  _High betweenness centrality (0.015) - this node is a cross-community bridge._
 - **Should `en` be split into smaller, more focused modules?**
   _Cohesion score 0.08 - nodes in this community are weakly interconnected._
-- **Why does `LKMessage` connect `LKMessage` to `RadioGroup`, `handlers.go`, `T`?**
-  _High betweenness centrality (0.013) - this node is a cross-community bridge._
+- **Why does `LKMessage` connect `LKMessage` to `LK`, `handlers.go`, `T`?**
+  _High betweenness centrality (0.014) - this node is a cross-community bridge._
 - **Should `et` be split into smaller, more focused modules?**
   _Cohesion score 0.08695652173913043 - nodes in this community are weakly interconnected._

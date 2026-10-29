@@ -1,7 +1,23 @@
-This favicon was generated using the following graphics from Twitter Twemoji:
+favicon.svg is the source. After editing it, regenerate the other files here,
+or tabs, home screens and old browsers show different icons.
 
-- Graphics Title: 1f4dd.svg
-- Graphics Author: Copyright 2020 Twitter, Inc and other contributors (https://github.com/twitter/twemoji)
-- Graphics Source: https://github.com/twitter/twemoji/blob/master/assets/svg/1f4dd.svg
-- Graphics License: CC-BY 4.0 (https://creativecommons.org/licenses/by/4.0/)
-- Generator: https://favicon.io/emoji-favicons/memo
+Colours are from the home theme (web/assets/themes/home.css):
+monstera #2e6a4d, linen #fbfaf5, ochre #d6a13a.
+
+1. Go to https://realfavicongenerator.net and upload favicon.svg
+2. iOS: no margin, no extra background, so it shows the SVG as a full
+   square and iOS rounds the corners itself
+   Android / web app: keep the SVG as is (rounded square)
+3. Generate, download the zip, and copy these four files here:
+
+   favicon.ico
+   apple-touch-icon.png
+   web-app-manifest-192x192.png
+   web-app-manifest-512x512.png
+
+   Ignore the rest: favicon.svg here is the original, the server builds its
+   own manifest (internal/handlers/handlers-push.go), and nothing uses
+   favicon-96x96.png or site.webmanifest.
+4. If the site's file names have changed, go by size:
+   .ico, 180, 192 and 512 px.
+5. Check them by eye, then reload the app (browsers cache icons hard).

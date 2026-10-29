@@ -71,8 +71,8 @@ func (h *DefaultHandler) Manifest(ctx *gin.Context) {
 		"scope":      "/",
 		"display":    "standalone",
 		"icons": []gin.H{
-			{"src": "/icons/android-chrome-192x192.png", "sizes": "192x192", "type": "image/png"},
-			{"src": "/icons/android-chrome-512x512.png", "sizes": "512x512", "type": "image/png"},
+			{"src": "/icons/web-app-manifest-192x192.png", "sizes": "192x192", "type": "image/png"},
+			{"src": "/icons/web-app-manifest-512x512.png", "sizes": "512x512", "type": "image/png"},
 		},
 	})
 }
