@@ -65,10 +65,7 @@ templ HeaderComponent(title string) {
 		<script src="/assets/chat-hold.js"></script>
 		<script src="/assets/chat-keyboard.js"></script>
 		<script src="/assets/push.js"></script>
-		// this reccomends to use @components.Scripts()
-		// https://shadcn-templ.com/docs/installation#javascript
-		// but scripts_bundle.go just has bundleSrc
-		<script src={ bundleSrc }></script>
+		@Scripts()
 	</head>
 }
 

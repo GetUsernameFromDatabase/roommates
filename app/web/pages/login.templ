@@ -1,6 +1,7 @@
 package pages
 
 import "roommates/web/components"
+import "roommates/web/components/alert"
 import "roommates/web/components/card"
 import "roommates/web/components/field"
 import "roommates/web/components/input"
@@ -35,12 +36,9 @@ templ Login(m models.Login) {
 						}
 						@card.Content() {
 							if m.Error != "" {
-								<div
-									role="alert"
-									class="mb-5 rounded-md border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive"
-								>
+								@alert.Alert(alert.Props{Variant: alert.VariantDestructive, Class: "mb-5"}) {
 									{ m.Error }
-								</div>
+								}
 							}
 							@LoginForm(m)
 							<!-- Signup -->

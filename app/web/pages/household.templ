@@ -1,6 +1,7 @@
 package pages
 
 import "roommates/web/components"
+import "roommates/web/components/avatar"
 import "roommates/web/components/button"
 import "roommates/web/components/field"
 import "roommates/web/components/input"
@@ -88,12 +89,20 @@ templ HouseholdPeople(actor services.Membership, o services.HouseholdOverview, i
 				<ul class="mt-2 divide-y">
 					for _, m := range o.Members {
 						<li class="flex flex-wrap items-center justify-between gap-2 py-3">
-							<div class="min-w-0">
-								<span class="font-medium break-words">{ m.Username }</span>
-								if m.UserID == actor.UserID {
-									<span class="text-sm text-muted-foreground">({ utils.T(ctx, locales.LK_HouseholdYou) })</span>
+							<div class="flex min-w-0 items-center gap-3">
+								// the same people colour and initial as in the chat
+								@avatar.Avatar(avatar.Props{Size: avatar.SizeLg, Attributes: templ.Attributes{"aria-hidden": "true"}}) {
+									@avatar.Fallback(avatar.FallbackProps{Class: "bg-claim font-heading text-base font-semibold text-claim-foreground"}) {
+										{ initial(m.Username) }
+									}
 								}
-								<div class="text-sm text-muted-foreground">{ RoleName(ctx, m.Role) }</div>
+								<div class="min-w-0">
+									<span class="font-medium break-words">{ m.Username }</span>
+									if m.UserID == actor.UserID {
+										<span class="text-sm text-muted-foreground">({ utils.T(ctx, locales.LK_HouseholdYou) })</span>
+									}
+									<div class="text-sm text-muted-foreground">{ RoleName(ctx, m.Role) }</div>
+								</div>
 							</div>
 							if isOwner && m.Role != g.RoleOwner {
 								<div class="flex gap-2">
