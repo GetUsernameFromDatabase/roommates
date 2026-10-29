@@ -88,7 +88,7 @@ func (h *DefaultHandler) PostMessage(ctx *gin.Context) {
 		h.renderChat(ctx, http.StatusUnprocessableEntity, pgtype.UUID{}, pgtype.UUID{}, body, "")
 	case errors.Is(err, g.ErrorInvalidInput):
 		h.renderChat(ctx, http.StatusUnprocessableEntity, pgtype.UUID{}, replyTo, body,
-			utils.T(c, locales.LK_ChatLength, services.MaxMessageLength))
+			utils.T(c, locales.LK_ChatLength, services.MaxMessageFiles, services.MaxMessageLength))
 	default:
 		swapMainOnError(ctx)
 		InternalError(ctx, err)
@@ -128,8 +128,8 @@ func (h *DefaultHandler) DeleteMessage(ctx *gin.Context) {
 	actor := membershipFromContext(ctx)
 	err = h.service.DeleteMessage(ctx, actor, messageID)
 	switch {
-	case err == nil && IsRequestHTMX(ctx):
-		// the form swaps only the messages out of it
+	case (err == nil || errors.Is(err, g.ErrorNotFound)) && IsRequestHTMX(ctx):
+		// the form swaps only the messages out of it, a message already gone (another tab) is no error
 		h.renderChat(ctx, http.StatusOK, pgtype.UUID{}, pgtype.UUID{}, "", "")
 	case err == nil:
 		Redirect(ctx, chatPath(actor.HouseholdID))

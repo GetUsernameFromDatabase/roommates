@@ -167,7 +167,7 @@ en:
     newest: Newest messages
     empty: Nothing here yet. Write the first message to the household
     unread: "%d unread"
-    length: Write a message or add a file, the message can be at most %d characters
+    length: Write a message or add up to %d files, the message can be at most %d characters
     delete: Delete message
     reply: Reply
     copy: Copy

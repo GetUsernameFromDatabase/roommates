@@ -167,7 +167,7 @@ et:
     newest: Uusimad sõnumid
     empty: Siin on veel vaikne. Kirjuta leibkonnale esimene sõnum
     unread: "%d lugemata"
-    length: Kirjuta sõnum või lisa fail, sõnum võib olla kuni %d märki
+    length: Kirjuta sõnum või lisa kuni %d faili, sõnum võib olla kuni %d märki
     delete: Kustuta sõnum
     reply: Vasta
     copy: Kopeeri
