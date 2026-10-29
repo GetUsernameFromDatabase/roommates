@@ -3,7 +3,7 @@ package pages
 import "roommates/web/components"
 import "roommates/web/components/alert"
 import "roommates/web/components/badge"
-import "roommates/internal/db/dbqueries"
+import g "roommates/internal/config"
 import "roommates/internal/events"
 import "roommates/internal/locales"
 import "roommates/internal/utils"
@@ -16,6 +16,8 @@ const (
 	SectionNotes    = "notes"
 	SectionFiles    = "files"
 	SectionChat     = "chat"
+	SectionPeople   = "people"
+	SectionSettings = "settings"
 )
 
 // HouseholdNav is where in a household a page is
@@ -37,6 +39,7 @@ templ guestShell(title string) {
 
 // appShell is the document of signed in pages: one column, and inside a household
 // the section nav, fixed at the bottom on phones so it is in reach of a thumb
+// with the rest behind [householdMenu], a sidebar on desktop
 //
 // inside a household the page listens to its events, see [liveRegion]
 templ appShell(title string, nav *HouseholdNav) {
@@ -44,16 +47,17 @@ templ appShell(title string, nav *HouseholdNav) {
 		@components.HeaderComponent(title)
 		// main fills what the nav leaves, the nav is in the flow on desktop
 		<body
-			class="flex min-h-svh flex-col"
+			class="flex min-h-svh flex-col lg:flex-row"
 			if nav != nil {
 				hx-ext="sse"
 				sse-connect={ string(householdURL(nav.HouseholdID, "events")) }
 			}
 		>
 			if nav != nil {
+				@householdTopBar(*nav)
 				@householdNav(*nav)
 			}
-			<main class={ utils.CN(pageMainClass, utils.IfElse(nav != nil, "pb-28 md:pb-10", "")) }>
+			<main class={ utils.CN(pageMainClass, utils.IfElse(nav != nil, "pb-28 lg:pb-10", "")) }>
 				{ children... }
 			</main>
 		</body>
@@ -61,47 +65,170 @@ templ appShell(title string, nav *HouseholdNav) {
 }
 
 // pageMainClass is the single column of the signed in pages, 16px gutters on phones,
-// the chat is wider on desktop so both sides of the conversation have room
-const pageMainClass = "mx-auto flex flex-1 w-full max-w-lg flex-col gap-8 px-4 py-6 sm:p-10 md:has-[#chat]:max-w-3xl"
+// the chat is wider so both sides of the conversation have room
+const pageMainClass = "mx-auto flex flex-1 w-full max-w-lg flex-col gap-8 px-4 py-6 sm:p-10 md:has-[#chat]:max-w-3xl lg:max-w-3xl"
 
 // sheetClass is the one raised surface of a page, the thing used most on it
 const sheetClass = "rounded-2xl bg-card p-4 text-card-foreground ring-1 ring-foreground/10 sm:p-5"
 
+// the sections only in [householdMenu] on phones
+const desktopOnly = "max-lg:hidden"
+
+// householdTopBar is on phones the household and [householdMenu], the sidebar has both on desktop
+templ householdTopBar(nav HouseholdNav) {
+	// with the keyboard open (chat-keyboard.js) the page is only the chat
+	<header class="sticky top-0 z-20 flex items-center justify-between gap-2 border-b bg-background px-2 py-1 sm:px-8 lg:hidden in-data-keyboard:hidden">
+		@householdSwitcher(nav.HouseholdID, "")
+		@householdMenu(nav)
+	</header>
+}
+
 templ householdNav(nav HouseholdNav) {
+	// the safe area only in the installed app, a browser tab already sits above the system bar
 	<nav
 		aria-label={ utils.T(ctx, locales.LK_NavLabel) }
-		class="fixed inset-x-0 bottom-0 z-10 border-t bg-card pb-[env(safe-area-inset-bottom)] md:sticky md:top-0 md:bottom-auto md:border-t-0 md:border-b md:bg-background md:pb-0"
+		class="fixed inset-x-0 bottom-0 z-10 border-t bg-card [@media(display-mode:standalone)]:pb-[env(safe-area-inset-bottom)] lg:sticky lg:top-0 lg:flex lg:h-svh lg:w-64 lg:shrink-0 lg:flex-col lg:border-t-0 lg:border-r lg:bg-background lg:px-4 lg:py-5"
 	>
-		<ul class="mx-auto flex w-full max-w-lg gap-1 px-4 md:gap-2 py-2 sm:px-10">
-			@householdNavItem(householdURL(nav.HouseholdID), locales.LK_NavShopping, nav.Section == SectionShopping)
-			@householdNavItem(householdURL(nav.HouseholdID, "expenses"), locales.LK_NavExpenses, nav.Section == SectionExpenses)
-			@householdNavItem(householdURL(nav.HouseholdID, "notes"), locales.LK_NavNotes, nav.Section == SectionNotes)
-			@householdNavItem(householdURL(nav.HouseholdID, "files"), locales.LK_NavFiles, nav.Section == SectionFiles)
-			@householdNavItem(householdURL(nav.HouseholdID, "chat"), locales.LK_NavChat, nav.Section == SectionChat) {
+		<div class={ desktopOnly }>
+			@householdSwitcher(nav.HouseholdID, "w-full")
+		</div>
+		// the rooms of the household, on phones only the three used most
+		<ul class="mx-auto flex w-full max-w-lg px-2 py-1.5 sm:px-8 lg:mt-6 lg:max-w-none lg:flex-col lg:gap-1 lg:p-0">
+			@householdNavItem(householdURL(nav.HouseholdID), locales.LK_NavShopping, "shopping", nav.Section == SectionShopping, "")
+			@householdNavItem(householdURL(nav.HouseholdID, "expenses"), locales.LK_NavExpenses, "expenses", nav.Section == SectionExpenses, desktopOnly)
+			@householdNavItem(householdURL(nav.HouseholdID, "notes"), locales.LK_NavNotes, "notes", nav.Section == SectionNotes, "")
+			@householdNavItem(householdURL(nav.HouseholdID, "files"), locales.LK_NavFiles, "files", nav.Section == SectionFiles, desktopOnly)
+			@householdNavItem(householdURL(nav.HouseholdID, "chat"), locales.LK_NavChat, "chat", nav.Section == SectionChat, "") {
 				// the chat page marks everything read
 				if nav.Section != SectionChat {
 					@ChatBadge(nav.HouseholdID, utils.GetUnreadChat(ctx))
 				}
 			}
 		</ul>
+		// the house itself, set apart by space only
+		<ul class={ desktopOnly + " mt-6 flex flex-col gap-1" }>
+			@householdNavItem(householdURL(nav.HouseholdID, "people"), locales.LK_NavPeople, "people", nav.Section == SectionPeople, "")
+			@householdNavItem(householdURL(nav.HouseholdID, "settings"), locales.LK_NavSettings, "settings", nav.Section == SectionSettings, "")
+		</ul>
+		<div class={ desktopOnly + " mt-auto" }>
+			@logoutForm()
+		</div>
 	</nav>
 }
 
-// householdNavItem shows children after the label
-templ householdNavItem(href templ.SafeURL, label locales.LK, current bool) {
-	<li class="flex-1 md:flex-none">
+// householdNavItem is an icon over its label on the phone tab bar and a row in the sidebar,
+// children (the unread badge) sit by the icon on phones and at the end of the row on desktop
+templ householdNavItem(href templ.SafeURL, label locales.LK, icon string, current bool, class string) {
+	<li class={ utils.CN("flex-1 lg:flex-none", class) }>
 		<a
 			href={ href }
 			if current {
 				aria-current="page"
 			}
-			class={ utils.CN("flex h-12 items-center justify-center gap-1 rounded-full px-2 font-heading md:px-5 font-semibold outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
-				utils.IfElse(current, "bg-primary text-primary-foreground", "text-muted-foreground hover:bg-secondary hover:text-foreground")) }
+			class={ utils.CN("relative flex h-14 flex-col items-center justify-center gap-0.5 rounded-2xl outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
+				"lg:h-11 lg:flex-row lg:justify-start lg:gap-3 lg:rounded-full lg:px-3",
+				utils.IfElse(current, "text-foreground lg:bg-secondary", "text-muted-foreground hover:text-foreground lg:hover:bg-secondary")) }
 		>
-			@components.T(label)
-			{ children... }
+			// where you are is a pill, on phones behind the icon
+			<span class={ utils.CN("flex h-7 w-14 items-center justify-center rounded-full lg:size-auto", utils.IfElse(current, "bg-secondary text-primary lg:bg-transparent", "")) }>
+				@navIcon(icon, "size-6 lg:size-5")
+			</span>
+			<span class="text-xs font-semibold lg:text-base">
+				@components.T(label)
+			</span>
+			<span class="absolute top-0.5 left-1/2 ml-2 lg:static lg:ml-auto">
+				{ children... }
+			</span>
 		</a>
 	</li>
+}
+
+// navRowClass is a row of the nav menus and the sidebar footer, the current one is a pill
+const navRowClass = "flex min-h-11 w-full items-center gap-3 rounded-full px-3 font-semibold outline-none hover:bg-secondary focus-visible:ring-3 focus-visible:ring-ring/50 aria-[current=page]:bg-secondary [&[aria-current=page]>svg]:text-primary"
+
+// menuPanelClass is the panel a nav menu opens, it grows out of its button
+const menuPanelClass = "absolute z-30 mt-2 rounded-3xl bg-card p-2 ring-1 ring-foreground/10 shadow-lg group-open:animate-in group-open:fade-in-0 group-open:zoom-in-95 motion-reduce:animate-none"
+
+// householdMenu is the ☰ on phones, the sections the bottom bar leaves out
+templ householdMenu(nav HouseholdNav) {
+	<details data-menu class="group relative">
+		<summary
+			class="flex size-11 cursor-pointer list-none items-center justify-center rounded-full text-muted-foreground outline-none hover:bg-secondary hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50 group-open:bg-secondary group-open:text-foreground [&::-webkit-details-marker]:hidden"
+			aria-label={ utils.T(ctx, locales.LK_NavMore) }
+		>
+			@navIcon("menu", "size-6")
+		</summary>
+		<ul class={ menuPanelClass + " right-0 w-60 origin-top-right" }>
+			@householdMenuItem(householdURL(nav.HouseholdID, "expenses"), locales.LK_NavExpenses, "expenses", nav.Section == SectionExpenses)
+			@householdMenuItem(householdURL(nav.HouseholdID, "files"), locales.LK_NavFiles, "files", nav.Section == SectionFiles)
+			@householdMenuItem(householdURL(nav.HouseholdID, "people"), locales.LK_NavPeople, "people", nav.Section == SectionPeople)
+			@householdMenuItem(householdURL(nav.HouseholdID, "settings"), locales.LK_NavSettings, "settings", nav.Section == SectionSettings)
+			<li class="mt-1 border-t pt-1">
+				@logoutForm()
+			</li>
+		</ul>
+	</details>
+}
+
+templ householdMenuItem(href templ.SafeURL, label locales.LK, icon string, current bool) {
+	<li>
+		<a
+			href={ href }
+			if current {
+				aria-current="page"
+			}
+			class={ navRowClass }
+		>
+			@navIcon(icon, "size-5 shrink-0 text-muted-foreground")
+			@components.T(label)
+		</a>
+	</li>
+}
+
+// navIcon is a lucide icon of the nav, by what it opens
+templ navIcon(name, class string) {
+	<svg class={ class } aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+		switch name {
+			case "shopping":
+				<circle cx="8" cy="21" r="1"></circle>
+				<circle cx="19" cy="21" r="1"></circle>
+				<path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"></path>
+			case "expenses":
+				<path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"></path>
+				<path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"></path>
+				<path d="M12 17.5v-11"></path>
+			case "notes":
+				<path d="M16 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V8Z"></path>
+				<path d="M15 3v4a2 2 0 0 0 2 2h4"></path>
+			case "files":
+				<path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"></path>
+			case "chat":
+				<path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"></path>
+			case "people":
+				<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
+				<circle cx="9" cy="7" r="4"></circle>
+				<path d="M22 21v-2a4 4 0 0 0-3-3.87"></path>
+				<path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+			case "settings":
+				<path d="M20 7h-9"></path>
+				<path d="M14 17H5"></path>
+				<circle cx="17" cy="17" r="3"></circle>
+				<circle cx="7" cy="7" r="3"></circle>
+			case "logout":
+				<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+				<polyline points="16 17 21 12 16 7"></polyline>
+				<line x1="21" x2="9" y1="12" y2="12"></line>
+			case "menu":
+				<line x1="4" x2="20" y1="6" y2="6"></line>
+				<line x1="4" x2="20" y1="12" y2="12"></line>
+				<line x1="4" x2="20" y1="18" y2="18"></line>
+			case "chevron-down":
+				<path d="m6 9 6 6 6-6"></path>
+			case "plus":
+				<path d="M5 12h14"></path>
+				<path d="M12 5v14"></path>
+		}
+	</svg>
 }
 
 // ChatBadge is the count of unread chat messages, it fetches itself again on new messages
@@ -127,47 +254,69 @@ templ liveRegion(id string, topics ...string) {
 	</div>
 }
 
-// householdSwitcher is the household name as the page's nameplate,
-// with more than one household it opens the others
-templ householdSwitcher(current pgtype.UUID, name string, households []dbqueries.ListHouseholdsOfUserRow) {
-	if len(households) < 2 {
-		<header>
-			<h1 class="doorplate">{ name }</h1>
-		</header>
-	} else {
-		<details class="group relative">
-			<summary
-				class="inline-flex cursor-pointer list-none items-baseline gap-2 rounded-lg outline-none focus-visible:ring-3 focus-visible:ring-ring/50 [&::-webkit-details-marker]:hidden"
-				aria-label={ utils.T(ctx, locales.LK_NavSwitch) + ": " + name }
-			>
-				<h1 class="doorplate">{ name }</h1>
-				<span aria-hidden="true" class="text-2xl text-muted-foreground transition-transform group-open:rotate-180 motion-reduce:transition-none">⌄</span>
-			</summary>
-			<ul class="absolute z-20 mt-2 w-full max-w-xs rounded-2xl bg-card p-2 ring-1 ring-foreground/10 shadow-lg">
-				for _, h := range households {
-					<li>
-						<a
-							href={ householdURL(h.ID) }
-							if h.ID == current {
-								aria-current="page"
-							}
-							class="flex min-h-11 items-center rounded-lg px-3 font-heading font-semibold break-words hover:bg-secondary aria-[current=page]:text-primary"
-						>
-							{ h.Name }
-						</a>
-					</li>
-				}
-				<li class="mt-1 border-t pt-1">
-					<a href={ householdURL(current, "people") } class="flex min-h-11 items-center rounded-lg px-3 text-sm text-muted-foreground hover:bg-secondary hover:text-foreground">
-						@components.T(locales.LK_NavPeople)
-					</a>
-					<a href="/" class="flex min-h-11 items-center rounded-lg px-3 text-sm text-muted-foreground hover:bg-secondary hover:text-foreground">
-						@components.T(locales.LK_HouseholdBack)
+// householdSwitcher is the name of the current household in the nav, it opens the others
+// and the page to create or join one
+templ householdSwitcher(current pgtype.UUID, class string) {
+	{{ households := utils.GetHouseholds(ctx) }}
+	{{ name := "" }}
+	for _, h := range households {
+		if h.ID == current {
+			{{ name = h.Name }}
+		}
+	}
+	<details data-menu class={ utils.CN("group relative min-w-0", class) }>
+		<summary
+			class="flex min-h-12 cursor-pointer list-none items-center gap-3 rounded-full py-1 pr-3 pl-1.5 outline-none hover:bg-secondary focus-visible:ring-3 focus-visible:ring-ring/50 group-open:bg-secondary [&::-webkit-details-marker]:hidden"
+			aria-label={ utils.T(ctx, locales.LK_NavSwitch) + ": " + name }
+		>
+			@houseTile(name, "size-9 text-lg")
+			<span class="min-w-0 flex-1 truncate font-heading text-lg font-[650] tracking-tight">{ name }</span>
+			@navIcon("chevron-down", "size-5 shrink-0 text-muted-foreground transition-transform group-open:rotate-180 motion-reduce:transition-none")
+		</summary>
+		<ul class={ menuPanelClass + " left-0 w-72 max-w-[calc(100vw-1rem)] origin-top-left" }>
+			for _, h := range households {
+				<li>
+					<a
+						href={ householdURL(h.ID) }
+						if h.ID == current {
+							aria-current="page"
+						}
+						class={ navRowClass + " pl-1.5 font-heading" }
+					>
+						@houseTile(h.Name, "size-8 text-sm")
+						<span class="min-w-0 truncate">{ h.Name }</span>
 					</a>
 				</li>
-			</ul>
-		</details>
-	}
+			}
+			<li class="mt-1 border-t pt-1">
+				// an empty slot where the next house tile would go
+				<a href="/" class={ navRowClass + " pl-1.5 text-muted-foreground hover:text-foreground" }>
+					<span aria-hidden="true" class="flex size-8 shrink-0 items-center justify-center rounded-md border-2 border-dashed border-current/40">
+						@navIcon("plus", "size-4")
+					</span>
+					@components.T(locales.LK_NavHouseholdsAdd)
+				</a>
+			</li>
+		</ul>
+	</details>
+}
+
+// houseTile is a household's initial on a square like the number plate by a front door,
+// households are squares and people (avatars) circles
+templ houseTile(name, class string) {
+	<span aria-hidden="true" class={ utils.CN("flex shrink-0 items-center justify-center rounded-md bg-primary font-heading font-bold text-primary-foreground", class) }>
+		{ initial(name) }
+	</span>
+}
+
+// logoutForm is the nav's logout, it also unsubscribes this device (push.js)
+templ logoutForm() {
+	<form action={ g.RouteLogout } method="post" data-push-logout>
+		<button type="submit" class={ navRowClass + " text-muted-foreground hover:text-foreground" }>
+			@navIcon("logout", "size-5 shrink-0")
+			@components.T(locales.LK_Logout)
+		</button>
+	</form>
 }
 
 // formError is the message of a failed form submit, nothing when it is empty

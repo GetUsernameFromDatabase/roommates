@@ -50,6 +50,9 @@ en:
     create-invite: Create invite
     expires: Expires %s
     revoke: Revoke
+    copy-code: Copy code
+    copy-link: Copy link
+    copied: Copied
     back: All households
     last-owner: Make someone else an owner before leaving.
     invite-email-title: Invite by email
@@ -203,6 +206,9 @@ en:
     switch: Switch household
     expenses: Expenses
     chat: Chat
+    more: More
+    settings: Settings
+    households-add: Create or join
   invite-page:
     title: Join %s
     description: You have been invited to join this household.

@@ -76,7 +76,7 @@ func ChatPage(actor services.Membership, c services.Chat, older bool, reply *ser
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				var templ_7745c5c3_Var3 = []any{utils.CN(sheetClass, "flex h-[calc(100dvh-14rem)] min-h-96 flex-col gap-4 in-data-keyboard:h-[calc(var(--visible-height)-3rem)] in-data-keyboard:min-h-0 [&>#chat-messages]:contents")}
+				var templ_7745c5c3_Var3 = []any{utils.CN(sheetClass, "flex h-[calc(100dvh-17.5rem)] min-h-96 lg:h-[calc(100dvh-14rem)] flex-col gap-4 in-data-keyboard:h-[calc(var(--visible-height)-3rem)] in-data-keyboard:min-h-0 [&>#chat-messages]:contents")}
 				templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_ElementWriter, templ_7745c5c3_Var3...)
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err

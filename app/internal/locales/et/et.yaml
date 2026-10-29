@@ -50,6 +50,9 @@ et:
     create-invite: Loo kutse
     expires: Aegub %s
     revoke: Tühista
+    copy-code: Kopeeri kood
+    copy-link: Kopeeri link
+    copied: Kopeeritud
     back: Kõik leibkonnad
     last-owner: Enne lahkumist tee keegi teine omanikuks.
     invite-email-title: Kutsu e-postiga
@@ -203,6 +206,9 @@ et:
     switch: Vaheta leibkonda
     expenses: Kulud
     chat: Vestlus
+    more: Rohkem
+    settings: Seaded
+    households-add: Loo või liitu
   invite-page:
     title: Liitu leibkonnaga %s
     description: Sind on kutsutud selle leibkonnaga liituma.

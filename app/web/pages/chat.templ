@@ -28,8 +28,8 @@ templ ChatPage(actor services.Membership, c services.Chat, older bool, reply *se
 		</header>
 		// fills the viewport so the composer stays in view, the messages scroll inside it,
 		// the live region's wrapper is display: contents so the log itself is the flex child that shrinks
-		// shortcut: 14rem is the app shell around it (nav, padding, header) by hand, revisit if the shell changes
-		<section id="chat" class={ utils.CN(sheetClass, "flex h-[calc(100dvh-14rem)] min-h-96 flex-col gap-4 in-data-keyboard:h-[calc(var(--visible-height)-3rem)] in-data-keyboard:min-h-0 [&>#chat-messages]:contents") }>
+		// shortcut: 17.5rem (14rem on desktop, no top bar) is the app shell around it (nav, padding, header) by hand, revisit if the shell changes
+		<section id="chat" class={ utils.CN(sheetClass, "flex h-[calc(100dvh-17.5rem)] min-h-96 lg:h-[calc(100dvh-14rem)] flex-col gap-4 in-data-keyboard:h-[calc(var(--visible-height)-3rem)] in-data-keyboard:min-h-0 [&>#chat-messages]:contents") }>
 			@liveRegion("chat-messages", events.TopicChat, events.TopicFiles) {
 				@chatMessages(actor, c, older)
 			}

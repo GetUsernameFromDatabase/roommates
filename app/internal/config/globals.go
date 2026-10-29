@@ -21,6 +21,8 @@ const (
 	RouteResetPassword = "/reset-password"
 	// POST theme, mode and next
 	RouteAppearance = "/appearance"
+	// the per-device settings, appearance and notifications
+	RouteSettings = "/settings"
 	// POST the JSON of a browser's PushSubscription
 	RoutePushSubscribe = "/push/subscribe"
 	// POST {"endpoint": ...}

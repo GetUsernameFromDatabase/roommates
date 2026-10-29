@@ -2,7 +2,9 @@ package handlers
 
 import (
 	"net/http"
+	g "roommates/internal/config"
 	"roommates/internal/models"
+	"roommates/internal/services"
 	"roommates/web/pages"
 
 	"github.com/gin-gonic/gin"
@@ -41,5 +43,15 @@ func (h *DefaultHandler) PageHome(ctx *gin.Context) {
 		InternalError(ctx, err)
 		return
 	}
-	RenderTempl(ctx, pages.Home(user.Username, user.EmailValidated, households, model, h.service.PushPublicKey()))
+	RenderTempl(ctx, pages.Home(user.Username, user.EmailValidated, households, model))
+}
+
+// PageSettings is the appearance and notifications of this device,
+// inside a household with its nav
+func (h *DefaultHandler) PageSettings(ctx *gin.Context) {
+	var nav *pages.HouseholdNav
+	if m, ok := ctx.Get(g.GinKeyMembership); ok {
+		nav = &pages.HouseholdNav{HouseholdID: m.(services.Membership).HouseholdID, Section: pages.SectionSettings}
+	}
+	RenderTempl(ctx, pages.Settings(h.service.PushPublicKey(), nav, ctx.Request.URL.Path))
 }

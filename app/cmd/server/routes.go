@@ -79,6 +79,7 @@ func initRoutes(r *gin.Engine, h *handlers.DefaultHandler, service *services.Def
 		priv.GET("/", h.PageHome)
 		priv.POST(g.RouteHouseholds, h.PageHome)
 		priv.POST(g.RouteLogout, h.Logout)
+		priv.GET(g.RouteSettings, h.PageSettings)
 		priv.POST(g.RouteVerifyEmailResend, mwEmailLimit, h.ResendVerificationEmail)
 		priv.POST(g.RoutePushSubscribe, h.SubscribePush)
 		priv.POST(g.RoutePushUnsubscribe, h.UnsubscribePush)
@@ -92,6 +93,7 @@ func initRoutes(r *gin.Engine, h *handlers.DefaultHandler, service *services.Def
 		{
 			household.GET("", h.PageHousehold)
 			household.GET("/people", h.PagePeople)
+			household.GET("/settings", h.PageSettings)
 			household.POST("/invites", h.CreateInvite)
 			household.POST("/invites/email", mwEmailLimit, h.SendInviteEmail)
 			household.POST("/invites/:"+g.ParamInviteID+"/delete", h.DeleteInvite)

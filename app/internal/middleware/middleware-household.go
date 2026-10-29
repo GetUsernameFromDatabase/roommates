@@ -39,8 +39,17 @@ func NewHouseholdMember(service *services.DefaultService) gin.HandlerFunc {
 			return
 		}
 
+		// the nav names the household and switches to the others
+		households, err := service.ListHouseholds(ctx, userID)
+		if err != nil {
+			log.Error().Err(err).Msg("could not list households")
+			ctx.AbortWithStatus(http.StatusInternalServerError)
+			return
+		}
+
 		ctx.Set(g.GinKeyMembership, m)
-		ctx.Request = ctx.Request.WithContext(utils.WithUnreadChat(ctx.Request.Context(), m.UnreadMessages))
+		rctx := utils.WithUnreadChat(ctx.Request.Context(), m.UnreadMessages)
+		ctx.Request = ctx.Request.WithContext(utils.WithHouseholds(rctx, households))
 		ctx.Next()
 	}
 }

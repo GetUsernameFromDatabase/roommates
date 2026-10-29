@@ -12,14 +12,20 @@ import "roommates/internal/locales"
 import "roommates/internal/utils"
 
 // Home is shown to signed in users at "/", lists their households
-// pushKey is the VAPID public key, without it the notification switch stays hidden
-templ Home(username string, emailValidated bool, households []dbqueries.ListHouseholdsOfUserRow, m models.Household, pushKey string) {
+templ Home(username string, emailValidated bool, households []dbqueries.ListHouseholdsOfUserRow, m models.Household) {
 	@appShell("", nil) {
-		<div class="flex items-center justify-between gap-4">
+		<div class="flex flex-wrap items-center justify-between gap-4">
 			<h1 class="text-2xl font-semibold">
 				{ utils.T(ctx, locales.LK_HomePageGreeting, username) }
 			</h1>
-			<form action={ g.RouteLogout } method="post" data-push-logout>
+			<form action={ g.RouteLogout } method="post" data-push-logout class="flex gap-2">
+				@button.Button(button.Props{
+					Href:    g.RouteSettings,
+					Variant: button.VariantGhost,
+					Size:    button.SizeSm,
+				}) {
+					@components.T(locales.LK_NavSettings)
+				}
 				@button.Button(button.Props{
 					Type:    button.TypeSubmit,
 					Variant: button.VariantOutline,
@@ -30,7 +36,6 @@ templ Home(username string, emailValidated bool, households []dbqueries.ListHous
 			</form>
 		</div>
 		@VerifyEmailBanner(emailValidated)
-		@pushSwitch(pushKey)
 		<section aria-labelledby="households-title" class={ sheetClass }>
 			<h2 id="households-title" class="text-xl font-semibold">
 				@components.T(locales.LK_HomePageHouseholds)
@@ -72,7 +77,6 @@ templ Home(username string, emailValidated bool, households []dbqueries.ListHous
 				@JoinForm("")
 			}
 		}
-		@AppearanceForm("/")
 	}
 }
 
@@ -127,28 +131,4 @@ templ JoinForm(code string) {
 			@components.T(locales.LK_HomePageJoinSubmit)
 		}
 	</form>
-}
-
-// pushSwitch turns notifications on this device on and off, web/assets/public/push.js
-// shows it when the browser can subscribe
-templ pushSwitch(pushKey string) {
-	<div
-		data-push
-		data-vapid-key={ pushKey }
-		data-enable={ utils.T(ctx, locales.LK_PushEnable) }
-		data-disable={ utils.T(ctx, locales.LK_PushDisable) }
-		data-denied={ utils.T(ctx, locales.LK_PushDenied) }
-		data-install={ utils.T(ctx, locales.LK_PushInstall) }
-		class="flex flex-col items-start gap-2"
-		hidden
-	>
-		@button.Button(button.Props{
-			Type:    button.TypeButton,
-			Variant: button.VariantOutline,
-			Size:    button.SizeSm,
-		}) {
-			@components.T(locales.LK_PushEnable)
-		}
-		<p data-push-hint class="text-sm text-muted-foreground" aria-live="polite" hidden></p>
-	</div>
 }

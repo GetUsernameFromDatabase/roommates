@@ -15,11 +15,11 @@ import "roommates/internal/utils"
 // errorMessage is the outcome of the last action
 templ HouseholdShopping(actor services.Membership, o services.HouseholdOverview, errorMessage string) {
 	@appShell(o.Household.Name, &HouseholdNav{HouseholdID: actor.HouseholdID, Section: SectionShopping}) {
-		@householdSwitcher(actor.HouseholdID, o.Household.Name, o.Households)
-		// people are not in the nav, the chat took their place
-		<a href={ householdURL(actor.HouseholdID, "people") } class="-mt-6 inline-flex min-h-11 items-center self-start text-sm text-muted-foreground underline underline-offset-4 hover:text-foreground">
-			@components.T(locales.LK_NavPeople)
-		</a>
+		<header>
+			<h1 class="doorplate">
+				@components.T(locales.LK_NavShopping)
+			</h1>
+		</header>
 		@VerifyEmailBanner(o.ActorEmailValidated)
 		@formError(errorMessage)
 		<section aria-labelledby="lists-title" class={ sheetClass }>
@@ -72,8 +72,12 @@ templ HouseholdShopping(actor services.Membership, o services.HouseholdOverview,
 // infoMessage and errorMessage are the outcome of the last action
 templ HouseholdPeople(actor services.Membership, o services.HouseholdOverview, inviteBaseURL, infoMessage, errorMessage string) {
 	{{ isOwner := actor.Role == g.RoleOwner }}
-	@appShell(o.Household.Name, &HouseholdNav{HouseholdID: actor.HouseholdID, Section: ""}) {
-		@householdSwitcher(actor.HouseholdID, o.Household.Name, o.Households)
+	@appShell(o.Household.Name, &HouseholdNav{HouseholdID: actor.HouseholdID, Section: SectionPeople}) {
+		<header>
+			<h1 class="doorplate">
+				@components.T(locales.LK_NavPeople)
+			</h1>
+		</header>
 		@VerifyEmailBanner(o.ActorEmailValidated)
 		if infoMessage != "" {
 			<div role="status" class="rounded-lg border bg-card p-3 text-sm">
@@ -154,7 +158,10 @@ templ HouseholdPeople(actor services.Membership, o services.HouseholdOverview, i
 							for _, inv := range o.Invites {
 								<li class="space-y-2 py-3">
 									<div class="flex items-center justify-between gap-2">
-										<span class="font-mono text-lg tracking-wider">{ inv.Code }</span>
+										<div class="flex items-center gap-2">
+											<span class="font-mono text-lg tracking-wider">{ inv.Code }</span>
+											@copyButton(inv.Code, locales.LK_HouseholdCopyCode)
+										</div>
 										<form action={ householdURL(actor.HouseholdID, "invites", inv.ID.String(), "delete") } method="post" hx-boost="true">
 											@button.Button(button.Props{
 												Type:    button.TypeSubmit,
@@ -165,13 +172,16 @@ templ HouseholdPeople(actor services.Membership, o services.HouseholdOverview, i
 											}
 										</form>
 									</div>
-									<input
-										type="text"
-										readonly
-										value={ inviteBaseURL + inv.Code }
-										aria-label={ utils.T(ctx, locales.LK_HouseholdInvites) }
-										class="w-full rounded-lg border bg-card px-2 py-1.5 font-mono text-xs"
-									/>
+									<div class="flex items-center gap-2">
+										<input
+											type="text"
+											readonly
+											value={ inviteBaseURL + inv.Code }
+											aria-label={ utils.T(ctx, locales.LK_HouseholdInvites) }
+											class="min-w-0 flex-1 rounded-lg border bg-card px-2 py-1.5 font-mono text-xs"
+										/>
+										@copyButton(inviteBaseURL+inv.Code, locales.LK_HouseholdCopyLink)
+									</div>
 									<div class="text-xs text-muted-foreground">
 										{ utils.T(ctx, locales.LK_HouseholdExpires, formatDate(inv.ExpiresAt)) }
 									</div>
@@ -230,5 +240,21 @@ templ HouseholdPeople(actor services.Membership, o services.HouseholdOverview, i
 				@components.T(locales.LK_HouseholdLeave)
 			}
 		</form>
+	}
+}
+
+// copyButton copies value to the clipboard, web/assets/public/copy.js
+templ copyButton(value string, label locales.LK) {
+	@button.Button(button.Props{
+		Type:    button.TypeButton,
+		Variant: button.VariantOutline,
+		Size:    button.SizeSm,
+		Class:   "shrink-0 [.no-clipboard_&]:hidden",
+		Attributes: templ.Attributes{
+			"data-copy":   value,
+			"data-copied": utils.T(ctx, locales.LK_HouseholdCopied),
+		},
+	}) {
+		@components.T(label)
 	}
 }
