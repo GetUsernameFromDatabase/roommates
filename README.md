@@ -9,7 +9,7 @@
 ```txt
 roommates/
 ├─ docker-compose.yml   db, rustfs, mailpit and app services
-├─ deploy/             PostgreSQL, RustFS and Mailpit images
+├─ deploy/             PostgreSQL, RustFS, Mailpit and app images
 └─ app/                 Go module (run go/task commands from here)
    ├─ cmd/server/       entry point (main.go) and routes
    ├─ internal/         application code
@@ -50,7 +50,7 @@ Install binaries with go
   - [taskfile](https://taskfile.dev/docs/installation#build-from-source)
   - similar to makefile
 
-Install [tailwindcss](https://github.com/tailwindlabs/tailwindcss/releases/latest) so that it is usable with `tailwindcss` command
+Install [tailwindcss](https://github.com/tailwindlabs/tailwindcss/releases) at the version pinned as `TAILWIND_VERSION` in [Taskfile.yml](./app/Taskfile.yml) so that it is usable with `tailwindcss` command (`task tailwind` and `task build` refuse other versions)
 > used in [Taskfile.yml](./app/Taskfile.yml)
 > required by <https://templui.io/docs/how-to-use#tailwind-css-v41>
 

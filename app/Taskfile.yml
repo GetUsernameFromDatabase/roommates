@@ -15,6 +15,8 @@ vars:
   PORT: '{{.PORT | default .FREE_PORT}}'
   TAILWIND_INPUT: './web/assets/globals.css'
   TAILWIND_OUTPUT: './web/assets/public/output.css'
+  # the only pin: deploy/app/Dockerfile downloads this version via 'task tailwind-version'
+  TAILWIND_VERSION: '4.3.3'
   PROXY_TLS_CRT: './certificates/server.pem'
   PROXY_TLS_KEY: './certificates/server.key'
 
@@ -38,8 +40,18 @@ tasks:
 
   tailwind:
     desc: Watch Tailwind CSS changes
+    preconditions: &tailwind-pinned
+      # --help colours the version even when piped, so no -w; the digit guard keeps 4.3.3 from matching 4.3.30
+      - sh: tailwindcss --help | grep -qE 'v{{.TAILWIND_VERSION}}([^0-9]|$)'
+        msg: 'tailwindcss must be v{{.TAILWIND_VERSION}}: https://github.com/tailwindlabs/tailwindcss/releases/tag/v{{.TAILWIND_VERSION}}'
     cmds:
       - 'tailwindcss -i {{.TAILWIND_INPUT}} -o {{.TAILWIND_OUTPUT}} --watch'
+
+  tailwind-version:
+    desc: Print the pinned tailwindcss version (read by deploy/app/Dockerfile)
+    silent: true
+    cmds:
+      - echo {{.TAILWIND_VERSION}}
 
   scripts-watch:
     desc: Watch component scripts
@@ -58,6 +70,7 @@ tasks:
 
   build:
     desc: Build the application with production assets
+    preconditions: *tailwind-pinned
     cmds:
       - task: vendor
       - sqlc generate
