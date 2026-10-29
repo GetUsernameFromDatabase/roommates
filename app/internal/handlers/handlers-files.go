@@ -84,7 +84,7 @@ func (h *DefaultHandler) renderFiles(ctx *gin.Context, status int, errorMessage 
 // UploadFile adds a file that is not attached to anything
 func (h *DefaultHandler) UploadFile(ctx *gin.Context) {
 	actor := membershipFromContext(ctx)
-	h.handleUpload(ctx, services.FileTarget{NoteID: pgtype.UUID{}, ListID: pgtype.UUID{}, ShoppingItemID: pgtype.UUID{}},
+	h.handleUpload(ctx, services.FileTarget{NoteID: pgtype.UUID{}, ListID: pgtype.UUID{}, ShoppingItemID: pgtype.UUID{}, ExpenseID: pgtype.UUID{}},
 		filesPath(actor.HouseholdID), func(status int, errorMessage string) {
 			h.renderFiles(ctx, status, errorMessage)
 		})
@@ -96,7 +96,7 @@ func (h *DefaultHandler) UploadNoteFile(ctx *gin.Context) {
 		return
 	}
 	actor := membershipFromContext(ctx)
-	h.handleUpload(ctx, services.FileTarget{NoteID: n.ID, ListID: pgtype.UUID{}, ShoppingItemID: pgtype.UUID{}},
+	h.handleUpload(ctx, services.FileTarget{NoteID: n.ID, ListID: pgtype.UUID{}, ShoppingItemID: pgtype.UUID{}, ExpenseID: pgtype.UUID{}},
 		notePath(actor.HouseholdID, n.ID), func(status int, errorMessage string) {
 			h.renderNote(ctx, status, n, errorMessage)
 		})
@@ -127,7 +127,7 @@ func (h *DefaultHandler) PageShoppingItem(ctx *gin.Context) {
 func (h *DefaultHandler) renderShoppingItem(ctx *gin.Context, status int, listID pgtype.UUID, it services.ShoppingItem, errorMessage string) {
 	actor := membershipFromContext(ctx)
 	files, err := h.service.AttachedFiles(ctx, actor,
-		services.FileTarget{NoteID: pgtype.UUID{}, ListID: listID, ShoppingItemID: it.ID})
+		services.FileTarget{NoteID: pgtype.UUID{}, ListID: listID, ShoppingItemID: it.ID, ExpenseID: pgtype.UUID{}})
 	if err != nil {
 		InternalError(ctx, err)
 		return
@@ -141,7 +141,7 @@ func (h *DefaultHandler) UploadShoppingItemFile(ctx *gin.Context) {
 		return
 	}
 	actor := membershipFromContext(ctx)
-	h.handleUpload(ctx, services.FileTarget{NoteID: pgtype.UUID{}, ListID: listID, ShoppingItemID: it.ID},
+	h.handleUpload(ctx, services.FileTarget{NoteID: pgtype.UUID{}, ListID: listID, ShoppingItemID: it.ID, ExpenseID: pgtype.UUID{}},
 		shoppingItemPath(actor.HouseholdID, listID, it.ID), func(status int, errorMessage string) {
 			h.renderShoppingItem(ctx, status, listID, it, errorMessage)
 		})

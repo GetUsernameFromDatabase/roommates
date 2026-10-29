@@ -38,6 +38,9 @@ const (
 	NoteVisibilityPrivate   = "private"
 )
 
+// ExpenseCategories are the expenses.category values, the table CHECKs these
+var ExpenseCategories = []string{"groceries", "utilities", "rent", "household", "other"}
+
 // keys of values set on [gin.Context] by middleware
 const (
 	// services.Membership set by middleware.NewHouseholdMember
@@ -53,4 +56,6 @@ const (
 	ParamItemID      = "itemID"
 	ParamNoteID      = "noteID"
 	ParamFileID      = "fileID"
+	ParamExpenseID   = "expenseID"
+	ParamSettleID    = "settlementID"
 )

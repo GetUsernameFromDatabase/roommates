@@ -57,11 +57,14 @@ SELECT f.id,
   n.title AS note_title,
   i.list_id AS item_list_id,
   f.shopping_item_id,
-  i.text AS item_text
+  i.text AS item_text,
+  f.expense_id,
+  e.title AS expense_title
 FROM files f
   JOIN users uploader ON uploader.id = f.uploader_id
   LEFT JOIN notes n ON n.id = f.note_id
   LEFT JOIN shopping_items i ON i.id = f.shopping_item_id
+  LEFT JOIN expenses e ON e.id = f.expense_id
 WHERE f.id = $1
   AND f.household_id = $2
   AND (
@@ -92,6 +95,8 @@ type GetFileRow struct {
 	ItemListID     pgtype.UUID        `json:"item_list_id"`
 	ShoppingItemID pgtype.UUID        `json:"shopping_item_id"`
 	ItemText       *string            `json:"item_text"`
+	ExpenseID      pgtype.UUID        `json:"expense_id"`
+	ExpenseTitle   *string            `json:"expense_title"`
 }
 
 func (q *Queries) GetFile(ctx context.Context, arg GetFileParams) (GetFileRow, error) {
@@ -112,6 +117,8 @@ func (q *Queries) GetFile(ctx context.Context, arg GetFileParams) (GetFileRow, e
 		&i.ItemListID,
 		&i.ShoppingItemID,
 		&i.ItemText,
+		&i.ExpenseID,
+		&i.ExpenseTitle,
 	)
 	return i, err
 }
@@ -126,9 +133,10 @@ INSERT INTO files (
     mime,
     size_bytes,
     note_id,
-    shopping_item_id
+    shopping_item_id,
+    expense_id
   )
-VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
 RETURNING id
 `
 
@@ -142,6 +150,7 @@ type InsertFileParams struct {
 	SizeBytes      int64       `json:"size_bytes"`
 	NoteID         pgtype.UUID `json:"note_id"`
 	ShoppingItemID pgtype.UUID `json:"shopping_item_id"`
+	ExpenseID      pgtype.UUID `json:"expense_id"`
 }
 
 func (q *Queries) InsertFile(ctx context.Context, arg InsertFileParams) (pgtype.UUID, error) {
@@ -155,6 +164,7 @@ func (q *Queries) InsertFile(ctx context.Context, arg InsertFileParams) (pgtype.
 		arg.SizeBytes,
 		arg.NoteID,
 		arg.ShoppingItemID,
+		arg.ExpenseID,
 	)
 	var id pgtype.UUID
 	err := row.Scan(&id)
@@ -176,6 +186,7 @@ WHERE f.household_id = $1
   AND (
     f.note_id = $2
     OR f.shopping_item_id = $3
+    OR f.expense_id = $4
   )
 ORDER BY f.created_at
 `
@@ -184,6 +195,7 @@ type ListAttachedFilesParams struct {
 	HouseholdID    pgtype.UUID `json:"household_id"`
 	NoteID         pgtype.UUID `json:"note_id"`
 	ShoppingItemID pgtype.UUID `json:"shopping_item_id"`
+	ExpenseID      pgtype.UUID `json:"expense_id"`
 }
 
 type ListAttachedFilesRow struct {
@@ -199,7 +211,12 @@ type ListAttachedFilesRow struct {
 
 // the caller has already checked that the user sees the note or item
 func (q *Queries) ListAttachedFiles(ctx context.Context, arg ListAttachedFilesParams) ([]ListAttachedFilesRow, error) {
-	rows, err := q.db.Query(ctx, listAttachedFiles, arg.HouseholdID, arg.NoteID, arg.ShoppingItemID)
+	rows, err := q.db.Query(ctx, listAttachedFiles,
+		arg.HouseholdID,
+		arg.NoteID,
+		arg.ShoppingItemID,
+		arg.ExpenseID,
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -267,11 +284,14 @@ SELECT f.id,
   n.title AS note_title,
   i.list_id AS item_list_id,
   f.shopping_item_id,
-  i.text AS item_text
+  i.text AS item_text,
+  f.expense_id,
+  e.title AS expense_title
 FROM files f
   JOIN users uploader ON uploader.id = f.uploader_id
   LEFT JOIN notes n ON n.id = f.note_id
   LEFT JOIN shopping_items i ON i.id = f.shopping_item_id
+  LEFT JOIN expenses e ON e.id = f.expense_id
 WHERE f.household_id = $1
   AND (
     n.id IS NULL
@@ -300,6 +320,8 @@ type ListFilesRow struct {
 	ItemListID     pgtype.UUID        `json:"item_list_id"`
 	ShoppingItemID pgtype.UUID        `json:"shopping_item_id"`
 	ItemText       *string            `json:"item_text"`
+	ExpenseID      pgtype.UUID        `json:"expense_id"`
+	ExpenseTitle   *string            `json:"expense_title"`
 }
 
 // every file the user may see, newest first, with what it is attached to
@@ -326,6 +348,8 @@ func (q *Queries) ListFiles(ctx context.Context, arg ListFilesParams) ([]ListFil
 			&i.ItemListID,
 			&i.ShoppingItemID,
 			&i.ItemText,
+			&i.ExpenseID,
+			&i.ExpenseTitle,
 		); err != nil {
 			return nil, err
 		}

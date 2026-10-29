@@ -1,4 +1,8 @@
 en:
+  common:
+    delete: Delete
+    save: Save
+    link-invalid: Link is invalid
   app:
     title: Roommates
   welcome-back: Welcome back
@@ -52,6 +56,7 @@ en:
     invite-email-submit: Send invite
     invite-email-sent: Invite sent to %s
     verify-to-invite: Confirm your email address to create invites.
+    balance-not-zero: Debts with this person must be settled first.
   shopping:
     back: All lists
     lists: Shopping lists
@@ -71,12 +76,52 @@ en:
     bought-by: Bought by %s
     check: Mark as bought
     uncheck: Mark as not bought
-    delete: Delete
     delete-list: Delete list
     clear: Remove bought items
     item-back: Back to the list
+  expenses:
+    new: New expense
+    none: No expenses yet
+    balances: Balances
+    settled: Everyone is settled up
+    owes: "%s owes %s"
+    i-paid: I paid
+    settle-invalid: Enter a positive amount
+    pending: Waiting for confirmation
+    paid-to: "%s paid %s"
+    you: You
+    you-owe: You owe %s
+    owes-you: "%s owes you"
+    you-paid-to: You paid %s
+    paid-you: "%s paid you"
+    paid-by-you: Paid by you on %s
+    total: Total
+    confirm: Confirm
+    reject: Reject
+    cancel: Cancel
+    what: What for
+    amount: Amount
+    category: Category
+    date: Date
+    split: Split
+    split-equal: Equally between the ticked
+    split-custom: By the amounts typed
+    add: Add expense
+    invalid: "Check the form: the text is 1 to %d characters, the amount is above zero, someone shares it, and typed shares add up to the amount."
+    paid-by: Paid by %s on %s
+    shares: Shares
+    share-paid: Paid
+    share-unpaid: Not paid
+    mark-paid: Mark paid
+    mark-unpaid: Mark not paid
+    copy: Copy
+    back: All expenses
+    category-groceries: Groceries
+    category-utilities: Utilities
+    category-rent: Rent
+    category-household: Household
+    category-other: Other
   notes:
-    title: Notes
     none: No notes yet
     new: New note
     back: All notes
@@ -86,7 +131,6 @@ en:
     private: Only visible to me
     private-badge: Private
     pinned-badge: Pinned
-    save: Save
     cancel: Cancel
     edit: Edit
     delete: Delete note
@@ -96,7 +140,6 @@ en:
     length: The title must be 1 to %d characters long and the text at most %d
     empty: This note is empty
   files:
-    title: Files
     none: No files yet
     file: File
     upload: Upload
@@ -107,9 +150,9 @@ en:
     added-by: Added by %s on %s · %s
     on-note: "On note: %s"
     on-item: "On item: %s"
-    delete: Delete
     download: Download
     all: All files
+    on-expense: "On expense: %s"
   appearance:
     title: Appearance
     theme: Theme
@@ -119,7 +162,6 @@ en:
     mode-system: Same as device
     mode-light: Light
     mode-dark: Dark
-    save: Save
   nav:
     label: Household
     shopping: Shopping
@@ -127,6 +169,7 @@ en:
     files: Files
     people: People
     switch: Switch household
+    expenses: Expenses
   invite-page:
     title: Join %s
     description: You have been invited to join this household.
@@ -169,7 +212,6 @@ en:
     resent-description: We sent a new confirmation link to %s.
     done-title: Email confirmed
     done-description: Thank you, your email address is confirmed.
-    invalid-title: Link is invalid
     invalid-description: The link is invalid, expired or already used. Sign in to send a new one.
     continue: Continue
   forgot-password-page:
@@ -183,7 +225,6 @@ en:
     submit: Save password
     done-title: Password changed
     done-description: Your password was changed. Sign in with the new password.
-    invalid-title: Link is invalid
     invalid-description: The link is invalid, expired or already used.
     new-link: Ask for a new link
   error-page:

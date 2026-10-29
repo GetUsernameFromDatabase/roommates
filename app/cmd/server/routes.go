@@ -105,6 +105,18 @@ func initRoutes(r *gin.Engine, h *handlers.DefaultHandler, service *services.Def
 			list.GET("/items/:"+g.ParamItemID, h.PageShoppingItem)
 			list.POST("/items/:"+g.ParamItemID+"/files", h.UploadShoppingItemFile)
 
+			household.GET("/expenses", h.PageExpenses)
+			household.GET("/expenses/new", h.PageNewExpense)
+			household.POST("/expenses", h.CreateExpense)
+			expense := household.Group("/expenses/:" + g.ParamExpenseID)
+			expense.GET("", h.PageExpense)
+			expense.POST("/delete", h.DeleteExpense)
+			expense.POST("/shares/:"+g.ParamUserID+"/paid", h.SetExpenseSharePaid)
+			expense.POST("/files", h.UploadExpenseFile)
+			household.POST("/settlements", h.CreateSettlement)
+			household.POST("/settlements/:"+g.ParamSettleID+"/confirm", h.ConfirmSettlement)
+			household.POST("/settlements/:"+g.ParamSettleID+"/delete", h.DeleteSettlement)
+
 			household.GET("/notes", h.PageNotes)
 			household.GET("/notes/new", h.PageNewNote)
 			household.POST("/notes", h.CreateNote)

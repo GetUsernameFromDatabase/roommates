@@ -26,7 +26,7 @@ func notice(ctx *gin.Context, status int, title, description locales.LK, href st
 func (h *DefaultHandler) VerifyEmail(ctx *gin.Context) {
 	err := h.service.VerifyEmail(ctx, ctx.Query("token"))
 	if errors.Is(err, g.ErrorTokenInvalid) {
-		notice(ctx, http.StatusNotFound, locales.LK_VerifyEmailInvalidTitle,
+		notice(ctx, http.StatusNotFound, locales.LK_CommonLinkInvalid,
 			locales.LK_VerifyEmailInvalidDescription, "/", locales.LK_VerifyEmailContinue)
 		return
 	}
@@ -84,7 +84,7 @@ func (h *DefaultHandler) PageForgotPassword(ctx *gin.Context) {
 // PageResetPassword asks for a new password for the ?token= link
 func (h *DefaultHandler) PageResetPassword(ctx *gin.Context) {
 	invalid := func() {
-		notice(ctx, http.StatusNotFound, locales.LK_ResetPasswordPageInvalidTitle,
+		notice(ctx, http.StatusNotFound, locales.LK_CommonLinkInvalid,
 			locales.LK_ResetPasswordPageInvalidDescription, g.RouteForgotPassword, locales.LK_ResetPasswordPageNewLink)
 	}
 

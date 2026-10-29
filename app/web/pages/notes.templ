@@ -23,10 +23,10 @@ type NoteForm struct {
 
 // HouseholdNotes lists the household's notes and the actor's private ones, pinned first
 templ HouseholdNotes(actor services.Membership, notes []dbqueries.ListNotesRow) {
-	@appShell(utils.T(ctx, locales.LK_NotesTitle), &HouseholdNav{HouseholdID: actor.HouseholdID, Section: SectionNotes}) {
+	@appShell(utils.T(ctx, locales.LK_NavNotes), &HouseholdNav{HouseholdID: actor.HouseholdID, Section: SectionNotes}) {
 		<header class="flex items-end justify-between gap-3">
 			<h1 class="doorplate">
-				@components.T(locales.LK_NotesTitle)
+				@components.T(locales.LK_NavNotes)
 			</h1>
 			@button.Button(button.Props{Href: string(householdURL(actor.HouseholdID, "notes", "new")), Size: button.SizeLg, Class: "h-10 shrink-0"}) {
 				@components.T(locales.LK_NotesNew)
@@ -137,14 +137,7 @@ templ NoteEditor(actor services.Membership, f NoteForm) {
 	@appShell(utils.IfElse(f.Input.Title != "", f.Input.Title, utils.T(ctx, locales.LK_NotesNew)), &HouseholdNav{HouseholdID: actor.HouseholdID, Section: SectionNotes}) {
 		@doorplateHeader(cancel, utils.T(ctx, locales.LK_NotesCancel), utils.IfElse(f.NoteID.Valid, f.Input.Title, utils.T(ctx, locales.LK_NotesNew)))
 		<form action={ action } method="post" hx-boost="true" class={ utils.CN(sheetClass, "space-y-4") }>
-			if f.ErrorMessage != "" {
-				<div
-					role="alert"
-					class="rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive"
-				>
-					{ f.ErrorMessage }
-				</div>
-			}
+			@formError(f.ErrorMessage)
 			<label class="block space-y-1.5">
 				<span class="text-sm font-medium">
 					@components.T(locales.LK_NotesNoteTitle)
@@ -191,7 +184,7 @@ templ NoteEditor(actor services.Membership, f NoteForm) {
 				</label>
 			}
 			@button.Button(button.Props{Type: button.TypeSubmit, Size: button.SizeLg, Class: "w-full"}) {
-				@components.T(locales.LK_NotesSave)
+				@components.T(locales.LK_CommonSave)
 			}
 		</form>
 	}

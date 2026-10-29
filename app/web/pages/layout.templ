@@ -9,6 +9,7 @@ import "github.com/jackc/pgx/v5/pgtype"
 // sections of a household, the bottom bar on phones and the tab row on wide screens
 const (
 	SectionShopping = "shopping"
+	SectionExpenses = "expenses"
 	SectionNotes    = "notes"
 	SectionFiles    = "files"
 	SectionPeople   = "people"
@@ -60,6 +61,7 @@ templ householdNav(nav HouseholdNav) {
 	>
 		<ul class="mx-auto flex w-full max-w-lg gap-1 px-4 md:gap-2 py-2 sm:px-10">
 			@householdNavItem(householdURL(nav.HouseholdID), locales.LK_NavShopping, nav.Section == SectionShopping)
+			@householdNavItem(householdURL(nav.HouseholdID, "expenses"), locales.LK_NavExpenses, nav.Section == SectionExpenses)
 			@householdNavItem(householdURL(nav.HouseholdID, "notes"), locales.LK_NavNotes, nav.Section == SectionNotes)
 			@householdNavItem(householdURL(nav.HouseholdID, "files"), locales.LK_NavFiles, nav.Section == SectionFiles)
 			@householdNavItem(householdURL(nav.HouseholdID, "people"), locales.LK_NavPeople, nav.Section == SectionPeople)
@@ -119,6 +121,18 @@ templ householdSwitcher(current pgtype.UUID, name string, households []dbqueries
 				</li>
 			</ul>
 		</details>
+	}
+}
+
+// formError is the message of a failed form submit, nothing when it is empty
+templ formError(message string) {
+	if message != "" {
+		<div
+			role="alert"
+			class="rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive"
+		>
+			{ message }
+		</div>
 	}
 }
 

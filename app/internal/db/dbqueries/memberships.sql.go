@@ -52,13 +52,15 @@ func (q *Queries) EndMembership(ctx context.Context, arg EndMembershipParams) er
 }
 
 const getActiveMembership = `-- name: GetActiveMembership :one
-SELECT household_id,
-  user_id,
-  role
-FROM memberships
-WHERE household_id = $1
-  AND user_id = $2
-  AND left_at IS NULL
+SELECT m.household_id,
+  m.user_id,
+  m.role,
+  h.currency
+FROM memberships m
+  JOIN households h ON h.id = m.household_id
+WHERE m.household_id = $1
+  AND m.user_id = $2
+  AND m.left_at IS NULL
 `
 
 type GetActiveMembershipParams struct {
@@ -70,12 +72,18 @@ type GetActiveMembershipRow struct {
 	HouseholdID pgtype.UUID `json:"household_id"`
 	UserID      pgtype.UUID `json:"user_id"`
 	Role        string      `json:"role"`
+	Currency    string      `json:"currency"`
 }
 
 func (q *Queries) GetActiveMembership(ctx context.Context, arg GetActiveMembershipParams) (GetActiveMembershipRow, error) {
 	row := q.db.QueryRow(ctx, getActiveMembership, arg.HouseholdID, arg.UserID)
 	var i GetActiveMembershipRow
-	err := row.Scan(&i.HouseholdID, &i.UserID, &i.Role)
+	err := row.Scan(
+		&i.HouseholdID,
+		&i.UserID,
+		&i.Role,
+		&i.Currency,
+	)
 	return i, err
 }
 

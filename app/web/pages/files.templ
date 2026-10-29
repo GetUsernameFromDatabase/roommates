@@ -11,10 +11,10 @@ import "github.com/jackc/pgx/v5/pgtype"
 
 // HouseholdFiles lists every file the actor may see, newest first, errorMessage is the outcome of an upload
 templ HouseholdFiles(actor services.Membership, files []dbqueries.ListFilesRow, errorMessage string) {
-	@appShell(utils.T(ctx, locales.LK_FilesTitle), &HouseholdNav{HouseholdID: actor.HouseholdID, Section: SectionFiles}) {
+	@appShell(utils.T(ctx, locales.LK_NavFiles), &HouseholdNav{HouseholdID: actor.HouseholdID, Section: SectionFiles}) {
 		<header>
 			<h1 class="doorplate">
-				@components.T(locales.LK_FilesTitle)
+				@components.T(locales.LK_NavFiles)
 			</h1>
 		</header>
 		<section class={ utils.CN(sheetClass, "space-y-4") }>
@@ -34,6 +34,10 @@ templ HouseholdFiles(actor services.Membership, files []dbqueries.ListFilesRow, 
 							} else if f.ItemText != nil {
 								<a href={ householdURL(actor.HouseholdID, "lists", f.ItemListID.String(), "items", f.ShoppingItemID.String()) } class={ fileContextClass }>
 									{ utils.T(ctx, locales.LK_FilesOnItem, *f.ItemText) }
+								</a>
+							} else if f.ExpenseTitle != nil {
+								<a href={ householdURL(actor.HouseholdID, "expenses", f.ExpenseID.String()) } class={ fileContextClass }>
+									{ utils.T(ctx, locales.LK_FilesOnExpense, *f.ExpenseTitle) }
 								</a>
 							}
 						}
@@ -67,14 +71,7 @@ templ attachedFiles(actor services.Membership, back templ.SafeURL, files []servi
 // fileUploadForm is a plain form, not boosted, the page reloads after an upload
 templ fileUploadForm(action templ.SafeURL, errorMessage string) {
 	<form action={ action } method="post" enctype="multipart/form-data" class="space-y-2">
-		if errorMessage != "" {
-			<div
-				role="alert"
-				class="rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive"
-			>
-				{ errorMessage }
-			</div>
-		}
+		@formError(errorMessage)
 		<div class="flex flex-wrap items-center gap-2">
 			<input
 				type="file"
@@ -109,14 +106,14 @@ templ fileRow(actor services.Membership, back templ.SafeURL, id pgtype.UUID, nam
 			{ children... }
 		</div>
 		if uploaderID == actor.UserID {
-			<form action={ href + "/delete" } method="post" hx-boost="true" hx-confirm={ utils.T(ctx, locales.LK_FilesDelete) + " " + name + "?" }>
+			<form action={ href + "/delete" } method="post" hx-boost="true" hx-confirm={ utils.T(ctx, locales.LK_CommonDelete) + " " + name + "?" }>
 				<input type="hidden" name={ g.QueryNext } value={ string(back) }/>
 				@button.Button(button.Props{
 					Type:    button.TypeSubmit,
 					Variant: button.VariantGhost,
 					Class:   "h-11 px-3 text-destructive",
 				}) {
-					@components.T(locales.LK_FilesDelete)
+					@components.T(locales.LK_CommonDelete)
 				}
 			</form>
 		}
@@ -133,6 +130,9 @@ templ FilePage(actor services.Membership, f services.FileMeta) {
 	} else if f.ItemText != nil {
 		{{ back = householdURL(actor.HouseholdID, "lists", f.ItemListID.String(), "items", f.ShoppingItemID.String()) }}
 		{{ backText, section = utils.T(ctx, locales.LK_FilesOnItem, *f.ItemText), SectionShopping }}
+	} else if f.ExpenseTitle != nil {
+		{{ back = householdURL(actor.HouseholdID, "expenses", f.ExpenseID.String()) }}
+		{{ backText, section = utils.T(ctx, locales.LK_FilesOnExpense, *f.ExpenseTitle), SectionExpenses }}
 	}
 	@appShell(f.Name, &HouseholdNav{HouseholdID: actor.HouseholdID, Section: section}) {
 		@doorplateHeader(back, backText, f.Name)
@@ -155,7 +155,7 @@ templ FilePage(actor services.Membership, f services.FileMeta) {
 					action={ fileURL + "/delete" }
 					method="post"
 					hx-boost="true"
-					hx-confirm={ utils.T(ctx, locales.LK_FilesDelete) + " " + f.Name + "?" }
+					hx-confirm={ utils.T(ctx, locales.LK_CommonDelete) + " " + f.Name + "?" }
 					class="ml-auto"
 				>
 					<input type="hidden" name={ g.QueryNext } value={ string(back) }/>
@@ -165,7 +165,7 @@ templ FilePage(actor services.Membership, f services.FileMeta) {
 						Size:    button.SizeLg,
 						Class:   "text-destructive",
 					}) {
-						@components.T(locales.LK_FilesDelete)
+						@components.T(locales.LK_CommonDelete)
 					}
 				</form>
 			}

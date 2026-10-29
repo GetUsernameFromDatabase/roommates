@@ -31,11 +31,12 @@ var ImageMimes = map[string]bool{
 	"image/webp": true,
 }
 
-// FileTarget is what an upload attaches to: a note, an item of a list, or nothing
+// FileTarget is what an upload attaches to: a note, an item of a list, an expense, or nothing
 type FileTarget struct {
 	NoteID         pgtype.UUID
 	ListID         pgtype.UUID
 	ShoppingItemID pgtype.UUID
+	ExpenseID      pgtype.UUID
 }
 
 type AttachedFile = dbqueries.ListAttachedFilesRow
@@ -60,7 +61,7 @@ func cleanFileName(name string) (string, error) {
 	return name, nil
 }
 
-// checkFileTarget returns [g.ErrorNotFound] unless the actor sees the note or item
+// checkFileTarget returns [g.ErrorNotFound] unless the actor sees the note, item or expense
 func (s *DefaultService) checkFileTarget(ctx context.Context, actor Membership, t FileTarget) error {
 	if t.NoteID.Valid {
 		_, err := s.GetNote(ctx, actor, t.NoteID)
@@ -69,6 +70,10 @@ func (s *DefaultService) checkFileTarget(ctx context.Context, actor Membership, 
 	if t.ShoppingItemID.Valid {
 		_, err := s.GetShoppingItem(ctx, actor, t.ListID, t.ShoppingItemID)
 		return err
+	}
+	if t.ExpenseID.Valid {
+		_, err := s.db.GetExpense(ctx, dbqueries.GetExpenseParams{ID: t.ExpenseID, HouseholdID: actor.HouseholdID})
+		return noRowsAs(err, g.ErrorNotFound)
 	}
 	return nil
 }
@@ -144,6 +149,7 @@ func (s *DefaultService) UploadFile(ctx context.Context, actor Membership, t Fil
 		SizeBytes:      size,
 		NoteID:         t.NoteID,
 		ShoppingItemID: t.ShoppingItemID,
+		ExpenseID:      t.ExpenseID,
 	})
 	if err != nil {
 		deleteStored()
@@ -159,12 +165,13 @@ func (s *DefaultService) ListFiles(ctx context.Context, actor Membership) ([]dbq
 	})
 }
 
-// AttachedFiles returns the files of a note or item the actor has already loaded
+// AttachedFiles returns the files of a note, item or expense the actor has already loaded
 func (s *DefaultService) AttachedFiles(ctx context.Context, actor Membership, t FileTarget) ([]AttachedFile, error) {
 	return s.db.ListAttachedFiles(ctx, dbqueries.ListAttachedFilesParams{
 		HouseholdID:    actor.HouseholdID,
 		NoteID:         t.NoteID,
 		ShoppingItemID: t.ShoppingItemID,
+		ExpenseID:      t.ExpenseID,
 	})
 }
 

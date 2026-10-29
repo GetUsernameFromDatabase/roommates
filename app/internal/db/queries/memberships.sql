@@ -6,13 +6,15 @@ SET role = EXCLUDED.role,
   joined_at = CURRENT_TIMESTAMP,
   left_at = NULL;
 -- name: GetActiveMembership :one
-SELECT household_id,
-  user_id,
-  role
-FROM memberships
-WHERE household_id = $1
-  AND user_id = $2
-  AND left_at IS NULL;
+SELECT m.household_id,
+  m.user_id,
+  m.role,
+  h.currency
+FROM memberships m
+  JOIN households h ON h.id = m.household_id
+WHERE m.household_id = $1
+  AND m.user_id = $2
+  AND m.left_at IS NULL;
 -- name: ListActiveMembers :many
 SELECT m.user_id,
   u.username,

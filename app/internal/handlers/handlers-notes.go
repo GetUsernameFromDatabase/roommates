@@ -97,7 +97,7 @@ func (h *DefaultHandler) PageNote(ctx *gin.Context) {
 func (h *DefaultHandler) renderNote(ctx *gin.Context, status int, n services.Note, errorMessage string) {
 	actor := membershipFromContext(ctx)
 	files, err := h.service.AttachedFiles(ctx, actor,
-		services.FileTarget{NoteID: n.ID, ListID: pgtype.UUID{}, ShoppingItemID: pgtype.UUID{}})
+		services.FileTarget{NoteID: n.ID, ListID: pgtype.UUID{}, ShoppingItemID: pgtype.UUID{}, ExpenseID: pgtype.UUID{}})
 	if err != nil {
 		InternalError(ctx, err)
 		return

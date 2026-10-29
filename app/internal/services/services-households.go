@@ -209,9 +209,7 @@ func (s *DefaultService) JoinWithInvite(ctx context.Context, code string, userID
 
 // -----------------------------------------------------------------------------
 
-// Leave ends the actor's membership, see [g.ErrorLastOwner]
-//
-// TODO(phase 6): block leaving while the member's balance is not zero
+// Leave ends the actor's membership, see [g.ErrorLastOwner] and [g.ErrorBalanceNotZero]
 func (s *DefaultService) Leave(ctx context.Context, actor Membership) error {
 	return s.inTx(ctx, func(q *dbqueries.Queries) error {
 		if err := q.LockHousehold(ctx, actor.HouseholdID); err != nil {
@@ -223,6 +221,9 @@ func (s *DefaultService) Leave(ctx context.Context, actor Membership) error {
 		}
 		if actor.Role == g.RoleOwner && counts.Owners == 1 && counts.Members > 1 {
 			return g.ErrorLastOwner
+		}
+		if err := checkSettled(ctx, q, actor.HouseholdID, actor.UserID); err != nil {
+			return err
 		}
 		// an invite into an empty household would make a member nobody can manage
 		if counts.Members == 1 {
@@ -260,12 +261,14 @@ func ownerActsOnMember(ctx context.Context, q *dbqueries.Queries, actor Membersh
 }
 
 // RemoveMember lets an owner remove a member, owners cannot be removed,
-// all invites are revoked so the removed member cannot rejoin with one
-//
-// TODO(phase 6): block removing while the member's balance is not zero
+// all invites are revoked so the removed member cannot rejoin with one,
+// see [g.ErrorBalanceNotZero]
 func (s *DefaultService) RemoveMember(ctx context.Context, actor Membership, targetID pgtype.UUID) error {
 	return s.inTx(ctx, func(q *dbqueries.Queries) error {
 		if err := ownerActsOnMember(ctx, q, actor, targetID); err != nil {
+			return err
+		}
+		if err := checkSettled(ctx, q, actor.HouseholdID, targetID); err != nil {
 			return err
 		}
 		if err := q.DeleteInvitesOfHousehold(ctx, actor.HouseholdID); err != nil {

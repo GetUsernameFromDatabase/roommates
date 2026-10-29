@@ -86,7 +86,7 @@ func TestFiles(t *testing.T) {
 	store := s.store.(*fakeStore)
 	ctx := context.Background()
 	ownerM, memberM, strangerM := newTestHousehold(t, s)
-	none := FileTarget{NoteID: pgtype.UUID{}, ListID: pgtype.UUID{}, ShoppingItemID: pgtype.UUID{}}
+	none := FileTarget{NoteID: pgtype.UUID{}, ListID: pgtype.UUID{}, ShoppingItemID: pgtype.UUID{}, ExpenseID: pgtype.UUID{}}
 	png := []byte("\x89PNG\r\n\x1a\n rest of the image")
 	upload := func(actor Membership, target FileTarget, name string, body []byte) (pgtype.UUID, error) {
 		return s.UploadFile(ctx, actor, target, name, bytes.NewReader(body), int64(len(body)))
@@ -121,7 +121,7 @@ func TestFiles(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	onPrivate := FileTarget{NoteID: private, ListID: pgtype.UUID{}, ShoppingItemID: pgtype.UUID{}}
+	onPrivate := FileTarget{NoteID: private, ListID: pgtype.UUID{}, ShoppingItemID: pgtype.UUID{}, ExpenseID: pgtype.UUID{}}
 	_, err = upload(memberM, onPrivate, "x.txt", []byte("x"))
 	wantErr(t, "member uploads to private note", err, g.ErrorNotFound)
 	secret, err := upload(ownerM, onPrivate, "lease.png", realPNG(t))
@@ -168,7 +168,7 @@ func TestFiles(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	onItem := FileTarget{NoteID: pgtype.UUID{}, ListID: listID, ShoppingItemID: list.Items[0].ID}
+	onItem := FileTarget{NoteID: pgtype.UUID{}, ListID: listID, ShoppingItemID: list.Items[0].ID, ExpenseID: pgtype.UUID{}}
 	_, err = upload(strangerM, onItem, "x.txt", []byte("x"))
 	wantErr(t, "stranger uploads to item", err, g.ErrorNotFound)
 	if _, err := upload(memberM, onItem, "cheese.png", png); err != nil {

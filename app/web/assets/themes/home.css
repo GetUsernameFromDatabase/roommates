@@ -70,4 +70,7 @@
   /*                        ochre throw, only for people (claims) */
   --claim: light-dark(#d6a13a, #e2b65a);
   --claim-foreground: light-dark(#1e2b24, #16201b);
+  /*                        money in or against the viewer's favour */
+  --favour: var(--primary);
+  --against: var(--destructive);
 }

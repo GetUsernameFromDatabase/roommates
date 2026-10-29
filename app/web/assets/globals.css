@@ -54,6 +54,8 @@
   --font-heading: var(--theme-font-heading);
   --color-claim: var(--claim);
   --color-claim-foreground: var(--claim-foreground);
+  --color-favour: var(--favour);
+  --color-against: var(--against);
   --color-chart-1: var(--chart-1);
   --color-chart-2: var(--chart-2);
   --color-chart-3: var(--chart-3);

@@ -30,7 +30,7 @@ templ AppearanceForm(next string) {
 			@appearanceSelect("theme", locales.LK_AppearanceTheme, utils.Themes, themeNames, a.Theme)
 			@appearanceSelect("mode", locales.LK_AppearanceMode, utils.Modes, modeNames, a.Mode)
 			@button.Button(button.Props{Type: button.TypeSubmit, Variant: button.VariantSecondary, Class: "h-10"}) {
-				@components.T(locales.LK_AppearanceSave)
+				@components.T(locales.LK_CommonSave)
 			}
 		</form>
 	</section>

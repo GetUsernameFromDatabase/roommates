@@ -16,6 +16,24 @@ type EmailToken struct {
 	CreatedAt pgtype.Timestamptz `json:"created_at"`
 }
 
+type Expense struct {
+	ID          pgtype.UUID        `json:"id"`
+	HouseholdID pgtype.UUID        `json:"household_id"`
+	PayerID     pgtype.UUID        `json:"payer_id"`
+	Category    string             `json:"category"`
+	Title       string             `json:"title"`
+	AmountCents int64              `json:"amount_cents"`
+	IncurredOn  pgtype.Date        `json:"incurred_on"`
+	CreatedAt   pgtype.Timestamptz `json:"created_at"`
+}
+
+type ExpenseShare struct {
+	ExpenseID   pgtype.UUID        `json:"expense_id"`
+	UserID      pgtype.UUID        `json:"user_id"`
+	AmountCents int64              `json:"amount_cents"`
+	PaidAt      pgtype.Timestamptz `json:"paid_at"`
+}
+
 type File struct {
 	ID             pgtype.UUID        `json:"id"`
 	HouseholdID    pgtype.UUID        `json:"household_id"`
@@ -28,6 +46,7 @@ type File struct {
 	NoteID         pgtype.UUID        `json:"note_id"`
 	ShoppingItemID pgtype.UUID        `json:"shopping_item_id"`
 	CreatedAt      pgtype.Timestamptz `json:"created_at"`
+	ExpenseID      pgtype.UUID        `json:"expense_id"`
 }
 
 type FilePurge struct {
@@ -73,6 +92,16 @@ type Note struct {
 	EditedAt    pgtype.Timestamptz `json:"edited_at"`
 	CreatedAt   pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
+}
+
+type Settlement struct {
+	ID          pgtype.UUID        `json:"id"`
+	HouseholdID pgtype.UUID        `json:"household_id"`
+	FromUser    pgtype.UUID        `json:"from_user"`
+	ToUser      pgtype.UUID        `json:"to_user"`
+	AmountCents int64              `json:"amount_cents"`
+	CreatedAt   pgtype.Timestamptz `json:"created_at"`
+	ConfirmedAt pgtype.Timestamptz `json:"confirmed_at"`
 }
 
 type ShoppingItem struct {

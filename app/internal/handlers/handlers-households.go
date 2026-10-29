@@ -114,6 +114,9 @@ func (h *DefaultHandler) householdAction(ctx *gin.Context, action func(actor ser
 	case errors.Is(err, g.ErrorLastOwner):
 		h.renderPeople(ctx, http.StatusConflict, "",
 			utils.T(ctx.Request.Context(), locales.LK_HouseholdLastOwner))
+	case errors.Is(err, g.ErrorBalanceNotZero):
+		h.renderPeople(ctx, http.StatusConflict, "",
+			utils.T(ctx.Request.Context(), locales.LK_HouseholdBalanceNotZero))
 	case errors.Is(err, g.ErrorEmailNotVerified):
 		h.renderPeople(ctx, http.StatusForbidden, "",
 			utils.T(ctx.Request.Context(), locales.LK_HouseholdVerifyToInvite))
@@ -189,6 +192,11 @@ func (h *DefaultHandler) LeaveHousehold(ctx *gin.Context) {
 	if errors.Is(err, g.ErrorLastOwner) {
 		h.renderPeople(ctx, http.StatusConflict, "",
 			utils.T(ctx.Request.Context(), locales.LK_HouseholdLastOwner))
+		return
+	}
+	if errors.Is(err, g.ErrorBalanceNotZero) {
+		h.renderPeople(ctx, http.StatusConflict, "",
+			utils.T(ctx.Request.Context(), locales.LK_HouseholdBalanceNotZero))
 		return
 	}
 	if err != nil {

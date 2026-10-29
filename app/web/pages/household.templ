@@ -15,14 +15,7 @@ templ HouseholdShopping(actor services.Membership, o services.HouseholdOverview,
 	@appShell(o.Household.Name, &HouseholdNav{HouseholdID: actor.HouseholdID, Section: SectionShopping}) {
 		@householdSwitcher(actor.HouseholdID, o.Household.Name, o.Households)
 		@VerifyEmailBanner(o.ActorEmailValidated)
-		if errorMessage != "" {
-			<div
-				role="alert"
-				class="rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive"
-			>
-				{ errorMessage }
-			</div>
-		}
+		@formError(errorMessage)
 		<section aria-labelledby="lists-title" class={ sheetClass }>
 			<h2 id="lists-title" class="text-xl font-semibold">
 				@components.T(locales.LK_ShoppingLists)
@@ -79,14 +72,7 @@ templ HouseholdPeople(actor services.Membership, o services.HouseholdOverview, i
 				{ infoMessage }
 			</div>
 		}
-		if errorMessage != "" {
-			<div
-				role="alert"
-				class="rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive"
-			>
-				{ errorMessage }
-			</div>
-		}
+		@formError(errorMessage)
 		<section aria-labelledby="members-title">
 			<h2 id="members-title" class="text-xl font-semibold">
 				@components.T(locales.LK_HouseholdMembers)

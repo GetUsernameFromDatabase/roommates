@@ -1,4 +1,8 @@
 et:
+  common:
+    delete: Kustuta
+    save: Salvesta
+    link-invalid: Link on vigane
   app:
     title: Toakaaslased
   welcome-back: Tere tulemast tagasi
@@ -52,6 +56,7 @@ et:
     invite-email-submit: Saada kutse
     invite-email-sent: Kutse saadetud aadressile %s
     verify-to-invite: Kutsete loomiseks kinnita oma e-posti aadress.
+    balance-not-zero: Selle inimese võlad tuleb enne arveldada.
   shopping:
     back: Kõik nimekirjad
     lists: Ostunimekirjad
@@ -71,12 +76,52 @@ et:
     bought-by: Ostis %s
     check: Märgi ostetuks
     uncheck: Märgi ostmata
-    delete: Kustuta
     delete-list: Kustuta nimekiri
     clear: Eemalda ostetud
     item-back: Tagasi nimekirja
+  expenses:
+    new: Uus kulu
+    none: Kulusid pole veel
+    balances: Saldod
+    settled: Kõik on arveldatud
+    owes: "%s võlgneb kasutajale %s"
+    i-paid: Maksin
+    settle-invalid: Sisesta nullist suurem summa
+    pending: Ootab kinnitust
+    paid-to: "%s maksis kasutajale %s"
+    you: Sina
+    you-owe: Sa võlgned kasutajale %s
+    owes-you: "%s võlgneb sulle"
+    you-paid-to: Sa maksid kasutajale %s
+    paid-you: "%s maksis sulle"
+    paid-by-you: Maksid sina, %s
+    total: Kokku
+    confirm: Kinnita
+    reject: Lükka tagasi
+    cancel: Tühista
+    what: Mille eest
+    amount: Summa
+    category: Kategooria
+    date: Kuupäev
+    split: Jagamine
+    split-equal: Võrdselt märgitute vahel
+    split-custom: Sisestatud summade järgi
+    add: Lisa kulu
+    invalid: "Kontrolli vormi: tekst on 1 kuni %d märki, summa on nullist suurem, keegi jagab seda ja sisestatud osad annavad kokku summa."
+    paid-by: Maksis %s, %s
+    shares: Osad
+    share-paid: Makstud
+    share-unpaid: Maksmata
+    mark-paid: Märgi makstuks
+    mark-unpaid: Märgi maksmata
+    copy: Kopeeri
+    back: Kõik kulud
+    category-groceries: Toidukaubad
+    category-utilities: Kommunaalid
+    category-rent: Üür
+    category-household: Majapidamine
+    category-other: Muu
   notes:
-    title: Märkmed
     none: Märkmeid veel pole
     new: Uus märge
     back: Kõik märkmed
@@ -86,7 +131,6 @@ et:
     private: Näha ainult mulle
     private-badge: Privaatne
     pinned-badge: Kinnitatud
-    save: Salvesta
     cancel: Loobu
     edit: Muuda
     delete: Kustuta märge
@@ -96,7 +140,6 @@ et:
     length: Pealkiri peab olema 1 kuni %d märki ja tekst kuni %d märki
     empty: See märge on tühi
   files:
-    title: Failid
     none: Faile veel pole
     file: Fail
     upload: Lae üles
@@ -107,9 +150,9 @@ et:
     added-by: Lisas %s, %s · %s
     on-note: "Märkmes: %s"
     on-item: "Ostus: %s"
-    delete: Kustuta
     download: Laadi alla
     all: Kõik failid
+    on-expense: "Kulul: %s"
   appearance:
     title: Välimus
     theme: Teema
@@ -119,7 +162,6 @@ et:
     mode-system: Nagu seadmes
     mode-light: Hele
     mode-dark: Tume
-    save: Salvesta
   nav:
     label: Leibkond
     shopping: Ostud
@@ -127,6 +169,7 @@ et:
     files: Failid
     people: Inimesed
     switch: Vaheta leibkonda
+    expenses: Kulud
   invite-page:
     title: Liitu leibkonnaga %s
     description: Sind on kutsutud selle leibkonnaga liituma.
@@ -169,7 +212,6 @@ et:
     resent-description: Saatsime uue kinnituslingi aadressile %s.
     done-title: E-post kinnitatud
     done-description: Aitäh, sinu e-posti aadress on kinnitatud.
-    invalid-title: Link on vigane
     invalid-description: Link on vigane, aegunud või juba kasutatud. Logi sisse, et saata uus.
     continue: Jätka
   forgot-password-page:
@@ -183,7 +225,6 @@ et:
     submit: Salvesta parool
     done-title: Parool muudetud
     done-description: Sinu parool on muudetud. Logi sisse uue parooliga.
-    invalid-title: Link on vigane
     invalid-description: Link on vigane, aegunud või juba kasutatud.
     new-link: Küsi uus link
   error-page:

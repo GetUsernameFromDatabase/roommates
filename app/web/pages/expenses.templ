@@ -1,0 +1,356 @@
+package pages
+
+import "roommates/web/components"
+import "roommates/web/components/button"
+import "roommates/web/components/input"
+import "roommates/internal/db/dbqueries"
+import "roommates/internal/services"
+import g "roommates/internal/config"
+import "roommates/internal/locales"
+import "roommates/internal/utils"
+import "slices"
+
+// HouseholdExpenses shows who owes whom, settlements waiting for confirmation and the expenses,
+// errorMessage is the outcome of an "I paid"
+templ HouseholdExpenses(actor services.Membership, o services.ExpensesOverview, errorMessage string) {
+	{{ expensesURL := householdURL(actor.HouseholdID, "expenses") }}
+	@appShell(utils.T(ctx, locales.LK_NavExpenses), &HouseholdNav{HouseholdID: actor.HouseholdID, Section: SectionExpenses}) {
+		<header class="flex items-end justify-between gap-3">
+			<h1 class="doorplate">
+				@components.T(locales.LK_NavExpenses)
+			</h1>
+			@button.Button(button.Props{Href: string(expensesURL) + "/new", Size: button.SizeLg, Class: "h-10 shrink-0"}) {
+				@components.T(locales.LK_ExpensesNew)
+			}
+		</header>
+		<section class={ utils.CN(sheetClass, "space-y-3") } aria-labelledby="balances-title">
+			<h2 id="balances-title" class="text-xl font-semibold">
+				@components.T(locales.LK_ExpensesBalances)
+			</h2>
+			@formError(errorMessage)
+			if len(o.Debts) == 0 {
+				<p class="text-muted-foreground">
+					@components.T(locales.LK_ExpensesSettled)
+				</p>
+			} else {
+				<ul class="divide-y">
+					for _, d := range o.Debts {
+						<li class="py-2">
+							@debtBreakdown(actor, d)
+							if d.From == actor.UserID {
+								<form action={ householdURL(actor.HouseholdID, "settlements") } method="post" hx-boost="true" class="mt-2 flex gap-2">
+									<input type="hidden" name="to" value={ d.To.String() }/>
+									@input.Input(input.Props{
+										Name:  "amount",
+										Type:  "text",
+										Value: services.FormatCentsInput(d.Cents),
+										Class: "h-11 min-w-0 flex-1",
+										Attributes: templ.Attributes{
+											"inputmode":  "decimal",
+											"required":   true,
+											"aria-label": utils.T(ctx, locales.LK_ExpensesAmount),
+										},
+									})
+									@button.Button(button.Props{Type: button.TypeSubmit, Variant: button.VariantSecondary, Size: button.SizeLg, Class: "h-11"}) {
+										@components.T(locales.LK_ExpensesIPaid)
+									}
+								</form>
+							}
+						</li>
+					}
+				</ul>
+			}
+		</section>
+		if len(o.Pending) > 0 {
+			<section class={ utils.CN(sheetClass, "space-y-3") } aria-labelledby="pending-title">
+				<h2 id="pending-title" class="text-xl font-semibold">
+					@components.T(locales.LK_ExpensesPending)
+				</h2>
+				<ul class="divide-y">
+					for _, p := range o.Pending {
+						{{ settlementURL := householdURL(actor.HouseholdID, "settlements", p.ID.String()) }}
+						<li class="flex flex-wrap items-center gap-2 py-2">
+							<span class="min-w-0 flex-1 break-words">
+								{ pairPhrase(ctx, actor, p.FromUser, p.FromName, p.ToUser, p.ToName,
+									locales.LK_ExpensesPaidTo, locales.LK_ExpensesYouPaidTo, locales.LK_ExpensesPaidYou) }
+								<span class="font-semibold tabular-nums">{ formatMoney(ctx, p.AmountCents, actor.Currency) }</span>
+							</span>
+							if p.ToUser == actor.UserID {
+								<form action={ settlementURL + "/confirm" } method="post" hx-boost="true">
+									@button.Button(button.Props{Type: button.TypeSubmit, Class: "h-11 px-4"}) {
+										@components.T(locales.LK_ExpensesConfirm)
+									}
+								</form>
+							}
+							<form action={ settlementURL + "/delete" } method="post" hx-boost="true">
+								@button.Button(button.Props{Type: button.TypeSubmit, Variant: button.VariantGhost, Class: "h-11 px-3 text-destructive"}) {
+									if p.ToUser == actor.UserID {
+										@components.T(locales.LK_ExpensesReject)
+									} else {
+										@components.T(locales.LK_ExpensesCancel)
+									}
+								}
+							</form>
+						</li>
+					}
+				</ul>
+			</section>
+		}
+		<section class={ sheetClass }>
+			if len(o.Expenses) == 0 {
+				<p class="text-muted-foreground">
+					@components.T(locales.LK_ExpensesNone)
+				</p>
+			} else {
+				<ul class="divide-y">
+					for _, e := range o.Expenses {
+						<li>
+							<a href={ householdURL(actor.HouseholdID, "expenses", e.ID.String()) } class="block min-h-12 py-2 hover:underline">
+								<span class="flex items-baseline justify-between gap-3">
+									<span class="font-heading text-lg font-semibold break-words">{ e.Title }</span>
+									<span class="shrink-0 font-semibold tabular-nums">{ formatMoney(ctx, e.AmountCents, actor.Currency) }</span>
+								</span>
+								<span class="block text-xs text-muted-foreground">
+									{ CategoryName(ctx, e.Category) } · { paidByLine(ctx, actor, e.PayerID, e.PayerName, e.IncurredOn) }
+								</span>
+							</a>
+						</li>
+					}
+				</ul>
+			}
+		</section>
+	}
+}
+
+// debtBreakdown is "who owes whom how much", opening to the unpaid shares and
+// payments between the two that add up to it
+templ debtBreakdown(actor services.Membership, d services.Debt) {
+	<details class="group">
+		<summary class="flex cursor-pointer list-none items-baseline justify-between gap-3 rounded-lg outline-none focus-visible:ring-3 focus-visible:ring-ring/50 [&::-webkit-details-marker]:hidden">
+			<span class="break-words">
+				{ pairPhrase(ctx, actor, d.From, d.FromName, d.To, d.ToName,
+					locales.LK_ExpensesOwes, locales.LK_ExpensesYouOwe, locales.LK_ExpensesOwesYou) }
+				<span aria-hidden="true" class="inline-block text-muted-foreground transition-transform group-open:rotate-180 motion-reduce:transition-none">⌄</span>
+			</span>
+			<span class="shrink-0 font-semibold tabular-nums">{ formatMoney(ctx, d.Cents, actor.Currency) }</span>
+		</summary>
+		<ul class="mt-2 divide-y rounded-lg bg-secondary/40 px-3 text-sm">
+			for _, it := range d.Items {
+				<li class="flex items-baseline justify-between gap-3 py-2">
+					<span class="min-w-0">
+						if it.Row.ExpenseID.Valid {
+							<a href={ householdURL(actor.HouseholdID, "expenses", it.Row.ExpenseID.String()) } class="break-words underline-offset-4 hover:underline">{ it.Row.Title }</a>
+							<span class="block text-xs text-muted-foreground">{ paidByLine(ctx, actor, it.Row.ToUser, it.Row.ToName, it.Row.OnDate) }</span>
+						} else {
+							// a settlement row runs the other way, ToUser is who paid
+							<span class="break-words">
+								{ pairPhrase(ctx, actor, it.Row.ToUser, it.Row.ToName, it.Row.FromUser, it.Row.FromName,
+									locales.LK_ExpensesPaidTo, locales.LK_ExpensesYouPaidTo, locales.LK_ExpensesPaidYou) }
+							</span>
+							<span class="block text-xs text-muted-foreground">{ formatDay(it.Row.OnDate) }</span>
+						}
+					</span>
+					<span class={ utils.CN("shrink-0 tabular-nums", itemClass(actor, d, it.Cents)) }>{ formatSignedMoney(ctx, it.Cents, actor.Currency) }</span>
+				</li>
+			}
+			<li class="flex items-baseline justify-between gap-3 py-2 font-semibold">
+				@components.T(locales.LK_ExpensesTotal)
+				<span class="shrink-0 tabular-nums">{ formatMoney(ctx, d.Cents, actor.Currency) }</span>
+			</li>
+		</ul>
+	</details>
+}
+
+// ExpenseEditor is the new expense form, the actor pays it
+templ ExpenseEditor(actor services.Membership, members []dbqueries.ListActiveMembersRow, in services.ExpenseInput, errorMessage string) {
+	{{ expensesURL := householdURL(actor.HouseholdID, "expenses") }}
+	@appShell(utils.T(ctx, locales.LK_ExpensesNew), &HouseholdNav{HouseholdID: actor.HouseholdID, Section: SectionExpenses}) {
+		@doorplateHeader(expensesURL, utils.T(ctx, locales.LK_ExpensesBack), utils.T(ctx, locales.LK_ExpensesNew))
+		<form action={ expensesURL } method="post" hx-boost="true" class={ utils.CN(sheetClass, "space-y-4") }>
+			@formError(errorMessage)
+			<label class="block space-y-1.5">
+				<span class="text-sm font-medium">
+					@components.T(locales.LK_ExpensesWhat)
+				</span>
+				@input.Input(input.Props{
+					Name:     "title",
+					Type:     "text",
+					Value:    in.Title,
+					Required: true,
+					Class:    "h-11",
+					Attributes: templ.Attributes{
+						"maxlength": services.MaxExpenseTitleLength,
+					},
+				})
+			</label>
+			<div class="grid grid-cols-2 gap-3">
+				<label class="block space-y-1.5">
+					<span class="text-sm font-medium">
+						@components.T(locales.LK_ExpensesAmount)
+					</span>
+					@input.Input(input.Props{
+						Name:     "amount",
+						Type:     "text",
+						Value:    in.Amount,
+						Required: true,
+						Class:    "h-11",
+						Attributes: templ.Attributes{
+							"inputmode":   "decimal",
+							"placeholder": "0,00",
+						},
+					})
+				</label>
+				<label class="block space-y-1.5">
+					<span class="text-sm font-medium">
+						@components.T(locales.LK_ExpensesDate)
+					</span>
+					@input.Input(input.Props{
+						Name:     "incurred_on",
+						Type:     "date",
+						Value:    in.IncurredOn,
+						Required: true,
+						Class:    "h-11",
+					})
+				</label>
+			</div>
+			<label class="block space-y-1.5">
+				<span class="text-sm font-medium">
+					@components.T(locales.LK_ExpensesCategory)
+				</span>
+				<select name="category" class="h-11 w-full rounded-lg border border-input bg-transparent px-3 text-base outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 md:text-sm">
+					for _, c := range g.ExpenseCategories {
+						<option value={ c } selected?={ c == in.Category }>{ CategoryName(ctx, c) }</option>
+					}
+				</select>
+			</label>
+			<fieldset class="space-y-2">
+				<legend class="text-sm font-medium">
+					@components.T(locales.LK_ExpensesSplit)
+				</legend>
+				<label class="flex min-h-11 items-center gap-3">
+					<input type="radio" name="split" value="equal" checked?={ !in.Custom } class="size-5 accent-primary"/>
+					@components.T(locales.LK_ExpensesSplitEqual)
+				</label>
+				<label class="flex min-h-11 items-center gap-3">
+					<input type="radio" name="split" value="custom" checked?={ in.Custom } class="size-5 accent-primary"/>
+					@components.T(locales.LK_ExpensesSplitCustom)
+				</label>
+				<ul class="divide-y">
+					for _, m := range members {
+						<li class="flex items-center gap-3 py-2">
+							<label class="flex min-h-11 min-w-0 flex-1 items-center gap-3">
+								<input
+									type="checkbox"
+									name="member"
+									value={ m.UserID.String() }
+									checked?={ slices.Contains(in.Members, m.UserID) }
+									class="size-5 accent-primary"
+								/>
+								<span class="break-words">{ m.Username }</span>
+							</label>
+							@input.Input(input.Props{
+								Name:  "share-" + m.UserID.String(),
+								Type:  "text",
+								Value: in.Shares[m.UserID],
+								Class: "h-11 w-28",
+								Attributes: templ.Attributes{
+									"inputmode":   "decimal",
+									"placeholder": "0,00",
+									"aria-label":  utils.T(ctx, locales.LK_ExpensesAmount) + ": " + m.Username,
+								},
+							})
+						</li>
+					}
+				</ul>
+			</fieldset>
+			@button.Button(button.Props{Type: button.TypeSubmit, Size: button.SizeLg, Class: "w-full"}) {
+				@components.T(locales.LK_ExpensesAdd)
+			}
+		</form>
+	}
+}
+
+// ExpensePage shows an expense with its shares and files, the payer marks shares paid,
+// uploadError is the outcome of an upload
+templ ExpensePage(actor services.Membership, e services.Expense, uploadError string) {
+	{{ expenseURL := householdURL(actor.HouseholdID, "expenses", e.Expense.ID.String()) }}
+	{{ isPayer := e.Expense.PayerID == actor.UserID }}
+	@appShell(e.Expense.Title, &HouseholdNav{HouseholdID: actor.HouseholdID, Section: SectionExpenses}) {
+		@doorplateHeader(householdURL(actor.HouseholdID, "expenses"), utils.T(ctx, locales.LK_ExpensesBack), e.Expense.Title)
+		<div class="-mt-6">
+			<p class="font-heading text-2xl font-semibold tabular-nums">{ formatMoney(ctx, e.Expense.AmountCents, actor.Currency) }</p>
+			<p class="mt-1 text-xs text-muted-foreground">
+				{ CategoryName(ctx, e.Expense.Category) } · { paidByLine(ctx, actor, e.Expense.PayerID, e.Expense.PayerName, e.Expense.IncurredOn) }
+			</p>
+		</div>
+		<section class={ utils.CN(sheetClass, "space-y-3") } aria-labelledby="shares-title">
+			<h2 id="shares-title" class="text-xl font-semibold">
+				@components.T(locales.LK_ExpensesShares)
+			</h2>
+			<ul class="divide-y">
+				for _, sh := range e.Shares {
+					<li class="flex min-h-12 flex-wrap items-center gap-x-3 gap-y-1 py-2">
+						<span class="min-w-0 flex-1 break-words">{ personName(ctx, actor, sh.UserID, sh.Username) }</span>
+						<span class="font-semibold tabular-nums">{ formatMoney(ctx, sh.AmountCents, actor.Currency) }</span>
+						// the payer's own share is not owed to anyone
+						if sh.UserID != e.Expense.PayerID {
+							if isPayer {
+								<form action={ expenseURL + "/shares/" + templ.SafeURL(sh.UserID.String()) + "/paid" } method="post" hx-boost="true">
+									<input type="hidden" name="paid" value={ utils.IfElse(sh.PaidAt.Valid, "0", "1") }/>
+									@button.Button(button.Props{
+										Type:    button.TypeSubmit,
+										Variant: utils.IfElse(sh.PaidAt.Valid, button.VariantGhost, button.VariantSecondary),
+										Class:   "h-11 px-3",
+									}) {
+										if sh.PaidAt.Valid {
+											@components.T(locales.LK_ExpensesMarkUnpaid)
+										} else {
+											@components.T(locales.LK_ExpensesMarkPaid)
+										}
+									}
+								</form>
+							}
+							@sharePaidBadge(sh.PaidAt.Valid)
+						}
+					</li>
+				}
+			</ul>
+		</section>
+		@attachedFiles(actor, expenseURL, e.Files, uploadError)
+		<div class="flex flex-wrap gap-2">
+			@button.Button(button.Props{Href: string(householdURL(actor.HouseholdID, "expenses", "new")) + "?from=" + e.Expense.ID.String(), Variant: button.VariantSecondary, Size: button.SizeLg}) {
+				@components.T(locales.LK_ExpensesCopy)
+			}
+			if isPayer {
+				<form
+					action={ expenseURL + "/delete" }
+					method="post"
+					hx-boost="true"
+					hx-confirm={ utils.T(ctx, locales.LK_CommonDelete) + "?" }
+					class="ml-auto"
+				>
+					@button.Button(button.Props{
+						Type:    button.TypeSubmit,
+						Variant: button.VariantOutline,
+						Size:    button.SizeLg,
+						Class:   "text-destructive",
+					}) {
+						@components.T(locales.LK_CommonDelete)
+					}
+				</form>
+			}
+		</div>
+	}
+}
+
+templ sharePaidBadge(paid bool) {
+	if paid {
+		<span class="inline-flex rounded-full bg-secondary px-2 py-0.5 text-xs font-medium text-secondary-foreground">
+			@components.T(locales.LK_ExpensesSharePaid)
+		</span>
+	} else {
+		<span class="inline-flex rounded-full border px-2 py-0.5 text-xs font-medium text-muted-foreground">
+			@components.T(locales.LK_ExpensesShareUnpaid)
+		</span>
+	}
+}
