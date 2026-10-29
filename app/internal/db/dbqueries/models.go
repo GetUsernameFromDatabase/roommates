@@ -104,6 +104,15 @@ type Note struct {
 	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
 }
 
+type PushSubscription struct {
+	Endpoint  string             `json:"endpoint"`
+	UserID    pgtype.UUID        `json:"user_id"`
+	P256dh    string             `json:"p256dh"`
+	Auth      string             `json:"auth"`
+	Lang      string             `json:"lang"`
+	CreatedAt pgtype.Timestamptz `json:"created_at"`
+}
+
 type Settlement struct {
 	ID          pgtype.UUID        `json:"id"`
 	HouseholdID pgtype.UUID        `json:"household_id"`

@@ -5,7 +5,9 @@ import (
 	"roommates/internal/db/dbqueries"
 	"roommates/internal/logger"
 	"roommates/internal/mailer"
+	"roommates/internal/push"
 	"roommates/internal/storage"
+	"sync"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -19,14 +21,19 @@ type DefaultService struct {
 	pool   *pgxpool.Pool
 	mailer mailer.Mailer
 	store  storage.Store
+	pusher push.Pusher
+	// notifications being sent, tests wait for them
+	pushing sync.WaitGroup
 }
 
-func NewDefaultService(dbpool *pgxpool.Pool, m mailer.Mailer, store storage.Store) *DefaultService {
+func NewDefaultService(dbpool *pgxpool.Pool, m mailer.Mailer, store storage.Store, pusher push.Pusher) *DefaultService {
 	dbHandler := dbqueries.New(dbpool)
 	return &DefaultService{
-		db:     dbHandler,
-		pool:   dbpool,
-		mailer: m,
-		store:  store,
+		db:      dbHandler,
+		pool:    dbpool,
+		mailer:  m,
+		store:   store,
+		pusher:  pusher,
+		pushing: sync.WaitGroup{},
 	}
 }

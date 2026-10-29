@@ -5,6 +5,9 @@ import (
 	"io"
 	g "roommates/internal/config"
 	"roommates/internal/db/dbqueries"
+	"roommates/internal/locales"
+	"roommates/internal/push"
+	"roommates/internal/utils"
 	"strings"
 	"unicode/utf8"
 
@@ -52,18 +55,50 @@ func (s *DefaultService) PostMessage(ctx context.Context, actor Membership, body
 		AuthorID:    actor.UserID,
 		Body:        body,
 	})
-	if err != nil || file == nil {
+	if err != nil {
 		return err
 	}
-	t := FileTarget{NoteID: pgtype.UUID{}, ListID: pgtype.UUID{}, ShoppingItemID: pgtype.UUID{}, ExpenseID: pgtype.UUID{}, MessageID: messageID}
-	if _, err := s.UploadFile(ctx, actor, t, file.Name, file.Body, file.Size); err != nil {
-		// the form shows the text again, sending it twice would duplicate it
-		if errDelete := s.DeleteMessage(context.WithoutCancel(ctx), actor, messageID); errDelete != nil {
-			log.Error().Err(errDelete).Msg("could not delete message of a failed upload")
+	if file != nil {
+		t := FileTarget{NoteID: pgtype.UUID{}, ListID: pgtype.UUID{}, ShoppingItemID: pgtype.UUID{}, ExpenseID: pgtype.UUID{}, MessageID: messageID}
+		if _, err := s.UploadFile(ctx, actor, t, file.Name, file.Body, file.Size); err != nil {
+			// the form shows the text again, sending it twice would duplicate it
+			if errDelete := s.DeleteMessage(context.WithoutCancel(ctx), actor, messageID); errDelete != nil {
+				log.Error().Err(errDelete).Msg("could not delete message of a failed upload")
+			}
+			return err
 		}
-		return err
 	}
+	s.notifyChat(ctx, actor, body)
 	return nil
+}
+
+// notifyChat tells the other members about a new message
+func (s *DefaultService) notifyChat(ctx context.Context, actor Membership, body string) {
+	members, err := s.db.ListActiveMembers(ctx, actor.HouseholdID)
+	if err != nil {
+		// the message is sent, only the notifications are missing
+		log.Error().Err(err).Msg("could not list members for chat push")
+		return
+	}
+	ids := make([]pgtype.UUID, 0, len(members))
+	for _, m := range members {
+		if m.UserID != actor.UserID {
+			ids = append(ids, m.UserID)
+		}
+	}
+	s.notifyAsync(ctx, actor, ids, func(ctx context.Context, _ pgtype.UUID, author, household string) push.Message {
+		text := pushPreview(body)
+		if text == "" {
+			text = utils.T(ctx, locales.LK_PushChatFile)
+		}
+		return push.Message{
+			Title: utils.T(ctx, locales.LK_PushChatTitle, author, household),
+			Body:  text,
+			URL:   householdPath(actor.HouseholdID, "chat"),
+			// a new message replaces the notification of the previous one
+			Tag: "chat-" + actor.HouseholdID.String(),
+		}
+	})
 }
 
 // ListChat returns [ChatPageSize] messages older than before, or the newest when before

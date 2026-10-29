@@ -45,6 +45,9 @@ templ HeaderComponent(title string) {
 			<link rel="preload" href="/assets/fonts/bricolage-grotesque-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin/>
 		}
 		<link rel="stylesheet" href="/assets/output.css"/>
+		// installable app, see web/assets/pwa
+		<link rel="manifest" href="/manifest.webmanifest"/>
+		<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png"/>
 		// by default htmx does not swap 4xx/5xx responses, which would leave
 		// a submitted form without feedback, so error pages are swapped in too
 		// allowEval is off as the CSP blocks eval anyway
@@ -58,6 +61,7 @@ templ HeaderComponent(title string) {
 		// live updates, see appShell
 		<script src="/assets/lib/sse.min.js"></script>
 		<script src="/assets/local-time.js"></script>
+		<script src="/assets/push.js"></script>
 		// this reccomends to use @components.Scripts()
 		// https://shadcn-templ.com/docs/installation#javascript
 		// but scripts_bundle.go just has bundleSrc

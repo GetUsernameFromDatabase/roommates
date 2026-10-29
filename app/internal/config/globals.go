@@ -21,6 +21,14 @@ const (
 	RouteResetPassword = "/reset-password"
 	// POST theme, mode and next
 	RouteAppearance = "/appearance"
+	// POST the JSON of a browser's PushSubscription
+	RoutePushSubscribe = "/push/subscribe"
+	// POST {"endpoint": ...}
+	RoutePushUnsubscribe = "/push/unsubscribe"
+	// the web app manifest, makes the app installable
+	RouteManifest = "/manifest.webmanifest"
+	// the service worker shows it when a page cannot be loaded
+	RouteOffline = "/offline"
 )
 
 // QueryNext is the query and form key of the path to return to after signing in

@@ -165,6 +165,21 @@ en:
     unread: "%d unread"
     length: Write a message or add a file, the message can be at most %d characters
     delete: Delete message
+  push:
+    enable: Turn on notifications on this device
+    disable: Turn off notifications on this device
+    denied: Notifications are blocked for this site in the browser settings
+    install: To get notifications, first add the app to your home screen (Share, then Add to Home Screen)
+    chat-title: "%s · %s"
+    chat-file: Sent a file
+    expense-title: New expense in %s
+    expense-body: "%s added %s, your share is %s"
+    settlement-title: "%s says they paid you"
+    settlement-body: "%s in %s. Confirm it under Expenses."
+  offline:
+    title: You are offline
+    description: Roommates needs a connection. Check your network and try again.
+    retry: Try again
   appearance:
     title: Appearance
     theme: Theme

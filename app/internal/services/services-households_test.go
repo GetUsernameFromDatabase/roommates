@@ -34,7 +34,7 @@ func newTestService(t *testing.T) *DefaultService {
 	t.Cleanup(pool.Close)
 	db.LockTestDB(t, pool)
 	db.MigrateToLatest(pool)
-	return NewDefaultService(pool, &fakeMailer{sent: make(chan mailer.Message, 10)}, newFakeStore())
+	return NewDefaultService(pool, &fakeMailer{sent: make(chan mailer.Message, 10)}, newFakeStore(), newFakePusher())
 }
 
 // fakeMailer collects emails, [DefaultService] sends them from a goroutine

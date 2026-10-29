@@ -40,3 +40,9 @@ templ Notice(title, description string, href templ.SafeURL, linkText string) {
 		</main>
 	}
 }
+
+// Offline is shown by the service worker for any page that cannot load, the link reloads it
+templ Offline() {
+	@Notice(utils.T(ctx, locales.LK_OfflineTitle), utils.T(ctx, locales.LK_OfflineDescription),
+		"", utils.T(ctx, locales.LK_OfflineRetry))
+}

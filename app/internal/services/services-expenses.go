@@ -7,6 +7,9 @@ import (
 	"regexp"
 	g "roommates/internal/config"
 	"roommates/internal/db/dbqueries"
+	"roommates/internal/locales"
+	"roommates/internal/push"
+	"roommates/internal/utils"
 	"slices"
 	"strconv"
 	"strings"
@@ -141,12 +144,14 @@ func (in ExpenseInput) clean(payer pgtype.UUID, members []dbqueries.ListActiveMe
 // CreateExpense records an expense the actor paid, see [ExpenseInput.clean] for errors
 func (s *DefaultService) CreateExpense(ctx context.Context, actor Membership, in ExpenseInput) (pgtype.UUID, error) {
 	var expenseID pgtype.UUID
+	var p dbqueries.InsertExpenseParams
+	var shares []expenseShare
 	err := s.inTx(ctx, func(q *dbqueries.Queries) error {
 		members, err := q.ListActiveMembers(ctx, actor.HouseholdID)
 		if err != nil {
 			return err
 		}
-		p, shares, err := in.clean(actor.UserID, members)
+		p, shares, err = in.clean(actor.UserID, members)
 		if err != nil {
 			return err
 		}
@@ -165,7 +170,26 @@ func (s *DefaultService) CreateExpense(ctx context.Context, actor Membership, in
 		}
 		return nil
 	})
-	return expenseID, err
+	if err != nil {
+		return expenseID, err
+	}
+	owed := map[pgtype.UUID]int64{}
+	ids := make([]pgtype.UUID, 0, len(shares))
+	for _, sh := range shares {
+		if sh.userID != actor.UserID {
+			owed[sh.userID] = sh.cents
+			ids = append(ids, sh.userID)
+		}
+	}
+	s.notifyAsync(ctx, actor, ids, func(ctx context.Context, userID pgtype.UUID, payer, household string) push.Message {
+		return push.Message{
+			Title: utils.T(ctx, locales.LK_PushExpenseTitle, household),
+			Body:  utils.T(ctx, locales.LK_PushExpenseBody, payer, p.Title, utils.FormatMoney(ctx, owed[userID], actor.Currency)),
+			URL:   householdPath(actor.HouseholdID, "expenses", expenseID.String()),
+			Tag:   "expense-" + expenseID.String(),
+		}
+	})
+	return expenseID, nil
 }
 
 // ListMembers returns the active members, who an expense can be split between
@@ -368,12 +392,23 @@ func (s *DefaultService) CreateSettlement(ctx context.Context, actor Membership,
 	}); err != nil {
 		return noRowsAs(err, g.ErrorInvalidInput)
 	}
-	return s.db.InsertSettlement(ctx, dbqueries.InsertSettlementParams{
+	if err := s.db.InsertSettlement(ctx, dbqueries.InsertSettlementParams{
 		HouseholdID: actor.HouseholdID,
 		FromUser:    actor.UserID,
 		ToUser:      toUserID,
 		AmountCents: cents,
+	}); err != nil {
+		return err
+	}
+	s.notifyAsync(ctx, actor, []pgtype.UUID{toUserID}, func(ctx context.Context, _ pgtype.UUID, from, household string) push.Message {
+		return push.Message{
+			Title: utils.T(ctx, locales.LK_PushSettlementTitle, from),
+			Body:  utils.T(ctx, locales.LK_PushSettlementBody, utils.FormatMoney(ctx, cents, actor.Currency), household),
+			URL:   householdPath(actor.HouseholdID, "expenses"),
+			Tag:   "settlement-" + actor.HouseholdID.String() + "-" + actor.UserID.String(),
+		}
 	})
+	return nil
 }
 
 // ListPendingSettlements returns the unconfirmed settlements the actor sent or has to confirm

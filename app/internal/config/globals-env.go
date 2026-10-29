@@ -74,6 +74,16 @@ const (
 	EVK_S3Region EnvironmentVariableKey = "S3_REGION"
 )
 
+// env keys for web push, the keys are required in release, see [push.New]
+const (
+	// generate both with `go run ./tools/vapid-keys`
+	EVK_VAPIDPublicKey  EnvironmentVariableKey = "VAPID_PUBLIC_KEY"
+	EVK_VAPIDPrivateKey EnvironmentVariableKey = "VAPID_PRIVATE_KEY"
+	// how push services reach the operator, an email address or https URL,
+	// defaults to [EVK_AppBaseURL]
+	EVK_VAPIDSubject EnvironmentVariableKey = "VAPID_SUBJECT"
+)
+
 // GetAppBaseURL is [EVK_AppBaseURL] without a trailing slash,
 // in development it defaults to https://localhost:[EVK_ServerPort]
 func GetAppBaseURL() string {

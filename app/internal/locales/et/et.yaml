@@ -165,6 +165,21 @@ et:
     unread: "%d lugemata"
     length: Kirjuta sõnum või lisa fail, sõnum võib olla kuni %d märki
     delete: Kustuta sõnum
+  push:
+    enable: Lülita sellel seadmel teavitused sisse
+    disable: Lülita sellel seadmel teavitused välja
+    denied: Teavitused on sellele saidile brauseri seadetes keelatud
+    install: Teavituste saamiseks lisa rakendus esmalt avaekraanile (Jaga, siis Lisa avaekraanile)
+    chat-title: "%s · %s"
+    chat-file: Saatis faili
+    expense-title: Uus kulu leibkonnas %s
+    expense-body: "%s lisas kulu %s, sinu osa on %s"
+    settlement-title: "%s teatab, et maksis sulle"
+    settlement-body: "%s leibkonnas %s. Kinnita see kulude all."
+  offline:
+    title: Ühendus puudub
+    description: Toakaaslased vajab internetiühendust. Kontrolli võrku ja proovi uuesti.
+    retry: Proovi uuesti
   appearance:
     title: Välimus
     theme: Teema

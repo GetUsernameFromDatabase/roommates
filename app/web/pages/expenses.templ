@@ -78,7 +78,7 @@ templ HouseholdExpenses(actor services.Membership, o services.ExpensesOverview, 
 									<span class="min-w-0 flex-1 break-words">
 										{ pairPhrase(ctx, actor, p.FromUser, p.FromName, p.ToUser, p.ToName,
 									locales.LK_ExpensesPaidTo, locales.LK_ExpensesYouPaidTo, locales.LK_ExpensesPaidYou) }
-										<span class="font-semibold tabular-nums">{ formatMoney(ctx, p.AmountCents, actor.Currency) }</span>
+										<span class="font-semibold tabular-nums">{ utils.FormatMoney(ctx, p.AmountCents, actor.Currency) }</span>
 									</span>
 									if p.ToUser == actor.UserID {
 										<form action={ settlementURL + "/confirm" } method="post" hx-boost="true">
@@ -113,7 +113,7 @@ templ HouseholdExpenses(actor services.Membership, o services.ExpensesOverview, 
 									<a href={ householdURL(actor.HouseholdID, "expenses", e.ID.String()) } class="block min-h-12 py-2 hover:underline">
 										<span class="flex items-baseline justify-between gap-3">
 											<span class="font-heading text-lg font-semibold break-words">{ e.Title }</span>
-											<span class="shrink-0 font-semibold tabular-nums">{ formatMoney(ctx, e.AmountCents, actor.Currency) }</span>
+											<span class="shrink-0 font-semibold tabular-nums">{ utils.FormatMoney(ctx, e.AmountCents, actor.Currency) }</span>
 										</span>
 										<span class="block text-xs text-muted-foreground">
 											{ CategoryName(ctx, e.Category) } · { paidByLine(ctx, actor, e.PayerID, e.PayerName, e.IncurredOn) }
@@ -139,7 +139,7 @@ templ debtBreakdown(actor services.Membership, d services.Debt) {
 					locales.LK_ExpensesOwes, locales.LK_ExpensesYouOwe, locales.LK_ExpensesOwesYou) }
 				<span aria-hidden="true" class="inline-block text-muted-foreground transition-transform group-open:rotate-180 motion-reduce:transition-none">⌄</span>
 			</span>
-			<span class="shrink-0 font-semibold tabular-nums">{ formatMoney(ctx, d.Cents, actor.Currency) }</span>
+			<span class="shrink-0 font-semibold tabular-nums">{ utils.FormatMoney(ctx, d.Cents, actor.Currency) }</span>
 		</summary>
 		<ul class="mt-2 divide-y rounded-lg bg-secondary/40 px-3 text-sm">
 			for _, it := range d.Items {
@@ -162,7 +162,7 @@ templ debtBreakdown(actor services.Membership, d services.Debt) {
 			}
 			<li class="flex items-baseline justify-between gap-3 py-2 font-semibold">
 				@components.T(locales.LK_ExpensesTotal)
-				<span class="shrink-0 tabular-nums">{ formatMoney(ctx, d.Cents, actor.Currency) }</span>
+				<span class="shrink-0 tabular-nums">{ utils.FormatMoney(ctx, d.Cents, actor.Currency) }</span>
 			</li>
 		</ul>
 	</details>
@@ -285,7 +285,7 @@ templ ExpensePage(actor services.Membership, e services.Expense, uploadError str
 	@appShell(e.Expense.Title, &HouseholdNav{HouseholdID: actor.HouseholdID, Section: SectionExpenses}) {
 		@doorplateHeader(householdURL(actor.HouseholdID, "expenses"), utils.T(ctx, locales.LK_ExpensesBack), e.Expense.Title)
 		<div class="-mt-6">
-			<p class="font-heading text-2xl font-semibold tabular-nums">{ formatMoney(ctx, e.Expense.AmountCents, actor.Currency) }</p>
+			<p class="font-heading text-2xl font-semibold tabular-nums">{ utils.FormatMoney(ctx, e.Expense.AmountCents, actor.Currency) }</p>
 			<p class="mt-1 text-xs text-muted-foreground">
 				{ CategoryName(ctx, e.Expense.Category) } · { paidByLine(ctx, actor, e.Expense.PayerID, e.Expense.PayerName, e.Expense.IncurredOn) }
 			</p>
@@ -299,7 +299,7 @@ templ ExpensePage(actor services.Membership, e services.Expense, uploadError str
 					for _, sh := range e.Shares {
 						<li class="flex min-h-12 flex-wrap items-center gap-x-3 gap-y-1 py-2">
 							<span class="min-w-0 flex-1 break-words">{ personName(ctx, actor, sh.UserID, sh.Username) }</span>
-							<span class="font-semibold tabular-nums">{ formatMoney(ctx, sh.AmountCents, actor.Currency) }</span>
+							<span class="font-semibold tabular-nums">{ utils.FormatMoney(ctx, sh.AmountCents, actor.Currency) }</span>
 							// the payer's own share is not owed to anyone
 							if sh.UserID != e.Expense.PayerID {
 								if isPayer {

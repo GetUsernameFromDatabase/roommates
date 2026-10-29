@@ -9,24 +9,8 @@ import (
 	"time"
 
 	"github.com/a-h/templ"
-	"github.com/invopop/ctxi18n"
 	"github.com/jackc/pgx/v5/pgtype"
-	"golang.org/x/text/currency"
-	"golang.org/x/text/language"
-	"golang.org/x/text/message"
-	"golang.org/x/text/number"
 )
-
-// formatMoney is cents in the ISO 4217 code with the request language's separators, "12,50 €"
-func formatMoney(ctx context.Context, cents int64, code string) string {
-	unit, err := currency.ParseISO(code)
-	if err != nil {
-		unit = currency.EUR
-	}
-	tag := language.Make(ctxi18n.Locale(ctx).Code().String())
-	p := message.NewPrinter(tag)
-	return p.Sprint(number.Decimal(float64(cents)/100, number.Scale(2))) + " " + p.Sprint(currency.Symbol(unit))
-}
 
 // newExpenseURL opens the expense form with title filled in
 func newExpenseURL(householdID pgtype.UUID, title string) templ.SafeURL {
@@ -81,12 +65,12 @@ func personName(ctx context.Context, actor services.Membership, id pgtype.UUID, 
 	return name
 }
 
-// formatSignedMoney is [formatMoney] with a + or a minus sign
+// formatSignedMoney is [utils.FormatMoney] with a + or a minus sign
 func formatSignedMoney(ctx context.Context, cents int64, code string) string {
 	if cents < 0 {
-		return "−" + formatMoney(ctx, -cents, code)
+		return "−" + utils.FormatMoney(ctx, -cents, code)
 	}
-	return "+" + formatMoney(ctx, cents, code)
+	return "+" + utils.FormatMoney(ctx, cents, code)
 }
 
 // itemClass colours a breakdown amount green when it is in the actor's favour and red

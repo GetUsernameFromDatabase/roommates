@@ -9,6 +9,7 @@ import (
 	"roommates/internal/handlers"
 	"roommates/internal/mailer"
 	"roommates/internal/middleware"
+	"roommates/internal/push"
 	"roommates/internal/services"
 	"roommates/internal/sessions"
 	"roommates/internal/storage"
@@ -62,6 +63,8 @@ func initRoutes(r *gin.Engine, h *handlers.DefaultHandler, service *services.Def
 		open.GET(g.RouteResetPassword, h.PageResetPassword)
 		open.POST(g.RouteResetPassword, mwAuthLimit, h.PageResetPassword)
 		open.POST(g.RouteAppearance, h.SetAppearance)
+		open.GET(g.RouteManifest, h.Manifest)
+		open.GET(g.RouteOffline, h.PageOffline)
 	}
 
 	// --- --- ---
@@ -77,6 +80,8 @@ func initRoutes(r *gin.Engine, h *handlers.DefaultHandler, service *services.Def
 		priv.POST(g.RouteHouseholds, h.PageHome)
 		priv.POST(g.RouteLogout, h.Logout)
 		priv.POST(g.RouteVerifyEmailResend, mwEmailLimit, h.ResendVerificationEmail)
+		priv.POST(g.RoutePushSubscribe, h.SubscribePush)
+		priv.POST(g.RoutePushUnsubscribe, h.UnsubscribePush)
 
 		priv.GET(g.RouteInvite, mwInviteLimit, h.PageInvite)
 		priv.POST(g.RouteInvite, mwInviteLimit, h.PageInvite)
@@ -149,6 +154,8 @@ func initRoutes(r *gin.Engine, h *handlers.DefaultHandler, service *services.Def
 //
 //	"/assets/public" is served at "/assets"
 //	"/favicon/favicon.ico" is served at "/favicon.ico"
+//	"/favicon/*.png" are served at "/icons"
+//	"/pwa/sw.js" is served at "/sw.js", a service worker only controls pages under its path
 func registerAssets(r *gin.Engine) {
 	// TODO: maybe change this at some point
 	// https://templ.guide/hosting-and-deployment/hosting-using-docker#adding-static-content-to-the-docker-container
@@ -160,6 +167,10 @@ func registerAssets(r *gin.Engine) {
 
 	r.StaticFS("/assets", http.FS(publicFS))
 	r.StaticFileFS("/favicon.ico", "favicon/favicon.ico", http.FS(assetFS))
+	for _, icon := range []string{"android-chrome-192x192.png", "android-chrome-512x512.png", "apple-touch-icon.png"} {
+		r.StaticFileFS("/icons/"+icon, "favicon/"+icon, http.FS(assetFS))
+	}
+	r.StaticFileFS("/sw.js", "pwa/sw.js", http.FS(assetFS))
 }
 
 // -----------------------------------------------------------------------------
@@ -190,7 +201,7 @@ func InitGinEngine(dbpool *pgxpool.Pool) *gin.Engine {
 	// panics now if APP_BASE_URL is missing in release, not on the first email
 	_ = g.GetAppBaseURL()
 	// panics now if the object storage is missing, not on the first upload
-	service := services.NewDefaultService(dbpool, mailer.New(), storage.New(context.Background()))
+	service := services.NewDefaultService(dbpool, mailer.New(), storage.New(context.Background()), push.New())
 	go service.RunFilePurger(context.Background(), time.Minute)
 	hub := events.NewHub()
 	go hub.Run(context.Background(), dbpool)

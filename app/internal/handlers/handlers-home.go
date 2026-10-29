@@ -41,5 +41,5 @@ func (h *DefaultHandler) PageHome(ctx *gin.Context) {
 		InternalError(ctx, err)
 		return
 	}
-	RenderTempl(ctx, pages.Home(user.Username, user.EmailValidated, households, model))
+	RenderTempl(ctx, pages.Home(user.Username, user.EmailValidated, households, model, h.service.PushPublicKey()))
 }
