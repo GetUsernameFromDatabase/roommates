@@ -1,7 +1,6 @@
 package pages
 
 import "roommates/web/components"
-import "roommates/web/components/card"
 import "roommates/web/components/button"
 import "roommates/web/components/field"
 import "roommates/web/components/input"
@@ -11,13 +10,21 @@ import g "roommates/internal/config"
 import "roommates/internal/locales"
 import "roommates/internal/utils"
 
-// Home is shown to signed in users at "/", lists their households
+// Home is shown to signed in users at "/", the landing: a door per household and
+// a dashed plot that leads to the form for a new one
 templ Home(username string, emailValidated bool, households []dbqueries.ListHouseholdsOfUserRow, m models.Household) {
 	@appShell("", nil) {
-		<div class="flex flex-wrap items-center justify-between gap-4">
-			<h1 class="text-2xl font-semibold">
-				{ utils.T(ctx, locales.LK_HomePageGreeting, username) }
-			</h1>
+		<header class="flex flex-wrap items-start justify-between gap-4">
+			<div>
+				<h1 class="doorplate">
+					{ utils.T(ctx, locales.LK_HomePageGreeting, username) }
+				</h1>
+				if len(households) == 0 {
+					<p class="mt-2 text-muted-foreground">
+						@components.T(locales.LK_HomePageNoHouseholds)
+					</p>
+				}
+			</div>
 			<form action={ g.RouteLogout } method="post" data-push-logout class="flex gap-2">
 				@button.Button(button.Props{
 					Href:    g.RouteSettings,
@@ -34,52 +41,43 @@ templ Home(username string, emailValidated bool, households []dbqueries.ListHous
 					@components.T(locales.LK_Logout)
 				}
 			</form>
-		</div>
+		</header>
 		@VerifyEmailBanner(emailValidated)
-		<section aria-labelledby="households-title" class={ sheetClass }>
-			<h2 id="households-title" class="text-xl font-semibold">
-				@components.T(locales.LK_HomePageHouseholds)
-			</h2>
-			if len(households) == 0 {
-				<p class="mt-2 text-muted-foreground">
-					@components.T(locales.LK_HomePageNoHouseholds)
-				</p>
-			} else {
-				<ul class="mt-2 divide-y">
-					for _, h := range households {
-						<li>
-							<a href={ householdURL(h.ID) } class="flex min-h-12 items-center justify-between gap-3 py-2 hover:underline">
-								<span class="font-heading text-lg font-semibold break-words">{ h.Name }</span>
-								<span class="shrink-0 text-sm text-muted-foreground">{ RoleName(ctx, h.Role) }</span>
-							</a>
-						</li>
-					}
-				</ul>
-			}
+		<section aria-label={ utils.T(ctx, locales.LK_HomePageHouseholds) }>
+			<ul class="door-row">
+				for _, h := range households {
+					<li>
+						@frontDoor(householdURL(h.ID)) {
+							{ h.Name }
+						}
+						<span class="text-sm text-muted-foreground">{ RoleName(ctx, h.Role) }</span>
+					</li>
+				}
+				<li>
+					// the name field below has the words, the plot only points at it
+					<label for="name" class="door-plot" aria-hidden="true">+</label>
+					<span class="text-sm text-muted-foreground" aria-hidden="true">
+						@components.T(locales.LK_HomePageCreateTitle)
+					</span>
+				</li>
+			</ul>
 		</section>
-		@card.Card() {
-			@card.Header() {
-				@card.Title() {
+		<section class={ sheetClass + " grid gap-8 md:grid-cols-2" }>
+			<div>
+				<h2 class="mb-4 text-xl font-semibold">
 					@components.T(locales.LK_HomePageCreateTitle)
-				}
-			}
-			@card.Content() {
+				</h2>
 				@CreateHouseholdForm(m)
-			}
-		}
-		@card.Card() {
-			@card.Header() {
-				@card.Title() {
+			</div>
+			<div>
+				<h2 class="mb-4 text-xl font-semibold">
 					@components.T(locales.LK_HomePageJoinTitle)
-				}
-			}
-			@card.Content() {
+				</h2>
 				@JoinForm("")
-			}
-		}
+			</div>
+		</section>
 	}
 }
-
 templ CreateHouseholdForm(m models.Household) {
 	{{ nameValidations := m.ValidateName() }}
 	<form action={ g.RouteHouseholds } method="post" hx-boost="true" class="space-y-4">
@@ -113,19 +111,22 @@ templ JoinForm(code string) {
 			@field.Label(field.LabelProps{For: "code"}) {
 				@components.T(locales.LK_InvitePageCode)
 			}
-			@input.Input(input.Props{
-				ID:       "code",
-				Name:     "code",
-				Type:     "text",
-				Value:    code,
-				Required: true,
-				Class:    "font-mono uppercase",
-				Attributes: templ.Attributes{
-					"autocomplete":   "off",
-					"autocapitalize": "characters",
-					"spellcheck":     "false",
-				},
-			})
+			// typed onto a spare key's tag, like the code on the people page
+			<div class="key-tag py-0.5 text-lg has-focus-visible:ring-3 has-focus-visible:ring-ring/50">
+				@input.Input(input.Props{
+					ID:       "code",
+					Name:     "code",
+					Type:     "text",
+					Value:    code,
+					Required: true,
+					Class:    "h-7 rounded-none border-0 bg-transparent px-0 text-lg uppercase shadow-none focus-visible:ring-0 dark:bg-transparent md:text-lg",
+					Attributes: templ.Attributes{
+						"autocomplete":   "off",
+						"autocapitalize": "characters",
+						"spellcheck":     "false",
+					},
+				})
+			</div>
 		}
 		@button.Button(button.Props{Type: button.TypeSubmit, Variant: button.VariantSecondary}) {
 			@components.T(locales.LK_HomePageJoinSubmit)
