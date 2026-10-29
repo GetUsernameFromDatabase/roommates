@@ -58,6 +58,11 @@ en:
     invite-email-title: Invite by email
     invite-email-submit: Send invite
     invite-email-sent: Invite sent to %s
+    since: "%s, since %s"
+    manage: Manage
+    count:
+      one: Only you live here
+      other: "%{count} people live here"
     verify-to-invite: Confirm your email address to create invites.
     balance-not-zero: Debts with this person must be settled first.
   shopping:

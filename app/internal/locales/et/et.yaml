@@ -58,6 +58,11 @@ et:
     invite-email-title: Kutsu e-postiga
     invite-email-submit: Saada kutse
     invite-email-sent: Kutse saadetud aadressile %s
+    since: "%s, alates %s"
+    manage: Halda
+    count:
+      one: Siin elad ainult sina
+      other: Siin elab %{count} inimest
     verify-to-invite: Kutsete loomiseks kinnita oma e-posti aadress.
     balance-not-zero: Selle inimese võlad tuleb enne arveldada.
   shopping:

@@ -22,8 +22,7 @@ templ Settings(pushKey string, nav *HouseholdNav, path string, user dbqueries.Ge
 		} else {
 			@doorplateHeader("/", utils.T(ctx, locales.LK_HouseholdBack), utils.T(ctx, locales.LK_NavSettings))
 		}
-		@formError(errorMessage)
-		@avatarForm(path, user)
+		@avatarForm(path, user, errorMessage)
 		// one sheet per scope: the picture is seen by housemates, the rest only changes this device
 		<section aria-labelledby="device-title" class={ sheetClass + " flex flex-col gap-5" }>
 			<div>
@@ -40,8 +39,8 @@ templ Settings(pushKey string, nav *HouseholdNav, path string, user dbqueries.Ge
 	}
 }
 
-// avatarForm uploads the user's picture, or removes it
-templ avatarForm(path string, user dbqueries.GetUserRow) {
+// avatarForm uploads the user's picture, or removes it, errorMessage is why the upload failed
+templ avatarForm(path string, user dbqueries.GetUserRow, errorMessage string) {
 	<section aria-labelledby="avatar-title" class={ sheetClass + " flex flex-col gap-4" }>
 		<div class="flex items-center gap-4">
 			@personAvatar(user.ID, user.AvatarKey, user.Username, avatar.SizeLg, "size-20 shrink-0 text-2xl")
@@ -67,6 +66,7 @@ templ avatarForm(path string, user dbqueries.GetUserRow) {
 			@button.Button(button.Props{Type: button.TypeSubmit, Class: "h-11"}) {
 				@components.T(locales.LK_AvatarUpload)
 			}
+			@formError(errorMessage)
 		</form>
 		if user.AvatarKey != nil {
 			<form action={ templ.SafeURL(path + g.RouteAvatarDelete) } method="post" class="-mt-1">

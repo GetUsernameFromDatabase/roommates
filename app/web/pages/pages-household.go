@@ -43,6 +43,14 @@ func inviteURL(code string) templ.SafeURL {
 	return templ.SafeURL(g.RouteInvite + "?" + url.Values{"code": {code}}.Encode())
 }
 
+// where on the people page the error of an action shows, next to that action
+const (
+	PeopleAtMembers     = "members"
+	PeopleAtInvites     = "invites"
+	PeopleAtInviteEmail = "invite-email"
+	PeopleAtLeave       = "leave"
+)
+
 // formatDate shows only the date, the server time zone (UTC in Docker) is not the user's
 func formatDate(t pgtype.Timestamptz) string {
 	return t.Time.Format(time.DateOnly)

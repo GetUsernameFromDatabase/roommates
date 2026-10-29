@@ -11,6 +11,7 @@ import g "roommates/internal/config"
 import "roommates/internal/locales"
 import "roommates/internal/utils"
 import "github.com/jackc/pgx/v5/pgtype"
+import "github.com/invopop/ctxi18n/i18n"
 
 // HouseholdShopping is the first section of a household, its shopping lists,
 // errorMessage is the outcome of the last action
@@ -22,7 +23,6 @@ templ HouseholdShopping(actor services.Membership, o services.HouseholdOverview,
 			</h1>
 		</header>
 		@VerifyEmailBanner(o.ActorEmailValidated)
-		@formError(errorMessage)
 		<section aria-labelledby="lists-title" class={ sheetClass }>
 			<h2 id="lists-title" class="text-xl font-semibold">
 				@components.T(locales.LK_ShoppingLists)
@@ -63,6 +63,9 @@ templ HouseholdShopping(actor services.Membership, o services.HouseholdOverview,
 					@components.T(locales.LK_ShoppingCreateList)
 				}
 			</form>
+			<div class="mt-3 empty:hidden">
+				@formError(errorMessage)
+			</div>
 		</section>
 	}
 }
@@ -70,9 +73,11 @@ templ HouseholdShopping(actor services.Membership, o services.HouseholdOverview,
 // HouseholdPeople shows members and, for owners, invites
 //
 // inviteBaseURL is the absolute invite link without the code,
-// infoMessage and errorMessage are the outcome of the last action
-templ HouseholdPeople(actor services.Membership, o services.HouseholdOverview, inviteBaseURL, infoMessage, errorMessage string) {
+// infoMessage and errorMessage are the outcome of the last action, the info is a toast
+// and the error shows by the action errorAt (a PeopleAt*)
+templ HouseholdPeople(actor services.Membership, o services.HouseholdOverview, inviteBaseURL, infoMessage, errorAt, errorMessage string) {
 	{{ isOwner := actor.Role == g.RoleOwner }}
+	{{ errorFor := func(at string) string { return utils.IfElse(errorAt == at, errorMessage, "") } }}
 	@appShell(o.Household.Name, &HouseholdNav{HouseholdID: actor.HouseholdID, Section: SectionPeople}) {
 		<header>
 			<h1 class="doorplate">
@@ -80,33 +85,46 @@ templ HouseholdPeople(actor services.Membership, o services.HouseholdOverview, i
 			</h1>
 		</header>
 		@VerifyEmailBanner(o.ActorEmailValidated)
-		if infoMessage != "" {
-			<div role="status" class="rounded-lg border bg-card p-3 text-sm">
-				{ infoMessage }
-			</div>
-		}
-		@formError(errorMessage)
-		<section aria-labelledby="members-title">
-			<h2 id="members-title" class="text-xl font-semibold">
+		@toast(infoMessage)
+		// the name board by the front door: who lives here, the biggest thing on the page
+		<section aria-labelledby="members-title" class={ sheetClass }>
+			<h2 id="members-title" class="sr-only">
 				@components.T(locales.LK_HouseholdMembers)
 			</h2>
 			@liveRegion("members", events.TopicPeople) {
+				<p class="text-sm text-muted-foreground">
+					@components.N(locales.LK_HouseholdCount, len(o.Members), i18n.M{"count": len(o.Members)})
+				</p>
 				<ul class="mt-2 divide-y">
 					for _, m := range o.Members {
-						<li class="flex flex-wrap items-center justify-between gap-2 py-3">
-							<div class="flex min-w-0 items-center gap-3">
-								// the same picture, or people colour and initial, as in the chat
-								@personAvatar(m.UserID, m.AvatarKey, m.Username, avatar.SizeLg, "")
-								<div class="min-w-0">
-									<span class="font-medium break-words">{ m.Username }</span>
+						<li class="flex flex-wrap items-start gap-3 py-3">
+							// the same picture, or people colour and initial, as in the chat
+							@personAvatar(m.UserID, m.AvatarKey, m.Username, avatar.SizeLg, "mt-0.5")
+							<div class="min-w-0 flex-1">
+								<div class="flex flex-wrap items-center gap-x-2">
+									<span class="font-heading text-xl leading-tight font-semibold break-words">{ m.Username }</span>
 									if m.UserID == actor.UserID {
-										<span class="text-sm text-muted-foreground">({ utils.T(ctx, locales.LK_HouseholdYou) })</span>
+										<span class="rounded-full bg-claim px-2 text-xs font-semibold text-claim-foreground">
+											@components.T(locales.LK_HouseholdYou)
+										</span>
 									}
-									<div class="text-sm text-muted-foreground">{ RoleName(ctx, m.Role) }</div>
+								</div>
+								<div class="text-sm text-muted-foreground">
+									{ utils.T(ctx, locales.LK_HouseholdSince, RoleName(ctx, m.Role), formatDate(m.JoinedAt)) }
 								</div>
 							</div>
 							if isOwner && m.Role != g.RoleOwner {
-								<div class="flex gap-2">
+								// a native disclosure keeps the two actions out of sight until asked for, no script,
+								// they show on their own row below the name, hx-preserve keeps it open through a live refresh
+								<details id={ "manage-" + m.UserID.String() } hx-preserve class="group/manage">
+									<summary
+										aria-label={ utils.T(ctx, locales.LK_HouseholdManage) + " " + m.Username }
+										class="flex size-10 cursor-pointer list-none items-center justify-center rounded-full text-muted-foreground outline-none hover:bg-muted hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50 group-open/manage:bg-muted [&::-webkit-details-marker]:hidden"
+									>
+										@navIcon("more", "size-5")
+									</summary>
+								</details>
+								<div class="hidden w-full flex-wrap justify-end gap-2 [li:has(>details[open])>&]:flex">
 									<form action={ householdURL(actor.HouseholdID, "members", m.UserID.String(), "promote") } method="post" hx-boost="true">
 										@button.Button(button.Props{
 											Type:    button.TypeSubmit,
@@ -136,6 +154,10 @@ templ HouseholdPeople(actor services.Membership, o services.HouseholdOverview, i
 					}
 				</ul>
 			}
+			// outside the region, a refetch would clear it before it is read
+			<div class="mt-3 empty:hidden">
+				@formError(errorFor(PeopleAtMembers))
+			</div>
 		</section>
 		if isOwner {
 			<section aria-labelledby="invites-title">
@@ -145,81 +167,87 @@ templ HouseholdPeople(actor services.Membership, o services.HouseholdOverview, i
 				<p class="mt-1 text-sm text-muted-foreground">
 					@components.T(locales.LK_HouseholdInvitesDescription)
 				</p>
-				@liveRegion("invites", events.TopicPeople) {
-					if len(o.Invites) == 0 {
-						<p class="mt-3 text-sm text-muted-foreground">
-							@components.T(locales.LK_HouseholdNoInvites)
-						</p>
-					} else {
-						<ul class="mt-2 divide-y">
-							for _, inv := range o.Invites {
-								<li class="space-y-2 py-3">
-									<div class="flex items-center justify-between gap-2">
-										<div class="flex items-center gap-2">
-											<span class="font-mono text-lg tracking-wider">{ inv.Code }</span>
+				<div class={ utils.CN(sheetClass, "mt-3") }>
+					@liveRegion("invites", events.TopicPeople) {
+						if len(o.Invites) == 0 {
+							<p class="text-sm text-muted-foreground">
+								@components.T(locales.LK_HouseholdNoInvites)
+							</p>
+						} else {
+							<ul class="divide-y">
+								for _, inv := range o.Invites {
+									<li class="space-y-3 py-4 first:pt-0">
+										<div class="flex flex-wrap items-center gap-2">
+											<span class="key-tag mr-auto">{ inv.Code }</span>
 											@copyButton(inv.Code, locales.LK_HouseholdCopyCode)
+											<form action={ householdURL(actor.HouseholdID, "invites", inv.ID.String(), "delete") } method="post" hx-boost="true">
+												@button.Button(button.Props{
+													Type:    button.TypeSubmit,
+													Variant: button.VariantGhost,
+													Size:    button.SizeSm,
+												}) {
+													@components.T(locales.LK_HouseholdRevoke)
+												}
+											</form>
 										</div>
-										<form action={ householdURL(actor.HouseholdID, "invites", inv.ID.String(), "delete") } method="post" hx-boost="true">
-											@button.Button(button.Props{
-												Type:    button.TypeSubmit,
-												Variant: button.VariantGhost,
-												Size:    button.SizeSm,
-											}) {
-												@components.T(locales.LK_HouseholdRevoke)
-											}
-										</form>
-									</div>
-									<div class="flex items-center gap-2">
-										<input
-											type="text"
-											readonly
-											value={ inviteBaseURL + inv.Code }
-											aria-label={ utils.T(ctx, locales.LK_HouseholdInvites) }
-											class="min-w-0 flex-1 rounded-lg border bg-card px-2 py-1.5 font-mono text-xs"
-										/>
-										@copyButton(inviteBaseURL+inv.Code, locales.LK_HouseholdCopyLink)
-									</div>
-									<div class="text-xs text-muted-foreground">
-										{ utils.T(ctx, locales.LK_HouseholdExpires, formatDate(inv.ExpiresAt)) }
-									</div>
-								</li>
-							}
-						</ul>
+										<div class="flex items-center gap-2">
+											<input
+												type="text"
+												readonly
+												value={ inviteBaseURL + inv.Code }
+												aria-label={ utils.T(ctx, locales.LK_HouseholdInvites) }
+												class="min-w-0 flex-1 rounded-lg border bg-background px-2 py-1.5 text-xs text-muted-foreground"
+											/>
+											@copyButton(inviteBaseURL+inv.Code, locales.LK_HouseholdCopyLink)
+										</div>
+										<div class="text-xs text-muted-foreground">
+											{ utils.T(ctx, locales.LK_HouseholdExpires, formatDate(inv.ExpiresAt)) }
+										</div>
+									</li>
+								}
+							</ul>
+						}
 					}
-				}
-				if o.ActorEmailValidated {
-					<form action={ householdURL(actor.HouseholdID, "invites") } method="post" hx-boost="true" class="mt-4">
-						@button.Button(button.Props{Type: button.TypeSubmit, Variant: button.VariantSecondary}) {
-							@components.T(locales.LK_HouseholdCreateInvite)
+					<div class="mt-4 border-t pt-4">
+						if o.ActorEmailValidated {
+							<form action={ householdURL(actor.HouseholdID, "invites") } method="post" hx-boost="true">
+								@button.Button(button.Props{Type: button.TypeSubmit, Variant: button.VariantSecondary}) {
+									@components.T(locales.LK_HouseholdCreateInvite)
+								}
+							</form>
+							<div class="mt-3 empty:hidden">
+								@formError(errorFor(PeopleAtInvites))
+							</div>
+							<form
+								action={ householdURL(actor.HouseholdID, "invites", "email") }
+								method="post"
+								hx-boost="true"
+								class="mt-5 space-y-2"
+							>
+								@field.Label(field.LabelProps{For: "invite-email"}) {
+									@components.T(locales.LK_HouseholdInviteEmailTitle)
+								}
+								<div class="flex gap-2">
+									@input.Input(input.Props{
+										ID:          "invite-email",
+										Name:        "email",
+										Type:        "email",
+										Placeholder: "flatmate@example.com",
+										Required:    true,
+									})
+									@button.Button(button.Props{Type: button.TypeSubmit, Variant: button.VariantSecondary}) {
+										@components.T(locales.LK_HouseholdInviteEmailSubmit)
+									}
+								</div>
+								@formError(errorFor(PeopleAtInviteEmail))
+							</form>
+						} else {
+							<p class="text-sm text-muted-foreground">
+								@components.T(locales.LK_HouseholdVerifyToInvite)
+							</p>
 						}
-					</form>
-					<form
-						action={ householdURL(actor.HouseholdID, "invites", "email") }
-						method="post"
-						hx-boost="true"
-						class="mt-6 space-y-2"
-					>
-						@field.Label(field.LabelProps{For: "invite-email"}) {
-							@components.T(locales.LK_HouseholdInviteEmailTitle)
-						}
-						<div class="flex gap-2">
-							@input.Input(input.Props{
-								ID:          "invite-email",
-								Name:        "email",
-								Type:        "email",
-								Placeholder: "flatmate@example.com",
-								Required:    true,
-							})
-							@button.Button(button.Props{Type: button.TypeSubmit, Variant: button.VariantSecondary}) {
-								@components.T(locales.LK_HouseholdInviteEmailSubmit)
-							}
-						</div>
-					</form>
-				} else {
-					<p class="mt-4 text-sm text-muted-foreground">
-						@components.T(locales.LK_HouseholdVerifyToInvite)
-					</p>
-				}
+					</div>
+				</div>
 			</section>
 		}
 		<form
@@ -227,12 +255,13 @@ templ HouseholdPeople(actor services.Membership, o services.HouseholdOverview, i
 			method="post"
 			hx-boost="true"
 			hx-confirm={ utils.T(ctx, locales.LK_HouseholdLeave) + "?" }
-			class="mt-4"
+			class="space-y-2"
 		>
+			@formError(errorFor(PeopleAtLeave))
 			@button.Button(button.Props{
 				Type:    button.TypeSubmit,
-				Variant: button.VariantOutline,
-				Class:   "w-full text-destructive",
+				Variant: button.VariantGhost,
+				Class:   "-ml-3 text-destructive hover:text-destructive",
 			}) {
 				@components.T(locales.LK_HouseholdLeave)
 			}

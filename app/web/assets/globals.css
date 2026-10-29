@@ -115,6 +115,54 @@
   overflow-wrap: anywhere;
 }
 
+/* an invite code, set like the tag on a spare key: punched hole at the rounded end */
+@utility key-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.625rem;
+  padding: 0.25rem 0.875rem 0.25rem 0.625rem;
+  /* darkened toward the text, the plain theme's --claim is almost the card's white */
+  border: 2px dashed color-mix(in oklab, var(--claim) 70%, var(--foreground));
+  border-radius: 1.25rem 0.5rem 0.5rem 1.25rem;
+  font-family: var(--theme-font-heading);
+  font-size: 1.5rem;
+  font-weight: 650;
+  letter-spacing: 0.06em;
+  overflow-wrap: anywhere;
+  &::before {
+    content: "";
+    flex: none;
+    width: 0.625rem;
+    height: 0.625rem;
+    border-radius: 9999px;
+    border: 2px solid color-mix(in oklab, var(--claim) 70%, var(--foreground));
+  }
+}
+
+/* a toast rises a little as it arrives, stays long enough to read, then fades and stops
+ * taking clicks, without motion it just appears and goes
+ */
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    translate: 0 0.375rem;
+  }
+}
+@keyframes toast-out {
+  to {
+    opacity: 0;
+    visibility: hidden;
+  }
+}
+@utility toast {
+  animation:
+    toast-in 0.18s ease-out,
+    toast-out 0.4s ease-in 5s forwards;
+  @media (prefers-reduced-motion: reduce) {
+    animation: toast-out 1ms 5s forwards;
+  }
+}
+
 /* the rendered markdown of a note, preflight resets these elements */
 @layer components {
   .note-body {

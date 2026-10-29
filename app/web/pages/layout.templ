@@ -1,7 +1,6 @@
 package pages
 
 import "roommates/web/components"
-import "roommates/web/components/alert"
 import "roommates/web/components/badge"
 import g "roommates/internal/config"
 import "roommates/internal/events"
@@ -227,6 +226,16 @@ templ navIcon(name, class string) {
 				<line x1="4" x2="20" y1="18" y2="18"></line>
 			case "chevron-down":
 				<path d="m6 9 6 6 6-6"></path>
+			case "check":
+				<path d="M20 6 9 17l-5-5"></path>
+			case "alert":
+				<circle cx="12" cy="12" r="10"></circle>
+				<line x1="12" x2="12" y1="8" y2="12"></line>
+				<line x1="12" x2="12.01" y1="16" y2="16"></line>
+			case "more":
+				<circle cx="12" cy="12" r="1"></circle>
+				<circle cx="19" cy="12" r="1"></circle>
+				<circle cx="5" cy="12" r="1"></circle>
 			case "plus":
 				<path d="M5 12h14"></path>
 				<path d="M12 5v14"></path>
@@ -322,12 +331,28 @@ templ logoutForm() {
 	</form>
 }
 
-// formError is the message of a failed form submit, nothing when it is empty
+// formError is the message of a failed form submit, nothing when it is empty,
+// a brick line right under what failed rather than a box, it belongs to that one control
 templ formError(message string) {
 	if message != "" {
-		@alert.Alert(alert.Props{Variant: alert.VariantDestructive}) {
-			{ message }
-		}
+		<p role="alert" class="flex items-start gap-2 text-sm font-medium text-destructive">
+			@navIcon("alert", "mt-px size-4 shrink-0")
+			<span class="min-w-0 break-words">{ message }</span>
+		</p>
+	}
+}
+
+// toast is the outcome of an action that went well, fixed in view wherever the page is scrolled
+// and above the tab bar on phones, it fades out by itself (the toast utility)
+//
+// an ink pill, inverted to linen in dark mode: buttons are pills in this theme, so it reads as the button's answer
+templ toast(message string) {
+	if message != "" {
+		// alert, not status: it arrives with the page, and only an alert is read out when inserted already filled
+		<div role="alert" class="toast fixed inset-x-4 bottom-24 z-30 mx-auto flex w-fit max-w-sm items-center gap-2.5 rounded-3xl bg-foreground py-3 pr-5 pl-4 text-sm font-medium text-background shadow-lg lg:right-6 lg:bottom-6 lg:left-auto lg:mx-0">
+			@navIcon("check", "size-4 shrink-0")
+			<span class="min-w-0 break-words">{ message }</span>
+		</div>
 	}
 }
 

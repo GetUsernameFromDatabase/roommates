@@ -74,6 +74,12 @@ func Redirect(ctx *gin.Context, location string) {
 	}
 }
 
+// stayInPlace keeps the scroll position of a boosted page swap, which would go to the top,
+// so an outcome shown by its form stays in view
+func stayInPlace(ctx *gin.Context) {
+	ctx.Header(g.HHK_HXReswap.String(), "innerHTML show:none")
+}
+
 // GetHeader is a wrapper of [gin.Context.GetHeader]
 func GetHeader(ctx *gin.Context, key g.HTTPHeaderKey) string {
 	return ctx.GetHeader(key.String())

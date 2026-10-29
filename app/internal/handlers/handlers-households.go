@@ -81,6 +81,9 @@ func (h *DefaultHandler) renderShopping(ctx *gin.Context, status int, errorMessa
 		InternalError(ctx, err)
 		return
 	}
+	if errorMessage != "" {
+		stayInPlace(ctx)
+	}
 	RenderTemplStatus(ctx, status, pages.HouseholdShopping(actor, overview, errorMessage))
 }
 
@@ -90,35 +93,45 @@ func (h *DefaultHandler) PagePeople(ctx *gin.Context) {
 	if invited := ctx.Query(queryInvited); invited != "" {
 		info = utils.T(ctx.Request.Context(), locales.LK_HouseholdInviteEmailSent, invited)
 	}
-	h.renderPeople(ctx, http.StatusOK, info, "")
+	h.renderPeople(ctx, http.StatusOK, info, "", "")
 }
 
-func (h *DefaultHandler) renderPeople(ctx *gin.Context, status int, infoMessage, errorMessage string) {
+// renderPeople shows infoMessage as a toast and errorMessage by the action at (a pages.PeopleAt*)
+func (h *DefaultHandler) renderPeople(ctx *gin.Context, status int, infoMessage, at, errorMessage string) {
 	actor := membershipFromContext(ctx)
 	overview, err := h.service.GetHouseholdOverview(ctx, actor)
 	if err != nil {
 		InternalError(ctx, err)
 		return
 	}
+	// an action answers htmx with the page itself, at the people address and where it was scrolled
+	if ctx.Request.Method == http.MethodPost && IsRequestHTMX(ctx) {
+		ctx.Header(g.HHK_HXReplaceURL.String(), peoplePath(actor.HouseholdID))
+		stayInPlace(ctx)
+	}
 	inviteURL := g.GetAppBaseURL() + g.RouteInvite + "?code="
-	RenderTemplStatus(ctx, status, pages.HouseholdPeople(actor, overview, inviteURL, infoMessage, errorMessage))
+	RenderTemplStatus(ctx, status, pages.HouseholdPeople(actor, overview, inviteURL, infoMessage, at, errorMessage))
 }
 
-// householdAction runs an action of the people page and goes back to it
-func (h *DefaultHandler) householdAction(ctx *gin.Context, action func(actor services.Membership) error) {
+// householdAction runs an action of the people page and goes back to it,
+// an error shows by the action at (a pages.PeopleAt*)
+func (h *DefaultHandler) householdAction(ctx *gin.Context, at string, action func(actor services.Membership) error) {
 	actor := membershipFromContext(ctx)
 	err := action(actor)
 	switch {
+	// HX-Redirect would reload the whole page, htmx gets the page in place instead
+	case err == nil && IsRequestHTMX(ctx):
+		h.renderPeople(ctx, http.StatusOK, "", "", "")
 	case err == nil:
 		Redirect(ctx, peoplePath(actor.HouseholdID))
 	case errors.Is(err, g.ErrorLastOwner):
-		h.renderPeople(ctx, http.StatusConflict, "",
+		h.renderPeople(ctx, http.StatusConflict, "", at,
 			utils.T(ctx.Request.Context(), locales.LK_HouseholdLastOwner))
 	case errors.Is(err, g.ErrorBalanceNotZero):
-		h.renderPeople(ctx, http.StatusConflict, "",
+		h.renderPeople(ctx, http.StatusConflict, "", at,
 			utils.T(ctx.Request.Context(), locales.LK_HouseholdBalanceNotZero))
 	case errors.Is(err, g.ErrorEmailNotVerified):
-		h.renderPeople(ctx, http.StatusForbidden, "",
+		h.renderPeople(ctx, http.StatusForbidden, "", at,
 			utils.T(ctx.Request.Context(), locales.LK_HouseholdVerifyToInvite))
 	case errors.Is(err, g.ErrorNotFound):
 		RenderTemplStatus(ctx, http.StatusNotFound, pages.NotFound())
@@ -130,20 +143,20 @@ func (h *DefaultHandler) householdAction(ctx *gin.Context, action func(actor ser
 }
 
 // householdTargetAction is [householdAction] with the :param UUID parsed
-func (h *DefaultHandler) householdTargetAction(ctx *gin.Context, param string,
+func (h *DefaultHandler) householdTargetAction(ctx *gin.Context, param, at string,
 	action func(actor services.Membership, target pgtype.UUID) error) {
 	target, err := utils.ParseUUID(ctx.Param(param))
 	if err != nil {
 		RenderTemplStatus(ctx, http.StatusNotFound, pages.NotFound())
 		return
 	}
-	h.householdAction(ctx, func(actor services.Membership) error {
+	h.householdAction(ctx, at, func(actor services.Membership) error {
 		return action(actor, target)
 	})
 }
 
 func (h *DefaultHandler) CreateInvite(ctx *gin.Context) {
-	h.householdAction(ctx, func(actor services.Membership) error {
+	h.householdAction(ctx, pages.PeopleAtInvites, func(actor services.Membership) error {
 		return h.service.CreateInvite(ctx, actor)
 	})
 }
@@ -153,7 +166,7 @@ func (h *DefaultHandler) SendInviteEmail(ctx *gin.Context) {
 	var model models.EmailForm
 	_ = ctx.ShouldBind(&model)
 	if isValid, _ := model.IsValid(); !isValid {
-		h.renderPeople(ctx, http.StatusUnprocessableEntity, "",
+		h.renderPeople(ctx, http.StatusUnprocessableEntity, "", pages.PeopleAtInviteEmail,
 			utils.T(ctx.Request.Context(), locales.LK_ValidationErrorsEmailGeneric))
 		return
 	}
@@ -161,26 +174,32 @@ func (h *DefaultHandler) SendInviteEmail(ctx *gin.Context) {
 	// the request context carries the language of the email
 	err := h.service.SendInviteEmail(ctx.Request.Context(), actor, model.Email)
 	if err != nil {
-		h.householdAction(ctx, func(services.Membership) error { return err })
+		h.householdAction(ctx, pages.PeopleAtInviteEmail, func(services.Membership) error { return err })
+		return
+	}
+	// htmx gets the page with the toast in place, without JS the redirect carries the address
+	if IsRequestHTMX(ctx) {
+		h.renderPeople(ctx, http.StatusOK,
+			utils.T(ctx.Request.Context(), locales.LK_HouseholdInviteEmailSent, model.Email), "", "")
 		return
 	}
 	Redirect(ctx, peoplePath(actor.HouseholdID)+"?"+url.Values{queryInvited: {model.Email}}.Encode())
 }
 
 func (h *DefaultHandler) DeleteInvite(ctx *gin.Context) {
-	h.householdTargetAction(ctx, g.ParamInviteID, func(actor services.Membership, inviteID pgtype.UUID) error {
+	h.householdTargetAction(ctx, g.ParamInviteID, pages.PeopleAtInvites, func(actor services.Membership, inviteID pgtype.UUID) error {
 		return h.service.DeleteInvite(ctx, actor, inviteID)
 	})
 }
 
 func (h *DefaultHandler) RemoveMember(ctx *gin.Context) {
-	h.householdTargetAction(ctx, g.ParamUserID, func(actor services.Membership, userID pgtype.UUID) error {
+	h.householdTargetAction(ctx, g.ParamUserID, pages.PeopleAtMembers, func(actor services.Membership, userID pgtype.UUID) error {
 		return h.service.RemoveMember(ctx, actor, userID)
 	})
 }
 
 func (h *DefaultHandler) PromoteMember(ctx *gin.Context) {
-	h.householdTargetAction(ctx, g.ParamUserID, func(actor services.Membership, userID pgtype.UUID) error {
+	h.householdTargetAction(ctx, g.ParamUserID, pages.PeopleAtMembers, func(actor services.Membership, userID pgtype.UUID) error {
 		return h.service.PromoteMember(ctx, actor, userID)
 	})
 }
@@ -190,12 +209,12 @@ func (h *DefaultHandler) LeaveHousehold(ctx *gin.Context) {
 	actor := membershipFromContext(ctx)
 	err := h.service.Leave(ctx, actor)
 	if errors.Is(err, g.ErrorLastOwner) {
-		h.renderPeople(ctx, http.StatusConflict, "",
+		h.renderPeople(ctx, http.StatusConflict, "", pages.PeopleAtLeave,
 			utils.T(ctx.Request.Context(), locales.LK_HouseholdLastOwner))
 		return
 	}
 	if errors.Is(err, g.ErrorBalanceNotZero) {
-		h.renderPeople(ctx, http.StatusConflict, "",
+		h.renderPeople(ctx, http.StatusConflict, "", pages.PeopleAtLeave,
 			utils.T(ctx.Request.Context(), locales.LK_HouseholdBalanceNotZero))
 		return
 	}
