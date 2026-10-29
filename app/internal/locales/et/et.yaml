@@ -190,7 +190,6 @@ et:
     description: Toakaaslased vajab internetiühendust. Kontrolli võrku ja proovi uuesti.
     retry: Proovi uuesti
   appearance:
-    title: Välimus
     theme: Teema
     mode: Hele või tume
     theme-home: Kodu
@@ -204,6 +203,11 @@ et:
     upload: Lae pilt üles
     remove: Eemalda pilt
     invalid: Vali pilt (PNG, JPEG, GIF või WebP)
+    zoom: Suurendus
+    crop-hint: Lohista ringi või kasuta nooleklahve, et valida, mida kaaslased näevad
+  settings:
+    device-title: See seade
+    device-description: Muudab ainult seda telefoni või arvutit
   nav:
     label: Leibkond
     shopping: Ostud

@@ -21,34 +21,50 @@ var modeNames = map[string]locales.LK{
 // AppearanceForm picks the theme and mode of this device, next is where to go after saving
 templ AppearanceForm(next string) {
 	{{ a := utils.GetAppearance(ctx) }}
-	<section aria-labelledby="appearance-title" class="mt-4 border-t pt-6">
-		<h2 id="appearance-title" class="text-base font-semibold">
-			@components.T(locales.LK_AppearanceTitle)
-		</h2>
-		<form action={ g.RouteAppearance } method="post" class="mt-3 flex flex-wrap items-end gap-3">
-			<input type="hidden" name={ g.QueryNext } value={ next }/>
-			@appearanceSelect("theme", locales.LK_AppearanceTheme, utils.Themes, themeNames, a.Theme)
-			@appearanceSelect("mode", locales.LK_AppearanceMode, utils.Modes, modeNames, a.Mode)
-			@button.Button(button.Props{Type: button.TypeSubmit, Variant: button.VariantSecondary, Class: "h-10"}) {
-				@components.T(locales.LK_CommonSave)
+	// autocomplete off: a reload must not keep a picked but unsaved theme the page no longer shows
+	<form action={ g.RouteAppearance } method="post" autocomplete="off" data-appearance class="flex flex-col gap-5">
+		<input type="hidden" name={ g.QueryNext } value={ next }/>
+		@field.Set() {
+			@field.Legend() {
+				@components.T(locales.LK_AppearanceTheme)
 			}
-		</form>
-	</section>
+			<div class="grid grid-cols-2 gap-3">
+				for _, v := range utils.Themes {
+					@themeSwatch(v, v == a.Theme)
+				}
+			</div>
+		}
+		@field.Set() {
+			@field.Legend() {
+				@components.T(locales.LK_AppearanceMode)
+			}
+			<div class="flex w-full rounded-full bg-secondary p-1 sm:w-fit">
+				for _, v := range utils.Modes {
+					<label class="flex min-h-11 flex-1 cursor-pointer items-center justify-center rounded-full px-4 text-center sm:flex-none sm:px-5 sm:whitespace-nowrap text-sm font-medium text-muted-foreground has-checked:bg-card has-checked:text-foreground has-checked:shadow-sm has-focus-visible:ring-3 has-focus-visible:ring-ring/50">
+						<input type="radio" name="mode" value={ v } checked?={ v == a.Mode } class="sr-only"/>
+						{ utils.T(ctx, modeNames[v]) }
+					</label>
+				}
+			</div>
+		}
+		@button.Button(button.Props{Type: button.TypeSubmit, Variant: button.VariantSecondary, Class: "h-11 self-end"}) {
+			@components.T(locales.LK_CommonSave)
+		}
+	</form>
 }
 
-templ appearanceSelect(name string, label locales.LK, values []string, names map[string]locales.LK, selected string) {
-	<div class="flex flex-col gap-1.5">
-		@field.Label(field.LabelProps{For: "appearance-" + name}) {
-			@components.T(label)
-		}
-		<select
-			id={ "appearance-" + name }
-			name={ name }
-			class="h-10 rounded-lg border border-input bg-card px-3 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
-		>
-			for _, v := range values {
-				<option value={ v } selected?={ v == selected }>{ utils.T(ctx, names[v]) }</option>
-			}
-		</select>
-	</div>
+// themeSwatch is a theme painted in its own colours and heading font, a small room
+// of its wall, a sheet on it and the plant and people colours, in the current mode
+templ themeSwatch(theme string, checked bool) {
+	<label class="cursor-pointer rounded-2xl ring-1 ring-foreground/10 outline-none has-checked:ring-2 has-checked:ring-primary has-focus-visible:ring-3 has-focus-visible:ring-ring/50">
+		<input type="radio" name="theme" value={ theme } checked?={ checked } class="sr-only"/>
+		<span data-theme={ theme } class="flex flex-col gap-3 rounded-[inherit] bg-background p-3 text-foreground">
+			<span class="flex items-center gap-2 rounded-lg bg-card p-2 ring-1 ring-foreground/10" aria-hidden="true">
+				<span class="h-2 flex-1 rounded-full bg-muted"></span>
+				<span class="size-4 rounded-full bg-claim"></span>
+				<span class="h-4 w-7 rounded-full bg-primary"></span>
+			</span>
+			<span class="font-heading text-lg font-semibold">{ utils.T(ctx, themeNames[theme]) }</span>
+		</span>
+	</label>
 }

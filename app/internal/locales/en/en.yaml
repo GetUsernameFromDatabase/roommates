@@ -190,7 +190,6 @@ en:
     description: Roommates needs a connection. Check your network and try again.
     retry: Try again
   appearance:
-    title: Appearance
     theme: Theme
     mode: Light or dark
     theme-home: Home
@@ -204,6 +203,11 @@ en:
     upload: Upload picture
     remove: Remove picture
     invalid: Choose an image (PNG, JPEG, GIF or WebP)
+    zoom: Zoom
+    crop-hint: Drag the circle, or use the arrow keys, to choose what housemates see
+  settings:
+    device-title: This device
+    device-description: Only changes this phone or computer
   nav:
     label: Household
     shopping: Shopping

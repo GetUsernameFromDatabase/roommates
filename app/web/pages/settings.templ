@@ -24,46 +24,85 @@ templ Settings(pushKey string, nav *HouseholdNav, path string, user dbqueries.Ge
 		}
 		@formError(errorMessage)
 		@avatarForm(path, user)
-		@pushSwitch(pushKey)
-		@AppearanceForm(path)
+		// one sheet per scope: the picture is seen by housemates, the rest only changes this device
+		<section aria-labelledby="device-title" class={ sheetClass + " flex flex-col gap-5" }>
+			<div>
+				<h2 id="device-title" class="text-xl font-semibold">
+					@components.T(locales.LK_SettingsDeviceTitle)
+				</h2>
+				<p class="text-sm text-muted-foreground">
+					@components.T(locales.LK_SettingsDeviceDescription)
+				</p>
+			</div>
+			@pushSwitch(pushKey)
+			@AppearanceForm(path)
+		</section>
 	}
 }
 
 // avatarForm uploads the user's picture, or removes it
 templ avatarForm(path string, user dbqueries.GetUserRow) {
-	<section aria-labelledby="avatar-title" class="flex flex-col gap-3">
-		<div>
-			<h2 id="avatar-title" class="text-base font-semibold">
-				@components.T(locales.LK_AvatarTitle)
-			</h2>
-			<p class="text-sm text-muted-foreground">
-				@components.T(locales.LK_AvatarDescription)
-			</p>
-		</div>
+	<section aria-labelledby="avatar-title" class={ sheetClass + " flex flex-col gap-4" }>
 		<div class="flex items-center gap-4">
-			@personAvatar(user.ID, user.AvatarKey, user.Username, avatar.SizeLg, "size-16")
-			if user.AvatarKey != nil {
-				<form action={ templ.SafeURL(path + g.RouteAvatarDelete) } method="post">
-					@button.Button(button.Props{Type: button.TypeSubmit, Variant: button.VariantOutline, Class: "h-11"}) {
-						@components.T(locales.LK_AvatarRemove)
-					}
-				</form>
-			}
+			@personAvatar(user.ID, user.AvatarKey, user.Username, avatar.SizeLg, "size-20 shrink-0 text-2xl")
+			<div class="min-w-0">
+				<h2 id="avatar-title" class="text-xl font-semibold">
+					@components.T(locales.LK_AvatarTitle)
+				</h2>
+				<p class="text-sm text-muted-foreground">
+					@components.T(locales.LK_AvatarDescription)
+				</p>
+			</div>
 		</div>
-		<form action={ templ.SafeURL(path + g.RouteAvatar) } method="post" enctype="multipart/form-data" class="flex flex-wrap items-center gap-2">
+		<form action={ templ.SafeURL(path + g.RouteAvatar) } method="post" enctype="multipart/form-data" class="flex flex-col items-start gap-4">
 			<input
 				type="file"
 				name="avatar"
 				accept="image/png,image/jpeg,image/gif,image/webp"
 				required
 				aria-label={ utils.T(ctx, locales.LK_AvatarTitle) }
-				class="min-h-11 min-w-0 flex-1 text-sm file:mr-3 file:h-11 file:cursor-pointer file:rounded-full file:border-0 file:bg-secondary file:px-4 file:font-medium file:text-secondary-foreground"
+				class="min-h-11 w-full min-w-0 text-sm file:mr-3 file:h-11 file:cursor-pointer file:rounded-full file:border-0 file:bg-secondary file:px-4 file:font-medium file:text-secondary-foreground"
 			/>
-			@button.Button(button.Props{Type: button.TypeSubmit, Variant: button.VariantSecondary, Class: "h-11"}) {
+			@avatarCrop()
+			@button.Button(button.Props{Type: button.TypeSubmit, Class: "h-11"}) {
 				@components.T(locales.LK_AvatarUpload)
 			}
 		</form>
+		if user.AvatarKey != nil {
+			<form action={ templ.SafeURL(path + g.RouteAvatarDelete) } method="post" class="-mt-1">
+				@button.Button(button.Props{Type: button.TypeSubmit, Variant: button.VariantLink, Class: "h-11 px-0 text-destructive"}) {
+					@components.T(locales.LK_AvatarRemove)
+				}
+			</form>
+		}
 	</section>
+}
+
+// avatarCrop frames the chosen picture in the circle before it is uploaded, at full size
+// and at the sizes of people and the chat, web/assets/public/avatar-crop.js shows it
+templ avatarCrop() {
+	<div data-avatar-crop class="flex w-full flex-col gap-3" hidden>
+		// sized to the picture by the script
+		<canvas
+			tabindex="0"
+			role="img"
+			aria-label={ utils.T(ctx, locales.LK_AvatarCropHint) }
+			class="max-w-full cursor-move touch-none rounded-xl ring-1 ring-foreground/10 outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+		></canvas>
+		<div class="flex w-full max-w-96 items-end gap-4">
+			<label class="flex flex-1 flex-col gap-1.5 text-sm font-medium">
+				@components.T(locales.LK_AvatarZoom)
+				<input type="range" min="1" max="4" step="any" value="1" class="h-11 accent-primary"/>
+			</label>
+			<div class="flex items-end gap-2 pb-1.5" aria-hidden="true">
+				<canvas class="size-10 rounded-full ring-1 ring-foreground/10"></canvas>
+				<canvas class="size-8 rounded-full ring-1 ring-foreground/10"></canvas>
+			</div>
+		</div>
+		<p class="text-sm text-muted-foreground">
+			@components.T(locales.LK_AvatarCropHint)
+		</p>
+	</div>
 }
 
 // pushSwitch turns notifications on this device on and off, web/assets/public/push.js
@@ -76,13 +115,13 @@ templ pushSwitch(pushKey string) {
 		data-disable={ utils.T(ctx, locales.LK_PushDisable) }
 		data-denied={ utils.T(ctx, locales.LK_PushDenied) }
 		data-install={ utils.T(ctx, locales.LK_PushInstall) }
-		class="flex flex-col items-start gap-2"
+		class="flex flex-col items-stretch gap-2 border-b pb-5 sm:items-start"
 		hidden
 	>
 		@button.Button(button.Props{
 			Type:    button.TypeButton,
 			Variant: button.VariantOutline,
-			Size:    button.SizeSm,
+			Class:   "h-11",
 		}) {
 			@components.T(locales.LK_PushEnable)
 		}
