@@ -1,0 +1,130 @@
+package pages
+
+import "roommates/web/components"
+import "roommates/web/components/button"
+import "roommates/web/components/textarea"
+import "roommates/internal/events"
+import "roommates/internal/services"
+import "roommates/internal/locales"
+import "roommates/internal/utils"
+import "github.com/jackc/pgx/v5/pgtype"
+import "time"
+
+// ChatPage is the household's chat, draft and errorMessage are a message that could not be sent
+//
+// the composer posts with hx-select="#chat" so it is cleared after sending,
+// the messages refetch on their own when someone writes
+templ ChatPage(actor services.Membership, c services.Chat, older bool, draft, errorMessage string) {
+	@appShell(utils.T(ctx, locales.LK_ChatTitle), &HouseholdNav{HouseholdID: actor.HouseholdID, Section: SectionChat}) {
+		<header>
+			<h1 class="doorplate">
+				@components.T(locales.LK_ChatTitle)
+			</h1>
+		</header>
+		<section id="chat" class={ utils.CN(sheetClass, "space-y-4") }>
+			@liveRegion("chat-messages", events.TopicChat, events.TopicFiles) {
+				@chatMessages(actor, c, older)
+			}
+			<form
+				action={ householdURL(actor.HouseholdID, "chat") }
+				method="post"
+				enctype="multipart/form-data"
+				hx-post={ string(householdURL(actor.HouseholdID, "chat")) }
+				hx-target="#chat"
+				hx-select="#chat"
+				hx-swap="outerHTML"
+				class="space-y-2"
+			>
+				@formError(errorMessage)
+				@textarea.Textarea(textarea.Props{
+					Name:        "body",
+					Value:       draft,
+					Rows:        2,
+					Placeholder: utils.T(ctx, locales.LK_ChatMessage),
+					Attributes: templ.Attributes{
+						"maxlength":  services.MaxMessageLength,
+						"aria-label": utils.T(ctx, locales.LK_ChatMessage),
+					},
+				})
+				<div class="flex flex-wrap items-center gap-2">
+					<input
+						type="file"
+						name="file"
+						aria-label={ utils.T(ctx, locales.LK_ChatAttach) }
+						class="min-h-11 min-w-0 flex-1 text-sm file:mr-3 file:h-11 file:cursor-pointer file:rounded-full file:border-0 file:bg-secondary file:px-4 file:font-medium file:text-secondary-foreground"
+					/>
+					@button.Button(button.Props{Type: button.TypeSubmit, Size: button.SizeLg, Class: "h-11"}) {
+						@components.T(locales.LK_ChatSend)
+					}
+				</div>
+			</form>
+		</section>
+	}
+}
+
+// chatMessages scrolls by itself, column-reverse keeps it at the newest message
+// at the bottom without a script, so the newest message comes first in the markup
+templ chatMessages(actor services.Membership, c services.Chat, older bool) {
+	<div role="log" class="flex max-h-[60svh] flex-col-reverse gap-3 overflow-y-auto" tabindex="0" aria-label={ utils.T(ctx, locales.LK_ChatTitle) }>
+		if older {
+			<a href={ householdURL(actor.HouseholdID, "chat") } class="inline-flex min-h-11 items-center self-center text-sm text-muted-foreground underline underline-offset-4 hover:text-foreground">
+				@components.T(locales.LK_ChatNewest)
+			</a>
+		}
+		if len(c.Messages) == 0 {
+			<p class="text-muted-foreground">
+				@components.T(locales.LK_ChatEmpty)
+			</p>
+		}
+		for _, m := range c.Messages {
+			{{ own := m.AuthorID == actor.UserID }}
+			<article class={ utils.CN("max-w-[85%] space-y-1 rounded-2xl px-3 py-2", utils.IfElse(own, "self-end bg-primary/10", "self-start bg-secondary")) }>
+				<div class="flex items-baseline gap-2 text-xs text-muted-foreground">
+					<span class="font-medium">{ m.AuthorName }</span>
+					@localTime(m.CreatedAt)
+				</div>
+				if m.Body != "" {
+					<p class="whitespace-pre-wrap break-words">{ m.Body }</p>
+				}
+				for _, f := range m.Files {
+					{{ href := householdURL(actor.HouseholdID, "files", f.ID.String()) }}
+					if f.HasThumb {
+						<a href={ href } class="block">
+							<img src={ string(href) + "/thumb" } alt={ f.Name } loading="lazy" class="max-h-48 rounded-lg ring-1 ring-foreground/10"/>
+						</a>
+					} else {
+						<a href={ href } class="block break-words underline underline-offset-4">
+							<span aria-hidden="true">📎</span> { f.Name } <span class="text-xs text-muted-foreground">{ formatSize(f.SizeBytes) }</span>
+						</a>
+					}
+				}
+				if own {
+					<form
+						action={ householdURL(actor.HouseholdID, "chat", m.ID.String(), "delete") }
+						method="post"
+						hx-boost="true"
+						hx-confirm={ utils.T(ctx, locales.LK_ChatDelete) + "?" }
+						class="text-right"
+					>
+						<button type="submit" class="min-h-11 text-xs text-muted-foreground underline-offset-4 hover:text-destructive hover:underline">
+							@components.T(locales.LK_CommonDelete)
+						</button>
+					</form>
+				}
+			</article>
+		}
+		if c.HasOlder {
+			<a
+				href={ templ.SafeURL(string(householdURL(actor.HouseholdID, "chat")) + "?before=" + c.Messages[len(c.Messages)-1].ID.String()) }
+				class="inline-flex min-h-11 items-center self-center text-sm text-muted-foreground underline underline-offset-4 hover:text-foreground"
+			>
+				@components.T(locales.LK_ChatOlder)
+			</a>
+		}
+	</div>
+}
+
+// localTime is shown in the viewer's time zone by local-time.js, the server only knows UTC
+templ localTime(t pgtype.Timestamptz) {
+	<time datetime={ t.Time.UTC().Format(time.RFC3339) } data-local>{ t.Time.UTC().Format("2006-01-02 15:04") } UTC</time>
+}

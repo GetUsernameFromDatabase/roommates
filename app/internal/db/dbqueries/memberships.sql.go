@@ -55,7 +55,14 @@ const getActiveMembership = `-- name: GetActiveMembership :one
 SELECT m.household_id,
   m.user_id,
   m.role,
-  h.currency
+  h.currency,
+  (
+    SELECT count(*)
+    FROM messages msg
+    WHERE msg.household_id = m.household_id
+      AND msg.created_at > m.chat_read_at
+      AND msg.author_id <> m.user_id
+  ) AS unread_messages
 FROM memberships m
   JOIN households h ON h.id = m.household_id
 WHERE m.household_id = $1
@@ -69,10 +76,11 @@ type GetActiveMembershipParams struct {
 }
 
 type GetActiveMembershipRow struct {
-	HouseholdID pgtype.UUID `json:"household_id"`
-	UserID      pgtype.UUID `json:"user_id"`
-	Role        string      `json:"role"`
-	Currency    string      `json:"currency"`
+	HouseholdID    pgtype.UUID `json:"household_id"`
+	UserID         pgtype.UUID `json:"user_id"`
+	Role           string      `json:"role"`
+	Currency       string      `json:"currency"`
+	UnreadMessages int64       `json:"unread_messages"`
 }
 
 func (q *Queries) GetActiveMembership(ctx context.Context, arg GetActiveMembershipParams) (GetActiveMembershipRow, error) {
@@ -83,6 +91,7 @@ func (q *Queries) GetActiveMembership(ctx context.Context, arg GetActiveMembersh
 		&i.UserID,
 		&i.Role,
 		&i.Currency,
+		&i.UnreadMessages,
 	)
 	return i, err
 }

@@ -9,7 +9,7 @@ import (
 
 func TestItemClass(t *testing.T) {
 	ben, you, other := pgtype.UUID{Bytes: [16]byte{1}, Valid: true}, pgtype.UUID{Bytes: [16]byte{2}, Valid: true}, pgtype.UUID{Bytes: [16]byte{3}, Valid: true}
-	actor := services.Membership{HouseholdID: pgtype.UUID{}, UserID: you, Role: "", Currency: ""}
+	actor := services.Membership{HouseholdID: pgtype.UUID{}, UserID: you, Role: "", Currency: "", UnreadMessages: 0}
 	youOwe := services.Debt{From: you, FromName: "", To: ben, ToName: "", Cents: 1, Items: nil}
 	owesYou := services.Debt{From: ben, FromName: "", To: you, ToName: "", Cents: 1, Items: nil}
 	others := services.Debt{From: ben, FromName: "", To: other, ToName: "", Cents: 1, Items: nil}

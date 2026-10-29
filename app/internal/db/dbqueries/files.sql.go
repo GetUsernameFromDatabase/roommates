@@ -59,7 +59,8 @@ SELECT f.id,
   f.shopping_item_id,
   i.text AS item_text,
   f.expense_id,
-  e.title AS expense_title
+  e.title AS expense_title,
+  f.message_id
 FROM files f
   JOIN users uploader ON uploader.id = f.uploader_id
   LEFT JOIN notes n ON n.id = f.note_id
@@ -97,6 +98,7 @@ type GetFileRow struct {
 	ItemText       *string            `json:"item_text"`
 	ExpenseID      pgtype.UUID        `json:"expense_id"`
 	ExpenseTitle   *string            `json:"expense_title"`
+	MessageID      pgtype.UUID        `json:"message_id"`
 }
 
 func (q *Queries) GetFile(ctx context.Context, arg GetFileParams) (GetFileRow, error) {
@@ -119,6 +121,7 @@ func (q *Queries) GetFile(ctx context.Context, arg GetFileParams) (GetFileRow, e
 		&i.ItemText,
 		&i.ExpenseID,
 		&i.ExpenseTitle,
+		&i.MessageID,
 	)
 	return i, err
 }
@@ -134,9 +137,10 @@ INSERT INTO files (
     size_bytes,
     note_id,
     shopping_item_id,
-    expense_id
+    expense_id,
+    message_id
   )
-VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
 RETURNING id
 `
 
@@ -151,6 +155,7 @@ type InsertFileParams struct {
 	NoteID         pgtype.UUID `json:"note_id"`
 	ShoppingItemID pgtype.UUID `json:"shopping_item_id"`
 	ExpenseID      pgtype.UUID `json:"expense_id"`
+	MessageID      pgtype.UUID `json:"message_id"`
 }
 
 func (q *Queries) InsertFile(ctx context.Context, arg InsertFileParams) (pgtype.UUID, error) {
@@ -165,6 +170,7 @@ func (q *Queries) InsertFile(ctx context.Context, arg InsertFileParams) (pgtype.
 		arg.NoteID,
 		arg.ShoppingItemID,
 		arg.ExpenseID,
+		arg.MessageID,
 	)
 	var id pgtype.UUID
 	err := row.Scan(&id)
@@ -187,6 +193,7 @@ WHERE f.household_id = $1
     f.note_id = $2
     OR f.shopping_item_id = $3
     OR f.expense_id = $4
+    OR f.message_id = $5
   )
 ORDER BY f.created_at
 `
@@ -196,6 +203,7 @@ type ListAttachedFilesParams struct {
 	NoteID         pgtype.UUID `json:"note_id"`
 	ShoppingItemID pgtype.UUID `json:"shopping_item_id"`
 	ExpenseID      pgtype.UUID `json:"expense_id"`
+	MessageID      pgtype.UUID `json:"message_id"`
 }
 
 type ListAttachedFilesRow struct {
@@ -216,6 +224,7 @@ func (q *Queries) ListAttachedFiles(ctx context.Context, arg ListAttachedFilesPa
 		arg.NoteID,
 		arg.ShoppingItemID,
 		arg.ExpenseID,
+		arg.MessageID,
 	)
 	if err != nil {
 		return nil, err
@@ -286,7 +295,8 @@ SELECT f.id,
   f.shopping_item_id,
   i.text AS item_text,
   f.expense_id,
-  e.title AS expense_title
+  e.title AS expense_title,
+  f.message_id
 FROM files f
   JOIN users uploader ON uploader.id = f.uploader_id
   LEFT JOIN notes n ON n.id = f.note_id
@@ -322,6 +332,7 @@ type ListFilesRow struct {
 	ItemText       *string            `json:"item_text"`
 	ExpenseID      pgtype.UUID        `json:"expense_id"`
 	ExpenseTitle   *string            `json:"expense_title"`
+	MessageID      pgtype.UUID        `json:"message_id"`
 }
 
 // every file the user may see, newest first, with what it is attached to
@@ -350,6 +361,7 @@ func (q *Queries) ListFiles(ctx context.Context, arg ListFilesParams) ([]ListFil
 			&i.ItemText,
 			&i.ExpenseID,
 			&i.ExpenseTitle,
+			&i.MessageID,
 		); err != nil {
 			return nil, err
 		}

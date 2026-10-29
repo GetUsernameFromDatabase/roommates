@@ -57,5 +57,6 @@ const (
 	ParamNoteID      = "noteID"
 	ParamFileID      = "fileID"
 	ParamExpenseID   = "expenseID"
+	ParamMessageID   = "messageID"
 	ParamSettleID    = "settlementID"
 )

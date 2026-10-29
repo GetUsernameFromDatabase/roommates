@@ -5,6 +5,7 @@ import "roommates/web/components/button"
 import "roommates/web/components/field"
 import "roommates/web/components/input"
 import "roommates/internal/services"
+import "roommates/internal/events"
 import g "roommates/internal/config"
 import "roommates/internal/locales"
 import "roommates/internal/utils"
@@ -14,29 +15,35 @@ import "roommates/internal/utils"
 templ HouseholdShopping(actor services.Membership, o services.HouseholdOverview, errorMessage string) {
 	@appShell(o.Household.Name, &HouseholdNav{HouseholdID: actor.HouseholdID, Section: SectionShopping}) {
 		@householdSwitcher(actor.HouseholdID, o.Household.Name, o.Households)
+		// people are not in the nav, the chat took their place
+		<a href={ householdURL(actor.HouseholdID, "people") } class="-mt-6 inline-flex min-h-11 items-center self-start text-sm text-muted-foreground underline underline-offset-4 hover:text-foreground">
+			@components.T(locales.LK_NavPeople)
+		</a>
 		@VerifyEmailBanner(o.ActorEmailValidated)
 		@formError(errorMessage)
 		<section aria-labelledby="lists-title" class={ sheetClass }>
 			<h2 id="lists-title" class="text-xl font-semibold">
 				@components.T(locales.LK_ShoppingLists)
 			</h2>
-			if len(o.ShoppingLists) == 0 {
-				<p class="mt-2 text-muted-foreground">
-					@components.T(locales.LK_ShoppingNoLists)
-				</p>
-			} else {
-				<ul class="mt-2 divide-y">
-					for _, l := range o.ShoppingLists {
-						<li>
-							<a href={ householdURL(actor.HouseholdID, "lists", l.ID.String()) } class="flex min-h-12 items-center justify-between gap-3 py-2 hover:underline">
-								<span class="font-heading text-lg font-semibold break-words">{ l.Name }</span>
-								<span class="shrink-0 text-sm text-muted-foreground">
-									{ utils.T(ctx, locales.LK_ShoppingOpenItems, l.OpenItems) }
-								</span>
-							</a>
-						</li>
-					}
-				</ul>
+			@liveRegion("shopping-lists", events.TopicShopping) {
+				if len(o.ShoppingLists) == 0 {
+					<p class="mt-2 text-muted-foreground">
+						@components.T(locales.LK_ShoppingNoLists)
+					</p>
+				} else {
+					<ul class="mt-2 divide-y">
+						for _, l := range o.ShoppingLists {
+							<li>
+								<a href={ householdURL(actor.HouseholdID, "lists", l.ID.String()) } class="flex min-h-12 items-center justify-between gap-3 py-2 hover:underline">
+									<span class="font-heading text-lg font-semibold break-words">{ l.Name }</span>
+									<span class="shrink-0 text-sm text-muted-foreground">
+										{ utils.T(ctx, locales.LK_ShoppingOpenItems, l.OpenItems) }
+									</span>
+								</a>
+							</li>
+						}
+					</ul>
+				}
 			}
 			<form action={ householdURL(actor.HouseholdID, "lists") } method="post" hx-boost="true" class="mt-4 flex gap-2">
 				@input.Input(input.Props{
@@ -64,7 +71,7 @@ templ HouseholdShopping(actor services.Membership, o services.HouseholdOverview,
 // infoMessage and errorMessage are the outcome of the last action
 templ HouseholdPeople(actor services.Membership, o services.HouseholdOverview, inviteBaseURL, infoMessage, errorMessage string) {
 	{{ isOwner := actor.Role == g.RoleOwner }}
-	@appShell(o.Household.Name, &HouseholdNav{HouseholdID: actor.HouseholdID, Section: SectionPeople}) {
+	@appShell(o.Household.Name, &HouseholdNav{HouseholdID: actor.HouseholdID, Section: ""}) {
 		@householdSwitcher(actor.HouseholdID, o.Household.Name, o.Households)
 		@VerifyEmailBanner(o.ActorEmailValidated)
 		if infoMessage != "" {
@@ -77,46 +84,48 @@ templ HouseholdPeople(actor services.Membership, o services.HouseholdOverview, i
 			<h2 id="members-title" class="text-xl font-semibold">
 				@components.T(locales.LK_HouseholdMembers)
 			</h2>
-			<ul class="mt-2 divide-y">
-				for _, m := range o.Members {
-					<li class="flex flex-wrap items-center justify-between gap-2 py-3">
-						<div class="min-w-0">
-							<span class="font-medium break-words">{ m.Username }</span>
-							if m.UserID == actor.UserID {
-								<span class="text-sm text-muted-foreground">({ utils.T(ctx, locales.LK_HouseholdYou) })</span>
-							}
-							<div class="text-sm text-muted-foreground">{ RoleName(ctx, m.Role) }</div>
-						</div>
-						if isOwner && m.Role != g.RoleOwner {
-							<div class="flex gap-2">
-								<form action={ householdURL(actor.HouseholdID, "members", m.UserID.String(), "promote") } method="post" hx-boost="true">
-									@button.Button(button.Props{
-										Type:    button.TypeSubmit,
-										Variant: button.VariantOutline,
-										Size:    button.SizeSm,
-									}) {
-										@components.T(locales.LK_HouseholdPromote)
-									}
-								</form>
-								<form
-									action={ householdURL(actor.HouseholdID, "members", m.UserID.String(), "remove") }
-									method="post"
-									hx-boost="true"
-									hx-confirm={ utils.T(ctx, locales.LK_HouseholdRemove) + " " + m.Username + "?" }
-								>
-									@button.Button(button.Props{
-										Type:    button.TypeSubmit,
-										Variant: button.VariantDestructive,
-										Size:    button.SizeSm,
-									}) {
-										@components.T(locales.LK_HouseholdRemove)
-									}
-								</form>
+			@liveRegion("members", events.TopicPeople) {
+				<ul class="mt-2 divide-y">
+					for _, m := range o.Members {
+						<li class="flex flex-wrap items-center justify-between gap-2 py-3">
+							<div class="min-w-0">
+								<span class="font-medium break-words">{ m.Username }</span>
+								if m.UserID == actor.UserID {
+									<span class="text-sm text-muted-foreground">({ utils.T(ctx, locales.LK_HouseholdYou) })</span>
+								}
+								<div class="text-sm text-muted-foreground">{ RoleName(ctx, m.Role) }</div>
 							</div>
-						}
-					</li>
-				}
-			</ul>
+							if isOwner && m.Role != g.RoleOwner {
+								<div class="flex gap-2">
+									<form action={ householdURL(actor.HouseholdID, "members", m.UserID.String(), "promote") } method="post" hx-boost="true">
+										@button.Button(button.Props{
+											Type:    button.TypeSubmit,
+											Variant: button.VariantOutline,
+											Size:    button.SizeSm,
+										}) {
+											@components.T(locales.LK_HouseholdPromote)
+										}
+									</form>
+									<form
+										action={ householdURL(actor.HouseholdID, "members", m.UserID.String(), "remove") }
+										method="post"
+										hx-boost="true"
+										hx-confirm={ utils.T(ctx, locales.LK_HouseholdRemove) + " " + m.Username + "?" }
+									>
+										@button.Button(button.Props{
+											Type:    button.TypeSubmit,
+											Variant: button.VariantDestructive,
+											Size:    button.SizeSm,
+										}) {
+											@components.T(locales.LK_HouseholdRemove)
+										}
+									</form>
+								</div>
+							}
+						</li>
+					}
+				</ul>
+			}
 		</section>
 		if isOwner {
 			<section aria-labelledby="invites-title">
@@ -126,39 +135,41 @@ templ HouseholdPeople(actor services.Membership, o services.HouseholdOverview, i
 				<p class="mt-1 text-sm text-muted-foreground">
 					@components.T(locales.LK_HouseholdInvitesDescription)
 				</p>
-				if len(o.Invites) == 0 {
-					<p class="mt-3 text-sm text-muted-foreground">
-						@components.T(locales.LK_HouseholdNoInvites)
-					</p>
-				} else {
-					<ul class="mt-2 divide-y">
-						for _, inv := range o.Invites {
-							<li class="space-y-2 py-3">
-								<div class="flex items-center justify-between gap-2">
-									<span class="font-mono text-lg tracking-wider">{ inv.Code }</span>
-									<form action={ householdURL(actor.HouseholdID, "invites", inv.ID.String(), "delete") } method="post" hx-boost="true">
-										@button.Button(button.Props{
-											Type:    button.TypeSubmit,
-											Variant: button.VariantGhost,
-											Size:    button.SizeSm,
-										}) {
-											@components.T(locales.LK_HouseholdRevoke)
-										}
-									</form>
-								</div>
-								<input
-									type="text"
-									readonly
-									value={ inviteBaseURL + inv.Code }
-									aria-label={ utils.T(ctx, locales.LK_HouseholdInvites) }
-									class="w-full rounded-lg border bg-card px-2 py-1.5 font-mono text-xs"
-								/>
-								<div class="text-xs text-muted-foreground">
-									{ utils.T(ctx, locales.LK_HouseholdExpires, formatDate(inv.ExpiresAt)) }
-								</div>
-							</li>
-						}
-					</ul>
+				@liveRegion("invites", events.TopicPeople) {
+					if len(o.Invites) == 0 {
+						<p class="mt-3 text-sm text-muted-foreground">
+							@components.T(locales.LK_HouseholdNoInvites)
+						</p>
+					} else {
+						<ul class="mt-2 divide-y">
+							for _, inv := range o.Invites {
+								<li class="space-y-2 py-3">
+									<div class="flex items-center justify-between gap-2">
+										<span class="font-mono text-lg tracking-wider">{ inv.Code }</span>
+										<form action={ householdURL(actor.HouseholdID, "invites", inv.ID.String(), "delete") } method="post" hx-boost="true">
+											@button.Button(button.Props{
+												Type:    button.TypeSubmit,
+												Variant: button.VariantGhost,
+												Size:    button.SizeSm,
+											}) {
+												@components.T(locales.LK_HouseholdRevoke)
+											}
+										</form>
+									</div>
+									<input
+										type="text"
+										readonly
+										value={ inviteBaseURL + inv.Code }
+										aria-label={ utils.T(ctx, locales.LK_HouseholdInvites) }
+										class="w-full rounded-lg border bg-card px-2 py-1.5 font-mono text-xs"
+									/>
+									<div class="text-xs text-muted-foreground">
+										{ utils.T(ctx, locales.LK_HouseholdExpires, formatDate(inv.ExpiresAt)) }
+									</div>
+								</li>
+							}
+						</ul>
+					}
 				}
 				if o.ActorEmailValidated {
 					<form action={ householdURL(actor.HouseholdID, "invites") } method="post" hx-boost="true" class="mt-4">

@@ -214,6 +214,7 @@ func (s *DefaultService) GetExpense(ctx context.Context, actor Membership, expen
 		ListID:         pgtype.UUID{},
 		ShoppingItemID: pgtype.UUID{},
 		ExpenseID:      expenseID,
+		MessageID:      pgtype.UUID{},
 	})
 	return e, err
 }

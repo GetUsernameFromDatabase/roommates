@@ -5,6 +5,7 @@ import (
 	"io/fs"
 	"net/http"
 	g "roommates/internal/config"
+	"roommates/internal/events"
 	"roommates/internal/handlers"
 	"roommates/internal/mailer"
 	"roommates/internal/middleware"
@@ -128,6 +129,12 @@ func initRoutes(r *gin.Engine, h *handlers.DefaultHandler, service *services.Def
 			note.POST("/delete", h.DeleteNote)
 			note.POST("/files", h.UploadNoteFile)
 
+			household.GET("/events", h.Events)
+			household.GET("/chat", h.PageChat)
+			household.POST("/chat", h.PostMessage)
+			household.GET("/chat/badge", h.ChatBadge)
+			household.POST("/chat/:"+g.ParamMessageID+"/delete", h.DeleteMessage)
+
 			household.GET("/files", h.PageFiles)
 			household.POST("/files", h.UploadFile)
 			household.GET("/files/:"+g.ParamFileID, h.PageFile)
@@ -185,7 +192,9 @@ func InitGinEngine(dbpool *pgxpool.Pool) *gin.Engine {
 	// panics now if the object storage is missing, not on the first upload
 	service := services.NewDefaultService(dbpool, mailer.New(), storage.New(context.Background()))
 	go service.RunFilePurger(context.Background(), time.Minute)
-	handler := handlers.NewDefaultHandler(service)
+	hub := events.NewHub()
+	go hub.Run(context.Background(), dbpool)
+	handler := handlers.NewDefaultHandler(service, hub)
 	initRoutes(r, handler, service)
 	return r
 }

@@ -47,6 +47,7 @@ type File struct {
 	ShoppingItemID pgtype.UUID        `json:"shopping_item_id"`
 	CreatedAt      pgtype.Timestamptz `json:"created_at"`
 	ExpenseID      pgtype.UUID        `json:"expense_id"`
+	MessageID      pgtype.UUID        `json:"message_id"`
 }
 
 type FilePurge struct {
@@ -78,6 +79,15 @@ type Membership struct {
 	Role        string             `json:"role"`
 	JoinedAt    pgtype.Timestamptz `json:"joined_at"`
 	LeftAt      pgtype.Timestamptz `json:"left_at"`
+	ChatReadAt  pgtype.Timestamptz `json:"chat_read_at"`
+}
+
+type Message struct {
+	ID          pgtype.UUID        `json:"id"`
+	HouseholdID pgtype.UUID        `json:"household_id"`
+	AuthorID    pgtype.UUID        `json:"author_id"`
+	Body        string             `json:"body"`
+	CreatedAt   pgtype.Timestamptz `json:"created_at"`
 }
 
 type Note struct {

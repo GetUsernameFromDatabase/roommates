@@ -2,6 +2,7 @@ package pages
 
 import "roommates/web/components"
 import "roommates/internal/db/dbqueries"
+import "roommates/internal/events"
 import "roommates/internal/locales"
 import "roommates/internal/utils"
 import "github.com/jackc/pgx/v5/pgtype"
@@ -12,7 +13,7 @@ const (
 	SectionExpenses = "expenses"
 	SectionNotes    = "notes"
 	SectionFiles    = "files"
-	SectionPeople   = "people"
+	SectionChat     = "chat"
 )
 
 // HouseholdNav is where in a household a page is
@@ -34,10 +35,17 @@ templ guestShell(title string) {
 
 // appShell is the document of signed in pages: one column, and inside a household
 // the section nav, fixed at the bottom on phones so it is in reach of a thumb
+//
+// inside a household the page listens to its events, see [liveRegion]
 templ appShell(title string, nav *HouseholdNav) {
 	@components.HtmlWrap() {
 		@components.HeaderComponent(title)
-		<body>
+		<body
+			if nav != nil {
+				hx-ext="sse"
+				sse-connect={ string(householdURL(nav.HouseholdID, "events")) }
+			}
+		>
 			if nav != nil {
 				@householdNav(*nav)
 			}
@@ -64,11 +72,17 @@ templ householdNav(nav HouseholdNav) {
 			@householdNavItem(householdURL(nav.HouseholdID, "expenses"), locales.LK_NavExpenses, nav.Section == SectionExpenses)
 			@householdNavItem(householdURL(nav.HouseholdID, "notes"), locales.LK_NavNotes, nav.Section == SectionNotes)
 			@householdNavItem(householdURL(nav.HouseholdID, "files"), locales.LK_NavFiles, nav.Section == SectionFiles)
-			@householdNavItem(householdURL(nav.HouseholdID, "people"), locales.LK_NavPeople, nav.Section == SectionPeople)
+			@householdNavItem(householdURL(nav.HouseholdID, "chat"), locales.LK_NavChat, nav.Section == SectionChat) {
+				// the chat page marks everything read
+				if nav.Section != SectionChat {
+					@ChatBadge(nav.HouseholdID, utils.GetUnreadChat(ctx))
+				}
+			}
 		</ul>
 	</nav>
 }
 
+// householdNavItem shows children after the label
 templ householdNavItem(href templ.SafeURL, label locales.LK, current bool) {
 	<li class="flex-1 md:flex-none">
 		<a
@@ -76,12 +90,35 @@ templ householdNavItem(href templ.SafeURL, label locales.LK, current bool) {
 			if current {
 				aria-current="page"
 			}
-			class={ utils.CN("flex h-12 items-center justify-center rounded-full px-2 font-heading md:px-5 font-semibold outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
+			class={ utils.CN("flex h-12 items-center justify-center gap-1 rounded-full px-2 font-heading md:px-5 font-semibold outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
 				utils.IfElse(current, "bg-primary text-primary-foreground", "text-muted-foreground hover:bg-secondary hover:text-foreground")) }
 		>
 			@components.T(label)
+			{ children... }
 		</a>
 	</li>
+}
+
+// ChatBadge is the count of unread chat messages, it fetches itself again on new messages
+templ ChatBadge(householdID pgtype.UUID, unread int64) {
+	<span id="chat-badge" hx-get={ string(householdURL(householdID, "chat", "badge")) } hx-trigger={ sseTrigger([]string{events.TopicChat, events.TopicRead}) } hx-swap="outerHTML">
+		if unread > 0 {
+			<span aria-hidden="true" class="inline-flex min-w-5 items-center justify-center rounded-full bg-primary px-1.5 text-xs text-primary-foreground">
+				{ unreadLabel(unread) }
+			</span>
+			<span class="sr-only">{ utils.T(ctx, locales.LK_ChatUnread, unread) }</span>
+		}
+	</span>
+}
+
+// liveRegion fetches the current page again when one of the household's topics
+// changes and swaps itself for its copy in it, so it shows the viewer's own view
+//
+// it must not hold a form that is typed in, the refetch would clear it
+templ liveRegion(id string, topics ...string) {
+	<div id={ id } hx-get="" hx-trigger={ sseTrigger(topics) } hx-select={ "#" + id } hx-swap="outerHTML">
+		{ children... }
+	</div>
 }
 
 // householdSwitcher is the household name as the page's nameplate,
@@ -115,6 +152,9 @@ templ householdSwitcher(current pgtype.UUID, name string, households []dbqueries
 					</li>
 				}
 				<li class="mt-1 border-t pt-1">
+					<a href={ householdURL(current, "people") } class="flex min-h-11 items-center rounded-lg px-3 text-sm text-muted-foreground hover:bg-secondary hover:text-foreground">
+						@components.T(locales.LK_NavPeople)
+					</a>
 					<a href="/" class="flex min-h-11 items-center rounded-lg px-3 text-sm text-muted-foreground hover:bg-secondary hover:text-foreground">
 						@components.T(locales.LK_HouseholdBack)
 					</a>

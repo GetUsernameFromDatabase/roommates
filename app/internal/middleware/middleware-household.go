@@ -40,6 +40,7 @@ func NewHouseholdMember(service *services.DefaultService) gin.HandlerFunc {
 		}
 
 		ctx.Set(g.GinKeyMembership, m)
+		ctx.Request = ctx.Request.WithContext(utils.WithUnreadChat(ctx.Request.Context(), m.UnreadMessages))
 		ctx.Next()
 	}
 }

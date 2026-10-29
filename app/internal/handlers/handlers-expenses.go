@@ -160,7 +160,7 @@ func (h *DefaultHandler) UploadExpenseFile(ctx *gin.Context) {
 		return
 	}
 	actor := membershipFromContext(ctx)
-	h.handleUpload(ctx, services.FileTarget{NoteID: pgtype.UUID{}, ListID: pgtype.UUID{}, ShoppingItemID: pgtype.UUID{}, ExpenseID: e.Expense.ID},
+	h.handleUpload(ctx, services.FileTarget{NoteID: pgtype.UUID{}, ListID: pgtype.UUID{}, ShoppingItemID: pgtype.UUID{}, ExpenseID: e.Expense.ID, MessageID: pgtype.UUID{}},
 		expensePath(actor.HouseholdID, e.Expense.ID), func(status int, errorMessage string) {
 			RenderTemplStatus(ctx, status, pages.ExpensePage(actor, e, errorMessage))
 		})

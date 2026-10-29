@@ -153,6 +153,18 @@ et:
     download: Laadi alla
     all: Kõik failid
     on-expense: "Kulul: %s"
+    on-message: Vestluses
+  chat:
+    title: Vestlus
+    message: Sõnum
+    send: Saada
+    attach: Lisa fail
+    older: Varasemad sõnumid
+    newest: Uusimad sõnumid
+    empty: Sõnumeid veel pole
+    unread: "%d lugemata"
+    length: Kirjuta sõnum või lisa fail, sõnum võib olla kuni %d märki
+    delete: Kustuta sõnum
   appearance:
     title: Välimus
     theme: Teema
@@ -170,6 +182,7 @@ et:
     people: Inimesed
     switch: Vaheta leibkonda
     expenses: Kulud
+    chat: Vestlus
   invite-page:
     title: Liitu leibkonnaga %s
     description: Sind on kutsutud selle leibkonnaga liituma.

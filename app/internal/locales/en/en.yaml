@@ -153,6 +153,18 @@ en:
     download: Download
     all: All files
     on-expense: "On expense: %s"
+    on-message: In the chat
+  chat:
+    title: Chat
+    message: Message
+    send: Send
+    attach: Add a file
+    older: Older messages
+    newest: Newest messages
+    empty: No messages yet
+    unread: "%d unread"
+    length: Write a message or add a file, the message can be at most %d characters
+    delete: Delete message
   appearance:
     title: Appearance
     theme: Theme
@@ -170,6 +182,7 @@ en:
     people: People
     switch: Switch household
     expenses: Expenses
+    chat: Chat
   invite-page:
     title: Join %s
     description: You have been invited to join this household.

@@ -8,6 +8,8 @@ import (
 	"roommates/internal/locales"
 	"roommates/internal/services"
 	"roommates/internal/utils"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/a-h/templ"
@@ -21,6 +23,19 @@ func householdURL(id pgtype.UUID, parts ...string) templ.SafeURL {
 		u += "/" + url.PathEscape(p)
 	}
 	return templ.SafeURL(u)
+}
+
+// sseTrigger is the hx-trigger of server-sent events named topics
+func sseTrigger(topics []string) string {
+	return "sse:" + strings.Join(topics, ", sse:")
+}
+
+// unreadLabel caps the count so the nav keeps its width
+func unreadLabel(n int64) string {
+	if n > 99 {
+		return "99+"
+	}
+	return strconv.FormatInt(n, 10)
 }
 
 func inviteURL(code string) templ.SafeURL {

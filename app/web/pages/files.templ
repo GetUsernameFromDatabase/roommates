@@ -4,6 +4,7 @@ import "roommates/web/components"
 import "roommates/web/components/button"
 import "roommates/internal/db/dbqueries"
 import "roommates/internal/services"
+import "roommates/internal/events"
 import g "roommates/internal/config"
 import "roommates/internal/locales"
 import "roommates/internal/utils"
@@ -19,30 +20,36 @@ templ HouseholdFiles(actor services.Membership, files []dbqueries.ListFilesRow, 
 		</header>
 		<section class={ utils.CN(sheetClass, "space-y-4") }>
 			@fileUploadForm(householdURL(actor.HouseholdID, "files"), errorMessage)
-			if len(files) == 0 {
-				<p class="text-muted-foreground">
-					@components.T(locales.LK_FilesNone)
-				</p>
-			} else {
-				<ul class="divide-y">
-					for _, f := range files {
-						@fileRow(actor, householdURL(actor.HouseholdID, "files"), f.ID, f.Name, f.HasThumb, f.SizeBytes, f.UploaderID, f.UploaderName, f.CreatedAt) {
-							if f.NoteTitle != nil {
-								<a href={ householdURL(actor.HouseholdID, "notes", f.NoteID.String()) } class={ fileContextClass }>
-									{ utils.T(ctx, locales.LK_FilesOnNote, *f.NoteTitle) }
-								</a>
-							} else if f.ItemText != nil {
-								<a href={ householdURL(actor.HouseholdID, "lists", f.ItemListID.String(), "items", f.ShoppingItemID.String()) } class={ fileContextClass }>
-									{ utils.T(ctx, locales.LK_FilesOnItem, *f.ItemText) }
-								</a>
-							} else if f.ExpenseTitle != nil {
-								<a href={ householdURL(actor.HouseholdID, "expenses", f.ExpenseID.String()) } class={ fileContextClass }>
-									{ utils.T(ctx, locales.LK_FilesOnExpense, *f.ExpenseTitle) }
-								</a>
+			@liveRegion("files", events.TopicFiles) {
+				if len(files) == 0 {
+					<p class="text-muted-foreground">
+						@components.T(locales.LK_FilesNone)
+					</p>
+				} else {
+					<ul class="divide-y">
+						for _, f := range files {
+							@fileRow(actor, householdURL(actor.HouseholdID, "files"), f.ID, f.Name, f.HasThumb, f.SizeBytes, f.UploaderID, f.UploaderName, f.CreatedAt) {
+								if f.NoteTitle != nil {
+									<a href={ householdURL(actor.HouseholdID, "notes", f.NoteID.String()) } class={ fileContextClass }>
+										{ utils.T(ctx, locales.LK_FilesOnNote, *f.NoteTitle) }
+									</a>
+								} else if f.ItemText != nil {
+									<a href={ householdURL(actor.HouseholdID, "lists", f.ItemListID.String(), "items", f.ShoppingItemID.String()) } class={ fileContextClass }>
+										{ utils.T(ctx, locales.LK_FilesOnItem, *f.ItemText) }
+									</a>
+								} else if f.ExpenseTitle != nil {
+									<a href={ householdURL(actor.HouseholdID, "expenses", f.ExpenseID.String()) } class={ fileContextClass }>
+										{ utils.T(ctx, locales.LK_FilesOnExpense, *f.ExpenseTitle) }
+									</a>
+								} else if f.MessageID.Valid {
+									<a href={ householdURL(actor.HouseholdID, "chat") } class={ fileContextClass }>
+										@components.T(locales.LK_FilesOnMessage)
+									</a>
+								}
 							}
 						}
-					}
-				</ul>
+					</ul>
+				}
 			}
 		</section>
 	}
@@ -57,12 +64,14 @@ templ attachedFiles(actor services.Membership, back templ.SafeURL, files []servi
 		<h2 id="attachments-title" class="text-xl font-semibold">
 			@components.T(locales.LK_FilesAttachments)
 		</h2>
-		if len(files) > 0 {
-			<ul class="divide-y">
-				for _, f := range files {
-					@fileRow(actor, back, f.ID, f.Name, f.HasThumb, f.SizeBytes, f.UploaderID, f.UploaderName, f.CreatedAt)
-				}
-			</ul>
+		@liveRegion("attachments", events.TopicFiles) {
+			if len(files) > 0 {
+				<ul class="divide-y">
+					for _, f := range files {
+						@fileRow(actor, back, f.ID, f.Name, f.HasThumb, f.SizeBytes, f.UploaderID, f.UploaderName, f.CreatedAt)
+					}
+				</ul>
+			}
 		}
 		@fileUploadForm(uploadAction, errorMessage)
 	</section>
@@ -133,6 +142,8 @@ templ FilePage(actor services.Membership, f services.FileMeta) {
 	} else if f.ExpenseTitle != nil {
 		{{ back = householdURL(actor.HouseholdID, "expenses", f.ExpenseID.String()) }}
 		{{ backText, section = utils.T(ctx, locales.LK_FilesOnExpense, *f.ExpenseTitle), SectionExpenses }}
+	} else if f.MessageID.Valid {
+		{{ back, backText, section = householdURL(actor.HouseholdID, "chat"), utils.T(ctx, locales.LK_FilesOnMessage), SectionChat }}
 	}
 	@appShell(f.Name, &HouseholdNav{HouseholdID: actor.HouseholdID, Section: section}) {
 		@doorplateHeader(back, backText, f.Name)

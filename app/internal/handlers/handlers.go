@@ -4,6 +4,7 @@ package handlers
 import (
 	"net/http"
 	g "roommates/internal/config"
+	"roommates/internal/events"
 	"roommates/internal/logger"
 	"roommates/internal/services"
 	"roommates/web/pages"
@@ -20,11 +21,13 @@ var log = logger.Main.With().Str("package", "handlers").Logger()
 
 type DefaultHandler struct {
 	service *services.DefaultService
+	hub     *events.Hub
 }
 
-func NewDefaultHandler(service *services.DefaultService) *DefaultHandler {
+func NewDefaultHandler(service *services.DefaultService, hub *events.Hub) *DefaultHandler {
 	return &DefaultHandler{
 		service: service,
+		hub:     hub,
 	}
 }
 

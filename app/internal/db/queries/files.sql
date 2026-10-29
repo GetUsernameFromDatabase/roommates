@@ -9,9 +9,10 @@ INSERT INTO files (
     size_bytes,
     note_id,
     shopping_item_id,
-    expense_id
+    expense_id,
+    message_id
   )
-VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
 RETURNING id;
 -- every file the user may see, newest first, with what it is attached to
 -- name: ListFiles :many
@@ -29,7 +30,8 @@ SELECT f.id,
   f.shopping_item_id,
   i.text AS item_text,
   f.expense_id,
-  e.title AS expense_title
+  e.title AS expense_title,
+  f.message_id
 FROM files f
   JOIN users uploader ON uploader.id = f.uploader_id
   LEFT JOIN notes n ON n.id = f.note_id
@@ -59,6 +61,7 @@ WHERE f.household_id = sqlc.arg(household_id)
     f.note_id = sqlc.narg(note_id)
     OR f.shopping_item_id = sqlc.narg(shopping_item_id)
     OR f.expense_id = sqlc.narg(expense_id)
+    OR f.message_id = sqlc.narg(message_id)
   )
 ORDER BY f.created_at;
 -- name: GetFile :one
@@ -77,7 +80,8 @@ SELECT f.id,
   f.shopping_item_id,
   i.text AS item_text,
   f.expense_id,
-  e.title AS expense_title
+  e.title AS expense_title,
+  f.message_id
 FROM files f
   JOIN users uploader ON uploader.id = f.uploader_id
   LEFT JOIN notes n ON n.id = f.note_id

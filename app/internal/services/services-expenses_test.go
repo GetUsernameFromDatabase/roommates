@@ -211,7 +211,7 @@ func TestExpenses(t *testing.T) {
 	wantDebt("settled up", 0)
 
 	// files attach to an expense and go with it
-	onExpense := FileTarget{NoteID: pgtype.UUID{}, ListID: pgtype.UUID{}, ShoppingItemID: pgtype.UUID{}, ExpenseID: pizzaID}
+	onExpense := FileTarget{NoteID: pgtype.UUID{}, ListID: pgtype.UUID{}, ShoppingItemID: pgtype.UUID{}, ExpenseID: pizzaID, MessageID: pgtype.UUID{}}
 	_, err = s.UploadFile(ctx, strangerM, onExpense, "bill.txt", strings.NewReader("bill"), 4)
 	wantErr(t, "stranger attaches", err, g.ErrorNotFound)
 	if _, err := s.UploadFile(ctx, memberM, onExpense, "bill.txt", strings.NewReader("bill"), 4); err != nil {

@@ -6,6 +6,7 @@ import "roommates/web/components/input"
 import "roommates/web/components/textarea"
 import "roommates/internal/db/dbqueries"
 import "roommates/internal/services"
+import "roommates/internal/events"
 import g "roommates/internal/config"
 import "roommates/internal/locales"
 import "roommates/internal/utils"
@@ -33,24 +34,26 @@ templ HouseholdNotes(actor services.Membership, notes []dbqueries.ListNotesRow) 
 			}
 		</header>
 		<section class={ sheetClass }>
-			if len(notes) == 0 {
-				<p class="text-muted-foreground">
-					@components.T(locales.LK_NotesNone)
-				</p>
-			} else {
-				<ul class="divide-y">
-					for _, n := range notes {
-						<li>
-							<a href={ householdURL(actor.HouseholdID, "notes", n.ID.String()) } class="block min-h-12 py-2 hover:underline">
-								<span class="font-heading text-lg font-semibold break-words">{ n.Title }</span>
-								@noteBadges(n.Pinned, n.Visibility)
-								<span class="block text-xs text-muted-foreground">
-									{ utils.T(ctx, locales.LK_NotesEditedBy, n.EditedByName, formatDate(n.EditedAt)) }
-								</span>
-							</a>
-						</li>
-					}
-				</ul>
+			@liveRegion("notes", events.TopicNotes) {
+				if len(notes) == 0 {
+					<p class="text-muted-foreground">
+						@components.T(locales.LK_NotesNone)
+					</p>
+				} else {
+					<ul class="divide-y">
+						for _, n := range notes {
+							<li>
+								<a href={ householdURL(actor.HouseholdID, "notes", n.ID.String()) } class="block min-h-12 py-2 hover:underline">
+									<span class="font-heading text-lg font-semibold break-words">{ n.Title }</span>
+									@noteBadges(n.Pinned, n.Visibility)
+									<span class="block text-xs text-muted-foreground">
+										{ utils.T(ctx, locales.LK_NotesEditedBy, n.EditedByName, formatDate(n.EditedAt)) }
+									</span>
+								</a>
+							</li>
+						}
+					</ul>
+				}
 			}
 		</section>
 	}
@@ -74,21 +77,26 @@ templ NotePage(actor services.Membership, n services.Note, files []services.Atta
 	{{ noteURL := householdURL(actor.HouseholdID, "notes", n.ID.String()) }}
 	@appShell(n.Title, &HouseholdNav{HouseholdID: actor.HouseholdID, Section: SectionNotes}) {
 		@doorplateHeader(householdURL(actor.HouseholdID, "notes"), utils.T(ctx, locales.LK_NotesBack), n.Title)
-		<div class="-mt-6">
-			@noteBadges(n.Pinned, n.Visibility)
-			<p class="mt-1 text-xs text-muted-foreground">
-				{ utils.T(ctx, locales.LK_NotesEditedBy, n.EditedByName, formatDate(n.EditedAt)) }
-			</p>
-		</div>
-		<article class={ utils.CN(sheetClass, "note-body") }>
-			if n.BodyMd == "" {
-				<p class="text-muted-foreground">
-					@components.T(locales.LK_NotesEmpty)
-				</p>
-			} else {
-				@noteHTML(n.BodyMd)
-			}
-		</article>
+		// a flatmate's edit shows up, the title in the header stays until a reload
+		@liveRegion("note", events.TopicNotes) {
+			<div class="flex flex-col gap-8">
+				<div class="-mt-6">
+					@noteBadges(n.Pinned, n.Visibility)
+					<p class="mt-1 text-xs text-muted-foreground">
+						{ utils.T(ctx, locales.LK_NotesEditedBy, n.EditedByName, formatDate(n.EditedAt)) }
+					</p>
+				</div>
+				<article class={ utils.CN(sheetClass, "note-body") }>
+					if n.BodyMd == "" {
+						<p class="text-muted-foreground">
+							@components.T(locales.LK_NotesEmpty)
+						</p>
+					} else {
+						@noteHTML(n.BodyMd)
+					}
+				</article>
+			</div>
+		}
 		@attachedFiles(actor, noteURL, files, uploadError)
 		<div class="flex flex-wrap gap-2">
 			@button.Button(button.Props{Href: string(noteURL) + "/edit", Size: button.SizeLg}) {

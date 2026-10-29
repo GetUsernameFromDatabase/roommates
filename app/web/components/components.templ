@@ -55,6 +55,9 @@ templ HeaderComponent(title string) {
 		/>
 		// https://htmx.org/docs/#installing
 		<script src="/assets/lib/htmx.min.js"></script>
+		// live updates, see appShell
+		<script src="/assets/lib/sse.min.js"></script>
+		<script src="/assets/local-time.js"></script>
 		// this reccomends to use @components.Scripts()
 		// https://shadcn-templ.com/docs/installation#javascript
 		// but scripts_bundle.go just has bundleSrc

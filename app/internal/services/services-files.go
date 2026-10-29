@@ -31,12 +31,14 @@ var ImageMimes = map[string]bool{
 	"image/webp": true,
 }
 
-// FileTarget is what an upload attaches to: a note, an item of a list, an expense, or nothing
+// FileTarget is what an upload attaches to: a note, an item of a list, an expense,
+// a chat message, or nothing
 type FileTarget struct {
 	NoteID         pgtype.UUID
 	ListID         pgtype.UUID
 	ShoppingItemID pgtype.UUID
 	ExpenseID      pgtype.UUID
+	MessageID      pgtype.UUID
 }
 
 type AttachedFile = dbqueries.ListAttachedFilesRow
@@ -61,7 +63,8 @@ func cleanFileName(name string) (string, error) {
 	return name, nil
 }
 
-// checkFileTarget returns [g.ErrorNotFound] unless the actor sees the note, item or expense
+// checkFileTarget returns [g.ErrorNotFound] unless the actor sees the note, item or expense,
+// or wrote the message
 func (s *DefaultService) checkFileTarget(ctx context.Context, actor Membership, t FileTarget) error {
 	if t.NoteID.Valid {
 		_, err := s.GetNote(ctx, actor, t.NoteID)
@@ -74,6 +77,15 @@ func (s *DefaultService) checkFileTarget(ctx context.Context, actor Membership, 
 	if t.ExpenseID.Valid {
 		_, err := s.db.GetExpense(ctx, dbqueries.GetExpenseParams{ID: t.ExpenseID, HouseholdID: actor.HouseholdID})
 		return noRowsAs(err, g.ErrorNotFound)
+	}
+	if t.MessageID.Valid {
+		author, err := s.db.GetMessageAuthor(ctx, dbqueries.GetMessageAuthorParams{ID: t.MessageID, HouseholdID: actor.HouseholdID})
+		if err != nil {
+			return noRowsAs(err, g.ErrorNotFound)
+		}
+		if author != actor.UserID {
+			return g.ErrorNotFound
+		}
 	}
 	return nil
 }
@@ -150,6 +162,7 @@ func (s *DefaultService) UploadFile(ctx context.Context, actor Membership, t Fil
 		NoteID:         t.NoteID,
 		ShoppingItemID: t.ShoppingItemID,
 		ExpenseID:      t.ExpenseID,
+		MessageID:      t.MessageID,
 	})
 	if err != nil {
 		deleteStored()
@@ -172,6 +185,7 @@ func (s *DefaultService) AttachedFiles(ctx context.Context, actor Membership, t 
 		NoteID:         t.NoteID,
 		ShoppingItemID: t.ShoppingItemID,
 		ExpenseID:      t.ExpenseID,
+		MessageID:      t.MessageID,
 	})
 }
 

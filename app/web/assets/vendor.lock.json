@@ -15,6 +15,12 @@
       "files/bricolage-grotesque-latin-wght-normal.woff2": "a97804dc9fbe5fc972a08018c5eda4dab7ef2346f64c57e61419d05e6de4ea1c"
     }
   },
+  "htmx-ext-sse": {
+    "version": "2.2.4",
+    "sha256": {
+      "dist/sse.min.js": "98a46496de0c3605fbffdce9167ba427bdd9553184f83f149c261891a92c0136"
+    }
+  },
   "htmx.org": {
     "version": "2.0.11",
     "sha256": {
