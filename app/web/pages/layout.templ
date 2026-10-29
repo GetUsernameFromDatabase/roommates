@@ -45,9 +45,10 @@ templ guestShell(title string) {
 templ appShell(title string, nav *HouseholdNav) {
 	@components.HtmlWrap() {
 		@components.HeaderComponent(title)
-		// main fills what the nav leaves, the nav is in the flow on desktop
+		// main fills what the nav leaves, the nav is in the flow on desktop,
+		// the chat page is exactly the viewport so the chat can fill it
 		<body
-			class="flex min-h-svh flex-col lg:flex-row"
+			class="flex min-h-svh flex-col has-[#chat]:h-dvh lg:flex-row"
 			if nav != nil {
 				hx-ext="sse"
 				sse-connect={ string(householdURL(nav.HouseholdID, "events")) }
@@ -65,8 +66,10 @@ templ appShell(title string, nav *HouseholdNav) {
 }
 
 // pageMainClass is the single column of the signed in pages, 16px gutters on phones,
-// the chat is wider so both sides of the conversation have room
-const pageMainClass = "mx-auto flex flex-1 w-full max-w-lg flex-col gap-8 px-4 py-6 sm:p-10 md:has-[#chat]:max-w-3xl lg:max-w-3xl"
+// the chat is wider so both sides of the conversation have room, and on phones
+// only clears the tab bar so it gets most of the screen, with the safe area
+// only in the installed app like [householdNav]
+const pageMainClass = "mx-auto flex flex-1 w-full max-w-lg flex-col gap-8 px-4 py-6 sm:p-10 md:has-[#chat]:max-w-3xl lg:max-w-3xl has-[#chat]:min-h-0 max-lg:has-[#chat]:pt-2 max-lg:has-[#chat]:pb-[4.5rem] [@media(display-mode:standalone)]:max-lg:has-[#chat]:pb-[calc(4.5rem+env(safe-area-inset-bottom))]"
 
 // sheetClass is the one raised surface of a page, the thing used most on it
 const sheetClass = "rounded-2xl bg-card p-4 text-card-foreground ring-1 ring-foreground/10 sm:p-5"

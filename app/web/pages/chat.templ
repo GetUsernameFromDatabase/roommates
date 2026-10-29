@@ -1,6 +1,7 @@
 package pages
 
 import "roommates/web/components"
+import "roommates/web/components/avatar"
 import "roommates/web/components/bubble"
 import "roommates/web/components/button"
 import "roommates/web/components/message"
@@ -20,20 +21,22 @@ import "time"
 // the messages refetch on their own when someone writes
 templ ChatPage(actor services.Membership, c services.Chat, older bool, reply *services.ReplyPreview, draft, errorMessage string) {
 	@appShell(utils.T(ctx, locales.LK_ChatTitle), &HouseholdNav{HouseholdID: actor.HouseholdID, Section: SectionChat}) {
-		// with the keyboard open (chat-keyboard.js) the page is only the chat, sized to what the keyboard leaves
-		<header class="in-data-keyboard:hidden">
+		// with the keyboard open (chat-keyboard.js) the page is only the chat, sized to what the keyboard leaves,
+		// on phones the top bar and the tab bar already say where you are
+		<header class="max-lg:sr-only in-data-keyboard:hidden">
 			<h1 class="doorplate">
 				@components.T(locales.LK_ChatTitle)
 			</h1>
 		</header>
-		// fills the viewport so the composer stays in view, the messages scroll inside it,
+		// fills what [appShell] leaves of the viewport so the composer stays in view, the messages scroll inside it,
+		// edge to edge on phones; with the keyboard open it is what the keyboard leaves less main's padding,
 		// the live region's wrapper is display: contents so the log itself is the flex child that shrinks
-		// shortcut: 17.5rem (14rem on desktop, no top bar) is the app shell around it (nav, padding, header) by hand, revisit if the shell changes
-		<section id="chat" class={ utils.CN(sheetClass, "flex h-[calc(100dvh-17.5rem)] min-h-96 lg:h-[calc(100dvh-14rem)] flex-col gap-4 in-data-keyboard:h-[calc(var(--visible-height)-3rem)] in-data-keyboard:min-h-0 [&>#chat-messages]:contents") }>
+		<section id="chat" class={ utils.CN(sheetClass, "flex min-h-0 flex-1 flex-col gap-4 max-sm:-mx-4 max-sm:rounded-none max-sm:px-3 max-sm:py-3 max-sm:ring-0 in-data-keyboard:h-[calc(var(--visible-height)-1rem)] in-data-keyboard:flex-none [&>#chat-messages]:contents") }>
 			@liveRegion("chat-messages", events.TopicChat, events.TopicFiles) {
 				@chatMessages(actor, c, older)
 			}
 			<form
+				id="chat-composer"
 				action={ householdURL(actor.HouseholdID, "chat") }
 				method="post"
 				enctype="multipart/form-data"
@@ -44,8 +47,10 @@ templ ChatPage(actor services.Membership, c services.Chat, older bool, reply *se
 				class="shrink-0 space-y-2"
 			>
 				@formError(errorMessage)
-				if reply != nil {
-					<input type="hidden" name="reply_to" value={ reply.ID.String() }/>
+				// Reply and ✕ swap only this, see [chatReplySwap]
+				<div id="chat-reply" class="empty:hidden">
+					if reply != nil {
+						<input type="hidden" name="reply_to" value={ reply.ID.String() }/>
 					<div class="flex items-center gap-2 rounded-lg border-l-4 border-primary bg-muted py-1 pr-1 pl-3 text-sm">
 						<div class="min-w-0 flex-1">
 							<p class="font-medium">{ utils.T(ctx, locales.LK_ChatReplyingTo, reply.AuthorName) }</p>
@@ -56,34 +61,42 @@ templ ChatPage(actor services.Membership, c services.Chat, older bool, reply *se
 							Variant: button.VariantGhost,
 							Size:    button.SizeIconLg,
 							Class:   "size-11",
-							Attributes: templ.Attributes{
-								"hx-boost":   "true",
+							Attributes: utils.MergeAttributes(chatReplySwap(householdURL(actor.HouseholdID, "chat")), templ.Attributes{
 								"aria-label": utils.T(ctx, locales.LK_ChatCancelReply),
-							},
+							}),
 						}) {
 							<span aria-hidden="true">✕</span>
 						}
 					</div>
-				}
-				@textarea.Textarea(textarea.Props{
-					Name:        "body",
-					Value:       draft,
-					Rows:        2,
-					Placeholder: utils.T(ctx, locales.LK_ChatMessage),
-					Attributes: templ.Attributes{
-						"maxlength":  services.MaxMessageLength,
-						"aria-label": utils.T(ctx, locales.LK_ChatMessage),
-						"autofocus":  reply != nil,
-					},
-				})
-				<div class="flex flex-wrap items-center gap-2">
-					<input
-						type="file"
-						name="file"
-						aria-label={ utils.T(ctx, locales.LK_ChatAttach) }
-						class="min-h-11 min-w-0 flex-1 text-sm file:mr-3 file:h-11 file:cursor-pointer file:rounded-full file:border-0 file:bg-secondary file:px-4 file:font-medium file:text-secondary-foreground"
-					/>
-					@button.Button(button.Props{Type: button.TypeSubmit, Size: button.SizeLg, Class: "h-11"}) {
+					}
+				</div>
+				// one row: attach, the message growing with its text, send; on touch screens attach sends
+				// the files on their own as soon as they are picked, with a mouse they show here first (chat-keyboard.js)
+				<div data-chat-previews data-remove={ utils.T(ctx, locales.LK_CommonDelete) } class="flex flex-wrap gap-3 pt-2" hidden></div>
+				<div class="flex items-end gap-2">
+					<label
+						title={ utils.T(ctx, locales.LK_ChatAttach) }
+						class="flex size-11 shrink-0 cursor-pointer items-center justify-center rounded-full bg-secondary text-secondary-foreground hover:bg-secondary/80 has-focus-visible:ring-3 has-focus-visible:ring-ring/50"
+					>
+						<input type="file" name="file" multiple data-chat-attach aria-label={ utils.T(ctx, locales.LK_ChatAttach) } class="sr-only"/>
+						// lucide paperclip
+						<svg class="size-5" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+							<path d="m16 6-8.414 8.586a2 2 0 0 0 2.829 2.829l8.414-8.586a4 4 0 1 0-5.657-5.657l-8.379 8.551a6 6 0 1 0 8.485 8.485l8.379-8.551"></path>
+						</svg>
+					</label>
+					@textarea.Textarea(textarea.Props{
+						Name:        "body",
+						Value:       draft,
+						Rows:        1,
+						Placeholder: utils.T(ctx, locales.LK_ChatMessage),
+						Class:       "min-h-11 max-h-40 flex-1",
+						Attributes: templ.Attributes{
+							"maxlength":  services.MaxMessageLength,
+							"aria-label": utils.T(ctx, locales.LK_ChatMessage),
+						},
+					})
+					// disabled while there is nothing to send (chat-keyboard.js), enabled without scripts
+					@button.Button(button.Props{Type: button.TypeSubmit, Size: button.SizeLg, Class: "h-11", Attributes: templ.Attributes{"data-chat-send": true}}) {
 						@components.T(locales.LK_ChatSend)
 					}
 				</div>
@@ -115,15 +128,15 @@ templ chatMessages(actor services.Membership, c services.Chat, older bool) {
 			@message.Message(message.Props{
 				ID:    "message-" + m.ID.String(),
 				Align: utils.IfElse(own, message.AlignEnd, message.AlignStart),
-				Class: utils.CN("pointer-coarse:select-none pointer-coarse:[-webkit-touch-callout:none]", utils.IfElse(starts, "", "-mt-2")),
+				Class: utils.CN("pointer-coarse:select-none pointer-coarse:[-webkit-touch-callout:none] pointer-coarse:[-webkit-user-drag:none]", utils.IfElse(starts, "", "-mt-2")),
 			}) {
 				// the people colour marks who wrote a run, the name is in its header for screen readers
 				if !own {
 					@message.Avatar(message.AvatarProps{
-						Class:      utils.CN("size-8 bg-claim font-heading font-semibold text-claim-foreground group-has-data-[slot=message-footer]/message:translate-y-0", utils.IfElse(ends, "", "invisible")),
+						Class:      utils.CN("size-8 group-has-data-[slot=message-footer]/message:translate-y-0", utils.IfElse(ends, "", "invisible")),
 						Attributes: templ.Attributes{"aria-hidden": "true"},
 					}) {
-						{ initial(m.AuthorName) }
+						@personAvatar(m.AuthorID, m.AuthorAvatarKey, m.AuthorName, avatar.SizeDefault, "")
 					}
 				}
 				@message.Content(message.ContentProps{Class: "gap-1"}) {
@@ -156,15 +169,29 @@ templ chatMessages(actor services.Membership, c services.Chat, older bool) {
 									{ m.Body }
 								}
 							}
-							for _, f := range m.Files {
-								{{ href := householdURL(actor.HouseholdID, "files", f.ID.String()) }}
-								if f.HasThumb {
-									@bubble.Content(bubble.ContentProps{Href: string(href), Class: "p-1"}) {
-										<img src={ string(href) + "/thumb" } alt={ f.Name } loading="lazy" class="max-h-48 rounded-lg"/>
+							// files sent together stay together: the images in one bubble, the other files in another
+							{{ images, others := splitFiles(m.Files) }}
+							if len(images) == 1 {
+								{{ href := householdURL(actor.HouseholdID, "files", images[0].ID.String()) }}
+								@bubble.Content(bubble.ContentProps{Href: string(href), Class: "p-1", Attributes: templ.Attributes{"draggable": "false"}}) {
+									<img src={ string(href) + "/thumb" } alt={ images[0].Name } loading="lazy" draggable="false" class="max-h-48 rounded-lg"/>
+								}
+							} else if len(images) > 1 {
+								@bubble.Content(bubble.ContentProps{Class: "grid w-64 max-w-full grid-cols-2 gap-1 p-1"}) {
+									for _, f := range images {
+										{{ href := householdURL(actor.HouseholdID, "files", f.ID.String()) }}
+										<a href={ href } draggable="false" class="rounded-lg outline-none focus-visible:ring-3 focus-visible:ring-ring/50">
+											<img src={ string(href) + "/thumb" } alt={ f.Name } loading="lazy" draggable="false" class="aspect-square size-full rounded-lg object-cover"/>
+										</a>
 									}
-								} else {
-									@bubble.Content(bubble.ContentProps{Href: string(href), Class: "underline underline-offset-4"}) {
-										<span aria-hidden="true">📎</span> { f.Name } <span class="text-xs text-muted-foreground">{ formatSize(f.SizeBytes) }</span>
+								}
+							}
+							if len(others) > 0 {
+								@bubble.Content(bubble.ContentProps{Class: "flex flex-col gap-1"}) {
+									for _, f := range others {
+										<a href={ householdURL(actor.HouseholdID, "files", f.ID.String()) } class="underline underline-offset-4">
+											<span aria-hidden="true">📎</span> { f.Name } <span class="text-xs text-muted-foreground">{ formatSize(f.SizeBytes) }</span>
+										</a>
 									}
 								}
 							}
@@ -179,7 +206,7 @@ templ chatMessages(actor services.Membership, c services.Chat, older bool) {
 									Variant:    button.VariantGhost,
 									Size:       button.SizeSm,
 									Class:      chatControlClass,
-									Attributes: utils.MergeAttributes(tooltip.Trigger(ctx), templ.Attributes{"hx-boost": "true"}),
+									Attributes: utils.MergeAttributes(tooltip.Trigger(ctx), chatReplySwap(householdURL(actor.HouseholdID, "chat")+templ.SafeURL("?reply="+m.ID.String()))),
 								}) {
 									@chatControlLabel("reply", locales.LK_ChatReply)
 								}
@@ -197,7 +224,10 @@ templ chatMessages(actor services.Membership, c services.Chat, older bool) {
 								<form
 									action={ householdURL(actor.HouseholdID, "chat", m.ID.String(), "delete") }
 									method="post"
-									hx-boost="true"
+									hx-post={ string(householdURL(actor.HouseholdID, "chat", m.ID.String(), "delete")) }
+									hx-target="#chat-messages"
+									hx-select="#chat-messages"
+									hx-swap="outerHTML"
 									hx-confirm={ utils.T(ctx, locales.LK_ChatDelete) + "?" }
 								>
 									@tooltip.Tooltip() {

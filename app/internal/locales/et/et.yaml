@@ -158,6 +158,7 @@ et:
     on-expense: "Kulul: %s"
     on-message: Vestluses
   chat:
+    files-too-large: Failid kokku võivad olla kuni %d MB
     title: Vestlus
     message: Sõnum
     send: Saada
@@ -197,6 +198,12 @@ et:
     mode-system: Nagu seadmes
     mode-light: Hele
     mode-dark: Tume
+  avatar:
+    title: Sinu pilt
+    description: Kaaslased näevad seda vestluses ja inimeste all
+    upload: Lae pilt üles
+    remove: Eemalda pilt
+    invalid: Vali pilt (PNG, JPEG, GIF või WebP)
   nav:
     label: Leibkond
     shopping: Ostud

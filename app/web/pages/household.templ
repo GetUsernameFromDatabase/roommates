@@ -10,6 +10,7 @@ import "roommates/internal/events"
 import g "roommates/internal/config"
 import "roommates/internal/locales"
 import "roommates/internal/utils"
+import "github.com/jackc/pgx/v5/pgtype"
 
 // HouseholdShopping is the first section of a household, its shopping lists,
 // errorMessage is the outcome of the last action
@@ -94,12 +95,8 @@ templ HouseholdPeople(actor services.Membership, o services.HouseholdOverview, i
 					for _, m := range o.Members {
 						<li class="flex flex-wrap items-center justify-between gap-2 py-3">
 							<div class="flex min-w-0 items-center gap-3">
-								// the same people colour and initial as in the chat
-								@avatar.Avatar(avatar.Props{Size: avatar.SizeLg, Attributes: templ.Attributes{"aria-hidden": "true"}}) {
-									@avatar.Fallback(avatar.FallbackProps{Class: "bg-claim font-heading text-base font-semibold text-claim-foreground"}) {
-										{ initial(m.Username) }
-									}
-								}
+								// the same picture, or people colour and initial, as in the chat
+								@personAvatar(m.UserID, m.AvatarKey, m.Username, avatar.SizeLg, "")
 								<div class="min-w-0">
 									<span class="font-medium break-words">{ m.Username }</span>
 									if m.UserID == actor.UserID {
@@ -256,5 +253,18 @@ templ copyButton(value string, label locales.LK) {
 		},
 	}) {
 		@components.T(label)
+	}
+}
+
+// personAvatar is a user's picture, or until it loads (or without one) their initial on the people colour,
+// decoration next to their name
+templ personAvatar(userID pgtype.UUID, avatarKey *string, name string, size avatar.Size, class string) {
+	@avatar.Avatar(avatar.Props{Size: size, Class: class, Attributes: templ.Attributes{"aria-hidden": "true"}}) {
+		if avatarKey != nil {
+			@avatar.Image(avatar.ImageProps{Src: avatarURL(userID, *avatarKey)})
+		}
+		@avatar.Fallback(avatar.FallbackProps{Class: "bg-claim font-heading font-semibold text-claim-foreground group-data-[size=lg]/avatar:text-base"}) {
+			{ initial(name) }
+		}
 	}
 }

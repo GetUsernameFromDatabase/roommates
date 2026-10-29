@@ -99,6 +99,7 @@ func (q *Queries) GetActiveMembership(ctx context.Context, arg GetActiveMembersh
 const listActiveMembers = `-- name: ListActiveMembers :many
 SELECT m.user_id,
   u.username,
+  u.avatar_key,
   m.role,
   m.joined_at
 FROM memberships m
@@ -109,10 +110,11 @@ ORDER BY m.joined_at
 `
 
 type ListActiveMembersRow struct {
-	UserID   pgtype.UUID        `json:"user_id"`
-	Username string             `json:"username"`
-	Role     string             `json:"role"`
-	JoinedAt pgtype.Timestamptz `json:"joined_at"`
+	UserID    pgtype.UUID        `json:"user_id"`
+	Username  string             `json:"username"`
+	AvatarKey *string            `json:"avatar_key"`
+	Role      string             `json:"role"`
+	JoinedAt  pgtype.Timestamptz `json:"joined_at"`
 }
 
 func (q *Queries) ListActiveMembers(ctx context.Context, householdID pgtype.UUID) ([]ListActiveMembersRow, error) {
@@ -127,6 +129,7 @@ func (q *Queries) ListActiveMembers(ctx context.Context, householdID pgtype.UUID
 		if err := rows.Scan(
 			&i.UserID,
 			&i.Username,
+			&i.AvatarKey,
 			&i.Role,
 			&i.JoinedAt,
 		); err != nil {

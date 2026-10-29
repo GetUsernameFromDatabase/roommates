@@ -158,6 +158,7 @@ en:
     on-expense: "On expense: %s"
     on-message: In the chat
   chat:
+    files-too-large: Files together can be at most %d MB
     title: Chat
     message: Message
     send: Send
@@ -197,6 +198,12 @@ en:
     mode-system: Same as device
     mode-light: Light
     mode-dark: Dark
+  avatar:
+    title: Your picture
+    description: Housemates see it in the chat and under people
+    upload: Upload picture
+    remove: Remove picture
+    invalid: Choose an image (PNG, JPEG, GIF or WebP)
   nav:
     label: Household
     shopping: Shopping

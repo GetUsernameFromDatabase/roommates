@@ -9,13 +9,15 @@ import (
 
 // all scripts, styles, fonts and images are served from /assets
 //
+// img-src blob: is the chat composer's previews of picked images
+//
 // style-src keeps 'unsafe-inline' since htmx injects its indicator styles
 // and components may use style attributes
 var contentSecurityPolicy = strings.Join([]string{
 	"default-src 'self'",
 	"script-src 'self'",
 	"style-src 'self' 'unsafe-inline'",
-	"img-src 'self' data:",
+	"img-src 'self' data: blob:",
 	"font-src 'self'",
 	"connect-src 'self'",
 	"form-action 'self'",

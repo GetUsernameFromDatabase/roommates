@@ -40,8 +40,16 @@
     document.addEventListener(type, cancel);
   });
   document.addEventListener("scroll", cancel, true);
+  // on touch screens the long press that opens the browser's menu (images, links) opens the controls instead,
+  // Android fires it before or with the timer
   document.addEventListener("contextmenu", function (e) {
-    if (held && e.target.closest("[data-slot=message]")) e.preventDefault();
+    var m = e.target.closest("[data-slot=message]");
+    if (!m || (!held && !matchMedia("(pointer: coarse)").matches)) return;
+    e.preventDefault();
+    cancel();
+    held = true;
+    close(m);
+    m.setAttribute("data-open", "");
   });
 
   document.addEventListener("click", function (e) {
@@ -55,17 +63,21 @@
 })();
 
 // every swap renders a new chat log and browsers disagree where it starts, so the scroll is set here:
-// a live refresh keeps the reader's place, sending goes to the newest message.
+// only sending (the composer form, a direct child of #chat) goes to the newest message, everything else
+// (a live refresh, reply, cancelling it, deleting) keeps the reader's place.
 // in the column-reverse log scrollTop counts from the bottom, 0 is the newest message
 (function () {
   var keep = null;
   document.addEventListener("htmx:beforeSwap", function (e) {
-    var id = e.detail.target.id;
+    var log = document.querySelector("#chat-messages [role=log]");
     // a response that is not swapped (204) leaves nothing to restore
-    keep = id === "chat" && e.detail.shouldSwap ? 0 : null;
-    if (id !== "chat-messages" || !e.detail.shouldSwap) return;
-    var log = e.detail.target.querySelector("[role=log]");
-    keep = log ? log.scrollTop : 0;
+    if (!log || !e.detail.shouldSwap) {
+      keep = null;
+      return;
+    }
+    var cfg = e.detail.requestConfig;
+    var sending = cfg && cfg.verb === "post" && cfg.elt.matches && cfg.elt.matches("#chat > form");
+    keep = sending ? 0 : log.scrollTop;
   });
   document.addEventListener("htmx:afterSwap", function () {
     if (keep === null) return;

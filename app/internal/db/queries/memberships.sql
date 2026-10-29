@@ -25,6 +25,7 @@ WHERE m.household_id = $1
 -- name: ListActiveMembers :many
 SELECT m.user_id,
   u.username,
+  u.avatar_key,
   m.role,
   m.joined_at
 FROM memberships m

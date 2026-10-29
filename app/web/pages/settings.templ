@@ -1,14 +1,17 @@
 package pages
 
 import "roommates/web/components"
+import "roommates/web/components/avatar"
 import "roommates/web/components/button"
 import "roommates/internal/locales"
+import g "roommates/internal/config"
+import "roommates/internal/db/dbqueries"
 import "roommates/internal/utils"
 
-// Settings is what is set per device, its appearance and notifications,
-// inside a household nav is set, path is where saving returns to
+// Settings is the user's picture and what is set per device, its appearance and notifications,
+// inside a household nav is set, path is where saving returns to and where the picture is posted under
 // pushKey is the VAPID public key, without it the notification switch stays hidden
-templ Settings(pushKey string, nav *HouseholdNav, path string) {
+templ Settings(pushKey string, nav *HouseholdNav, path string, user dbqueries.GetUserRow, errorMessage string) {
 	@appShell(utils.T(ctx, locales.LK_NavSettings), nav) {
 		if nav != nil {
 			<header>
@@ -19,9 +22,48 @@ templ Settings(pushKey string, nav *HouseholdNav, path string) {
 		} else {
 			@doorplateHeader("/", utils.T(ctx, locales.LK_HouseholdBack), utils.T(ctx, locales.LK_NavSettings))
 		}
+		@formError(errorMessage)
+		@avatarForm(path, user)
 		@pushSwitch(pushKey)
 		@AppearanceForm(path)
 	}
+}
+
+// avatarForm uploads the user's picture, or removes it
+templ avatarForm(path string, user dbqueries.GetUserRow) {
+	<section aria-labelledby="avatar-title" class="flex flex-col gap-3">
+		<div>
+			<h2 id="avatar-title" class="text-base font-semibold">
+				@components.T(locales.LK_AvatarTitle)
+			</h2>
+			<p class="text-sm text-muted-foreground">
+				@components.T(locales.LK_AvatarDescription)
+			</p>
+		</div>
+		<div class="flex items-center gap-4">
+			@personAvatar(user.ID, user.AvatarKey, user.Username, avatar.SizeLg, "size-16")
+			if user.AvatarKey != nil {
+				<form action={ templ.SafeURL(path + g.RouteAvatarDelete) } method="post">
+					@button.Button(button.Props{Type: button.TypeSubmit, Variant: button.VariantOutline, Class: "h-11"}) {
+						@components.T(locales.LK_AvatarRemove)
+					}
+				</form>
+			}
+		</div>
+		<form action={ templ.SafeURL(path + g.RouteAvatar) } method="post" enctype="multipart/form-data" class="flex flex-wrap items-center gap-2">
+			<input
+				type="file"
+				name="avatar"
+				accept="image/png,image/jpeg,image/gif,image/webp"
+				required
+				aria-label={ utils.T(ctx, locales.LK_AvatarTitle) }
+				class="min-h-11 min-w-0 flex-1 text-sm file:mr-3 file:h-11 file:cursor-pointer file:rounded-full file:border-0 file:bg-secondary file:px-4 file:font-medium file:text-secondary-foreground"
+			/>
+			@button.Button(button.Props{Type: button.TypeSubmit, Variant: button.VariantSecondary, Class: "h-11"}) {
+				@components.T(locales.LK_AvatarUpload)
+			}
+		</form>
+	</section>
 }
 
 // pushSwitch turns notifications on this device on and off, web/assets/public/push.js

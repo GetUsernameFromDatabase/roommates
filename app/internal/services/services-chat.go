@@ -18,6 +18,8 @@ import (
 
 const (
 	MaxMessageLength = 4000
+	// MaxMessageFiles is how many files one message can carry
+	MaxMessageFiles = 10
 	// ChatPageSize is how many messages the chat shows, older ones are a link away
 	ChatPageSize = 50
 )
@@ -53,14 +55,15 @@ func (s *DefaultService) GetReplyPreview(ctx context.Context, actor Membership, 
 	return p, noRowsAs(err, g.ErrorNotFound)
 }
 
-// PostMessage sends body with an optional file as an answer to replyTo when it is valid,
-// [g.ErrorInvalidInput] when body and file are both missing or body is longer than [MaxMessageLength],
+// PostMessage sends body with up to [MaxMessageFiles] files as an answer to replyTo when it is valid,
+// [g.ErrorInvalidInput] when body and files are both missing, there are too many files
+// or body is longer than [MaxMessageLength],
 // [g.ErrorNotFound] when replyTo is not (or no longer) in the actor's household,
 // file errors are those of [DefaultService.UploadFile]
-func (s *DefaultService) PostMessage(ctx context.Context, actor Membership, body string, replyTo pgtype.UUID, file *Upload) error {
+func (s *DefaultService) PostMessage(ctx context.Context, actor Membership, body string, replyTo pgtype.UUID, files []Upload) error {
 	// forms send CRLF but maxlength counts a line break once
 	body = strings.TrimSpace(strings.ReplaceAll(body, "\r\n", "\n"))
-	if (body == "" && file == nil) || utf8.RuneCountInString(body) > MaxMessageLength {
+	if (body == "" && len(files) == 0) || len(files) > MaxMessageFiles || utf8.RuneCountInString(body) > MaxMessageLength {
 		return g.ErrorInvalidInput
 	}
 	messageID, err := s.db.InsertMessage(ctx, dbqueries.InsertMessageParams{
@@ -77,10 +80,11 @@ func (s *DefaultService) PostMessage(ctx context.Context, actor Membership, body
 		}
 		return err
 	}
-	if file != nil {
+	for _, file := range files {
 		t := FileTarget{NoteID: pgtype.UUID{}, ListID: pgtype.UUID{}, ShoppingItemID: pgtype.UUID{}, ExpenseID: pgtype.UUID{}, MessageID: messageID}
 		if _, err := s.UploadFile(ctx, actor, t, file.Name, file.Body, file.Size); err != nil {
-			// the form shows the text again, sending it twice would duplicate it
+			// the form shows the text again, sending it twice would duplicate it,
+			// the files already stored go with the message
 			if errDelete := s.DeleteMessage(context.WithoutCancel(ctx), actor, messageID); errDelete != nil {
 				log.Error().Err(errDelete).Msg("could not delete message of a failed upload")
 			}

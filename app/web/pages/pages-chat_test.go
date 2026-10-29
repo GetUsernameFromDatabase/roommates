@@ -16,6 +16,7 @@ func TestChatRuns(t *testing.T) {
 		return services.Message{ListMessagesRow: dbqueries.ListMessagesRow{
 			ID:              pgtype.UUID{},
 			AuthorName:      "",
+			AuthorAvatarKey: nil,
 			Body:            "",
 			ReplyToID:       pgtype.UUID{},
 			ReplyAuthorName: nil,
@@ -35,6 +36,13 @@ func TestChatRuns(t *testing.T) {
 		if got := endsRun(ms, i); got != wantEnds[i] {
 			t.Errorf("endsRun(%d) = %v", i, got)
 		}
+	}
+	file := func(name string, thumb bool) services.MessageFile {
+		return services.MessageFile{ID: pgtype.UUID{}, MessageID: pgtype.UUID{}, Name: name, Mime: "", SizeBytes: 0, HasThumb: thumb}
+	}
+	images, others := splitFiles([]services.MessageFile{file("a.jpg", true), file("b.pdf", false), file("c.png", true)})
+	if len(images) != 2 || images[0].Name != "a.jpg" || images[1].Name != "c.png" || len(others) != 1 || others[0].Name != "b.pdf" {
+		t.Errorf("splitFiles = %v, %v", images, others)
 	}
 	for name, want := range map[string]string{"mari": "M", " õie": "Õ", "": "?"} {
 		if got := initial(name); got != want {

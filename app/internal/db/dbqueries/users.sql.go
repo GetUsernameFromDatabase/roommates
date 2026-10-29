@@ -15,7 +15,8 @@ const getUser = `-- name: GetUser :one
 SELECT id,
   email,
   username,
-  email_validated
+  email_validated,
+  avatar_key
 FROM users
 WHERE id = $1
 `
@@ -25,6 +26,7 @@ type GetUserRow struct {
 	Email          string      `json:"email"`
 	Username       string      `json:"username"`
 	EmailValidated bool        `json:"email_validated"`
+	AvatarKey      *string     `json:"avatar_key"`
 }
 
 func (q *Queries) GetUser(ctx context.Context, id pgtype.UUID) (GetUserRow, error) {
@@ -35,8 +37,41 @@ func (q *Queries) GetUser(ctx context.Context, id pgtype.UUID) (GetUserRow, erro
 		&i.Email,
 		&i.Username,
 		&i.EmailValidated,
+		&i.AvatarKey,
 	)
 	return i, err
+}
+
+const getUserAvatarKey = `-- name: GetUserAvatarKey :one
+SELECT u.avatar_key::text
+FROM users u
+WHERE u.id = $1
+  AND u.avatar_key IS NOT NULL
+  AND (
+    u.id = $2
+    OR EXISTS (
+      SELECT 1
+      FROM memberships mine
+        JOIN memberships theirs ON theirs.household_id = mine.household_id
+      WHERE mine.user_id = $2
+        AND theirs.user_id = u.id
+        AND mine.left_at IS NULL
+        AND theirs.left_at IS NULL
+    )
+  )
+`
+
+type GetUserAvatarKeyParams struct {
+	UserID   pgtype.UUID `json:"user_id"`
+	ViewerID pgtype.UUID `json:"viewer_id"`
+}
+
+// the picture of a user, only for themselves and the people they live with
+func (q *Queries) GetUserAvatarKey(ctx context.Context, arg GetUserAvatarKeyParams) (string, error) {
+	row := q.db.QueryRow(ctx, getUserAvatarKey, arg.UserID, arg.ViewerID)
+	var u_avatar_key string
+	err := row.Scan(&u_avatar_key)
+	return u_avatar_key, err
 }
 
 const getUserCredentials = `-- name: GetUserCredentials :one
@@ -99,6 +134,22 @@ WHERE id = $1
 
 func (q *Queries) SetEmailValidated(ctx context.Context, id pgtype.UUID) error {
 	_, err := q.db.Exec(ctx, setEmailValidated, id)
+	return err
+}
+
+const setUserAvatar = `-- name: SetUserAvatar :exec
+UPDATE users
+SET avatar_key = $2
+WHERE id = $1
+`
+
+type SetUserAvatarParams struct {
+	ID        pgtype.UUID `json:"id"`
+	AvatarKey *string     `json:"avatar_key"`
+}
+
+func (q *Queries) SetUserAvatar(ctx context.Context, arg SetUserAvatarParams) error {
+	_, err := q.db.Exec(ctx, setUserAvatar, arg.ID, arg.AvatarKey)
 	return err
 }
 

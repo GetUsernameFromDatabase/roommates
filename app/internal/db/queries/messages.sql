@@ -7,6 +7,7 @@ RETURNING id;
 SELECT m.id,
   m.author_id,
   author.username AS author_name,
+  author.avatar_key AS author_avatar_key,
   m.body,
   m.created_at,
   m.reply_to_id,

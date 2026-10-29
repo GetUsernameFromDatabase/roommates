@@ -46,12 +46,33 @@ func (h *DefaultHandler) PageHome(ctx *gin.Context) {
 	RenderTempl(ctx, pages.Home(user.Username, user.EmailValidated, households, model))
 }
 
-// PageSettings is the appearance and notifications of this device,
+// PageSettings is the user's picture and the appearance and notifications of this device,
 // inside a household with its nav
 func (h *DefaultHandler) PageSettings(ctx *gin.Context) {
-	var nav *pages.HouseholdNav
+	h.renderSettings(ctx, http.StatusOK, "")
+}
+
+// settingsPath is /settings, or the household's settings on a household route, with its nav
+func settingsPath(ctx *gin.Context) (string, *pages.HouseholdNav) {
 	if m, ok := ctx.Get(g.GinKeyMembership); ok {
-		nav = &pages.HouseholdNav{HouseholdID: m.(services.Membership).HouseholdID, Section: pages.SectionSettings}
+		id := m.(services.Membership).HouseholdID
+		return householdPath(id) + g.RouteSettings, &pages.HouseholdNav{HouseholdID: id, Section: pages.SectionSettings}
 	}
-	RenderTempl(ctx, pages.Settings(h.service.PushPublicKey(), nav, ctx.Request.URL.Path))
+	return g.RouteSettings, nil
+}
+
+// renderSettings shows the settings at /settings, or inside the household of the route
+func (h *DefaultHandler) renderSettings(ctx *gin.Context, status int, errorMessage string) {
+	path, nav := settingsPath(ctx)
+	userID, err := sessionUserID(ctx)
+	if err != nil {
+		InternalError(ctx, err)
+		return
+	}
+	user, err := h.service.GetUser(ctx, userID)
+	if err != nil {
+		InternalError(ctx, err)
+		return
+	}
+	RenderTemplStatus(ctx, status, pages.Settings(h.service.PushPublicKey(), nav, path, user, errorMessage))
 }

@@ -36,19 +36,26 @@ func TestChat(t *testing.T) {
 		t.Fatalf("own message counts as unread: %d", got)
 	}
 
-	photo := &Upload{Name: "cat.png", Body: bytes.NewReader([]byte("\x89PNG\r\n\x1a\n")), Size: 8}
-	if err := s.PostMessage(ctx, ownerM, "", none, photo); err != nil {
+	photos := []Upload{
+		{Name: "cat.png", Body: bytes.NewReader([]byte("\x89PNG\r\n\x1a\n")), Size: 8},
+		{Name: "dog.txt", Body: strings.NewReader("woof"), Size: 4},
+	}
+	if err := s.PostMessage(ctx, ownerM, "", none, photos); err != nil {
 		t.Fatal(err)
 	}
 	// a failed upload takes its message with it
-	tooLarge := &Upload{Name: "big.bin", Body: bytes.NewReader([]byte("x")), Size: MaxFileSize + 1}
+	tooLarge := []Upload{
+		{Name: "ok.txt", Body: strings.NewReader("x"), Size: 1},
+		{Name: "big.bin", Body: bytes.NewReader([]byte("x")), Size: MaxFileSize + 1},
+	}
 	wantErr(t, "too large file", s.PostMessage(ctx, ownerM, "big one", none, tooLarge), g.ErrorFileTooLarge)
+	wantErr(t, "too many files", s.PostMessage(ctx, ownerM, "", none, make([]Upload, MaxMessageFiles+1)), g.ErrorInvalidInput)
 
 	c, err := s.ListChat(ctx, ownerM, none)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(c.Messages) != 2 || c.HasOlder || len(c.Messages[0].Files) != 1 || c.Messages[0].Files[0].Name != "cat.png" {
+	if len(c.Messages) != 2 || c.HasOlder || len(c.Messages[0].Files) != 2 {
 		t.Fatalf("chat %+v", c)
 	}
 	if got := unread(ownerM); got != 0 {

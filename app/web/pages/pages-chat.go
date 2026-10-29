@@ -1,11 +1,15 @@
 package pages
 
 import (
+	g "roommates/internal/config"
 	"roommates/internal/services"
 	"strings"
 	"time"
 	"unicode"
 	"unicode/utf8"
+
+	"github.com/a-h/templ"
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 // runGap is how far apart messages of one author can be and still read as one run
@@ -24,6 +28,34 @@ func startsRun(ms []services.Message, i int) bool {
 
 func endsRun(ms []services.Message, i int) bool {
 	return i == 0 || !sameRun(ms[i], ms[i-1])
+}
+
+// chatReplySwap makes a link to url (the chat, ?reply= answers a message) swap only the composer's
+// reply banner, so the typed text and picked files stay
+func chatReplySwap(url templ.SafeURL) templ.Attributes {
+	return templ.Attributes{
+		"hx-get":    string(url),
+		"hx-target": "#chat-reply",
+		"hx-select": "#chat-reply",
+		"hx-swap":   "outerHTML",
+	}
+}
+
+// splitFiles is the images of a message (the files with a thumbnail) and its other files, each in order
+func splitFiles(fs []services.MessageFile) (images, others []services.MessageFile) {
+	for _, f := range fs {
+		if f.HasThumb {
+			images = append(images, f)
+		} else {
+			others = append(others, f)
+		}
+	}
+	return images, others
+}
+
+// avatarURL is where a user's picture is, the key's random end makes a new picture a new URL
+func avatarURL(userID pgtype.UUID, key string) string {
+	return g.RouteUsers + "/" + userID.String() + "/avatar?v=" + key[strings.LastIndexByte(key, '/')+1:]
 }
 
 // initial is the first letter of a name for its avatar

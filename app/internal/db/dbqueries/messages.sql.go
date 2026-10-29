@@ -164,6 +164,7 @@ const listMessages = `-- name: ListMessages :many
 SELECT m.id,
   m.author_id,
   author.username AS author_name,
+  author.avatar_key AS author_avatar_key,
   m.body,
   m.created_at,
   m.reply_to_id,
@@ -199,6 +200,7 @@ type ListMessagesRow struct {
 	ID              pgtype.UUID        `json:"id"`
 	AuthorID        pgtype.UUID        `json:"author_id"`
 	AuthorName      string             `json:"author_name"`
+	AuthorAvatarKey *string            `json:"author_avatar_key"`
 	Body            string             `json:"body"`
 	CreatedAt       pgtype.Timestamptz `json:"created_at"`
 	ReplyToID       pgtype.UUID        `json:"reply_to_id"`
@@ -220,6 +222,7 @@ func (q *Queries) ListMessages(ctx context.Context, arg ListMessagesParams) ([]L
 			&i.ID,
 			&i.AuthorID,
 			&i.AuthorName,
+			&i.AuthorAvatarKey,
 			&i.Body,
 			&i.CreatedAt,
 			&i.ReplyToID,

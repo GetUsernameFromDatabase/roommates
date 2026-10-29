@@ -23,6 +23,11 @@ const (
 	RouteAppearance = "/appearance"
 	// the per-device settings, appearance and notifications
 	RouteSettings = "/settings"
+	// POST the "avatar" file under [RouteSettings] (at /settings or a household's), or delete it
+	RouteAvatar       = "/avatar"
+	RouteAvatarDelete = "/avatar/delete"
+	// GET /users/:userID/avatar is a user's picture
+	RouteUsers = "/users"
 	// POST the JSON of a browser's PushSubscription
 	RoutePushSubscribe = "/push/subscribe"
 	// POST {"endpoint": ...}
