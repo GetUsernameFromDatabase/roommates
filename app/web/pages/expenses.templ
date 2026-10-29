@@ -1,8 +1,11 @@
 package pages
 
 import "roommates/web/components"
+import "roommates/web/components/badge"
 import "roommates/web/components/button"
+import "roommates/web/components/field"
 import "roommates/web/components/input"
+import "roommates/web/components/radiogroup"
 import "roommates/internal/db/dbqueries"
 import "roommates/internal/services"
 import "roommates/internal/events"
@@ -175,11 +178,12 @@ templ ExpenseEditor(actor services.Membership, members []dbqueries.ListActiveMem
 		@doorplateHeader(expensesURL, utils.T(ctx, locales.LK_ExpensesBack), utils.T(ctx, locales.LK_ExpensesNew))
 		<form action={ expensesURL } method="post" hx-boost="true" class={ utils.CN(sheetClass, "space-y-4") }>
 			@formError(errorMessage)
-			<label class="block space-y-1.5">
-				<span class="text-sm font-medium">
+			@field.Field() {
+				@field.Label(field.LabelProps{For: "expense-title"}) {
 					@components.T(locales.LK_ExpensesWhat)
-				</span>
+				}
 				@input.Input(input.Props{
+					ID:       "expense-title",
 					Name:     "title",
 					Type:     "text",
 					Value:    in.Title,
@@ -189,13 +193,14 @@ templ ExpenseEditor(actor services.Membership, members []dbqueries.ListActiveMem
 						"maxlength": services.MaxExpenseTitleLength,
 					},
 				})
-			</label>
+			}
 			<div class="grid grid-cols-2 gap-3">
-				<label class="block space-y-1.5">
-					<span class="text-sm font-medium">
+				@field.Field() {
+					@field.Label(field.LabelProps{For: "expense-amount"}) {
 						@components.T(locales.LK_ExpensesAmount)
-					</span>
+					}
 					@input.Input(input.Props{
+						ID:       "expense-amount",
 						Name:     "amount",
 						Type:     "text",
 						Value:    in.Amount,
@@ -206,42 +211,39 @@ templ ExpenseEditor(actor services.Membership, members []dbqueries.ListActiveMem
 							"placeholder": "0,00",
 						},
 					})
-				</label>
-				<label class="block space-y-1.5">
-					<span class="text-sm font-medium">
+				}
+				@field.Field() {
+					@field.Label(field.LabelProps{For: "expense-date"}) {
 						@components.T(locales.LK_ExpensesDate)
-					</span>
+					}
 					@input.Input(input.Props{
+						ID:       "expense-date",
 						Name:     "incurred_on",
 						Type:     "date",
 						Value:    in.IncurredOn,
 						Required: true,
 						Class:    "h-11",
 					})
-				</label>
+				}
 			</div>
-			<label class="block space-y-1.5">
-				<span class="text-sm font-medium">
+			@field.Field() {
+				@field.Label(field.LabelProps{For: "expense-category"}) {
 					@components.T(locales.LK_ExpensesCategory)
-				</span>
-				<select name="category" class="h-11 w-full rounded-lg border border-input bg-transparent px-3 text-base outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 md:text-sm">
+				}
+				<select id="expense-category" name="category" class="h-11 w-full rounded-lg border border-input bg-transparent px-3 text-base outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 md:text-sm">
 					for _, c := range g.ExpenseCategories {
 						<option value={ c } selected?={ c == in.Category }>{ CategoryName(ctx, c) }</option>
 					}
 				</select>
-			</label>
+			}
 			<fieldset class="space-y-2">
 				<legend class="text-sm font-medium">
 					@components.T(locales.LK_ExpensesSplit)
 				</legend>
-				<label class="flex min-h-11 items-center gap-3">
-					<input type="radio" name="split" value="equal" checked?={ !in.Custom } class="size-5 accent-primary"/>
-					@components.T(locales.LK_ExpensesSplitEqual)
-				</label>
-				<label class="flex min-h-11 items-center gap-3">
-					<input type="radio" name="split" value="custom" checked?={ in.Custom } class="size-5 accent-primary"/>
-					@components.T(locales.LK_ExpensesSplitCustom)
-				</label>
+				@radiogroup.RadioGroup(radiogroup.Props{Name: "split", DefaultValue: utils.IfElse(in.Custom, "custom", "equal"), Class: "gap-0"}) {
+					@splitOption("split-equal", "equal", locales.LK_ExpensesSplitEqual)
+					@splitOption("split-custom", "custom", locales.LK_ExpensesSplitCustom)
+				}
 				<ul class="divide-y">
 					for _, m := range members {
 						<li class="flex items-center gap-3 py-2">
@@ -352,14 +354,23 @@ templ ExpensePage(actor services.Membership, e services.Expense, uploadError str
 	}
 }
 
+templ splitOption(id, value string, label locales.LK) {
+	@field.Field(field.Props{Orientation: field.OrientationHorizontal, Class: "min-h-11"}) {
+		@radiogroup.Item(radiogroup.ItemProps{ID: id, Value: value})
+		@field.Label(field.LabelProps{For: id, Class: "min-h-11 text-base font-normal"}) {
+			@components.T(label)
+		}
+	}
+}
+
 templ sharePaidBadge(paid bool) {
 	if paid {
-		<span class="inline-flex rounded-full bg-secondary px-2 py-0.5 text-xs font-medium text-secondary-foreground">
+		@badge.Badge(badge.Props{Variant: badge.VariantSecondary}) {
 			@components.T(locales.LK_ExpensesSharePaid)
-		</span>
+		}
 	} else {
-		<span class="inline-flex rounded-full border px-2 py-0.5 text-xs font-medium text-muted-foreground">
+		@badge.Badge(badge.Props{Variant: badge.VariantOutline, Class: "text-muted-foreground"}) {
 			@components.T(locales.LK_ExpensesShareUnpaid)
-		</span>
+		}
 	}
 }

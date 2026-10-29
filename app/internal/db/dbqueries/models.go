@@ -88,6 +88,7 @@ type Message struct {
 	AuthorID    pgtype.UUID        `json:"author_id"`
 	Body        string             `json:"body"`
 	CreatedAt   pgtype.Timestamptz `json:"created_at"`
+	ReplyToID   pgtype.UUID        `json:"reply_to_id"`
 }
 
 type Note struct {

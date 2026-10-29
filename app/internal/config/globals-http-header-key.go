@@ -10,11 +10,12 @@ type HTTPHeaderKey string
 
 // HTMX header
 const (
-	HHK_HXRequest  HTTPHeaderKey = "HX-Request"
-	HHK_HXRedirect HTTPHeaderKey = "HX-Redirect"
-	HHK_HXRetarget HTTPHeaderKey = "HX-Retarget"
-	HHK_HXReselect HTTPHeaderKey = "HX-Reselect"
-	HHK_HXReswap   HTTPHeaderKey = "HX-Reswap"
+	HHK_HXRequest    HTTPHeaderKey = "HX-Request"
+	HHK_HXRedirect   HTTPHeaderKey = "HX-Redirect"
+	HHK_HXRetarget   HTTPHeaderKey = "HX-Retarget"
+	HHK_HXReselect   HTTPHeaderKey = "HX-Reselect"
+	HHK_HXReswap     HTTPHeaderKey = "HX-Reswap"
+	HHK_HXReplaceURL HTTPHeaderKey = "HX-Replace-Url"
 )
 
 const (

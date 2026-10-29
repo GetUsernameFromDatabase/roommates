@@ -1,6 +1,7 @@
 package pages
 
 import "roommates/web/components"
+import "roommates/web/components/badge"
 import "roommates/web/components/button"
 import "roommates/web/components/input"
 import "roommates/internal/services"
@@ -132,9 +133,9 @@ templ shoppingListContent(actor services.Membership, l services.ShoppingList, er
 								</div>
 							} else if !checked && it.ClaimedByName != nil {
 								<div>
-									<span class="mt-0.5 inline-flex rounded-full bg-claim px-2 py-0.5 text-xs font-medium text-claim-foreground">
+									@badge.Badge(badge.Props{Class: "mt-0.5 h-auto max-w-full whitespace-normal bg-claim text-claim-foreground"}) {
 										{ utils.T(ctx, locales.LK_ShoppingBuyingBy, *it.ClaimedByName) }
-									</span>
+									}
 								</div>
 							}
 						</div>

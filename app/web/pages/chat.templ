@@ -1,8 +1,11 @@
 package pages
 
 import "roommates/web/components"
+import "roommates/web/components/bubble"
 import "roommates/web/components/button"
+import "roommates/web/components/message"
 import "roommates/web/components/textarea"
+import "roommates/web/components/tooltip"
 import "roommates/internal/events"
 import "roommates/internal/services"
 import "roommates/internal/locales"
@@ -10,18 +13,23 @@ import "roommates/internal/utils"
 import "github.com/jackc/pgx/v5/pgtype"
 import "time"
 
-// ChatPage is the household's chat, draft and errorMessage are a message that could not be sent
+// ChatPage is the household's chat, draft and errorMessage are a message that could not be sent,
+// a non-nil reply is the message the composer answers
 //
 // the composer posts with hx-select="#chat" so it is cleared after sending,
 // the messages refetch on their own when someone writes
-templ ChatPage(actor services.Membership, c services.Chat, older bool, draft, errorMessage string) {
+templ ChatPage(actor services.Membership, c services.Chat, older bool, reply *services.ReplyPreview, draft, errorMessage string) {
 	@appShell(utils.T(ctx, locales.LK_ChatTitle), &HouseholdNav{HouseholdID: actor.HouseholdID, Section: SectionChat}) {
-		<header>
+		// with the keyboard open (chat-keyboard.js) the page is only the chat, sized to what the keyboard leaves
+		<header class="in-data-keyboard:hidden">
 			<h1 class="doorplate">
 				@components.T(locales.LK_ChatTitle)
 			</h1>
 		</header>
-		<section id="chat" class={ utils.CN(sheetClass, "space-y-4") }>
+		// fills the viewport so the composer stays in view, the messages scroll inside it,
+		// the live region's wrapper is display: contents so the log itself is the flex child that shrinks
+		// shortcut: 14rem is the app shell around it (nav, padding, header) by hand, revisit if the shell changes
+		<section id="chat" class={ utils.CN(sheetClass, "flex h-[calc(100dvh-14rem)] min-h-96 flex-col gap-4 in-data-keyboard:h-[calc(var(--visible-height)-3rem)] in-data-keyboard:min-h-0 [&>#chat-messages]:contents") }>
 			@liveRegion("chat-messages", events.TopicChat, events.TopicFiles) {
 				@chatMessages(actor, c, older)
 			}
@@ -33,9 +41,30 @@ templ ChatPage(actor services.Membership, c services.Chat, older bool, draft, er
 				hx-target="#chat"
 				hx-select="#chat"
 				hx-swap="outerHTML"
-				class="space-y-2"
+				class="shrink-0 space-y-2"
 			>
 				@formError(errorMessage)
+				if reply != nil {
+					<input type="hidden" name="reply_to" value={ reply.ID.String() }/>
+					<div class="flex items-center gap-2 rounded-lg border-l-4 border-primary bg-muted py-1 pr-1 pl-3 text-sm">
+						<div class="min-w-0 flex-1">
+							<p class="font-medium">{ utils.T(ctx, locales.LK_ChatReplyingTo, reply.AuthorName) }</p>
+							@replySnippet(reply.Body)
+						</div>
+						@button.Button(button.Props{
+							Href:    string(householdURL(actor.HouseholdID, "chat")),
+							Variant: button.VariantGhost,
+							Size:    button.SizeIconLg,
+							Class:   "size-11",
+							Attributes: templ.Attributes{
+								"hx-boost":   "true",
+								"aria-label": utils.T(ctx, locales.LK_ChatCancelReply),
+							},
+						}) {
+							<span aria-hidden="true">✕</span>
+						}
+					</div>
+				}
 				@textarea.Textarea(textarea.Props{
 					Name:        "body",
 					Value:       draft,
@@ -44,6 +73,7 @@ templ ChatPage(actor services.Membership, c services.Chat, older bool, draft, er
 					Attributes: templ.Attributes{
 						"maxlength":  services.MaxMessageLength,
 						"aria-label": utils.T(ctx, locales.LK_ChatMessage),
+						"autofocus":  reply != nil,
 					},
 				})
 				<div class="flex flex-wrap items-center gap-2">
@@ -65,7 +95,7 @@ templ ChatPage(actor services.Membership, c services.Chat, older bool, draft, er
 // chatMessages scrolls by itself, column-reverse keeps it at the newest message
 // at the bottom without a script, so the newest message comes first in the markup
 templ chatMessages(actor services.Membership, c services.Chat, older bool) {
-	<div role="log" class="flex max-h-[60svh] flex-col-reverse gap-3 overflow-y-auto" tabindex="0" aria-label={ utils.T(ctx, locales.LK_ChatTitle) }>
+	<div role="log" class="flex min-h-0 flex-1 flex-col-reverse gap-3 overflow-y-auto" tabindex="0" aria-label={ utils.T(ctx, locales.LK_ChatTitle) }>
 		if older {
 			<a href={ householdURL(actor.HouseholdID, "chat") } class="inline-flex min-h-11 items-center self-center text-sm text-muted-foreground underline underline-offset-4 hover:text-foreground">
 				@components.T(locales.LK_ChatNewest)
@@ -76,42 +106,112 @@ templ chatMessages(actor services.Membership, c services.Chat, older bool) {
 				@components.T(locales.LK_ChatEmpty)
 			</p>
 		}
-		for _, m := range c.Messages {
-			{{ own := m.AuthorID == actor.UserID }}
-			<article class={ utils.CN("max-w-[85%] space-y-1 rounded-2xl px-3 py-2", utils.IfElse(own, "self-end bg-primary/10", "self-start bg-secondary")) }>
-				<div class="flex items-baseline gap-2 text-xs text-muted-foreground">
-					<span class="font-medium">{ m.AuthorName }</span>
-					@localTime(m.CreatedAt)
-				</div>
-				if m.Body != "" {
-					<p class="whitespace-pre-wrap break-words">{ m.Body }</p>
-				}
-				for _, f := range m.Files {
-					{{ href := householdURL(actor.HouseholdID, "files", f.ID.String()) }}
-					if f.HasThumb {
-						<a href={ href } class="block">
-							<img src={ string(href) + "/thumb" } alt={ f.Name } loading="lazy" class="max-h-48 rounded-lg ring-1 ring-foreground/10"/>
-						</a>
-					} else {
-						<a href={ href } class="block break-words underline underline-offset-4">
-							<span aria-hidden="true">📎</span> { f.Name } <span class="text-xs text-muted-foreground">{ formatSize(f.SizeBytes) }</span>
-						</a>
+		for i, m := range c.Messages {
+			{{
+				own := m.AuthorID == actor.UserID
+				starts, ends := startsRun(c.Messages, i), endsRun(c.Messages, i)
+			}}
+			// on touch screens chat-hold.js shows the controls on a long press, which would otherwise select text
+			@message.Message(message.Props{
+				ID:    "message-" + m.ID.String(),
+				Align: utils.IfElse(own, message.AlignEnd, message.AlignStart),
+				Class: utils.CN("pointer-coarse:select-none pointer-coarse:[-webkit-touch-callout:none]", utils.IfElse(starts, "", "-mt-2")),
+			}) {
+				// the people colour marks who wrote a run, the name is in its header for screen readers
+				if !own {
+					@message.Avatar(message.AvatarProps{
+						Class:      utils.CN("size-8 bg-claim font-heading font-semibold text-claim-foreground group-has-data-[slot=message-footer]/message:translate-y-0", utils.IfElse(ends, "", "invisible")),
+						Attributes: templ.Attributes{"aria-hidden": "true"},
+					}) {
+						{ initial(m.AuthorName) }
 					}
 				}
-				if own {
-					<form
-						action={ householdURL(actor.HouseholdID, "chat", m.ID.String(), "delete") }
-						method="post"
-						hx-boost="true"
-						hx-confirm={ utils.T(ctx, locales.LK_ChatDelete) + "?" }
-						class="text-right"
-					>
-						<button type="submit" class="min-h-11 text-xs text-muted-foreground underline-offset-4 hover:text-destructive hover:underline">
-							@components.T(locales.LK_CommonDelete)
-						</button>
-					</form>
+				@message.Content(message.ContentProps{Class: "gap-1"}) {
+					if starts {
+						@message.Header(message.HeaderProps{Class: "gap-2"}) {
+							if !own {
+								<span>{ m.AuthorName }</span>
+							}
+							<span class="font-normal">
+								@localTime(m.CreatedAt)
+							</span>
+						}
+					}
+					if m.ReplyAuthorName != nil {
+						<a href={ templ.SafeURL("#message-" + m.ReplyToID.String()) } data-slot="message-reply" class={ utils.CN("max-w-[80%] rounded-lg bg-muted/60 px-3 py-1 text-xs text-muted-foreground border-primary/50", utils.IfElse(own, "border-r-4", "border-l-4")) }>
+							<span class="font-medium">{ *m.ReplyAuthorName }</span>
+							@replySnippet(m.ReplyBody)
+						</a>
+					}
+					// the controls sit beside the bubble on the side with room, row-reverse puts them left of own messages
+					<div data-slot="message-row" class="flex w-full items-end gap-1 group-data-[align=end]/message:flex-row-reverse">
+						@bubble.Bubble(bubble.Props{
+							Variant: utils.IfElse(own, bubble.VariantTinted, bubble.VariantSecondary),
+							Align:   utils.IfElse(own, bubble.AlignEnd, bubble.AlignStart),
+							// the last bubble of a run leans towards its person
+							Class: utils.IfElse(ends, utils.IfElse(own, "*:data-[slot=bubble-content]:last:rounded-br-sm", "*:data-[slot=bubble-content]:last:rounded-bl-sm"), ""),
+						}) {
+							if m.Body != "" {
+								@bubble.Content(bubble.ContentProps{Class: "whitespace-pre-wrap text-base", Attributes: templ.Attributes{"data-chat-body": true}}) {
+									{ m.Body }
+								}
+							}
+							for _, f := range m.Files {
+								{{ href := householdURL(actor.HouseholdID, "files", f.ID.String()) }}
+								if f.HasThumb {
+									@bubble.Content(bubble.ContentProps{Href: string(href), Class: "p-1"}) {
+										<img src={ string(href) + "/thumb" } alt={ f.Name } loading="lazy" class="max-h-48 rounded-lg"/>
+									}
+								} else {
+									@bubble.Content(bubble.ContentProps{Href: string(href), Class: "underline underline-offset-4"}) {
+										<span aria-hidden="true">📎</span> { f.Name } <span class="text-xs text-muted-foreground">{ formatSize(f.SizeBytes) }</span>
+									}
+								}
+							}
+						}
+						// with a mouse: icons beside the bubble with a tooltip, shown on hover or keyboard focus;
+						// on touch screens: a labelled pill over the message, shown by a long press (data-open, chat-hold.js);
+						// transparent rather than hidden so nothing moves and screen readers always reach them
+						@message.Footer(message.FooterProps{Class: utils.CN(chatControlsClass, utils.IfElse(own, "pointer-coarse:end-2", "pointer-coarse:start-10"))}) {
+							@tooltip.Tooltip() {
+								@button.Button(button.Props{
+									Href:       string(householdURL(actor.HouseholdID, "chat")) + "?reply=" + m.ID.String(),
+									Variant:    button.VariantGhost,
+									Size:       button.SizeSm,
+									Class:      chatControlClass,
+									Attributes: utils.MergeAttributes(tooltip.Trigger(ctx), templ.Attributes{"hx-boost": "true"}),
+								}) {
+									@chatControlLabel("reply", locales.LK_ChatReply)
+								}
+								@chatControlTip(locales.LK_ChatReply)
+							}
+							if m.Body != "" {
+								@tooltip.Tooltip() {
+									@button.Button(button.Props{Variant: button.VariantGhost, Size: button.SizeSm, Class: chatControlClass, Attributes: utils.MergeAttributes(tooltip.Trigger(ctx), templ.Attributes{"data-chat-copy": true})}) {
+										@chatControlLabel("copy", locales.LK_ChatCopy)
+									}
+									@chatControlTip(locales.LK_ChatCopy)
+								}
+							}
+							if own {
+								<form
+									action={ householdURL(actor.HouseholdID, "chat", m.ID.String(), "delete") }
+									method="post"
+									hx-boost="true"
+									hx-confirm={ utils.T(ctx, locales.LK_ChatDelete) + "?" }
+								>
+									@tooltip.Tooltip() {
+										@button.Button(button.Props{Type: button.TypeSubmit, Variant: button.VariantGhost, Size: button.SizeSm, Class: chatControlClass + " hover:text-destructive", Attributes: tooltip.Trigger(ctx)}) {
+											@chatControlLabel("delete", locales.LK_CommonDelete)
+										}
+										@chatControlTip(locales.LK_CommonDelete)
+									}
+								</form>
+							}
+						}
+					</div>
 				}
-			</article>
+			}
 		}
 		if c.HasOlder {
 			<a
@@ -124,7 +224,62 @@ templ chatMessages(actor services.Membership, c services.Chat, older bool) {
 	</div>
 }
 
-// localTime is shown in the viewer's time zone by local-time.js, the server only knows UTC
+const chatControlsClass = "shrink-0 gap-0.5 self-center px-0 pointer-events-none opacity-0 " +
+	"pointer-coarse:absolute pointer-coarse:-top-4 pointer-coarse:z-10 pointer-coarse:rounded-full pointer-coarse:bg-popover " +
+	"pointer-coarse:p-0.5 pointer-coarse:shadow-md pointer-coarse:ring-1 pointer-coarse:ring-foreground/10 " +
+	"group-hover/message:pointer-events-auto group-hover/message:opacity-100 " +
+	"group-focus-within/message:pointer-events-auto group-focus-within/message:opacity-100 " +
+	"group-data-open/message:pointer-events-auto group-data-open/message:opacity-100 " +
+	"motion-safe:group-data-open/message:animate-in motion-safe:group-data-open/message:fade-in motion-safe:group-data-open/message:zoom-in-95 motion-safe:group-data-open/message:duration-120"
+
+// chatControlClass is a labelled touch target on touch screens, a round icon with a mouse
+const chatControlClass = "min-h-11 rounded-full text-muted-foreground pointer-fine:size-8 pointer-fine:min-h-8 pointer-fine:p-0"
+
+// chatControlLabel is the icon of a control with a mouse and its text on touch screens,
+// the text stays for screen readers
+templ chatControlLabel(icon string, label locales.LK) {
+	<svg class="size-4 pointer-coarse:hidden" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+		// lucide icons
+		switch icon {
+			case "reply":
+				<polyline points="9 17 4 12 9 7"></polyline>
+				<path d="M20 18v-2a4 4 0 0 0-4-4H4"></path>
+			case "copy":
+				<rect width="14" height="14" x="8" y="8" rx="2" ry="2"></rect>
+				<path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"></path>
+			case "delete":
+				<path d="M3 6h18"></path>
+				<path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
+				<path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
+				<line x1="10" x2="10" y1="11" y2="17"></line>
+				<line x1="14" x2="14" y1="11" y2="17"></line>
+		}
+	</svg>
+	<span class="pointer-fine:sr-only">
+		@components.T(label)
+	</span>
+}
+
+// chatControlTip names an icon control for mouse users, touch screens see the label itself
+templ chatControlTip(label locales.LK) {
+	@tooltip.Content(tooltip.ContentProps{Class: "pointer-coarse:hidden"}) {
+		@components.T(label)
+	}
+}
+
+// replySnippet is one line of a quoted message, a message of only files says so
+templ replySnippet(body string) {
+	<span class="block truncate">
+		if body != "" {
+			{ body }
+		} else {
+			@components.T(locales.LK_ChatReplyFile)
+		}
+	</span>
+}
+
+// localTime is shown in the viewer's time zone by local-time.js, the server only knows UTC,
+// without today's date and this year
 templ localTime(t pgtype.Timestamptz) {
 	<time datetime={ t.Time.UTC().Format(time.RFC3339) } data-local>{ t.Time.UTC().Format("2006-01-02 15:04") } UTC</time>
 }

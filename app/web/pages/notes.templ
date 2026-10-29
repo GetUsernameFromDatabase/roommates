@@ -1,7 +1,9 @@
 package pages
 
 import "roommates/web/components"
+import "roommates/web/components/badge"
 import "roommates/web/components/button"
+import "roommates/web/components/field"
 import "roommates/web/components/input"
 import "roommates/web/components/textarea"
 import "roommates/internal/db/dbqueries"
@@ -61,14 +63,14 @@ templ HouseholdNotes(actor services.Membership, notes []dbqueries.ListNotesRow) 
 
 templ noteBadges(pinned bool, visibility string) {
 	if pinned {
-		<span class="ml-1 inline-flex rounded-full bg-secondary px-2 py-0.5 align-middle text-xs font-medium text-secondary-foreground">
+		@badge.Badge(badge.Props{Variant: badge.VariantSecondary, Class: "ml-1 align-middle"}) {
 			@components.T(locales.LK_NotesPinnedBadge)
-		</span>
+		}
 	}
 	if visibility == g.NoteVisibilityPrivate {
-		<span class="ml-1 inline-flex rounded-full border px-2 py-0.5 align-middle text-xs font-medium text-muted-foreground">
+		@badge.Badge(badge.Props{Variant: badge.VariantOutline, Class: "ml-1 align-middle text-muted-foreground"}) {
 			@components.T(locales.LK_NotesPrivateBadge)
-		</span>
+		}
 	}
 }
 
@@ -146,11 +148,12 @@ templ NoteEditor(actor services.Membership, f NoteForm) {
 		@doorplateHeader(cancel, utils.T(ctx, locales.LK_NotesCancel), utils.IfElse(f.NoteID.Valid, f.Input.Title, utils.T(ctx, locales.LK_NotesNew)))
 		<form action={ action } method="post" hx-boost="true" class={ utils.CN(sheetClass, "space-y-4") }>
 			@formError(f.ErrorMessage)
-			<label class="block space-y-1.5">
-				<span class="text-sm font-medium">
+			@field.Field() {
+				@field.Label(field.LabelProps{For: "note-title"}) {
 					@components.T(locales.LK_NotesNoteTitle)
-				</span>
+				}
 				@input.Input(input.Props{
+					ID:       "note-title",
 					Name:     "title",
 					Type:     "text",
 					Value:    f.Input.Title,
@@ -160,12 +163,13 @@ templ NoteEditor(actor services.Membership, f NoteForm) {
 						"maxlength": services.MaxNoteTitleLength,
 					},
 				})
-			</label>
-			<label class="block space-y-1.5">
-				<span class="text-sm font-medium">
+			}
+			@field.Field() {
+				@field.Label(field.LabelProps{For: "note-body"}) {
 					@components.T(locales.LK_NotesBody)
-				</span>
+				}
 				@textarea.Textarea(textarea.Props{
+					ID:    "note-body",
 					Name:  "body",
 					Value: f.Input.BodyMD,
 					Rows:  12,
@@ -175,10 +179,10 @@ templ NoteEditor(actor services.Membership, f NoteForm) {
 						"aria-describedby": "note-body-hint",
 					},
 				})
-				<span id="note-body-hint" class="block text-xs text-muted-foreground">
+				@field.Description(field.DescriptionProps{ID: "note-body-hint", Class: "text-xs"}) {
 					@components.T(locales.LK_NotesBodyHint)
-				</span>
-			</label>
+				}
+			}
 			if f.IsAuthor {
 				<label class="flex min-h-11 items-center gap-3">
 					<input

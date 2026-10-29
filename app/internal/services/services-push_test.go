@@ -12,6 +12,20 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+func TestPushPreview(t *testing.T) {
+	long := strings.Repeat("õ", 200)
+	for body, want := range map[string]string{
+		"Who took my milk?":       "Who took my milk?",
+		"a\r\nsd\n\n  asd\tdasd ": "a sd asd dasd",
+		long:                      strings.Repeat("õ", pushPreviewLength-1) + "…",
+		strings.Repeat("🥛", 81):   strings.Repeat("🥛", pushPreviewLength-1) + "…",
+	} {
+		if got := pushPreview(body); got != want {
+			t.Errorf("pushPreview(%q) = %q, want %q", body, got, want)
+		}
+	}
+}
+
 func TestValidPushSubscription(t *testing.T) {
 	keys := push.Keys{P256dh: "BNcR", Auth: "tBHI"}
 	for endpoint, want := range map[string]bool{
@@ -105,7 +119,7 @@ func TestPushNotifications(t *testing.T) {
 	memberDevice := subscribeTestDevice(t, s, memberM.UserID, "et")
 	subscribeTestDevice(t, s, strangerM.UserID, "en")
 
-	if err := s.PostMessage(ctx, memberM, "Who took my milk?", nil); err != nil {
+	if err := s.PostMessage(ctx, memberM, "Who took my milk?", pgtype.UUID{}, nil); err != nil {
 		t.Fatal(err)
 	}
 	got := takePushes(s)
@@ -138,7 +152,7 @@ func TestPushNotifications(t *testing.T) {
 	wantPushes(t, "settlement", takePushes(s), ownerDevice)
 
 	s.pusher.(*fakePusher).gone[ownerDevice] = true
-	if err := s.PostMessage(ctx, memberM, "hello?", nil); err != nil {
+	if err := s.PostMessage(ctx, memberM, "hello?", pgtype.UUID{}, nil); err != nil {
 		t.Fatal(err)
 	}
 	wantPushes(t, "gone", takePushes(s))
@@ -150,7 +164,7 @@ func TestPushNotifications(t *testing.T) {
 	if err := s.UnsubscribePush(ctx, memberM.UserID, memberDevice); err != nil {
 		t.Fatal(err)
 	}
-	if err := s.PostMessage(ctx, ownerM, "bye", nil); err != nil {
+	if err := s.PostMessage(ctx, ownerM, "bye", pgtype.UUID{}, nil); err != nil {
 		t.Fatal(err)
 	}
 	wantPushes(t, "unsubscribed", takePushes(s))

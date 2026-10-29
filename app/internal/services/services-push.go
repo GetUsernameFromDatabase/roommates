@@ -21,8 +21,8 @@ var (
 	pushHostSuffixes = []string{".push.services.mozilla.com", ".push.apple.com", ".notify.windows.com"}
 )
 
-// pushPreviewLength is how much of a chat message a notification shows
-const pushPreviewLength = 120
+// pushPreviewLength is how much of a chat message a notification shows, the rest is in the chat
+const pushPreviewLength = 80
 
 func validPushSubscription(sub push.Subscription) bool {
 	u, err := url.Parse(sub.Endpoint)
@@ -108,8 +108,9 @@ func householdPath(householdID pgtype.UUID, parts ...string) string {
 	return g.RouteHousehold + "/" + householdID.String() + "/" + strings.Join(parts, "/")
 }
 
-// pushPreview shortens a chat message for a notification
+// pushPreview shortens a chat message to one line for a notification
 func pushPreview(body string) string {
+	body = strings.Join(strings.Fields(body), " ")
 	r := []rune(body)
 	if len(r) <= pushPreviewLength {
 		return body

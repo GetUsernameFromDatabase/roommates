@@ -1,6 +1,6 @@
 -- name: InsertMessage :one
-INSERT INTO messages (household_id, author_id, body)
-VALUES ($1, $2, $3)
+INSERT INTO messages (household_id, author_id, body, reply_to_id)
+VALUES ($1, $2, $3, $4)
 RETURNING id;
 -- the newest messages, older than the before message when it is given
 -- name: ListMessages :many
@@ -8,9 +8,14 @@ SELECT m.id,
   m.author_id,
   author.username AS author_name,
   m.body,
-  m.created_at
+  m.created_at,
+  m.reply_to_id,
+  reply_author.username AS reply_author_name,
+  coalesce(left(reply.body, 200), '')::text AS reply_body
 FROM messages m
   JOIN users author ON author.id = m.author_id
+  LEFT JOIN messages reply ON reply.id = m.reply_to_id
+  LEFT JOIN users reply_author ON reply_author.id = reply.author_id
 WHERE m.household_id = sqlc.arg(household_id)
   AND (
     sqlc.narg(before)::uuid IS NULL
@@ -25,6 +30,15 @@ WHERE m.household_id = sqlc.arg(household_id)
 ORDER BY m.created_at DESC,
   m.id DESC
 LIMIT sqlc.arg(max_count);
+-- the quote of a message being answered
+-- name: GetReplyPreview :one
+SELECT m.id,
+  author.username AS author_name,
+  left(m.body, 200)::text AS body
+FROM messages m
+  JOIN users author ON author.id = m.author_id
+WHERE m.id = $1
+  AND m.household_id = $2;
 -- name: ListMessageFiles :many
 SELECT f.id,
   f.message_id,

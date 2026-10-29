@@ -161,10 +161,15 @@ en:
     attach: Add a file
     older: Older messages
     newest: Newest messages
-    empty: No messages yet
+    empty: Nothing here yet. Write the first message to the household
     unread: "%d unread"
     length: Write a message or add a file, the message can be at most %d characters
     delete: Delete message
+    reply: Reply
+    copy: Copy
+    replying-to: "Replying to %s"
+    cancel-reply: Cancel reply
+    reply-file: File
   push:
     enable: Turn on notifications on this device
     disable: Turn off notifications on this device

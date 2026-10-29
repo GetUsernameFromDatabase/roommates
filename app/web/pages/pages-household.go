@@ -25,9 +25,10 @@ func householdURL(id pgtype.UUID, parts ...string) templ.SafeURL {
 	return templ.SafeURL(u)
 }
 
-// sseTrigger is the hx-trigger of server-sent events named topics
+// sseTrigger is the hx-trigger of server-sent events named topics,
+// and of live-resync when the page may have missed some (live-resync.js)
 func sseTrigger(topics []string) string {
-	return "sse:" + strings.Join(topics, ", sse:")
+	return "sse:" + strings.Join(topics, ", sse:") + ", live-resync from:body"
 }
 
 // unreadLabel caps the count so the nav keeps its width

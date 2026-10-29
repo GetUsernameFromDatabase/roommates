@@ -161,10 +161,15 @@ et:
     attach: Lisa fail
     older: Varasemad sõnumid
     newest: Uusimad sõnumid
-    empty: Sõnumeid veel pole
+    empty: Siin on veel vaikne. Kirjuta leibkonnale esimene sõnum
     unread: "%d lugemata"
     length: Kirjuta sõnum või lisa fail, sõnum võib olla kuni %d märki
     delete: Kustuta sõnum
+    reply: Vasta
+    copy: Kopeeri
+    replying-to: "Vastad kasutajale %s"
+    cancel-reply: Tühista vastamine
+    reply-file: Fail
   push:
     enable: Lülita sellel seadmel teavitused sisse
     disable: Lülita sellel seadmel teavitused välja

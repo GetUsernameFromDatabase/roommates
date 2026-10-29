@@ -1,6 +1,7 @@
 package pages
 
 import "roommates/web/components"
+import "roommates/web/components/badge"
 import "roommates/internal/db/dbqueries"
 import "roommates/internal/events"
 import "roommates/internal/locales"
@@ -40,7 +41,9 @@ templ guestShell(title string) {
 templ appShell(title string, nav *HouseholdNav) {
 	@components.HtmlWrap() {
 		@components.HeaderComponent(title)
+		// main fills what the nav leaves, the nav is in the flow on desktop
 		<body
+			class="flex min-h-svh flex-col"
 			if nav != nil {
 				hx-ext="sse"
 				sse-connect={ string(householdURL(nav.HouseholdID, "events")) }
@@ -56,8 +59,9 @@ templ appShell(title string, nav *HouseholdNav) {
 	}
 }
 
-// pageMainClass is the single column of the signed in pages, 16px gutters on phones
-const pageMainClass = "mx-auto flex min-h-svh w-full max-w-lg flex-col gap-8 px-4 py-6 sm:p-10"
+// pageMainClass is the single column of the signed in pages, 16px gutters on phones,
+// the chat is wider on desktop so both sides of the conversation have room
+const pageMainClass = "mx-auto flex flex-1 w-full max-w-lg flex-col gap-8 px-4 py-6 sm:p-10 md:has-[#chat]:max-w-3xl"
 
 // sheetClass is the one raised surface of a page, the thing used most on it
 const sheetClass = "rounded-2xl bg-card p-4 text-card-foreground ring-1 ring-foreground/10 sm:p-5"
@@ -103,9 +107,9 @@ templ householdNavItem(href templ.SafeURL, label locales.LK, current bool) {
 templ ChatBadge(householdID pgtype.UUID, unread int64) {
 	<span id="chat-badge" hx-get={ string(householdURL(householdID, "chat", "badge")) } hx-trigger={ sseTrigger([]string{events.TopicChat, events.TopicRead}) } hx-swap="outerHTML">
 		if unread > 0 {
-			<span aria-hidden="true" class="inline-flex min-w-5 items-center justify-center rounded-full bg-primary px-1.5 text-xs text-primary-foreground">
+			@badge.Badge(badge.Props{Class: "min-w-5 px-1.5", Attributes: templ.Attributes{"aria-hidden": "true"}}) {
 				{ unreadLabel(unread) }
-			</span>
+			}
 			<span class="sr-only">{ utils.T(ctx, locales.LK_ChatUnread, unread) }</span>
 		}
 	</span>
@@ -116,7 +120,8 @@ templ ChatBadge(householdID pgtype.UUID, unread int64) {
 //
 // it must not hold a form that is typed in, the refetch would clear it
 templ liveRegion(id string, topics ...string) {
-	<div id={ id } hx-get="" hx-trigger={ sseTrigger(topics) } hx-select={ "#" + id } hx-swap="outerHTML">
+	// hx-disinherit: these only refresh the region, a boosted link inside must not swap with them
+	<div id={ id } hx-get="" hx-trigger={ sseTrigger(topics) } hx-select={ "#" + id } hx-swap="outerHTML" hx-disinherit="*">
 		{ children... }
 	</div>
 }

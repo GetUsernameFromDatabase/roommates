@@ -52,9 +52,38 @@ func (q *Queries) GetMessageAuthor(ctx context.Context, arg GetMessageAuthorPara
 	return author_id, err
 }
 
+const getReplyPreview = `-- name: GetReplyPreview :one
+SELECT m.id,
+  author.username AS author_name,
+  left(m.body, 200)::text AS body
+FROM messages m
+  JOIN users author ON author.id = m.author_id
+WHERE m.id = $1
+  AND m.household_id = $2
+`
+
+type GetReplyPreviewParams struct {
+	ID          pgtype.UUID `json:"id"`
+	HouseholdID pgtype.UUID `json:"household_id"`
+}
+
+type GetReplyPreviewRow struct {
+	ID         pgtype.UUID `json:"id"`
+	AuthorName string      `json:"author_name"`
+	Body       string      `json:"body"`
+}
+
+// the quote of a message being answered
+func (q *Queries) GetReplyPreview(ctx context.Context, arg GetReplyPreviewParams) (GetReplyPreviewRow, error) {
+	row := q.db.QueryRow(ctx, getReplyPreview, arg.ID, arg.HouseholdID)
+	var i GetReplyPreviewRow
+	err := row.Scan(&i.ID, &i.AuthorName, &i.Body)
+	return i, err
+}
+
 const insertMessage = `-- name: InsertMessage :one
-INSERT INTO messages (household_id, author_id, body)
-VALUES ($1, $2, $3)
+INSERT INTO messages (household_id, author_id, body, reply_to_id)
+VALUES ($1, $2, $3, $4)
 RETURNING id
 `
 
@@ -62,10 +91,16 @@ type InsertMessageParams struct {
 	HouseholdID pgtype.UUID `json:"household_id"`
 	AuthorID    pgtype.UUID `json:"author_id"`
 	Body        string      `json:"body"`
+	ReplyToID   pgtype.UUID `json:"reply_to_id"`
 }
 
 func (q *Queries) InsertMessage(ctx context.Context, arg InsertMessageParams) (pgtype.UUID, error) {
-	row := q.db.QueryRow(ctx, insertMessage, arg.HouseholdID, arg.AuthorID, arg.Body)
+	row := q.db.QueryRow(ctx, insertMessage,
+		arg.HouseholdID,
+		arg.AuthorID,
+		arg.Body,
+		arg.ReplyToID,
+	)
 	var id pgtype.UUID
 	err := row.Scan(&id)
 	return id, err
@@ -130,9 +165,14 @@ SELECT m.id,
   m.author_id,
   author.username AS author_name,
   m.body,
-  m.created_at
+  m.created_at,
+  m.reply_to_id,
+  reply_author.username AS reply_author_name,
+  coalesce(left(reply.body, 200), '')::text AS reply_body
 FROM messages m
   JOIN users author ON author.id = m.author_id
+  LEFT JOIN messages reply ON reply.id = m.reply_to_id
+  LEFT JOIN users reply_author ON reply_author.id = reply.author_id
 WHERE m.household_id = $1
   AND (
     $2::uuid IS NULL
@@ -156,11 +196,14 @@ type ListMessagesParams struct {
 }
 
 type ListMessagesRow struct {
-	ID         pgtype.UUID        `json:"id"`
-	AuthorID   pgtype.UUID        `json:"author_id"`
-	AuthorName string             `json:"author_name"`
-	Body       string             `json:"body"`
-	CreatedAt  pgtype.Timestamptz `json:"created_at"`
+	ID              pgtype.UUID        `json:"id"`
+	AuthorID        pgtype.UUID        `json:"author_id"`
+	AuthorName      string             `json:"author_name"`
+	Body            string             `json:"body"`
+	CreatedAt       pgtype.Timestamptz `json:"created_at"`
+	ReplyToID       pgtype.UUID        `json:"reply_to_id"`
+	ReplyAuthorName *string            `json:"reply_author_name"`
+	ReplyBody       string             `json:"reply_body"`
 }
 
 // the newest messages, older than the before message when it is given
@@ -179,6 +222,9 @@ func (q *Queries) ListMessages(ctx context.Context, arg ListMessagesParams) ([]L
 			&i.AuthorName,
 			&i.Body,
 			&i.CreatedAt,
+			&i.ReplyToID,
+			&i.ReplyAuthorName,
+			&i.ReplyBody,
 		); err != nil {
 			return nil, err
 		}

@@ -218,14 +218,14 @@ func HeaderComponent(title string) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 17, "\"><script src=\"/assets/lib/htmx.min.js\"></script><script src=\"/assets/lib/sse.min.js\"></script><script src=\"/assets/local-time.js\"></script><script src=\"/assets/push.js\"></script><script src=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 17, "\"><script src=\"/assets/lib/htmx.min.js\"></script><script src=\"/assets/lib/sse.min.js\"></script><script src=\"/assets/local-time.js\"></script><script src=\"/assets/live-resync.js\"></script><script src=\"/assets/chat-hold.js\"></script><script src=\"/assets/chat-keyboard.js\"></script><script src=\"/assets/push.js\"></script><script src=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var12 string
 		templ_7745c5c3_Var12, templ_7745c5c3_Err = templruntime.NewAttributeExpression(bundleSrc).ResolveURL(ctx)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/components/components.templ`, Line: 68, Col: 25}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/components/components.templ`, Line: 71, Col: 25}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var12)
 		if templ_7745c5c3_Err != nil {

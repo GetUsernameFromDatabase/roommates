@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"errors"
 	"io"
 	g "roommates/internal/config"
 	"roommates/internal/db/dbqueries"
@@ -11,6 +12,7 @@ import (
 	"strings"
 	"unicode/utf8"
 
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
@@ -42,9 +44,20 @@ type Chat struct {
 	HasOlder bool
 }
 
-// PostMessage sends body with an optional file, [g.ErrorInvalidInput] when both are
-// missing or body is longer than [MaxMessageLength], file errors are those of [DefaultService.UploadFile]
-func (s *DefaultService) PostMessage(ctx context.Context, actor Membership, body string, file *Upload) error {
+// ReplyPreview is the quote of a message being answered
+type ReplyPreview = dbqueries.GetReplyPreviewRow
+
+// GetReplyPreview returns [g.ErrorNotFound] if the message is not in the actor's household
+func (s *DefaultService) GetReplyPreview(ctx context.Context, actor Membership, messageID pgtype.UUID) (ReplyPreview, error) {
+	p, err := s.db.GetReplyPreview(ctx, dbqueries.GetReplyPreviewParams{ID: messageID, HouseholdID: actor.HouseholdID})
+	return p, noRowsAs(err, g.ErrorNotFound)
+}
+
+// PostMessage sends body with an optional file as an answer to replyTo when it is valid,
+// [g.ErrorInvalidInput] when body and file are both missing or body is longer than [MaxMessageLength],
+// [g.ErrorNotFound] when replyTo is not (or no longer) in the actor's household,
+// file errors are those of [DefaultService.UploadFile]
+func (s *DefaultService) PostMessage(ctx context.Context, actor Membership, body string, replyTo pgtype.UUID, file *Upload) error {
 	// forms send CRLF but maxlength counts a line break once
 	body = strings.TrimSpace(strings.ReplaceAll(body, "\r\n", "\n"))
 	if (body == "" && file == nil) || utf8.RuneCountInString(body) > MaxMessageLength {
@@ -54,8 +67,14 @@ func (s *DefaultService) PostMessage(ctx context.Context, actor Membership, body
 		HouseholdID: actor.HouseholdID,
 		AuthorID:    actor.UserID,
 		Body:        body,
+		ReplyToID:   replyTo,
 	})
 	if err != nil {
+		var pgErr *pgconn.PgError
+		// the foreign key keeps replies in the household, the answered message may also just be deleted
+		if replyTo.Valid && errors.As(err, &pgErr) && pgErr.Code == "23503" {
+			return g.ErrorNotFound
+		}
 		return err
 	}
 	if file != nil {

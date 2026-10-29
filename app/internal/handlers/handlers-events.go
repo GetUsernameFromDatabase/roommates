@@ -23,17 +23,7 @@ func (h *DefaultHandler) Events(ctx *gin.Context) {
 	ctx.Header("Content-Type", "text/event-stream")
 	ctx.Header("Cache-Control", "no-cache")
 	ctx.Header("X-Accel-Buffering", "no")
-	// an id makes a browser that reconnects by itself send Last-Event-ID,
-	// the changes in between were missed, so the page refetches everything
-	start := "id: 1\n\n"
-	if ctx.GetHeader("Last-Event-ID") != "" {
-		for _, t := range events.Topics {
-			start += "event: " + t + "\ndata: 1\n\n"
-		}
-	}
-	if _, err := io.WriteString(ctx.Writer, start); err != nil {
-		return
-	}
+	// a reconnected page catches up by itself, see live-resync.js
 	ctx.Writer.Flush()
 	ping := time.NewTicker(eventsPing)
 	defer ping.Stop()

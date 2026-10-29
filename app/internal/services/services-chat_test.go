@@ -18,10 +18,10 @@ func TestChat(t *testing.T) {
 	ownerM, memberM, strangerM := newTestHousehold(t, s)
 	none := pgtype.UUID{}
 
-	wantErr(t, "empty message", s.PostMessage(ctx, memberM, " \r\n ", nil), g.ErrorInvalidInput)
-	wantErr(t, "too long", s.PostMessage(ctx, memberM, strings.Repeat("a", MaxMessageLength+1), nil), g.ErrorInvalidInput)
+	wantErr(t, "empty message", s.PostMessage(ctx, memberM, " \r\n ", none, nil), g.ErrorInvalidInput)
+	wantErr(t, "too long", s.PostMessage(ctx, memberM, strings.Repeat("a", MaxMessageLength+1), none, nil), g.ErrorInvalidInput)
 	// a line break counts once, as in the textarea's maxlength
-	if err := s.PostMessage(ctx, memberM, strings.Repeat("a\r\n", MaxMessageLength/2-1)+"a", nil); err != nil {
+	if err := s.PostMessage(ctx, memberM, strings.Repeat("a\r\n", MaxMessageLength/2-1)+"a", none, nil); err != nil {
 		t.Fatal(err)
 	}
 
@@ -37,12 +37,12 @@ func TestChat(t *testing.T) {
 	}
 
 	photo := &Upload{Name: "cat.png", Body: bytes.NewReader([]byte("\x89PNG\r\n\x1a\n")), Size: 8}
-	if err := s.PostMessage(ctx, ownerM, "", photo); err != nil {
+	if err := s.PostMessage(ctx, ownerM, "", none, photo); err != nil {
 		t.Fatal(err)
 	}
 	// a failed upload takes its message with it
 	tooLarge := &Upload{Name: "big.bin", Body: bytes.NewReader([]byte("x")), Size: MaxFileSize + 1}
-	wantErr(t, "too large file", s.PostMessage(ctx, ownerM, "big one", tooLarge), g.ErrorFileTooLarge)
+	wantErr(t, "too large file", s.PostMessage(ctx, ownerM, "big one", none, tooLarge), g.ErrorFileTooLarge)
 
 	c, err := s.ListChat(ctx, ownerM, none)
 	if err != nil {
@@ -75,7 +75,7 @@ func TestChat(t *testing.T) {
 
 	// pages of ChatPageSize, newest first
 	for i := range ChatPageSize {
-		if err := s.PostMessage(ctx, memberM, string(rune('a'+i%26)), nil); err != nil {
+		if err := s.PostMessage(ctx, memberM, string(rune('a'+i%26)), none, nil); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -92,6 +92,48 @@ func TestChat(t *testing.T) {
 	}
 	if len(older.Messages) != 1 || older.HasOlder || older.Messages[0].Body[0] != 'a' || len(older.Messages[0].Body) < 100 {
 		t.Fatalf("older page %+v", older)
+	}
+}
+
+// a reply quotes a message of its own household until that message is deleted
+func TestChatReply(t *testing.T) {
+	s := newTestService(t)
+	ctx := context.Background()
+	ownerM, memberM, strangerM := newTestHousehold(t, s)
+	none := pgtype.UUID{}
+
+	if err := s.PostMessage(ctx, ownerM, "Who took my milk?", none, nil); err != nil {
+		t.Fatal(err)
+	}
+	c, err := s.ListChat(ctx, ownerM, none)
+	if err != nil {
+		t.Fatal(err)
+	}
+	question := c.Messages[0].ID
+	wantErr(t, "stranger replies", s.PostMessage(ctx, strangerM, "not me", question, nil), g.ErrorNotFound)
+	_, err = s.GetReplyPreview(ctx, strangerM, question)
+	wantErr(t, "stranger previews", err, g.ErrorNotFound)
+	if err := s.PostMessage(ctx, memberM, "Sorry", question, nil); err != nil {
+		t.Fatal(err)
+	}
+	c, err = s.ListChat(ctx, ownerM, none)
+	if err != nil {
+		t.Fatal(err)
+	}
+	reply := c.Messages[0]
+	if reply.ReplyToID != question || reply.ReplyAuthorName == nil || reply.ReplyBody != "Who took my milk?" {
+		t.Fatalf("reply %+v", reply)
+	}
+
+	if err := s.DeleteMessage(ctx, ownerM, question); err != nil {
+		t.Fatal(err)
+	}
+	c, err = s.ListChat(ctx, ownerM, none)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(c.Messages) != 1 || c.Messages[0].ReplyToID.Valid || c.Messages[0].ReplyAuthorName != nil {
+		t.Fatalf("reply of a deleted message %+v", c.Messages)
 	}
 }
 
@@ -122,7 +164,7 @@ func TestHouseholdEvents(t *testing.T) {
 		}
 	}
 
-	if err := s.PostMessage(ctx, memberM, "hi", nil); err != nil {
+	if err := s.PostMessage(ctx, memberM, "hi", pgtype.UUID{}, nil); err != nil {
 		t.Fatal(err)
 	}
 	next("message", events.TopicChat)
