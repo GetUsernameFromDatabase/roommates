@@ -6,7 +6,7 @@ Go web app: Gin + templ + htmx + Tailwind v4 / shadcn-templ + sqlc + PostgreSQL.
 
 Run from `app/` (the Go module root). Anything that touches the database (`go test`, `task dev`, the server) needs the compose `db` service on 127.0.0.1:5433, and the server also needs `rustfs` (S3 API on 127.0.0.1:9000): run `docker compose up -d --wait db rustfs` first (`task dev` does it itself). DB tests use an in-memory store, not RustFS.
 
-- `task dev` — hot reload (tailwind watch + shadcn-templ bundle watch + `templ generate --watch`, whose `--cmd` `scripts/dev-signal.sh` only signals `scripts/dev-run.sh` to restart the server under dlv on :2345)
+- `task dev` — hot reload (tailwind watch + shadcn-templ bundle watch + `templ generate --watch`, whose `--cmd` `scripts/dev-signal.sh` only signals `scripts/dev-run.sh` to restart the server under dlv on :2345; `assets-watch` sends the same signal when an embedded `web/assets` file changes)
 - `task build` — full production build → `bin/app`
 - `go build ./...` / `go vet ./...` — quick check
 - `sh scripts/lint.sh` — staticcheck + golangci-lint

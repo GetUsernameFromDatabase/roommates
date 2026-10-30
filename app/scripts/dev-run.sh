@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # runs the server under dlv (127.0.0.1:2345) and restarts it whenever
 # scripts/dev-signal.sh writes bin/.dev-restart, see there for why templ
-# does not run the server itself
+# does not run the server itself; the Taskfile's assets-watch writes it too
+# when an embedded web/assets file changes
 
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 TRIGGER=bin/.dev-restart

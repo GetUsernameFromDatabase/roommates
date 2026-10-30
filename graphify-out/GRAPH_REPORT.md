@@ -1,17 +1,17 @@
 # Graph Report - roommates  (2026-10-30)
 
 ## Corpus Check
-- 245 files · ~159,411 words
+- 245 files · ~159,504 words
 - Verdict: corpus is large enough that graph structure adds value.
-- Unclassified: 49 file(s) not represented in the graph (top: .templ 32, (none) 6, .css 5)
+- Unclassified: 50 file(s) not represented in the graph (top: .templ 32, (none) 7, .css 5)
 
 ## Summary
-- 2396 nodes · 7773 edges · 150 communities (116 shown, 34 thin omitted)
+- 2404 nodes · 7781 edges · 165 communities (127 shown, 38 thin omitted)
 - Extraction: 93% EXTRACTED · 7% INFERRED · 0% AMBIGUOUS · INFERRED: 559 edges (avg confidence: 0.85)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `30e8d1b0`
+- Built from commit: `9a442d29`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -27,7 +27,7 @@
 - Membership
 - LKMessage
 - T
-- RenderTemplStatus
+- ParseUUID
 - components.json
 - block-secret-files.sh
 - go
@@ -64,9 +64,9 @@
 - github.com/jackc/pgx/v5/pgtype.UUID
 - notes
 - Redirect
-- householdPath
+- membershipFromContext
 - floating_ui_dom.js
-- models.go
+- RenderTemplStatus
 - files
 - validation-errors
 - Queries
@@ -85,7 +85,7 @@
 - password
 - appearance
 - appearance
-- householdURL
+- appShell
 - environment
 - nav
 - nav
@@ -101,7 +101,7 @@
 - app
 - chatMessages
 - images.go
-- offline
+- tooltip_templ.go
 - floating_ui_core.js
 - generate-locales-keys.go
 - Debt
@@ -116,7 +116,7 @@
 - chat
 - chat
 - use_transition_status.js
-- Props
+- inputgroup_templ.go
 - registration-page
 - composite.js
 - bubble_templ.go
@@ -127,7 +127,7 @@
 - push
 - chat-keyboard.js
 - mailer.go
-- Redirect
+- tasks
 - DefaultService
 - Renderer
 - GetDatabaseURL
@@ -135,7 +135,7 @@
 - switch.js
 - mounted
 - ChatBadge
-- registration-page
+- .UpdateNote
 - .clean
 - mail
 - generate-locales-languages.go
@@ -146,14 +146,29 @@
 - go_pkg_fmt
 - Assets
 - avatar.js
-- .renderShoppingItem
+- GetAppearance
 - avatar
-- password
+- tailwind
 - ListNotesRow
 - error-page
 - invite-page
 - forgot-password-page
 - noRowsAs
+- invite-page
+- server
+- assets-signal
+- dev
+- NormalizeInviteCode
+- build
+- tailwind-version
+- scripts-watch
+- GetReplyPreviewParams
+- GetShoppingItemParams
+- pushPreview
+- DeleteMessageParams
+- DeleteShoppingListParams
+- SetShoppingItemClaimParams
+- SetUserAvatarParams
 
 ## God Nodes (most connected - your core abstractions)
 1. `T()` - 77 edges
@@ -168,41 +183,41 @@
 10. `notes` - 35 edges
 
 ## Surprising Connections (you probably didn't know these)
+- `chatPath()` --calls--> `householdPath()`  [INFERRED]
+  app/internal/handlers/handlers-chat.go → app/internal/handlers/handlers-households.go
 - `notice()` --calls--> `RenderTemplStatus()`  [INFERRED]
   app/internal/handlers/handlers-email.go → app/internal/handlers/handlers.go
 - `expensesPath()` --calls--> `householdPath()`  [INFERRED]
   app/internal/handlers/handlers-expenses.go → app/internal/handlers/handlers-households.go
-- `settingsPath()` --calls--> `householdPath()`  [INFERRED]
-  app/internal/handlers/handlers-home.go → app/internal/handlers/handlers-households.go
-- `shoppingListPath()` --calls--> `householdPath()`  [INFERRED]
-  app/internal/handlers/handlers-shopping.go → app/internal/handlers/handlers-households.go
-- `TestSafeNextPath()` --calls--> `safeNextPath()`  [INFERRED]
-  app/internal/handlers/handlers-next_test.go → app/internal/handlers/handlers-next.go
+- `filesPath()` --calls--> `householdPath()`  [INFERRED]
+  app/internal/handlers/handlers-files.go → app/internal/handlers/handlers-households.go
+- `notesPath()` --calls--> `householdPath()`  [INFERRED]
+  app/internal/handlers/handlers-notes.go → app/internal/handlers/handlers-households.go
 
 ## Import Cycles
 - None detected.
 
-## Communities (150 total, 34 thin omitted)
+## Communities (165 total, 38 thin omitted)
 
 ### Community 0 - "testing.T"
-Cohesion: 0.15
-Nodes (35): TestSafeNextPath(), TestAvatars(), TestChat(), TestChatReply(), TestHouseholdEvents(), englishContext(), TestExpiredTokenIsInvalid(), TestInviteNeedsConfirmedEmail() (+27 more)
+Cohesion: 0.22
+Nodes (28): TestSafeNextPath(), TestAvatars(), TestChat(), TestChatReply(), TestHouseholdEvents(), englishContext(), TestExpiredTokenIsInvalid(), TestInviteNeedsConfirmedEmail() (+20 more)
 
 ### Community 1 - "handlers.go"
 Cohesion: 0.14
-Nodes (10): lastTopLevelColon(), twImportantToV3(), twImportantToV4(), ctxKey, ctxKey, Props, appearanceKey, directionKey (+2 more)
+Nodes (8): lastTopLevelColon(), twImportantToV3(), twImportantToV4(), ctxKey, appearanceKey, directionKey, householdsKey, unreadChatKey
 
 ### Community 2 - "migrations.go"
 Cohesion: 0.16
 Nodes (11): ensureMigrationRow(), ensureMigrationTable(), getMigrationVersion(), MigrateToLatest(), NewMigrations(), SelectMigrationVersion(), TestMigrateUpAndDown(), updateMigrationVersion() (+3 more)
 
 ### Community 3 - "en"
-Cohesion: 0.07
-Nodes (26): title, delete, link-invalid, save, en, app, common, email (+18 more)
+Cohesion: 0.06
+Nodes (31): title, delete, link-invalid, save, en, app, common, email (+23 more)
 
 ### Community 4 - "et"
-Cohesion: 0.08
-Nodes (24): title, delete, link-invalid, save, et, app, common, email (+16 more)
+Cohesion: 0.07
+Nodes (28): title, delete, link-invalid, save, et, app, common, email (+20 more)
 
 ### Community 5 - "environment"
 Cohesion: 0.20
@@ -213,24 +228,24 @@ Cohesion: 0.18
 Nodes (17): download(), fileSHA256(), latestVersion(), load(), main(), pinLatest(), readJSON(), runCheck() (+9 more)
 
 ### Community 7 - "vars"
-Cohesion: 0.04
-Nodes (47): cmds, desc, preconditions, task, cmds, desc, env, SERVER_PORT (+39 more)
+Cohesion: 0.17
+Nodes (11): sh, use_gitignore, vars, FREE_PORT, PORT, PROXY_TLS_CRT, PROXY_TLS_KEY, TAILWIND_INPUT (+3 more)
 
 ### Community 8 - "Membership"
-Cohesion: 0.14
-Nodes (28): GetExpenseRow, Expense, AttachedFile, Membership, ShoppingList, FormatMoney(), localTime(), debtBreakdown() (+20 more)
+Cohesion: 0.12
+Nodes (39): GetExpenseRow, GetUserRow, Expense, AttachedFile, Membership, ShoppingList, FormatMoney(), localTime() (+31 more)
 
 ### Community 9 - "LKMessage"
 Cohesion: 0.10
 Nodes (16): LKMessage, EmailForm, ResetPassword, Household, IsModelValid(), Login, validateEmail(), Register (+8 more)
 
 ### Community 10 - "T"
-Cohesion: 0.15
-Nodes (44): GetUserRow, HouseholdOverview, T(), Button(), T(), ValidationErrors(), Field(), Group() (+36 more)
+Cohesion: 0.14
+Nodes (43): LK, HouseholdOverview, N(), T(), unescapeJSON(), Alert(), Button(), N() (+35 more)
 
-### Community 11 - "RenderTemplStatus"
-Cohesion: 0.21
-Nodes (10): optionalUUID(), expenseFromForm(), expensePath(), expensesPath(), membershipFromContext(), pageError(), RenderTemplStatus(), Note (+2 more)
+### Community 11 - "ParseUUID"
+Cohesion: 0.14
+Nodes (8): expenseFromForm(), expensePath(), expensesPath(), pageError(), NewHouseholdMember(), WithUnreadChat(), WithHouseholds(), ParseUUID()
 
 ### Community 12 - "components.json"
 Cohesion: 0.12
@@ -246,7 +261,7 @@ Nodes (15): go, emit_enum_valid_method, emit_exact_table_names, emit_json_tags, 
 
 ### Community 15 - "context.Context"
 Cohesion: 0.03
-Nodes (37): ListHouseholdsOfUserRow, Direction(), WithDirection(), GetUnreadChat(), WithUnreadChat(), GetHouseholds(), WithHouseholds(), state() (+29 more)
+Nodes (37): ListHouseholdsOfUserRow, checkSettled(), ownerActsOnMember(), Direction(), WithDirection(), GetUnreadChat(), GetHouseholds(), state() (+29 more)
 
 ### Community 16 - "expenses"
 Cohesion: 0.05
@@ -301,8 +316,8 @@ Cohesion: 0.09
 Nodes (22): shopping, add, back, bought-by, buying, buying-by, check, clear (+14 more)
 
 ### Community 40 - "newEmailToken"
-Cohesion: 0.10
-Nodes (7): GetUserCredentialsRow, InsertUserParams, LoginRequest, NormalizeEmail(), newEmailToken(), timestamptz(), newInviteCode()
+Cohesion: 0.12
+Nodes (6): GetUserCredentialsRow, InsertUserParams, LoginRequest, NormalizeEmail(), newEmailToken(), timestamptz()
 
 ### Community 41 - "validation-errors"
 Cohesion: 0.12
@@ -317,32 +332,32 @@ Cohesion: 0.25
 Nodes (8): home-page, create-submit, create-title, greeting, households, join-submit, join-title, no-households
 
 ### Community 44 - "io.ReadSeeker"
-Cohesion: 0.13
+Cohesion: 0.14
 Nodes (4): Store, New(), Upload, S3Store
 
 ### Community 45 - "github.com/jackc/pgx/v5/pgtype.UUID"
-Cohesion: 0.04
-Nodes (30): ListExpenseSharesRow, GetHouseholdRow, ListActiveInvitesRow, GetShoppingListRow, ListShoppingListsRow, avatarURL(), ConsumeEmailTokenParams, DeleteCheckedShoppingItemsParams (+22 more)
+Cohesion: 0.05
+Nodes (47): ListExpenseSharesRow, GetHouseholdRow, ListActiveInvitesRow, ListMessagesRow, GetShoppingListRow, ListShoppingItemsRow, ListShoppingListsRow, shoppingItemPath() (+39 more)
 
 ### Community 46 - "notes"
 Cohesion: 0.06
 Nodes (35): notes, back, body, body-hint, bold, cancel, delete, edit (+27 more)
 
 ### Community 47 - "Redirect"
-Cohesion: 0.21
-Nodes (3): peoplePath(), IsRequestHTMX(), swapMainOnError()
+Cohesion: 0.23
+Nodes (5): peoplePath(), IsRequestHTMX(), safeNextPath(), Redirect(), FromGinContext()
 
-### Community 48 - "householdPath"
-Cohesion: 0.16
-Nodes (7): chatPath(), filesPath(), householdPath(), noteFromForm(), noteLengthMessage(), notePath(), notesPath()
+### Community 48 - "membershipFromContext"
+Cohesion: 0.18
+Nodes (3): filesPath(), membershipFromContext(), ShoppingItem
 
 ### Community 49 - "floating_ui_dom.js"
 Cohesion: 0.13
 Nodes (51): autoUpdate(), frameLoop(), convertOffsetParentRelativeRectToViewportRelativeRect(), getBoundingClientRect(), getClientRectFromClippingAncestor(), getClippingElementAncestors(), getClippingRect(), getComputedStyle$1() (+43 more)
 
-### Community 50 - "models.go"
-Cohesion: 0.08
-Nodes (26): ListMessagesRow, ListShoppingItemsRow, EmailToken, Expense, ExpenseShare, File, FilePurge, GetFileParams (+18 more)
+### Community 50 - "RenderTemplStatus"
+Cohesion: 0.23
+Nodes (5): chatPath(), optionalUUID(), RenderTemplStatus(), swapMainOnError(), NotFound()
 
 ### Community 51 - "files"
 Cohesion: 0.13
@@ -353,16 +368,16 @@ Cohesion: 0.12
 Nodes (16): generic, validation-errors, name-length, case, length, match, max-length, required (+8 more)
 
 ### Community 53 - "Queries"
-Cohesion: 0.14
-Nodes (5): Queries, New(), checkSettled(), ownerActsOnMember(), DBTX
+Cohesion: 0.20
+Nodes (3): Queries, New(), DBTX
 
 ### Community 54 - "notes"
 Cohesion: 0.06
 Nodes (35): notes, back, body, body-hint, bold, cancel, delete, edit (+27 more)
 
 ### Community 55 - "github.com/a-h/templ.Attributes"
-Cohesion: 0.05
-Nodes (52): ActionProps, DescriptionProps, Props, TitleProps, Variant, variantClasses(), Badge(), Size (+44 more)
+Cohesion: 0.08
+Nodes (37): ActionProps, DescriptionProps, Props, TitleProps, Variant, DirectionAttributes(), variantClasses(), Action() (+29 more)
 
 ### Community 56 - "verify-email"
 Cohesion: 0.22
@@ -393,8 +408,8 @@ Cohesion: 0.29
 Nodes (7): login-page, create-account, enter-credentials-description, forgot-password, invalid-credentials, no-account, sign-in
 
 ### Community 63 - "github.com/a-h/templ.Component"
-Cohesion: 0.07
-Nodes (59): CN(), DirectionAttributes(), flattenClasses(), RandomID(), twMapTokens(), twReorder(), GetAppearance(), Action() (+51 more)
+Cohesion: 0.08
+Nodes (51): CN(), flattenClasses(), twMapTokens(), twReorder(), Action(), Description(), Title(), AspectRatio() (+43 more)
 
 ### Community 64 - "forgot-password-page"
 Cohesion: 0.33
@@ -416,9 +431,9 @@ Nodes (8): mode, mode-dark, mode-light, mode-system, theme, theme-home, theme-pl
 Cohesion: 0.25
 Nodes (8): mode, mode-dark, mode-light, mode-system, theme, theme-home, theme-plain, appearance
 
-### Community 69 - "householdURL"
-Cohesion: 0.11
-Nodes (30): LK, IfElse(), N(), unescapeJSON(), Reactions(), N(), Description(), chatControlLabel() (+22 more)
+### Community 69 - "appShell"
+Cohesion: 0.28
+Nodes (13): IfElse(), Reactions(), appShell(), HouseholdNav, householdMenu(), householdMenuItem(), householdNav(), householdNavItem() (+5 more)
 
 ### Community 70 - "environment"
 Cohesion: 0.18
@@ -434,7 +449,7 @@ Nodes (12): nav, chat, expenses, files, households-add, label, more, notes (+4 m
 
 ### Community 73 - "rowsAffected"
 Cohesion: 0.09
-Nodes (7): GetInviteByCodeRow, hashToken(), noRowsAs(), NoteInput, rowsAffected(), trimToLength(), NoteForm
+Nodes (7): GetInviteByCodeRow, hashToken(), cleanFileName(), TestCleanFileName(), noRowsAs(), rowsAffected(), trimToLength()
 
 ### Community 74 - "services"
 Cohesion: 0.22
@@ -468,9 +483,9 @@ Nodes (26): Chat, Message, MessageFile, MergeAttributes(), Avatar(), Content(), 
 Cohesion: 0.13
 Nodes (11): exifOrientation(), fit(), jpegOrientation(), orient(), encodePNG(), jpegWithOrientation(), testImage(), TestOrient() (+3 more)
 
-### Community 85 - "offline"
-Cohesion: 0.50
-Nodes (4): offline, description, retry, title
+### Community 85 - "tooltip_templ.go"
+Cohesion: 0.15
+Nodes (16): RandomID(), initialChecked(), Switch(), Content(), DisableTrigger(), state(), Tooltip(), Trigger() (+8 more)
 
 ### Community 86 - "floating_ui_core.js"
 Cohesion: 0.13
@@ -481,8 +496,8 @@ Cohesion: 0.24
 Nodes (7): flattenYAML(), generateOutputContent(), main(), parseLocaleYml(), pathToConst(), toConstName(), writeOutput()
 
 ### Community 88 - "Debt"
-Cohesion: 0.13
-Nodes (13): ListDebtItemsRow, ListExpensesRow, ListPendingSettlementsRow, Debt, ExpensesOverview, netDebts(), TestNetDebts(), testUUID() (+5 more)
+Cohesion: 0.14
+Nodes (11): ListDebtItemsRow, ListExpensesRow, ListPendingSettlementsRow, Debt, ExpensesOverview, netDebts(), itemClass(), TestItemClass() (+3 more)
 
 ### Community 89 - "tabbable.js"
 Cohesion: 0.14
@@ -505,16 +520,16 @@ Cohesion: 0.13
 Nodes (20): main(), InitGinEngine(), initRoutes(), registerAssets(), GetAppBaseURL(), IsDevelopment(), InitLogger(), New() (+12 more)
 
 ### Community 94 - "Subscription"
-Cohesion: 0.12
-Nodes (9): Message, Subscription, newFakePusher(), TestValidPushSubscription(), validPushSubscription(), Keys, LogPusher, WebPusher (+1 more)
+Cohesion: 0.13
+Nodes (8): Message, Pusher, Subscription, TestValidPushSubscription(), validPushSubscription(), Keys, LogPusher, WebPusher
 
 ### Community 95 - "mail"
 Cohesion: 0.29
 Nodes (7): mail, invite-body, invite-subject, reset-body, reset-subject, verify-body, verify-subject
 
 ### Community 96 - "NewInternationalization"
-Cohesion: 0.12
-Nodes (14): DeleteCookie(), GetCookie(), GetHeader(), NewAppearance(), localeMissing(), NewInternationalization(), setLocaleContext(), NewAppearance() (+6 more)
+Cohesion: 0.17
+Nodes (9): DeleteCookie(), GetCookie(), GetHeader(), localeMissing(), NewInternationalization(), setLocaleContext(), CookieKey, HTTPHeaderKey (+1 more)
 
 ### Community 97 - "chat"
 Cohesion: 0.12
@@ -528,9 +543,9 @@ Nodes (17): attach, cancel-reply, copy, delete, empty, files-too-large, length, 
 Cohesion: 0.40
 Nodes (7): animationsFinished(), close(), open(), reset(), resolve(), setOpen(), whenAnimationsFinish()
 
-### Community 100 - "Props"
-Cohesion: 0.36
-Nodes (6): Type, Variant, Variants(), Props, Size, ButtonProps
+### Community 100 - "inputgroup_templ.go"
+Cohesion: 0.12
+Nodes (21): Type, Variant, Variants(), Props, Addon(), Button(), Input(), InputGroup() (+13 more)
 
 ### Community 101 - "registration-page"
 Cohesion: 0.33
@@ -568,21 +583,25 @@ Nodes (11): push, chat-file, chat-title, denied, disable, enable, expense-body, 
 Cohesion: 0.24
 Nodes (6): buildMessage(), Message, TestBuildMessage(), LogMailer, SMTPMailer, fakeMailer
 
-### Community 112 - "Redirect"
-Cohesion: 0.29
-Nodes (6): safeNextPath(), Redirect(), NewHouseholdMember(), notFound(), FromGinContext(), New()
+### Community 112 - "tasks"
+Cohesion: 0.20
+Nodes (10): cmds, desc, tasks, assets-watch, templ, vendor, cmds, desc (+2 more)
 
 ### Community 113 - "DefaultService"
-Cohesion: 0.17
-Nodes (13): DefaultHandler, NewDefaultHandler(), LoadLocales(), Mailer, Pusher, DefaultService, NewDefaultService(), subscribeTestDevice() (+5 more)
+Cohesion: 0.19
+Nodes (12): DefaultHandler, NewDefaultHandler(), LoadLocales(), Mailer, DefaultService, NewDefaultService(), subscribeTestDevice(), takePushes() (+4 more)
+
+### Community 114 - "Renderer"
+Cohesion: 0.47
+Nodes (3): notFound(), New(), Renderer
 
 ### Community 115 - "GetDatabaseURL"
 Cohesion: 0.24
 Nodes (8): ensureDatabasePool(), GetDatabaseURL(), GetEnv(), GetSessionKeyPairs(), MustGetEnv(), TestGetDatabaseURLEscapes(), ValidateCookieHashBlockPair(), EnvironmentVariableKey
 
 ### Community 116 - "InternalError"
-Cohesion: 0.16
-Nodes (5): notice(), settingsPath(), sessionUserID(), InternalError(), GetLocaleString()
+Cohesion: 0.17
+Nodes (5): settingsPath(), householdPath(), sessionUserID(), InternalError(), GetLocaleString()
 
 ### Community 117 - "switch.js"
 Cohesion: 0.24
@@ -593,16 +612,16 @@ Cohesion: 0.83
 Nodes (3): mounted(), register(), sync()
 
 ### Community 123 - "ChatBadge"
-Cohesion: 0.60
-Nodes (4): Badge(), badgeClasses(), Props, Variant
-
-### Community 124 - "registration-page"
 Cohesion: 0.33
-Nodes (6): registration-page, account-exists, already-have-account, description, submit, title
+Nodes (7): Badge(), badgeClasses(), ChatBadge(), sseTrigger(), unreadLabel(), Props, Variant
+
+### Community 124 - ".UpdateNote"
+Cohesion: 0.38
+Nodes (4): noteFromForm(), noteLengthMessage(), notePath(), notesPath()
 
 ### Community 125 - ".clean"
-Cohesion: 0.15
-Nodes (10): InsertExpenseParams, ListActiveMembersRow, FormatCentsInput(), ExpenseInput, ParseCents(), splitEqual(), TestParseCents(), TestSplitEqual() (+2 more)
+Cohesion: 0.13
+Nodes (12): InsertExpenseParams, ListActiveMembersRow, FormatCentsInput(), ExpenseInput, ParseCents(), splitEqual(), TestNetDebts(), TestParseCents() (+4 more)
 
 ### Community 126 - "mail"
 Cohesion: 0.29
@@ -612,25 +631,33 @@ Nodes (7): mail, invite-body, invite-subject, reset-body, reset-subject, verify-
 Cohesion: 0.27
 Nodes (7): discoverLanguages(), generateLocales(), loadYAML(), main(), mapping(), missingKeys(), unwrapLocale()
 
+### Community 128 - "github.com/gin-gonic/gin.Context"
+Cohesion: 0.16
+Nodes (3): notice(), RenderTempl(), stayInPlace()
+
 ### Community 129 - "vendor-assets_test.go"
 Cohesion: 0.26
 Nodes (7): fakeNPM(), readFile(), TestCheckAndUpdate(), TestSync(), writeManifest(), writeAtomic(), writeJSON()
 
 ### Community 131 - "Hub"
-Cohesion: 0.21
-Nodes (5): Hub, NewHub(), TestHub(), newFakeStore(), fakeStore
+Cohesion: 0.15
+Nodes (7): Hub, NewHub(), TestHub(), newFakeStore(), newFakePusher(), fakePusher, fakeStore
 
-### Community 139 - ".renderShoppingItem"
-Cohesion: 0.29
-Nodes (3): shoppingItemPath(), shoppingListPath(), ShoppingItem
+### Community 139 - "GetAppearance"
+Cohesion: 0.43
+Nodes (6): NewAppearance(), GetAppearance(), NewAppearance(), TestNewAppearance(), WithAppearance(), Appearance
 
 ### Community 141 - "avatar"
 Cohesion: 0.25
 Nodes (8): crop-hint, description, invalid, remove, title, upload, zoom, avatar
 
-### Community 142 - "password"
-Cohesion: 0.40
-Nodes (5): password, confirm, enter, show, title
+### Community 142 - "tailwind"
+Cohesion: 0.33
+Nodes (7): preconditions, msg, sh, cmds, desc, preconditions, tailwind
+
+### Community 143 - "ListNotesRow"
+Cohesion: 0.18
+Nodes (5): ListNotesRow, Note, NoteInput, ListNotesParams, NoteForm
 
 ### Community 146 - "error-page"
 Cohesion: 0.50
@@ -645,28 +672,60 @@ Cohesion: 0.33
 Nodes (6): forgot-password-page, description, sent-description, sent-title, submit, title
 
 ### Community 149 - "noRowsAs"
-Cohesion: 0.22
+Cohesion: 0.24
 Nodes (4): ListFilesRow, FileMeta, FileTarget, ListFilesParams
+
+### Community 150 - "invite-page"
+Cohesion: 0.33
+Nodes (6): invite-page, code, description, invalid, join, title
+
+### Community 151 - "server"
+Cohesion: 0.33
+Nodes (6): SERVER_PORT, cmds, desc, dotenv, env, server
+
+### Community 152 - "assets-signal"
+Cohesion: 0.40
+Nodes (5): cmds, desc, sources, use_gitignore, assets-signal
+
+### Community 153 - "dev"
+Cohesion: 0.40
+Nodes (5): cmds, desc, env, SHADCN_TEMPL_DEV, dev
+
+### Community 154 - "NormalizeInviteCode"
+Cohesion: 0.50
+Nodes (4): newInviteCode(), NormalizeInviteCode(), TestNewInviteCode(), TestNormalizeInviteCode()
+
+### Community 155 - "build"
+Cohesion: 0.50
+Nodes (4): cmds, desc, task, build
+
+### Community 156 - "tailwind-version"
+Cohesion: 0.50
+Nodes (4): cmds, desc, silent, tailwind-version
+
+### Community 157 - "scripts-watch"
+Cohesion: 0.67
+Nodes (3): cmds, desc, scripts-watch
 
 ## Knowledge Gaps
 - **1 isolated node(s):** `roommates`
-  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 799 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
-- **34 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 805 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
+- **38 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `et` connect `et` to `avatar`, `error-page`, `household`, `forgot-password-page`, `expenses`, `shopping`, `validation-errors`, `home-page`, `notes`, `verify-email`, `reset-password-page`, `login-page`, `files`, `password`, `appearance`, `nav`, `offline`, `chat`, `push`, `registration-page`, `mail`?**
+- **Why does `et` connect `et` to `avatar`, `error-page`, `household`, `forgot-password-page`, `invite-page`, `expenses`, `shopping`, `validation-errors`, `home-page`, `notes`, `verify-email`, `reset-password-page`, `login-page`, `files`, `password`, `appearance`, `nav`, `chat`, `push`, `mail`?**
   _High betweenness centrality (0.025) - this node is a cross-community bridge._
 - **What connects `roommates` to the rest of the system?**
   _1 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `handlers.go` be split into smaller, more focused modules?**
-  _Cohesion score 0.13505614520842948 - nodes in this community are weakly interconnected._
-- **Why does `T()` connect `T` to `handlers.go`, `householdURL`, `.notifyChat`, `Membership`, `newEmailToken`, `RenderTemplStatus`, `.renderShoppingItem`, `context.Context`, `householdPath`, `DefaultService`, `Redirect`, `chatMessages`, `InternalError`, `Redirect`, `.clean`, `github.com/a-h/templ.Component`?**
-  _High betweenness centrality (0.012) - this node is a cross-community bridge._
-- **Should `en` be split into smaller, more focused modules?**
-  _Cohesion score 0.07407407407407407 - nodes in this community are weakly interconnected._
-- **Why does `en` connect `en` to `password`, `expenses`, `household`, `invite-page`, `shopping`, `home-page`, `notes`, `files`, `validation-errors`, `verify-email`, `reset-password-page`, `login-page`, `forgot-password-page`, `appearance`, `nav`, `avatar`, `mail`, `chat`, `registration-page`, `push`?**
+  _Cohesion score 0.13893488595694675 - nodes in this community are weakly interconnected._
+- **Why does `en` connect `en` to `expenses`, `household`, `invite-page`, `shopping`, `home-page`, `notes`, `files`, `validation-errors`, `verify-email`, `reset-password-page`, `login-page`, `forgot-password-page`, `appearance`, `nav`, `avatar`, `mail`, `chat`, `registration-page`, `push`?**
   _High betweenness centrality (0.011) - this node is a cross-community bridge._
+- **Should `en` be split into smaller, more focused modules?**
+  _Cohesion score 0.0625 - nodes in this community are weakly interconnected._
+- **Why does `expenses` connect `expenses` to `et`?**
+  _High betweenness centrality (0.008) - this node is a cross-community bridge._
 - **Should `et` be split into smaller, more focused modules?**
-  _Cohesion score 0.08 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.06896551724137931 - nodes in this community are weakly interconnected._

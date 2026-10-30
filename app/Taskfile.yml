@@ -58,6 +58,25 @@ tasks:
     cmds:
       - go tool shadcn-templ bundle --watch
 
+  assets-signal:
+    desc: Signal scripts/dev-run.sh to restart, the server embeds web/assets
+    # output.css and shadcn-templ-*.js are gitignored but are exactly what changes
+    use_gitignore: false
+    sources:
+      - web/assets/public/**/*
+      - web/assets/favicon/**/*
+      - web/assets/pwa/**/*
+      # the bundle already restarts via web/components/scripts_bundle.go (templ's Go watch)
+      - exclude: web/assets/public/js/**/*
+    cmds:
+      - mkdir -p bin && date +%s%N > bin/.dev-restart
+
+  assets-watch:
+    desc: Watch embedded assets and signal the server to restart
+    cmds:
+      # not 'watch: true': in 'task --parallel' Task only starts watch tasks after the others exit, and they never do
+      - task --watch assets-signal
+
   # TODO: add sqlc https://docs.sqlc.dev/en/latest/reference/cli.html
   # does not seem to have simple --watch like templ generate
   # ust running it manualy should suffice, go files are watched
@@ -86,4 +105,4 @@ tasks:
     desc: Start development server with hot reload
     cmds:
       - docker compose -f ../docker-compose.yml up -d --wait db rustfs
-      - task --parallel tailwind scripts-watch templ server
+      - task --parallel tailwind scripts-watch templ server assets-watch
