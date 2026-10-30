@@ -26,5 +26,19 @@
     "sha256": {
       "dist/htmx.min.js": "d6fdc75f204e6bdefa99b69bf1e6d4ac69b8a364f77929f45c13476b4000f717"
     }
+  },
+  "turndown": {
+    "version": "7.2.0",
+    "sha256": {
+      "LICENSE": "a055e3a15db4b4cbb5af381230eba085603126d7d5d8c4dae45ee85b877a9729",
+      "dist/turndown.js": "ae3605eb07ab920a2d181008ace692ec560fa6cd67d2e291f77cbc5c4322cd38"
+    }
+  },
+  "turndown-plugin-gfm": {
+    "version": "1.0.2",
+    "sha256": {
+      "LICENSE": "a055e3a15db4b4cbb5af381230eba085603126d7d5d8c4dae45ee85b877a9729",
+      "dist/turndown-plugin-gfm.js": "cf744cc1b7580f06d64ce236a4ff2630a53d389eccf2133a09d71ca443511912"
+    }
   }
 }

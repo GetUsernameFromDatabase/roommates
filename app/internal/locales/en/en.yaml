@@ -132,11 +132,26 @@ en:
     category-other: Other
   notes:
     none: No notes yet
+    none-hint: Leave the wifi password, bin days or house rules here for everyone.
     new: New note
     back: All notes
     note-title: Title
     body: Text
     body-hint: "Markdown works: **bold**, - lists, [links](https://example.com)"
+    bold: Bold
+    italic: Italic
+    link: Link
+    list: List
+    heading: Heading
+    quote: Quote
+    numbered: Numbered
+    markdown: Markdown
+    link-url: Link address
+    link-invalid: Enter a web address, like example.com
+    link-text: Text
+    link-remove: Remove link
+    link-add: Add link
+    render-failed: The formatted view could not load, keep editing the markdown
     private: Only visible to me
     private-badge: Private
     pinned-badge: Pinned
@@ -145,7 +160,9 @@ en:
     delete: Delete note
     pin: Pin
     unpin: Unpin
-    edited-by: Edited by %s on %s
+    edited-by: Edited by %s
+    today-at: today at %s
+    yesterday-at: yesterday at %s
     length: The title must be 1 to %d characters long and the text at most %d
     empty: This note is empty
   files:

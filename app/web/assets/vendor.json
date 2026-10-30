@@ -26,5 +26,19 @@
     "files": {
       "dist/htmx.min.js": "public/lib/htmx.min.js"
     }
+  },
+  "turndown": {
+    "version": "7.2.0",
+    "files": {
+      "LICENSE": "public/lib/LICENSE-turndown.txt",
+      "dist/turndown.js": "public/lib/turndown.js"
+    }
+  },
+  "turndown-plugin-gfm": {
+    "version": "1.0.2",
+    "files": {
+      "LICENSE": "public/lib/LICENSE-turndown-plugin-gfm.txt",
+      "dist/turndown-plugin-gfm.js": "public/lib/turndown-plugin-gfm.js"
+    }
   }
 }

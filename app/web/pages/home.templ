@@ -78,6 +78,7 @@ templ Home(username string, emailValidated bool, households []dbqueries.ListHous
 		</section>
 	}
 }
+
 templ CreateHouseholdForm(m models.Household) {
 	{{ nameValidations := m.ValidateName() }}
 	<form action={ g.RouteHouseholds } method="post" hx-boost="true" class="space-y-4">

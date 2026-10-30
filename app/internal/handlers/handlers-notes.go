@@ -8,6 +8,7 @@ import (
 	"roommates/internal/services"
 	"roommates/internal/utils"
 	"roommates/web/pages"
+	"unicode/utf8"
 
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5/pgtype"
@@ -70,6 +71,16 @@ func (h *DefaultHandler) CreateNote(ctx *gin.Context) {
 	default:
 		InternalError(ctx, err)
 	}
+}
+
+// RenderNoteBody is the editor's formatted view of the markdown typed in its markdown view
+func (h *DefaultHandler) RenderNoteBody(ctx *gin.Context) {
+	body := ctx.PostForm("body")
+	if utf8.RuneCountInString(body) > services.MaxNoteBodyLength {
+		ctx.Status(http.StatusUnprocessableEntity)
+		return
+	}
+	RenderTempl(ctx, pages.NoteBody(body))
 }
 
 // loadNote gets the :noteID note, or shows the error page and returns false

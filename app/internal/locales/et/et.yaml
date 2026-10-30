@@ -132,11 +132,26 @@ et:
     category-other: Muu
   notes:
     none: Märkmeid veel pole
+    none-hint: Jäta siia kõigile wifi parool, prügiveo päevad või maja reeglid.
     new: Uus märge
     back: Kõik märkmed
     note-title: Pealkiri
     body: Tekst
     body-hint: "Markdown töötab: **paks**, - loendid, [lingid](https://example.com)"
+    bold: Paks
+    italic: Kaldkiri
+    link: Link
+    list: Loend
+    heading: Pealkiri
+    quote: Tsitaat
+    numbered: Nummerdatud
+    markdown: Markdown
+    link-url: Lingi aadress
+    link-invalid: Sisesta veebiaadress, näiteks example.com
+    link-text: Tekst
+    link-remove: Eemalda link
+    link-add: Lisa link
+    render-failed: Vormindatud vaadet ei õnnestunud laadida, jätka markdowni muutmist
     private: Näha ainult mulle
     private-badge: Privaatne
     pinned-badge: Kinnitatud
@@ -145,7 +160,9 @@ et:
     delete: Kustuta märge
     pin: Kinnita
     unpin: Eemalda kinnitus
-    edited-by: Muutis %s, %s
+    edited-by: Muutis %s
+    today-at: täna kell %s
+    yesterday-at: eile kell %s
     length: Pealkiri peab olema 1 kuni %d märki ja tekst kuni %d märki
     empty: See märge on tühi
   files:

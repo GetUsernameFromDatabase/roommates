@@ -1,11 +1,11 @@
 package pages
 
 import "roommates/web/components"
-import "roommates/web/components/badge"
 import "roommates/web/components/button"
 import "roommates/web/components/field"
 import "roommates/web/components/input"
 import "roommates/web/components/textarea"
+import "roommates/web/components/switch"
 import "roommates/internal/db/dbqueries"
 import "roommates/internal/services"
 import "roommates/internal/events"
@@ -24,9 +24,13 @@ type NoteForm struct {
 	ErrorMessage string
 }
 
-// HouseholdNotes lists the household's notes and the actor's private ones, pinned first
+// HouseholdNotes lists the household's notes and the actor's private ones, the pinned
+// ones as slips on a board above the rest
 templ HouseholdNotes(actor services.Membership, notes []dbqueries.ListNotesRow) {
 	@appShell(utils.T(ctx, locales.LK_NavNotes), &HouseholdNav{HouseholdID: actor.HouseholdID, Section: SectionNotes}) {
+		@localTimeScript.Once() {
+			<script src="/assets/local-time.js"></script>
+		}
 		<header class="flex items-end justify-between gap-3">
 			<h1 class="doorplate">
 				@components.T(locales.LK_NavNotes)
@@ -35,106 +39,176 @@ templ HouseholdNotes(actor services.Membership, notes []dbqueries.ListNotesRow) 
 				@components.T(locales.LK_NotesNew)
 			}
 		</header>
-		<section class={ sheetClass }>
-			@liveRegion("notes", events.TopicNotes) {
+		@liveRegion("notes", events.TopicNotes) {
+			// the query has the pinned ones first
+			{{ split := 0 }}
+			{{
+				for split < len(notes) && notes[split].Pinned {
+					split++
+				}
+			}}
+			<div class="flex flex-col gap-6">
 				if len(notes) == 0 {
-					<p class="text-muted-foreground">
-						@components.T(locales.LK_NotesNone)
-					</p>
-				} else {
-					<ul class="divide-y">
-						for _, n := range notes {
+					<section class={ sheetClass }>
+						<p class="font-heading text-lg font-semibold">
+							@components.T(locales.LK_NotesNone)
+						</p>
+						<p class="mt-1 text-sm text-muted-foreground">
+							@components.T(locales.LK_NotesNoneHint)
+						</p>
+					</section>
+				}
+				if split > 0 {
+					<ul class="notice-board">
+						for _, n := range notes[:split] {
 							<li>
-								<a href={ householdURL(actor.HouseholdID, "notes", n.ID.String()) } class="block min-h-12 py-2 hover:underline">
-									<span class="font-heading text-lg font-semibold break-words">{ n.Title }</span>
-									@noteBadges(n.Pinned, n.Visibility)
-									<span class="block text-xs text-muted-foreground">
-										{ utils.T(ctx, locales.LK_NotesEditedBy, n.EditedByName, formatDate(n.EditedAt)) }
+								<a
+									href={ householdURL(actor.HouseholdID, "notes", n.ID.String()) }
+									class={ "note-slip", templ.KV("note-fold", n.Visibility == g.NoteVisibilityPrivate) }
+									aria-labelledby={ "slip-" + n.ID.String() }
+								>
+									@notePin()
+									<span id={ "slip-" + n.ID.String() } class="font-heading text-lg leading-tight font-semibold break-words">{ n.Title }</span>
+									if n.Excerpt != "" {
+										<span class="mt-1 line-clamp-3 text-sm break-words whitespace-pre-line">{ n.Excerpt }</span>
+									}
+									<span class="mt-auto pt-2 text-xs text-muted-foreground">
+										{ utils.T(ctx, locales.LK_NotesEditedBy, n.EditedByName) + ", " }
+										@noteTime(n.EditedAt)
+										@notePrivate(n.Visibility)
 									</span>
 								</a>
 							</li>
 						}
 					</ul>
 				}
-			}
-		</section>
+				if split < len(notes) {
+					<section class={ sheetClass }>
+						<ul class="divide-y">
+							for _, n := range notes[split:] {
+								<li>
+									<a href={ householdURL(actor.HouseholdID, "notes", n.ID.String()) } class="block min-h-12 py-2 hover:underline">
+										<span class="font-heading text-lg font-semibold break-words">{ n.Title }</span>
+										<span class="block text-xs text-muted-foreground">
+											{ utils.T(ctx, locales.LK_NotesEditedBy, n.EditedByName) + ", " }
+											@noteTime(n.EditedAt)
+											@notePrivate(n.Visibility)
+										</span>
+									</a>
+								</li>
+							}
+						</ul>
+					</section>
+				}
+			</div>
+		}
 	}
 }
 
-templ noteBadges(pinned bool, visibility string) {
-	if pinned {
-		@badge.Badge(badge.Props{Variant: badge.VariantSecondary, Class: "ml-1 align-middle"}) {
+// noteTime is when a note was edited, as "today at 14:05" on the viewer's today and yesterday
+templ noteTime(t pgtype.Timestamptz) {
+	@localTime(t, templ.Attributes{
+		"data-today":     utils.T(ctx, locales.LK_NotesTodayAt),
+		"data-yesterday": utils.T(ctx, locales.LK_NotesYesterdayAt),
+	})
+}
+
+// notePin is the pushpin that holds a pinned note up
+templ notePin() {
+	<span class="note-pin">
+		<span class="sr-only">
 			@components.T(locales.LK_NotesPinnedBadge)
-		}
-	}
+		</span>
+	</span>
+}
+
+// notePrivate says a note is the actor's own, next to the folded corner it has
+templ notePrivate(visibility string) {
 	if visibility == g.NoteVisibilityPrivate {
-		@badge.Badge(badge.Props{Variant: badge.VariantOutline, Class: "ml-1 align-middle text-muted-foreground"}) {
+		<span class="note-private block font-semibold text-foreground">
 			@components.T(locales.LK_NotesPrivateBadge)
-		}
+		</span>
 	}
 }
 
 // NotePage shows one note with its markdown rendered and its files, uploadError is the outcome of an upload
+//
+// the note is a sheet on the board with its title written on it, under its pin when pinned
 templ NotePage(actor services.Membership, n services.Note, files []services.AttachedFile, uploadError string) {
 	{{ noteURL := householdURL(actor.HouseholdID, "notes", n.ID.String()) }}
 	@appShell(n.Title, &HouseholdNav{HouseholdID: actor.HouseholdID, Section: SectionNotes}) {
-		@doorplateHeader(householdURL(actor.HouseholdID, "notes"), utils.T(ctx, locales.LK_NotesBack), n.Title)
-		// a flatmate's edit shows up, the title in the header stays until a reload
+		@localTimeScript.Once() {
+			<script src="/assets/local-time.js"></script>
+		}
+		<a href={ householdURL(actor.HouseholdID, "notes") } class="inline-flex min-h-11 items-center self-start text-sm text-muted-foreground underline-offset-4 hover:text-foreground hover:underline">
+			@components.T(locales.LK_NotesBack)
+		</a>
+		// a flatmate's edit, pin or unpin shows up here with the buttons that go with it
 		@liveRegion("note", events.TopicNotes) {
-			<div class="flex flex-col gap-8">
-				<div class="-mt-6">
-					@noteBadges(n.Pinned, n.Visibility)
-					<p class="mt-1 text-xs text-muted-foreground">
-						{ utils.T(ctx, locales.LK_NotesEditedBy, n.EditedByName, formatDate(n.EditedAt)) }
-					</p>
-				</div>
-				<article class={ utils.CN(sheetClass, "note-body") }>
-					if n.BodyMd == "" {
-						<p class="text-muted-foreground">
-							@components.T(locales.LK_NotesEmpty)
-						</p>
-					} else {
-						@noteHTML(n.BodyMd)
+			<div class="note-board -mt-4 space-y-4">
+				<article
+					aria-labelledby="note-title"
+					class={ "note-paper", templ.KV("note-fold", n.Visibility == g.NoteVisibilityPrivate) }
+				>
+					if n.Pinned {
+						@notePin()
 					}
+					<h1 id="note-title" class="doorplate">{ n.Title }</h1>
+					<div class="note-body mt-5 max-w-[65ch] leading-relaxed">
+						if n.BodyMd == "" {
+							<p class="text-muted-foreground">
+								@components.T(locales.LK_NotesEmpty)
+							</p>
+						} else {
+							@noteHTML(n.BodyMd)
+						}
+					</div>
+					<p class="mt-8 text-sm text-muted-foreground">
+						{ utils.T(ctx, locales.LK_NotesEditedBy, n.EditedByName) + ", " }
+						@noteTime(n.EditedAt)
+						@notePrivate(n.Visibility)
+					</p>
 				</article>
+				<div class="flex flex-wrap gap-2">
+					@button.Button(button.Props{Href: string(noteURL) + "/edit", Size: button.SizeLg}) {
+						@components.T(locales.LK_NotesEdit)
+					}
+					<form action={ noteURL + "/pin" } method="post" hx-boost="true">
+						<input type="hidden" name="pinned" value={ utils.IfElse(n.Pinned, "0", "1") }/>
+						@button.Button(button.Props{Type: button.TypeSubmit, Variant: button.VariantOutline, Size: button.SizeLg, Class: "bg-card"}) {
+							if n.Pinned {
+								@components.T(locales.LK_NotesUnpin)
+							} else {
+								@components.T(locales.LK_NotesPin)
+							}
+						}
+					</form>
+					if n.AuthorID == actor.UserID {
+						<form
+							action={ noteURL + "/delete" }
+							method="post"
+							hx-boost="true"
+							hx-confirm={ utils.T(ctx, locales.LK_NotesDelete) + "?" }
+							class="ml-auto"
+						>
+							@button.Button(button.Props{
+								Type:    button.TypeSubmit,
+								Variant: button.VariantGhost,
+								Size:    button.SizeLg,
+								Class:   "text-destructive",
+							}) {
+								@components.T(locales.LK_NotesDelete)
+							}
+						</form>
+					}
+				</div>
 			</div>
 		}
 		@attachedFiles(actor, noteURL, files, uploadError)
-		<div class="flex flex-wrap gap-2">
-			@button.Button(button.Props{Href: string(noteURL) + "/edit", Size: button.SizeLg}) {
-				@components.T(locales.LK_NotesEdit)
-			}
-			<form action={ noteURL + "/pin" } method="post" hx-boost="true">
-				<input type="hidden" name="pinned" value={ utils.IfElse(n.Pinned, "0", "1") }/>
-				@button.Button(button.Props{Type: button.TypeSubmit, Variant: button.VariantSecondary, Size: button.SizeLg}) {
-					if n.Pinned {
-						@components.T(locales.LK_NotesUnpin)
-					} else {
-						@components.T(locales.LK_NotesPin)
-					}
-				}
-			</form>
-			if n.AuthorID == actor.UserID {
-				<form
-					action={ noteURL + "/delete" }
-					method="post"
-					hx-boost="true"
-					hx-confirm={ utils.T(ctx, locales.LK_NotesDelete) + "?" }
-					class="ml-auto"
-				>
-					@button.Button(button.Props{
-						Type:    button.TypeSubmit,
-						Variant: button.VariantOutline,
-						Size:    button.SizeLg,
-						Class:   "text-destructive",
-					}) {
-						@components.T(locales.LK_NotesDelete)
-					}
-				</form>
-			}
-		</div>
 	}
 }
+
+var noteEditorScript = templ.NewOnceHandle()
 
 // NoteEditor creates a note, or edits one when f.NoteID is set
 templ NoteEditor(actor services.Membership, f NoteForm) {
@@ -145,59 +219,223 @@ templ NoteEditor(actor services.Membership, f NoteForm) {
 		{{ action = cancel + "/edit" }}
 	}
 	@appShell(utils.IfElse(f.Input.Title != "", f.Input.Title, utils.T(ctx, locales.LK_NotesNew)), &HouseholdNav{HouseholdID: actor.HouseholdID, Section: SectionNotes}) {
-		@doorplateHeader(cancel, utils.T(ctx, locales.LK_NotesCancel), utils.IfElse(f.NoteID.Valid, f.Input.Title, utils.T(ctx, locales.LK_NotesNew)))
-		<form action={ action } method="post" hx-boost="true" class={ utils.CN(sheetClass, "space-y-4") }>
-			@formError(f.ErrorMessage)
-			@field.Field() {
-				@field.Label(field.LabelProps{For: "note-title"}) {
-					@components.T(locales.LK_NotesNoteTitle)
-				}
+		@noteEditorScript.Once() {
+			<script src="/assets/lib/turndown.js"></script>
+			<script src="/assets/lib/turndown-plugin-gfm.js"></script>
+			<script src="/assets/note-editor.js"></script>
+		}
+		<a href={ cancel } class="inline-flex min-h-11 items-center self-start text-sm text-muted-foreground underline-offset-4 hover:text-foreground hover:underline">
+			@components.T(locales.LK_NotesCancel)
+		</a>
+		// the title input is the heading people see
+		<h1 class="sr-only">{ utils.IfElse(f.NoteID.Valid, f.Input.Title, utils.T(ctx, locales.LK_NotesNew)) }</h1>
+		<form id="note-form" action={ action } method="post" hx-boost="true" class="-mt-4 space-y-4">
+			<div class="empty:hidden">
+				@formError(f.ErrorMessage)
+			</div>
+			<label for="note-title" class="sr-only">
+				@components.T(locales.LK_NotesNoteTitle)
+			</label>
+			// the input takes the doorplate's size and face, its own text-base would win over the utility
+			<div class="doorplate">
 				@input.Input(input.Props{
-					ID:       "note-title",
-					Name:     "title",
-					Type:     "text",
-					Value:    f.Input.Title,
-					Required: true,
-					Class:    "h-11",
+					ID:          "note-title",
+					Name:        "title",
+					Type:        "text",
+					Value:       f.Input.Title,
+					Placeholder: utils.T(ctx, locales.LK_NotesNoteTitle),
+					Required:    true,
+					Class:       "h-auto rounded-none border-0 border-b-2 border-transparent bg-transparent px-0 py-1 text-[length:inherit] shadow-none focus-visible:border-ring focus-visible:ring-0 md:text-[length:inherit] dark:bg-transparent",
 					Attributes: templ.Attributes{
 						"maxlength": services.MaxNoteTitleLength,
 					},
 				})
-			}
-			@field.Field() {
-				@field.Label(field.LabelProps{For: "note-body"}) {
-					@components.T(locales.LK_NotesBody)
-				}
-				@textarea.Textarea(textarea.Props{
-					ID:    "note-body",
-					Name:  "body",
-					Value: f.Input.BodyMD,
-					Rows:  12,
-					Class: "font-mono text-sm",
-					Attributes: templ.Attributes{
-						"maxlength":        services.MaxNoteBodyLength,
-						"aria-describedby": "note-body-hint",
-					},
-				})
-				@field.Description(field.DescriptionProps{ID: "note-body-hint", Class: "text-xs"}) {
-					@components.T(locales.LK_NotesBodyHint)
-				}
-			}
-			if f.IsAuthor {
-				<label class="flex min-h-11 items-center gap-3">
-					<input
-						type="checkbox"
-						name="private"
-						value="1"
-						checked?={ f.Input.Private }
-						class="size-5 accent-primary"
-					/>
-					@components.T(locales.LK_NotesPrivate)
-				</label>
-			}
-			@button.Button(button.Props{Type: button.TypeSubmit, Size: button.SizeLg, Class: "w-full"}) {
-				@components.T(locales.LK_CommonSave)
-			}
+			</div>
+			// the note page's board and sheet, written on: note-editor.js shows the toolbar and the
+			// formatted note and keeps the textarea in step, without it the textarea is all there is
+			<div class="note-board space-y-4">
+				// the words set what is typed next or the line the cursor is on, the bubble at a
+				// selection changes the selected text
+				<div id="note-tools" hidden class="sticky top-0 z-10 -mx-1 -mt-2 flex items-center gap-2 rounded-lg bg-secondary px-1 py-1 max-lg:top-[3.25rem]">
+					<div role="toolbar" aria-controls="note-editor" class="flex min-w-0 flex-1 items-center gap-0.5 overflow-x-auto [scrollbar-width:none]">
+						@noteToolButton("bold", "", "bold", locales.LK_NotesBold)
+						@noteToolButton("italic", "", "italic", locales.LK_NotesItalic)
+						@noteToolButton("link", "", "link", locales.LK_NotesLink)
+						<span class="mx-1 h-6 w-px shrink-0 bg-foreground/15" aria-hidden="true"></span>
+						@noteToolButton("formatBlock", "h2", "heading", locales.LK_NotesHeading)
+						@noteToolButton("formatBlock", "blockquote", "quote", locales.LK_NotesQuote)
+						@noteToolButton("insertUnorderedList", "", "list", locales.LK_NotesList)
+						@noteToolButton("insertOrderedList", "", "list-ordered", locales.LK_NotesNumbered)
+					</div>
+					<label class="flex min-h-11 shrink-0 cursor-pointer items-center gap-2 pr-2 text-sm text-muted-foreground">
+						@components.T(locales.LK_NotesMarkdown)
+						@switchcomp.Switch(switchcomp.Props{ID: "note-markdown"})
+					</label>
+				</div>
+				<div id="note-render-failed" hidden>
+					@formError(utils.T(ctx, locales.LK_NotesRenderFailed))
+				</div>
+				<div class="note-paper">
+					<label for="note-body" class="sr-only">
+						@components.T(locales.LK_NotesBody)
+					</label>
+					<div
+						id="note-editor"
+						hidden
+						hx-boost="false"
+						contenteditable="true"
+						role="textbox"
+						aria-multiline="true"
+						aria-label={ utils.T(ctx, locales.LK_NotesBody) }
+						data-render={ string(householdURL(actor.HouseholdID, "notes", "render")) }
+						class="note-body -mx-2 min-h-64 max-w-[65ch] rounded-lg px-2 py-1 leading-relaxed outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+					>
+						@noteHTML(f.Input.BodyMD)
+					</div>
+					// placed at the selection by note-editor.js, an ink pill like the toast
+					<div id="note-bubble" hidden class="absolute z-20 flex items-center gap-1 rounded-full bg-foreground p-0.5 text-background shadow-[0_2px_0_var(--door-frame)]">
+						<div role="toolbar" aria-controls="note-editor" class="flex items-center">
+							@noteBubbleButton("bold", "", "bold", locales.LK_NotesBold)
+							@noteBubbleButton("italic", "", "italic", locales.LK_NotesItalic)
+							@noteBubbleButton("link", "", "link", locales.LK_NotesLink)
+							<span class="mx-0.5 h-4 w-px bg-background/25" aria-hidden="true"></span>
+							@noteBubbleButton("formatBlock", "h2", "heading", locales.LK_NotesHeading)
+							@noteBubbleButton("formatBlock", "blockquote", "quote", locales.LK_NotesQuote)
+							@noteBubbleButton("insertUnorderedList", "", "list", locales.LK_NotesList)
+							@noteBubbleButton("insertOrderedList", "", "list-ordered", locales.LK_NotesNumbered)
+						</div>
+					</div>
+					// the text shown and where it goes, filled from the selection or the link being changed;
+					// placed by note-editor.js like the bubble
+					<div id="note-link" hidden role="dialog" aria-label={ utils.T(ctx, locales.LK_NotesLink) } class="absolute z-20 flex w-72 max-w-[calc(100vw-2rem)] flex-col gap-2 rounded-xl bg-card p-3 text-card-foreground shadow-[0_2px_0_var(--door-frame)] ring-1 ring-foreground/10">
+						// form names no form: the note's form must not wait on a half-typed address
+						<label for="note-link-text" class="text-xs text-muted-foreground">
+							@components.T(locales.LK_NotesLinkText)
+						</label>
+						@input.Input(input.Props{
+							ID:    "note-link-text",
+							Type:  "text",
+							Form:  "note-link-only",
+							Class: "-mt-1 h-9",
+						})
+						<label for="note-link-url" class="text-xs text-muted-foreground">
+							@components.T(locales.LK_NotesLinkUrl)
+						</label>
+						@input.Input(input.Props{
+							ID:          "note-link-url",
+							Type:        "url",
+							Form:        "note-link-only",
+							Placeholder: "https://",
+							Required:    true,
+							Class:       "-mt-1 h-9",
+							Attributes:  templ.Attributes{"aria-describedby": "note-link-error"},
+						})
+						<div id="note-link-error" hidden>
+							@formError(utils.T(ctx, locales.LK_NotesLinkInvalid))
+						</div>
+						<div class="mt-1 flex items-center gap-1">
+							@button.Button(button.Props{
+								Variant:    button.VariantGhost,
+								Size:       button.SizeSm,
+								Class:      "-ml-2 text-destructive",
+								Attributes: templ.Attributes{"data-link-remove": "", "hidden": true},
+							}) {
+								@components.T(locales.LK_NotesLinkRemove)
+							}
+							@button.Button(button.Props{
+								Variant:    button.VariantGhost,
+								Size:       button.SizeSm,
+								Class:      "ml-auto",
+								Attributes: templ.Attributes{"data-link-cancel": ""},
+							}) {
+								@components.T(locales.LK_NotesCancel)
+							}
+							@button.Button(button.Props{
+								Size: button.SizeSm,
+								Attributes: templ.Attributes{
+									"data-link-add": "",
+									"data-new":      utils.T(ctx, locales.LK_NotesLinkAdd),
+									"data-edit":     utils.T(ctx, locales.LK_CommonSave),
+								},
+							}) {
+								@components.T(locales.LK_NotesLinkAdd)
+							}
+						</div>
+					</div>
+					@textarea.Textarea(textarea.Props{
+						ID:    "note-body",
+						Name:  "body",
+						Value: f.Input.BodyMD,
+						Class: "-mx-2 min-h-64 w-[calc(100%+1rem)] border-0 bg-transparent px-2 py-1 font-mono text-sm shadow-none dark:bg-transparent",
+						Attributes: templ.Attributes{
+							"maxlength":        services.MaxNoteBodyLength,
+							"aria-describedby": "note-body-hint",
+						},
+					})
+					@field.Description(field.DescriptionProps{ID: "note-body-hint", Class: "mt-2 text-xs"}) {
+						@components.T(locales.LK_NotesBodyHint)
+					}
+				</div>
+				<div class="flex flex-wrap items-center gap-3">
+					if f.IsAuthor {
+						<label class="flex min-h-11 items-center gap-3">
+							<input
+								type="checkbox"
+								name="private"
+								value="1"
+								checked?={ f.Input.Private }
+								class="size-5 accent-primary"
+							/>
+							@components.T(locales.LK_NotesPrivate)
+						</label>
+					}
+					@button.Button(button.Props{Type: button.TypeSubmit, Size: button.SizeLg, Class: "ml-auto max-sm:w-full"}) {
+						@components.T(locales.LK_CommonSave)
+					}
+				</div>
+			</div>
 		</form>
 	}
+}
+
+// noteToolButton is an icon and word in the editor's top bar, lit while its style is on where
+// the cursor is; value is the block of formatBlock
+templ noteToolButton(command, value, icon string, label locales.LK) {
+	{{ attrs := templ.Attributes{"data-cmd": command} }}
+	if value != "" {
+		{{ attrs["data-value"] = value }}
+	}
+	if command != "link" {
+		{{ attrs["aria-pressed"] = "false" }}
+	}
+	@button.Button(button.Props{
+		Variant:    button.VariantGhost,
+		Class:      "h-11 shrink-0 gap-1.5 px-3 aria-pressed:bg-card aria-pressed:text-foreground aria-pressed:shadow-[0_2px_0_var(--door-frame)]",
+		Attributes: attrs,
+	}) {
+		@navIcon(icon, "size-4")
+		@components.T(label)
+	}
+}
+
+// noteBubbleButton is an icon in the selection bubble, named by its label
+templ noteBubbleButton(command, value, icon string, label locales.LK) {
+	<button
+		type="button"
+		data-cmd={ command }
+		if value != "" {
+			data-value={ value }
+		}
+		aria-pressed="false"
+		aria-label={ utils.T(ctx, label) }
+		title={ utils.T(ctx, label) }
+		class="flex size-8 items-center justify-center rounded-full outline-none pointer-coarse:size-10 hover:bg-background/15 focus-visible:ring-3 focus-visible:ring-ring/50 aria-pressed:bg-background aria-pressed:text-foreground"
+	>
+		@navIcon(icon, "size-4")
+	</button>
+}
+
+// NoteBody is the formatted view of markdown typed in the editor's markdown view
+templ NoteBody(md string) {
+	@noteHTML(md)
 }

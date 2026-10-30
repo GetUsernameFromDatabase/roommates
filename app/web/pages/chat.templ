@@ -27,7 +27,9 @@ templ ChatPage(actor services.Membership, c services.Chat, older bool, reply *se
 			<script src="/assets/chat-hold.js"></script>
 			<script src="/assets/chat-keyboard.js"></script>
 			// here, not in localTime: an empty chat has none, and a script swapped in later misses its htmx.onLoad
-			<script src="/assets/local-time.js"></script>
+			@localTimeScript.Once() {
+				<script src="/assets/local-time.js"></script>
+			}
 		}
 		// with the keyboard open (chat-keyboard.js) the page is only the chat, sized to what the keyboard leaves,
 		// on phones the top bar and the tab bar already say where you are
@@ -154,7 +156,7 @@ templ chatMessages(actor services.Membership, c services.Chat, older bool) {
 								<span>{ m.AuthorName }</span>
 							}
 							<span class="font-normal">
-								@localTime(m.CreatedAt)
+								@localTime(m.CreatedAt, nil)
 							</span>
 						}
 					}
@@ -316,8 +318,11 @@ templ replySnippet(body string) {
 	</span>
 }
 
+// localTimeScript is local-time.js, a page with times loads it at page level, not in localTime
+var localTimeScript = templ.NewOnceHandle()
+
 // localTime is shown in the viewer's time zone by local-time.js, the server only knows UTC,
-// without today's date and this year
-templ localTime(t pgtype.Timestamptz) {
-	<time datetime={ t.Time.UTC().Format(time.RFC3339) } data-local>{ t.Time.UTC().Format("2006-01-02 15:04") } UTC</time>
+// without today's date and this year, attrs can hold its data-today and data-yesterday phrases
+templ localTime(t pgtype.Timestamptz, attrs templ.Attributes) {
+	<time datetime={ t.Time.UTC().Format(time.RFC3339) } data-local { attrs... }>{ t.Time.UTC().Format("2006-01-02 15:04") } UTC</time>
 }

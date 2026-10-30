@@ -132,7 +132,9 @@ SELECT n.id,
   n.visibility,
   n.pinned,
   n.edited_at,
-  editor.username AS edited_by_name
+  editor.username AS edited_by_name,
+  -- blank lines at the top would fill the slip's three lines
+  left(btrim(n.body_md, E' \t\r\n'), 160) AS excerpt
 FROM notes n
   JOIN users editor ON editor.id = n.edited_by
 WHERE n.household_id = $1
@@ -156,6 +158,7 @@ type ListNotesRow struct {
 	Pinned       bool               `json:"pinned"`
 	EditedAt     pgtype.Timestamptz `json:"edited_at"`
 	EditedByName string             `json:"edited_by_name"`
+	Excerpt      string             `json:"excerpt"`
 }
 
 // pinned first, then the most recently edited
@@ -175,6 +178,7 @@ func (q *Queries) ListNotes(ctx context.Context, arg ListNotesParams) ([]ListNot
 			&i.Pinned,
 			&i.EditedAt,
 			&i.EditedByName,
+			&i.Excerpt,
 		); err != nil {
 			return nil, err
 		}

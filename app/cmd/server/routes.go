@@ -133,6 +133,7 @@ func initRoutes(r *gin.Engine, h *handlers.DefaultHandler, service *services.Def
 			household.GET("/notes", h.PageNotes)
 			household.GET("/notes/new", h.PageNewNote)
 			household.POST("/notes", h.CreateNote)
+			household.POST("/notes/render", h.RenderNoteBody)
 			note := household.Group("/notes/:" + g.ParamNoteID)
 			note.GET("", h.PageNote)
 			note.GET("/edit", h.PageEditNote)

@@ -245,7 +245,12 @@
  */
 @layer components {
   .front-door-wall,
-  .door-row {
+  .door-row,
+  .notice-board,
+  .note-paper,
+  .note-pin,
+  .note-fold,
+  .note-private {
     --door-frame: color-mix(in oklab, var(--primary) 55%, var(--foreground));
   }
   .front-door-wall {
@@ -407,5 +412,137 @@
   .door-plot:hover {
     color: var(--foreground);
     border-color: var(--foreground);
+  }
+}
+
+/* the notes in the hall: the pinned ones are slips on a board, each under a pushpin and
+ * hanging a little crooked by its place, a private one has its top corner folded down
+ */
+@layer components {
+  .notice-board,
+  .note-board {
+    border-radius: calc(var(--radius) * 1.8);
+    background: var(--secondary);
+  }
+  .notice-board {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1.75rem 1rem;
+    padding: 1.75rem 1rem 1.25rem;
+  }
+  /* one note: its sheet fills the board, straight so a long note reads easily */
+  .note-board {
+    padding: 1.5rem 0.75rem 0.75rem;
+  }
+  @media (width >= 40rem) {
+    .notice-board {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 2rem 1.5rem;
+      padding: 2rem 1.5rem 1.5rem;
+    }
+    .note-board {
+      padding: 2rem 1.5rem 1.5rem;
+    }
+  }
+  .note-slip,
+  .note-paper {
+    position: relative;
+    border-radius: 2px;
+    background: var(--card);
+    color: var(--card-foreground);
+    box-shadow: 0 2px 0 var(--door-frame);
+  }
+  .note-paper {
+    padding: 1.5rem 1.25rem 1.25rem;
+  }
+  @media (width >= 40rem) {
+    .note-paper {
+      padding: 2.25rem 2.5rem 1.75rem;
+    }
+  }
+  .note-slip {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    min-height: 7rem;
+    padding: 1rem 0.875rem 0.75rem;
+    rotate: -1deg;
+    transition:
+      rotate 0.15s ease-out,
+      translate 0.15s ease-out;
+  }
+  .notice-board > li:nth-child(3n + 2) .note-slip {
+    rotate: 0.6deg;
+  }
+  .notice-board > li:nth-child(3n) .note-slip {
+    rotate: -0.4deg;
+  }
+  .notice-board .note-slip:is(:hover, :focus-visible) {
+    rotate: 0deg;
+    translate: 0 -2px;
+  }
+  .note-slip:focus-visible {
+    outline: 3px solid var(--ring);
+    outline-offset: 3px;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .note-slip {
+      transition: none;
+    }
+  }
+  /* on the slip's top edge, the head lit from the top left */
+  .note-pin {
+    position: absolute;
+    top: -0.4375rem;
+    left: 50%;
+    translate: -50% 0;
+    width: 0.875rem;
+    aspect-ratio: 1;
+    border-radius: 9999px;
+    background: radial-gradient(circle at 35% 35%, color-mix(in oklab, var(--primary) 35%, white) 0 18%, var(--primary) 24%);
+    box-shadow: 0 2px 0 var(--door-frame);
+  }
+  .note-paper > .note-pin {
+    top: -0.5625rem;
+    width: 1.125rem;
+  }
+  /* the cut reaches past the edges so the pin, shadow and focus ring are not clipped,
+   * in the editor it folds as soon as "Only visible to me" is ticked
+   */
+  .note-fold,
+  .note-board:has([name="private"]:checked) > .note-paper {
+    --fold: 1.125rem;
+    clip-path: polygon(
+      -1rem -1rem,
+      calc(100% - var(--fold)) -1rem,
+      calc(100% - var(--fold)) 0,
+      100% var(--fold),
+      calc(100% + 1rem) var(--fold),
+      calc(100% + 1rem) calc(100% + 1rem),
+      -1rem calc(100% + 1rem)
+    );
+  }
+  .note-fold::after,
+  .note-board:has([name="private"]:checked) > .note-paper::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: var(--fold);
+    height: var(--fold);
+    background: linear-gradient(
+      to bottom left,
+      transparent 50%,
+      color-mix(in oklab, var(--door-frame) 40%, var(--card)) 50%
+    );
+  }
+  /* the same corner, small, by the word */
+  .note-private::before {
+    content: "";
+    display: inline-block;
+    width: 0.75em;
+    height: 0.75em;
+    margin-right: 0.375em;
+    background: linear-gradient(to bottom left, transparent 50%, var(--door-frame) 50%);
   }
 }
