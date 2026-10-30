@@ -184,6 +184,7 @@ func TestHouseholdEvents(t *testing.T) {
 	expenseID, err := s.CreateExpense(ctx, ownerM, ExpenseInput{
 		Title: "Pizza", Amount: "10", Category: "groceries", IncurredOn: "2026-10-01",
 		Custom: false, Members: []pgtype.UUID{ownerM.UserID, memberM.UserID}, Shares: nil,
+		ListID: pgtype.UUID{}, ItemID: pgtype.UUID{},
 	})
 	if err != nil {
 		t.Fatal(err)

@@ -272,6 +272,9 @@ templ navIcon(name, class string) {
 			case "plus":
 				<path d="M5 12h14"></path>
 				<path d="M12 5v14"></path>
+			case "pencil":
+				<path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"></path>
+				<path d="m15 5 4 4"></path>
 		}
 	</svg>
 }
@@ -389,12 +392,15 @@ templ toast(message string) {
 	}
 }
 
-// doorplateHeader is a back link and the name of what the page is about
+// doorplateHeader is a back link and the name of what the page is about, children sit beside the name
 templ doorplateHeader(back templ.SafeURL, backText, name string) {
 	<header>
 		<a href={ back } class="inline-flex min-h-11 items-center text-sm text-muted-foreground underline-offset-4 hover:text-foreground hover:underline">
 			{ backText }
 		</a>
-		<h1 class="doorplate mt-1">{ name }</h1>
+		<div class="mt-1 flex flex-wrap items-center gap-x-1 gap-y-2">
+			<h1 class="doorplate min-w-0">{ name }</h1>
+			{ children... }
+		</div>
 	</header>
 }

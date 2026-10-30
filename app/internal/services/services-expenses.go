@@ -49,7 +49,8 @@ func FormatCentsInput(cents int64) string {
 }
 
 // splitEqual divides total between participants, the leftover cents go to the payer,
-// or one each to the first participants when the payer is not one of them
+// or one each to the first participants when the payer is not one of them,
+// web/assets/public/expense-split.js shows the same sums on the form
 func splitEqual(total int64, participants []pgtype.UUID, payer pgtype.UUID) []int64 {
 	n := int64(len(participants))
 	shares := make([]int64, n)
@@ -77,6 +78,9 @@ type ExpenseInput struct {
 	Custom  bool
 	Members []pgtype.UUID
 	Shares  map[pgtype.UUID]string
+	// ListID links the list's bought items to the expense, only ItemID when that is set too
+	ListID pgtype.UUID
+	ItemID pgtype.UUID
 }
 
 type expenseShare struct {
@@ -168,7 +172,15 @@ func (s *DefaultService) CreateExpense(ctx context.Context, actor Membership, in
 				return err
 			}
 		}
-		return nil
+		if !in.ListID.Valid {
+			return nil
+		}
+		return q.LinkShoppingItems(ctx, dbqueries.LinkShoppingItemsParams{
+			ExpenseID:   expenseID,
+			HouseholdID: actor.HouseholdID,
+			ListID:      in.ListID,
+			ItemID:      in.ItemID,
+		})
 	})
 	if err != nil {
 		return expenseID, err
@@ -254,6 +266,8 @@ func (e Expense) CopyInput() ExpenseInput {
 		Custom:     false,
 		Members:    nil,
 		Shares:     map[pgtype.UUID]string{},
+		ListID:     pgtype.UUID{},
+		ItemID:     pgtype.UUID{},
 	}
 	var cents []int64
 	for _, sh := range e.Shares {

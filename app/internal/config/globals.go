@@ -53,7 +53,7 @@ const (
 	NoteVisibilityPrivate   = "private"
 )
 
-// ExpenseCategories are the expenses.category values, the table CHECKs these
+// ExpenseCategories are the rows of the expense_categories table, which expenses and shopping lists reference
 var ExpenseCategories = []string{"groceries", "utilities", "rent", "household", "other"}
 
 // keys of values set on [gin.Context] by middleware

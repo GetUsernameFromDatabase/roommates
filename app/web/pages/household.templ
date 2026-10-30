@@ -23,42 +23,48 @@ templ HouseholdShopping(actor services.Membership, o services.HouseholdOverview,
 			</h1>
 		</header>
 		@VerifyEmailBanner(o.ActorEmailValidated)
-		<section aria-labelledby="lists-title" class={ sheetClass }>
-			<h2 id="lists-title" class="text-xl font-semibold">
+		<section aria-labelledby="lists-title">
+			<h2 id="lists-title" class="sr-only">
 				@components.T(locales.LK_ShoppingLists)
 			</h2>
 			@liveRegion("shopping-lists", events.TopicShopping) {
+				// the bags by the door: green has something to buy, linen is empty
+				<ul class="bag-rail">
+					for _, l := range o.ShoppingLists {
+						<li>
+							<a href={ householdURL(actor.HouseholdID, "lists", l.ID.String()) } data-empty?={ l.OpenItems == 0 } class="tote">
+								<span class="tote-name">{ l.Name }</span>
+								<span class="text-sm">{ utils.T(ctx, locales.LK_ShoppingOpenItems, l.OpenItems) }</span>
+							</a>
+						</li>
+					}
+					<li>
+						// the name field below has the words, the empty peg only points at it
+						<label for="new-list" class="tote tote-slot" aria-hidden="true">+</label>
+					</li>
+				</ul>
 				if len(o.ShoppingLists) == 0 {
 					<p class="mt-2 text-muted-foreground">
 						@components.T(locales.LK_ShoppingNoLists)
 					</p>
-				} else {
-					<ul class="mt-2 divide-y">
-						for _, l := range o.ShoppingLists {
-							<li>
-								<a href={ householdURL(actor.HouseholdID, "lists", l.ID.String()) } class="flex min-h-12 items-center justify-between gap-3 py-2 hover:underline">
-									<span class="font-heading text-lg font-semibold break-words">{ l.Name }</span>
-									<span class="shrink-0 text-sm text-muted-foreground">
-										{ utils.T(ctx, locales.LK_ShoppingOpenItems, l.OpenItems) }
-									</span>
-								</a>
-							</li>
-						}
-					</ul>
 				}
 			}
-			<form action={ householdURL(actor.HouseholdID, "lists") } method="post" hx-boost="true" class="mt-4 flex gap-2">
+			<form action={ householdURL(actor.HouseholdID, "lists") } method="post" hx-boost="true" class="mt-4 grid grid-cols-[minmax(0,1fr)_auto] gap-2 sm:grid-cols-[minmax(0,1fr)_11rem_auto]">
 				@input.Input(input.Props{
+					ID:          "new-list",
 					Name:        "name",
 					Type:        "text",
 					Placeholder: utils.T(ctx, locales.LK_ShoppingNewList),
 					Required:    true,
-					Class:       "h-10",
+					Class:       "col-span-2 h-10 bg-card sm:col-span-1 dark:bg-card",
 					Attributes: templ.Attributes{
 						"maxlength":  services.MaxShoppingListNameLength,
 						"aria-label": utils.T(ctx, locales.LK_ShoppingNewList),
 					},
 				})
+				<select name="category" aria-label={ utils.T(ctx, locales.LK_ExpensesCategory) } class={ utils.CN(selectClass, "h-10 bg-card dark:bg-card") }>
+					@categoryOptions(g.ExpenseCategories[0])
+				</select>
 				@button.Button(button.Props{Type: button.TypeSubmit, Size: button.SizeLg, Class: "h-10"}) {
 					@components.T(locales.LK_ShoppingCreateList)
 				}

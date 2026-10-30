@@ -136,6 +136,8 @@ func TestPushNotifications(t *testing.T) {
 		Custom:     false,
 		Members:    []pgtype.UUID{ownerM.UserID, memberM.UserID},
 		Shares:     nil,
+		ListID:     pgtype.UUID{},
+		ItemID:     pgtype.UUID{},
 	}); err != nil {
 		t.Fatal(err)
 	}

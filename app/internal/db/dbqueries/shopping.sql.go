@@ -11,23 +11,6 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
-const deleteCheckedShoppingItems = `-- name: DeleteCheckedShoppingItems :exec
-DELETE FROM shopping_items
-WHERE list_id = $1
-  AND household_id = $2
-  AND checked_at IS NOT NULL
-`
-
-type DeleteCheckedShoppingItemsParams struct {
-	ListID      pgtype.UUID `json:"list_id"`
-	HouseholdID pgtype.UUID `json:"household_id"`
-}
-
-func (q *Queries) DeleteCheckedShoppingItems(ctx context.Context, arg DeleteCheckedShoppingItemsParams) error {
-	_, err := q.db.Exec(ctx, deleteCheckedShoppingItems, arg.ListID, arg.HouseholdID)
-	return err
-}
-
 const deleteShoppingItem = `-- name: DeleteShoppingItem :execrows
 DELETE FROM shopping_items
 WHERE id = $1
@@ -82,7 +65,10 @@ func (q *Queries) DeleteShoppingList(ctx context.Context, arg DeleteShoppingList
 const getShoppingItem = `-- name: GetShoppingItem :one
 SELECT id,
   text,
-  qty
+  qty,
+  description,
+  created_by,
+  expense_id
 FROM shopping_items
 WHERE id = $1
   AND list_id = $2
@@ -96,21 +82,32 @@ type GetShoppingItemParams struct {
 }
 
 type GetShoppingItemRow struct {
-	ID   pgtype.UUID `json:"id"`
-	Text string      `json:"text"`
-	Qty  string      `json:"qty"`
+	ID          pgtype.UUID `json:"id"`
+	Text        string      `json:"text"`
+	Qty         string      `json:"qty"`
+	Description string      `json:"description"`
+	CreatedBy   pgtype.UUID `json:"created_by"`
+	ExpenseID   pgtype.UUID `json:"expense_id"`
 }
 
 func (q *Queries) GetShoppingItem(ctx context.Context, arg GetShoppingItemParams) (GetShoppingItemRow, error) {
 	row := q.db.QueryRow(ctx, getShoppingItem, arg.ID, arg.ListID, arg.HouseholdID)
 	var i GetShoppingItemRow
-	err := row.Scan(&i.ID, &i.Text, &i.Qty)
+	err := row.Scan(
+		&i.ID,
+		&i.Text,
+		&i.Qty,
+		&i.Description,
+		&i.CreatedBy,
+		&i.ExpenseID,
+	)
 	return i, err
 }
 
 const getShoppingList = `-- name: GetShoppingList :one
 SELECT id,
   name,
+  category,
   created_by
 FROM shopping_lists
 WHERE id = $1
@@ -125,14 +122,41 @@ type GetShoppingListParams struct {
 type GetShoppingListRow struct {
 	ID        pgtype.UUID `json:"id"`
 	Name      string      `json:"name"`
+	Category  string      `json:"category"`
 	CreatedBy pgtype.UUID `json:"created_by"`
 }
 
 func (q *Queries) GetShoppingList(ctx context.Context, arg GetShoppingListParams) (GetShoppingListRow, error) {
 	row := q.db.QueryRow(ctx, getShoppingList, arg.ID, arg.HouseholdID)
 	var i GetShoppingListRow
-	err := row.Scan(&i.ID, &i.Name, &i.CreatedBy)
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.Category,
+		&i.CreatedBy,
+	)
 	return i, err
+}
+
+const hideCheckedShoppingItems = `-- name: HideCheckedShoppingItems :exec
+UPDATE shopping_items
+SET cleared_at = CURRENT_TIMESTAMP,
+  claimed_by = NULL
+WHERE list_id = $1
+  AND household_id = $2
+  AND checked_at IS NOT NULL
+  AND cleared_at IS NULL
+`
+
+type HideCheckedShoppingItemsParams struct {
+	ListID      pgtype.UUID `json:"list_id"`
+	HouseholdID pgtype.UUID `json:"household_id"`
+}
+
+// removing bought items hides them, they can be bought again
+func (q *Queries) HideCheckedShoppingItems(ctx context.Context, arg HideCheckedShoppingItemsParams) error {
+	_, err := q.db.Exec(ctx, hideCheckedShoppingItems, arg.ListID, arg.HouseholdID)
+	return err
 }
 
 const insertShoppingItem = `-- name: InsertShoppingItem :exec
@@ -161,33 +185,132 @@ func (q *Queries) InsertShoppingItem(ctx context.Context, arg InsertShoppingItem
 }
 
 const insertShoppingList = `-- name: InsertShoppingList :one
-INSERT INTO shopping_lists (household_id, name, created_by)
-VALUES ($1, $2, $3)
+INSERT INTO shopping_lists (household_id, name, category, created_by)
+VALUES ($1, $2, $3, $4)
 RETURNING id
 `
 
 type InsertShoppingListParams struct {
 	HouseholdID pgtype.UUID `json:"household_id"`
 	Name        string      `json:"name"`
+	Category    string      `json:"category"`
 	CreatedBy   pgtype.UUID `json:"created_by"`
 }
 
 func (q *Queries) InsertShoppingList(ctx context.Context, arg InsertShoppingListParams) (pgtype.UUID, error) {
-	row := q.db.QueryRow(ctx, insertShoppingList, arg.HouseholdID, arg.Name, arg.CreatedBy)
+	row := q.db.QueryRow(ctx, insertShoppingList,
+		arg.HouseholdID,
+		arg.Name,
+		arg.Category,
+		arg.CreatedBy,
+	)
 	var id pgtype.UUID
 	err := row.Scan(&id)
 	return id, err
+}
+
+const linkShoppingItems = `-- name: LinkShoppingItems :exec
+UPDATE shopping_items
+SET expense_id = $1
+WHERE household_id = $2
+  AND list_id = $3
+  AND checked_at IS NOT NULL
+  AND cleared_at IS NULL
+  AND expense_id IS NULL
+  AND (
+    $4::uuid IS NULL
+    OR id = $4::uuid
+  )
+`
+
+type LinkShoppingItemsParams struct {
+	ExpenseID   pgtype.UUID `json:"expense_id"`
+	HouseholdID pgtype.UUID `json:"household_id"`
+	ListID      pgtype.UUID `json:"list_id"`
+	ItemID      pgtype.UUID `json:"item_id"`
+}
+
+// the bought items of a list a new expense paid for, one item_id or all not linked yet,
+// anything that is not this household's bought item simply links nothing
+func (q *Queries) LinkShoppingItems(ctx context.Context, arg LinkShoppingItemsParams) error {
+	_, err := q.db.Exec(ctx, linkShoppingItems,
+		arg.ExpenseID,
+		arg.HouseholdID,
+		arg.ListID,
+		arg.ItemID,
+	)
+	return err
+}
+
+const listBuyAgain = `-- name: ListBuyAgain :many
+SELECT h.text,
+  h.qty
+FROM (
+    SELECT DISTINCT ON (lower(i.text)) i.text,
+      i.qty,
+      i.cleared_at
+    FROM shopping_items i
+    WHERE i.household_id = $1
+      AND i.cleared_at IS NOT NULL
+      AND NOT EXISTS (
+        SELECT 1
+        FROM shopping_items o
+        WHERE o.list_id = $2
+          AND o.cleared_at IS NULL
+          AND lower(o.text) = lower(i.text)
+      )
+    ORDER BY lower(i.text),
+      i.cleared_at DESC
+  ) h
+ORDER BY h.cleared_at DESC
+LIMIT 100
+`
+
+type ListBuyAgainParams struct {
+	HouseholdID pgtype.UUID `json:"household_id"`
+	ListID      pgtype.UUID `json:"list_id"`
+}
+
+type ListBuyAgainRow struct {
+	Text string `json:"text"`
+	Qty  string `json:"qty"`
+}
+
+// what can be bought again on list_id, newest first, each name once with its last
+// quantity, not what is on the list already
+// shortcut: capped at 100 rows, a household with more only sees its latest
+func (q *Queries) ListBuyAgain(ctx context.Context, arg ListBuyAgainParams) ([]ListBuyAgainRow, error) {
+	rows, err := q.db.Query(ctx, listBuyAgain, arg.HouseholdID, arg.ListID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListBuyAgainRow
+	for rows.Next() {
+		var i ListBuyAgainRow
+		if err := rows.Scan(&i.Text, &i.Qty); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const listShoppingItems = `-- name: ListShoppingItems :many
 SELECT i.id,
   i.text,
   i.qty,
+  i.description,
   i.created_by,
   i.claimed_by,
   claimer.username AS claimed_by_name,
+  claimer.avatar_key AS claimed_by_avatar_key,
   i.checked_at,
   checker.username AS checked_by_name,
+  i.expense_id,
   (
     SELECT count(*)
     FROM files f
@@ -198,6 +321,7 @@ FROM shopping_items i
   LEFT JOIN users checker ON checker.id = i.checked_by
 WHERE i.list_id = $1
   AND i.household_id = $2
+  AND i.cleared_at IS NULL
 ORDER BY i.checked_at IS NOT NULL,
   i.checked_at DESC,
   i.created_at
@@ -209,15 +333,18 @@ type ListShoppingItemsParams struct {
 }
 
 type ListShoppingItemsRow struct {
-	ID            pgtype.UUID        `json:"id"`
-	Text          string             `json:"text"`
-	Qty           string             `json:"qty"`
-	CreatedBy     pgtype.UUID        `json:"created_by"`
-	ClaimedBy     pgtype.UUID        `json:"claimed_by"`
-	ClaimedByName *string            `json:"claimed_by_name"`
-	CheckedAt     pgtype.Timestamptz `json:"checked_at"`
-	CheckedByName *string            `json:"checked_by_name"`
-	FileCount     int64              `json:"file_count"`
+	ID                 pgtype.UUID        `json:"id"`
+	Text               string             `json:"text"`
+	Qty                string             `json:"qty"`
+	Description        string             `json:"description"`
+	CreatedBy          pgtype.UUID        `json:"created_by"`
+	ClaimedBy          pgtype.UUID        `json:"claimed_by"`
+	ClaimedByName      *string            `json:"claimed_by_name"`
+	ClaimedByAvatarKey *string            `json:"claimed_by_avatar_key"`
+	CheckedAt          pgtype.Timestamptz `json:"checked_at"`
+	CheckedByName      *string            `json:"checked_by_name"`
+	ExpenseID          pgtype.UUID        `json:"expense_id"`
+	FileCount          int64              `json:"file_count"`
 }
 
 // open items first in the order added, then the most recently checked
@@ -234,11 +361,14 @@ func (q *Queries) ListShoppingItems(ctx context.Context, arg ListShoppingItemsPa
 			&i.ID,
 			&i.Text,
 			&i.Qty,
+			&i.Description,
 			&i.CreatedBy,
 			&i.ClaimedBy,
 			&i.ClaimedByName,
+			&i.ClaimedByAvatarKey,
 			&i.CheckedAt,
 			&i.CheckedByName,
+			&i.ExpenseID,
 			&i.FileCount,
 		); err != nil {
 			return nil, err
@@ -256,6 +386,7 @@ SELECT l.id,
   l.name,
   count(i.id) FILTER (
     WHERE i.checked_at IS NULL
+      AND i.cleared_at IS NULL
   ) AS open_items
 FROM shopping_lists l
   LEFT JOIN shopping_items i ON i.list_id = l.id
@@ -290,6 +421,53 @@ func (q *Queries) ListShoppingLists(ctx context.Context, householdID pgtype.UUID
 	return items, nil
 }
 
+const reviveShoppingItem = `-- name: ReviveShoppingItem :execrows
+UPDATE shopping_items
+SET list_id = $1,
+  qty = $2,
+  created_by = $3,
+  created_at = CURRENT_TIMESTAMP,
+  cleared_at = NULL,
+  checked_at = NULL,
+  checked_by = NULL,
+  claimed_by = NULL,
+  expense_id = NULL
+WHERE id = (
+    SELECT h.id
+    FROM shopping_items h
+    WHERE h.household_id = $4
+      AND h.cleared_at IS NOT NULL
+      AND lower(h.text) = lower($5)
+    ORDER BY h.cleared_at DESC
+    LIMIT 1
+  )
+`
+
+type ReviveShoppingItemParams struct {
+	ListID      pgtype.UUID `json:"list_id"`
+	Qty         string      `json:"qty"`
+	CreatedBy   pgtype.UUID `json:"created_by"`
+	HouseholdID pgtype.UUID `json:"household_id"`
+	Text        string      `json:"text"`
+}
+
+// buying again brings back the household's latest hidden item of that name with its
+// description and files, on list_id at the end of it, the old expense stays but this
+// purchase is a new one and must not show its receipt
+func (q *Queries) ReviveShoppingItem(ctx context.Context, arg ReviveShoppingItemParams) (int64, error) {
+	result, err := q.db.Exec(ctx, reviveShoppingItem,
+		arg.ListID,
+		arg.Qty,
+		arg.CreatedBy,
+		arg.HouseholdID,
+		arg.Text,
+	)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
 const setShoppingItemChecked = `-- name: SetShoppingItemChecked :execrows
 UPDATE shopping_items
 SET checked_at = CASE
@@ -297,6 +475,9 @@ SET checked_at = CASE
   END,
   checked_by = CASE
     WHEN $1::boolean THEN COALESCE(checked_by, $2::uuid)
+  END,
+  expense_id = CASE
+    WHEN $1::boolean THEN expense_id
   END
 WHERE id = $3
   AND list_id = $4
@@ -311,7 +492,8 @@ type SetShoppingItemCheckedParams struct {
 	HouseholdID pgtype.UUID `json:"household_id"`
 }
 
-// checking an already checked item keeps who bought it and when
+// checking an already checked item keeps who bought it and when, unchecking drops the
+// expense, buying it later is a new purchase
 func (q *Queries) SetShoppingItemChecked(ctx context.Context, arg SetShoppingItemCheckedParams) (int64, error) {
 	result, err := q.db.Exec(ctx, setShoppingItemChecked,
 		arg.Checked,
@@ -355,6 +537,79 @@ func (q *Queries) SetShoppingItemClaim(ctx context.Context, arg SetShoppingItemC
 		arg.ListID,
 		arg.HouseholdID,
 	)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
+const setShoppingItemDescription = `-- name: SetShoppingItemDescription :execrows
+UPDATE shopping_items
+SET description = $1
+WHERE id = $2
+  AND list_id = $3
+  AND household_id = $4
+`
+
+type SetShoppingItemDescriptionParams struct {
+	Description string      `json:"description"`
+	ID          pgtype.UUID `json:"id"`
+	ListID      pgtype.UUID `json:"list_id"`
+	HouseholdID pgtype.UUID `json:"household_id"`
+}
+
+// any member describes an item
+func (q *Queries) SetShoppingItemDescription(ctx context.Context, arg SetShoppingItemDescriptionParams) (int64, error) {
+	result, err := q.db.Exec(ctx, setShoppingItemDescription,
+		arg.Description,
+		arg.ID,
+		arg.ListID,
+		arg.HouseholdID,
+	)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
+const setShoppingListCategory = `-- name: SetShoppingListCategory :execrows
+UPDATE shopping_lists
+SET category = $3
+WHERE id = $1
+  AND household_id = $2
+`
+
+type SetShoppingListCategoryParams struct {
+	ID          pgtype.UUID `json:"id"`
+	HouseholdID pgtype.UUID `json:"household_id"`
+	Category    string      `json:"category"`
+}
+
+// any member files a list under another category
+func (q *Queries) SetShoppingListCategory(ctx context.Context, arg SetShoppingListCategoryParams) (int64, error) {
+	result, err := q.db.Exec(ctx, setShoppingListCategory, arg.ID, arg.HouseholdID, arg.Category)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
+const setShoppingListName = `-- name: SetShoppingListName :execrows
+UPDATE shopping_lists
+SET name = $3
+WHERE id = $1
+  AND household_id = $2
+`
+
+type SetShoppingListNameParams struct {
+	ID          pgtype.UUID `json:"id"`
+	HouseholdID pgtype.UUID `json:"household_id"`
+	Name        string      `json:"name"`
+}
+
+// any member renames a list
+func (q *Queries) SetShoppingListName(ctx context.Context, arg SetShoppingListNameParams) (int64, error) {
+	result, err := q.db.Exec(ctx, setShoppingListName, arg.ID, arg.HouseholdID, arg.Name)
 	if err != nil {
 		return 0, err
 	}

@@ -73,11 +73,14 @@ en:
     open-items: "%d to buy"
     new-list: New list
     create-list: Create list
+    rename-list: Rename list
     name-length: Name must be between 1 and %d characters long
     item: Item
     qty: Quantity
     add: Add
     empty: The list is empty
+    in-bag: In the bag
+    all-bought: Everything's in the bag
     item-length: The item must be 1 to %d characters long and the quantity at most %d
     buying: "I'm buying"
     stop-buying: Not buying
@@ -88,6 +91,14 @@ en:
     delete-list: Delete list
     clear: Remove bought items
     item-back: Back to the list
+    description: Description
+    description-placeholder: Brand, size, anything that helps
+    description-length: The description can be at most %d characters
+    item-files-hint: Add a photo of the product so whoever buys it picks the right one
+    item-expense: Expense
+    see-expense: See expense
+    add-bag-expense: Add expense for the whole bag
+    buy-again: Buy again
   expenses:
     new: New expense
     none: No expenses yet
@@ -111,6 +122,7 @@ en:
     what: What for
     amount: Amount
     category: Category
+    receipt-hint: Add a picture of the receipt
     date: Date
     split: Split
     split-equal: Equally between the ticked

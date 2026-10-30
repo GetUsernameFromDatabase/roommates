@@ -20,7 +20,7 @@ func shoppingListPath(householdID, listID pgtype.UUID) string {
 // CreateShoppingList opens the new list, an invalid name shows on the household page
 func (h *DefaultHandler) CreateShoppingList(ctx *gin.Context) {
 	actor := membershipFromContext(ctx)
-	listID, err := h.service.CreateShoppingList(ctx, actor, ctx.PostForm("name"))
+	listID, err := h.service.CreateShoppingList(ctx, actor, ctx.PostForm("name"), ctx.PostForm("category"))
 	if errors.Is(err, g.ErrorInvalidInput) {
 		h.renderShopping(ctx, http.StatusUnprocessableEntity,
 			utils.T(ctx.Request.Context(), locales.LK_ShoppingNameLength, services.MaxShoppingListNameLength))
@@ -126,6 +126,34 @@ func (h *DefaultHandler) DeleteShoppingList(ctx *gin.Context) {
 	default:
 		InternalError(ctx, err)
 	}
+}
+
+// RenameShoppingList shows the list again, an invalid name shows on it
+func (h *DefaultHandler) RenameShoppingList(ctx *gin.Context) {
+	listID, err := utils.ParseUUID(ctx.Param(g.ParamListID))
+	if err != nil {
+		RenderTemplStatus(ctx, http.StatusNotFound, pages.NotFound())
+		return
+	}
+	actor := membershipFromContext(ctx)
+	err = h.service.RenameShoppingList(ctx, actor, listID, ctx.PostForm("name"))
+	switch {
+	case err == nil:
+		Redirect(ctx, shoppingListPath(actor.HouseholdID, listID))
+	case errors.Is(err, g.ErrorInvalidInput):
+		h.renderShoppingList(ctx, http.StatusUnprocessableEntity, listID,
+			utils.T(ctx.Request.Context(), locales.LK_ShoppingNameLength, services.MaxShoppingListNameLength))
+	case errors.Is(err, g.ErrorNotFound):
+		RenderTemplStatus(ctx, http.StatusNotFound, pages.NotFound())
+	default:
+		InternalError(ctx, err)
+	}
+}
+
+func (h *DefaultHandler) SetShoppingListCategory(ctx *gin.Context) {
+	h.shoppingAction(ctx, func(actor services.Membership, listID pgtype.UUID) error {
+		return h.service.SetShoppingListCategory(ctx, actor, listID, ctx.PostForm("category"))
+	})
 }
 
 func (h *DefaultHandler) AddShoppingItem(ctx *gin.Context) {

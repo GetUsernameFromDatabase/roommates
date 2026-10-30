@@ -40,17 +40,36 @@ func (h *DefaultHandler) renderExpenses(ctx *gin.Context, status int, errorMessa
 	RenderTemplStatus(ctx, status, pages.HouseholdExpenses(actor, o, errorMessage))
 }
 
-// PageNewExpense starts empty, as a copy of ?from=<expenseID>, or with ?title= from a shopping item
+// PageNewExpense starts empty, as a copy of ?from=<expenseID>, or for the bought items of ?list=<listID>,
+// only ?item=<itemID> when given, their title and category come from the list
 func (h *DefaultHandler) PageNewExpense(ctx *gin.Context) {
 	actor := membershipFromContext(ctx)
 	in := services.ExpenseInput{
-		Title:      ctx.Query("title"),
+		Title:      "",
 		Amount:     "",
 		Category:   g.ExpenseCategories[0],
 		IncurredOn: time.Now().Format(services.DateLayout),
 		Custom:     false,
 		Members:    nil,
 		Shares:     nil,
+		ListID:     pgtype.UUID{},
+		ItemID:     pgtype.UUID{},
+	}
+	if list := ctx.Query("list"); list != "" {
+		var errList, errItem error
+		in.ListID, errList = utils.ParseUUID(list)
+		if item := ctx.Query("item"); item != "" {
+			in.ItemID, errItem = utils.ParseUUID(item)
+		}
+		if errList != nil || errItem != nil {
+			RenderTemplStatus(ctx, http.StatusNotFound, pages.NotFound())
+			return
+		}
+		var err error
+		if in.Title, in.Category, err = h.service.ShoppingExpenseDraft(ctx, actor, in.ListID, in.ItemID); err != nil {
+			pageError(ctx, err)
+			return
+		}
 	}
 	if from := ctx.Query("from"); from != "" {
 		expenseID, err := utils.ParseUUID(from)
@@ -101,6 +120,15 @@ func expenseFromForm(ctx *gin.Context) services.ExpenseInput {
 		Custom:     ctx.PostForm("split") == "custom",
 		Members:    nil,
 		Shares:     map[pgtype.UUID]string{},
+		ListID:     pgtype.UUID{},
+		ItemID:     pgtype.UUID{},
+	}
+	// a bad id only links nothing, the expense itself is what was asked for
+	if id, err := utils.ParseUUID(ctx.PostForm("list")); err == nil {
+		in.ListID = id
+	}
+	if id, err := utils.ParseUUID(ctx.PostForm("item")); err == nil {
+		in.ItemID = id
 	}
 	for _, v := range ctx.PostFormArray("member") {
 		if id, err := utils.ParseUUID(v); err == nil {

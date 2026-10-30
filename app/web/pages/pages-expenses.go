@@ -13,8 +13,12 @@ import (
 )
 
 // newExpenseURL opens the expense form with title filled in
-func newExpenseURL(householdID pgtype.UUID, title string) templ.SafeURL {
-	return householdURL(householdID, "expenses", "new") + templ.SafeURL("?"+url.Values{"title": {title}}.Encode())
+func newExpenseURL(householdID, listID, itemID pgtype.UUID) templ.SafeURL {
+	q := url.Values{"list": {listID.String()}}
+	if itemID.Valid {
+		q.Set("item", itemID.String())
+	}
+	return householdURL(householdID, "expenses", "new") + templ.SafeURL("?"+q.Encode())
 }
 
 // formatDay is a date column, it has no time zone

@@ -5,9 +5,11 @@ import (
 	"fmt"
 	"net/url"
 	g "roommates/internal/config"
+	"roommates/internal/db/dbqueries"
 	"roommates/internal/locales"
 	"roommates/internal/services"
 	"roommates/internal/utils"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -81,12 +83,32 @@ func shoppingListURL(actor services.Membership, l services.ShoppingList, parts .
 	return householdURL(actor.HouseholdID, append([]string{"lists", l.List.ID.String()}, parts...)...)
 }
 
-// shoppingSwap posts a form with htmx and swaps in only #shopping-list of the response
+// shoppingSwap posts a form with htmx and swaps in only #shopping-list of the response,
+// as a view transition so a bought item slides down into the bag
 func shoppingSwap(actor services.Membership, l services.ShoppingList, parts ...string) templ.Attributes {
 	return templ.Attributes{
 		"hx-post":   string(shoppingListURL(actor, l, parts...)),
 		"hx-target": "#shopping-list",
 		"hx-select": "#shopping-list",
-		"hx-swap":   "outerHTML",
+		"hx-swap":   "outerHTML transition:true",
 	}
+}
+
+// itemTransitionName lets the browser follow an item from the pad to the bag
+func itemTransitionName(itemID string) templ.SafeCSS {
+	return templ.SafeCSS("view-transition-name:item-" + itemID)
+}
+
+// hasUnlinked says whether a bought item has no expense yet
+func hasUnlinked(bought []dbqueries.ListShoppingItemsRow) bool {
+	return slices.ContainsFunc(bought, func(it dbqueries.ListShoppingItemsRow) bool { return !it.ExpenseID.Valid })
+}
+
+// splitBought parts the items of a list, the query sorts the bought ones last
+func splitBought(items []dbqueries.ListShoppingItemsRow) (open, bought []dbqueries.ListShoppingItemsRow) {
+	i := slices.IndexFunc(items, func(it dbqueries.ListShoppingItemsRow) bool { return it.CheckedAt.Valid })
+	if i < 0 {
+		return items, nil
+	}
+	return items[:i], items[i:]
 }

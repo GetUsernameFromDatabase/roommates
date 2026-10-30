@@ -157,7 +157,7 @@ func TestFiles(t *testing.T) {
 	}
 
 	// files attach to an item of the household's list only
-	listID, err := s.CreateShoppingList(ctx, ownerM, "Food")
+	listID, err := s.CreateShoppingList(ctx, ownerM, "Food", "groceries")
 	if err != nil {
 		t.Fatal(err)
 	}

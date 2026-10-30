@@ -27,6 +27,10 @@ type Expense struct {
 	CreatedAt   pgtype.Timestamptz `json:"created_at"`
 }
 
+type ExpenseCategory struct {
+	ID string `json:"id"`
+}
+
 type ExpenseShare struct {
 	ExpenseID   pgtype.UUID        `json:"expense_id"`
 	UserID      pgtype.UUID        `json:"user_id"`
@@ -136,6 +140,9 @@ type ShoppingItem struct {
 	CheckedAt   pgtype.Timestamptz `json:"checked_at"`
 	CreatedAt   pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
+	Description string             `json:"description"`
+	ClearedAt   pgtype.Timestamptz `json:"cleared_at"`
+	ExpenseID   pgtype.UUID        `json:"expense_id"`
 }
 
 type ShoppingList struct {
@@ -145,6 +152,7 @@ type ShoppingList struct {
 	CreatedBy   pgtype.UUID        `json:"created_by"`
 	CreatedAt   pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
+	Category    string             `json:"category"`
 }
 
 type User struct {

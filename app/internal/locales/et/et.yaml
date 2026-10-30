@@ -73,11 +73,14 @@ et:
     open-items: "%d ostmata"
     new-list: Uus nimekiri
     create-list: Loo nimekiri
+    rename-list: Muuda nimekirja nime
     name-length: Nimi peab olema 1 kuni %d tähte pikk
     item: Toode
     qty: Kogus
     add: Lisa
     empty: Nimekiri on tühi
+    in-bag: Kotis
+    all-bought: Kõik on kotis
     item-length: Toode peab olema 1 kuni %d tähte ja kogus kõige rohkem %d tähte pikk
     buying: Ostan mina
     stop-buying: Ei osta
@@ -88,6 +91,14 @@ et:
     delete-list: Kustuta nimekiri
     clear: Eemalda ostetud
     item-back: Tagasi nimekirja
+    description: Kirjeldus
+    description-placeholder: Mark, suurus või muu, mis aitab
+    description-length: Kirjeldus võib olla kõige rohkem %d tähte pikk
+    item-files-hint: Lisa toote pilt, et ostja valiks õige
+    item-expense: Kulu
+    see-expense: Vaata kulu
+    add-bag-expense: Lisa kulu kogu kotile
+    buy-again: Osta uuesti
   expenses:
     new: Uus kulu
     none: Kulusid pole veel
@@ -111,6 +122,7 @@ et:
     what: Mille eest
     amount: Summa
     category: Kategooria
+    receipt-hint: Lisa pilt tšekist
     date: Kuupäev
     split: Jagamine
     split-equal: Võrdselt märgitute vahel

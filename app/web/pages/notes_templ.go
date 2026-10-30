@@ -945,7 +945,7 @@ func NotePage(actor services.Membership, n services.Note, files []services.Attac
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = attachedFiles(actor, noteURL, files, uploadError).Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = attachedFiles(actor, noteURL, files, "", uploadError).Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}

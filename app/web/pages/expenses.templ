@@ -171,12 +171,21 @@ templ debtBreakdown(actor services.Membership, d services.Debt) {
 	</details>
 }
 
+var expenseSplitScript = templ.NewOnceHandle()
+
 // ExpenseEditor is the new expense form, the actor pays it
 templ ExpenseEditor(actor services.Membership, members []dbqueries.ListActiveMembersRow, in services.ExpenseInput, errorMessage string) {
 	{{ expensesURL := householdURL(actor.HouseholdID, "expenses") }}
 	@appShell(utils.T(ctx, locales.LK_ExpensesNew), &HouseholdNav{HouseholdID: actor.HouseholdID, Section: SectionExpenses}) {
 		@doorplateHeader(expensesURL, utils.T(ctx, locales.LK_ExpensesBack), utils.T(ctx, locales.LK_ExpensesNew))
-		<form action={ expensesURL } method="post" hx-boost="true" class={ utils.CN(sheetClass, "space-y-4") }>
+		<form action={ expensesURL } method="post" hx-boost="true" data-expense-split={ actor.UserID.String() } class={ utils.CN(sheetClass, "space-y-4") }>
+			// the shopping items this expense paid for
+			if in.ListID.Valid {
+				<input type="hidden" name="list" value={ in.ListID.String() }/>
+			}
+			if in.ItemID.Valid {
+				<input type="hidden" name="item" value={ in.ItemID.String() }/>
+			}
 			@formError(errorMessage)
 			@field.Field() {
 				@field.Label(field.LabelProps{For: "expense-title"}) {
@@ -230,10 +239,8 @@ templ ExpenseEditor(actor services.Membership, members []dbqueries.ListActiveMem
 				@field.Label(field.LabelProps{For: "expense-category"}) {
 					@components.T(locales.LK_ExpensesCategory)
 				}
-				<select id="expense-category" name="category" class="h-11 w-full rounded-lg border border-input bg-transparent px-3 text-base outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 md:text-sm">
-					for _, c := range g.ExpenseCategories {
-						<option value={ c } selected?={ c == in.Category }>{ CategoryName(ctx, c) }</option>
-					}
+				<select id="expense-category" name="category" class={ selectClass }>
+					@categoryOptions(in.Category)
 				</select>
 			}
 			<fieldset class="space-y-2">
@@ -261,7 +268,8 @@ templ ExpenseEditor(actor services.Membership, members []dbqueries.ListActiveMem
 								Name:  "share-" + m.UserID.String(),
 								Type:  "text",
 								Value: in.Shares[m.UserID],
-								Class: "h-11 w-28",
+								// an equal split is a result, not a field to fill in
+								Class: "h-11 w-28 text-right tabular-nums read-only:border-transparent read-only:bg-transparent read-only:shadow-none dark:read-only:bg-transparent",
 								Attributes: templ.Attributes{
 									"inputmode":   "decimal",
 									"placeholder": "0,00",
@@ -276,6 +284,10 @@ templ ExpenseEditor(actor services.Membership, members []dbqueries.ListActiveMem
 				@components.T(locales.LK_ExpensesAdd)
 			}
 		</form>
+		// after the form, it fills in the shares as soon as it runs
+		@expenseSplitScript.Once() {
+			<script src="/assets/expense-split.js"></script>
+		}
 	}
 }
 
@@ -327,7 +339,7 @@ templ ExpensePage(actor services.Membership, e services.Expense, uploadError str
 				</ul>
 			}
 		</section>
-		@attachedFiles(actor, expenseURL, e.Files, uploadError)
+		@attachedFiles(actor, expenseURL, e.Files, locales.LK_ExpensesReceiptHint, uploadError)
 		<div class="flex flex-wrap gap-2">
 			@button.Button(button.Props{Href: string(householdURL(actor.HouseholdID, "expenses", "new")) + "?from=" + e.Expense.ID.String(), Variant: button.VariantSecondary, Size: button.SizeLg}) {
 				@components.T(locales.LK_ExpensesCopy)
@@ -351,6 +363,15 @@ templ ExpensePage(actor services.Membership, e services.Expense, uploadError str
 				</form>
 			}
 		</div>
+	}
+}
+
+// selectClass is a native select among the form's inputs
+const selectClass = "h-11 w-full rounded-lg border border-input bg-transparent px-3 text-base outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 md:text-sm"
+
+templ categoryOptions(selected string) {
+	for _, c := range g.ExpenseCategories {
+		<option value={ c } selected?={ c == selected }>{ CategoryName(ctx, c) }</option>
 	}
 }
 

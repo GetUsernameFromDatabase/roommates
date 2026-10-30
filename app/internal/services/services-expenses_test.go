@@ -10,8 +10,28 @@ import (
 	g "roommates/internal/config"
 	"roommates/internal/db/dbqueries"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 )
+
+// the form and validation read the Go list, the foreign keys the table
+func TestExpenseCategoriesMatchTable(t *testing.T) {
+	s := newTestService(t)
+	rows, err := s.pool.Query(t.Context(), "SELECT id FROM expense_categories")
+	if err != nil {
+		t.Fatal(err)
+	}
+	inTable, err := pgx.CollectRows(rows, pgx.RowTo[string])
+	if err != nil {
+		t.Fatal(err)
+	}
+	inConfig := slices.Clone(g.ExpenseCategories)
+	slices.Sort(inTable)
+	slices.Sort(inConfig)
+	if !slices.Equal(inTable, inConfig) {
+		t.Fatalf("expense_categories %v, config %v", inTable, inConfig)
+	}
+}
 
 func TestParseCents(t *testing.T) {
 	for in, want := range map[string]int64{
@@ -102,6 +122,8 @@ func TestExpenses(t *testing.T) {
 		Custom:     false,
 		Members:    []pgtype.UUID{ownerM.UserID, memberM.UserID},
 		Shares:     nil,
+		ListID:     pgtype.UUID{},
+		ItemID:     pgtype.UUID{},
 	}
 
 	bad := equal

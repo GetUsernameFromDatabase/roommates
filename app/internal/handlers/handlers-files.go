@@ -132,7 +132,35 @@ func (h *DefaultHandler) renderShoppingItem(ctx *gin.Context, status int, listID
 		InternalError(ctx, err)
 		return
 	}
-	RenderTemplStatus(ctx, status, pages.ShoppingItemPage(actor, listID, it, files, errorMessage))
+	// the receipt of the shop it was bought in
+	var expense *services.Expense
+	if it.ExpenseID.Valid {
+		e, err := h.service.GetExpense(ctx, actor, it.ExpenseID)
+		if err != nil {
+			pageError(ctx, err)
+			return
+		}
+		expense = &e
+	}
+	RenderTemplStatus(ctx, status, pages.ShoppingItemPage(actor, listID, it, expense, files, errorMessage))
+}
+
+func (h *DefaultHandler) SetShoppingItemDescription(ctx *gin.Context) {
+	listID, it, ok := h.loadShoppingItem(ctx)
+	if !ok {
+		return
+	}
+	actor := membershipFromContext(ctx)
+	err := h.service.SetShoppingItemDescription(ctx, actor, listID, it.ID, ctx.PostForm("description"))
+	switch {
+	case err == nil:
+		Redirect(ctx, shoppingListPath(actor.HouseholdID, listID)+"/items/"+it.ID.String())
+	case errors.Is(err, g.ErrorInvalidInput):
+		h.renderShoppingItem(ctx, http.StatusUnprocessableEntity, listID, it,
+			utils.T(ctx.Request.Context(), locales.LK_ShoppingDescriptionLength, services.MaxShoppingItemDescriptionLength))
+	default:
+		pageError(ctx, err)
+	}
 }
 
 func (h *DefaultHandler) UploadShoppingItemFile(ctx *gin.Context) {

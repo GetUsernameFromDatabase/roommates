@@ -1,13 +1,20 @@
 package pages
 
 import "roommates/web/components"
-import "roommates/web/components/badge"
+import "roommates/web/components/avatar"
 import "roommates/web/components/button"
 import "roommates/web/components/input"
+import "roommates/internal/db/dbqueries"
 import "roommates/internal/services"
 import "roommates/internal/events"
 import "roommates/internal/locales"
 import "roommates/internal/utils"
+import "github.com/jackc/pgx/v5/pgtype"
+
+var shoppingReuseScript = templ.NewOnceHandle()
+
+// shoppingBuyAgainShown is how many of the old items show as buttons, all of them are suggested while typing
+const shoppingBuyAgainShown = 8
 
 // ShoppingList shows the items of one list, errorMessage is the outcome of the last action
 //
@@ -15,10 +22,20 @@ import "roommates/internal/utils"
 // a check-off keeps the scroll position
 templ ShoppingList(actor services.Membership, l services.ShoppingList, errorMessage string) {
 	@appShell(l.List.Name, &HouseholdNav{HouseholdID: actor.HouseholdID, Section: SectionShopping}) {
-		@doorplateHeader(householdURL(actor.HouseholdID), utils.T(ctx, locales.LK_ShoppingBack), l.List.Name)
-		<section class={ sheetClass }>
-			@shoppingListContent(actor, l, errorMessage)
-		</section>
+		@shoppingReuseScript.Once() {
+			<script src="/assets/shopping-reuse.js"></script>
+		}
+		@shoppingListHeader(actor, l)
+		// saved on pick, what the list's expenses start from
+		<form hx-post={ string(shoppingListURL(actor, l, "category")) } hx-trigger="change" hx-swap="none" class="-mt-5 flex items-center gap-2">
+			<label for="list-category" class="text-sm text-muted-foreground">
+				@components.T(locales.LK_ExpensesCategory)
+			</label>
+			<select id="list-category" name="category" class={ utils.CN(selectClass, "h-9 w-auto bg-card dark:bg-card") }>
+				@categoryOptions(l.List.Category)
+			</select>
+		</form>
+		@shoppingListContent(actor, l, errorMessage)
 		if l.List.CreatedBy == actor.UserID {
 			<form
 				action={ shoppingListURL(actor, l, "delete") }
@@ -28,8 +45,8 @@ templ ShoppingList(actor services.Membership, l services.ShoppingList, errorMess
 			>
 				@button.Button(button.Props{
 					Type:    button.TypeSubmit,
-					Variant: button.VariantOutline,
-					Class:   "w-full text-destructive",
+					Variant: button.VariantGhost,
+					Class:   "-ml-3 text-destructive hover:text-destructive",
 				}) {
 					@components.T(locales.LK_ShoppingDeleteList)
 				}
@@ -38,144 +55,271 @@ templ ShoppingList(actor services.Membership, l services.ShoppingList, errorMess
 	}
 }
 
-templ shoppingListContent(actor services.Membership, l services.ShoppingList, errorMessage string) {
-	{{ hasChecked := false }}
-	<div id="shopping-list" class="space-y-4">
+// shoppingListHeader has a pencil by the name, a native disclosure so renaming needs no script,
+// the form shows on its own row under the name
+templ shoppingListHeader(actor services.Membership, l services.ShoppingList) {
+	@doorplateHeader(householdURL(actor.HouseholdID), utils.T(ctx, locales.LK_ShoppingBack), l.List.Name) {
+		<details class="group/rename">
+			<summary
+				aria-label={ utils.T(ctx, locales.LK_ShoppingRenameList) }
+				class="flex size-11 cursor-pointer list-none items-center justify-center rounded-full text-muted-foreground outline-none hover:bg-muted hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50 group-open/rename:bg-muted [&::-webkit-details-marker]:hidden"
+			>
+				@navIcon("pencil", "size-5")
+			</summary>
+		</details>
 		<form
-			action={ shoppingListURL(actor, l, "items") }
+			action={ shoppingListURL(actor, l, "name") }
 			method="post"
-			{ shoppingSwap(actor, l, "items")... }
-			class="grid grid-cols-[1fr_auto] gap-2 sm:grid-cols-[1fr_6rem_auto]"
+			hx-boost="true"
+			class="hidden w-full gap-2 [div:has(>details[open])>&]:flex"
 		>
 			@input.Input(input.Props{
-				Name:        "text",
-				Type:        "text",
-				Placeholder: utils.T(ctx, locales.LK_ShoppingItem),
-				Required:    true,
-				Class:       "col-span-2 h-11 sm:col-span-1",
+				Name:     "name",
+				Type:     "text",
+				Value:    l.List.Name,
+				Required: true,
+				Class:    "h-11 bg-card dark:bg-card",
 				Attributes: templ.Attributes{
-					"maxlength":  services.MaxShoppingItemTextLength,
-					"aria-label": utils.T(ctx, locales.LK_ShoppingItem),
-				},
-			})
-			@input.Input(input.Props{
-				Name:        "qty",
-				Type:        "text",
-				Placeholder: utils.T(ctx, locales.LK_ShoppingQty),
-				Class:       "h-11",
-				Attributes: templ.Attributes{
-					"maxlength":  services.MaxShoppingItemQtyLength,
-					"aria-label": utils.T(ctx, locales.LK_ShoppingQty),
+					"maxlength":  services.MaxShoppingListNameLength,
+					"aria-label": utils.T(ctx, locales.LK_ShoppingRenameList),
 				},
 			})
 			@button.Button(button.Props{Type: button.TypeSubmit, Size: button.SizeLg, Class: "h-11"}) {
-				@components.T(locales.LK_ShoppingAdd)
+				@components.T(locales.LK_CommonSave)
 			}
 		</form>
-		@formError(errorMessage)
-		// the add form stays out, a flatmate's change must not clear what is typed
-		@liveRegion("shopping-items", events.TopicShopping, events.TopicFiles) {
-			if len(l.Items) == 0 {
-				<p class="py-2 text-muted-foreground">
-					@components.T(locales.LK_ShoppingEmpty)
-				</p>
-			}
-			<ul class="divide-y">
-				for _, it := range l.Items {
-					{{ checked := it.CheckedAt.Valid }}
-					{{ hasChecked = hasChecked || checked }}
-					{{ itemID := it.ID.String() }}
-					// ids let htmx settle old into new classes, so the tick and the fade animate
-					<li
-						id={ "item-" + itemID }
-						class={ utils.CN("flex min-h-14 items-center gap-2 py-1 transition-opacity duration-150 motion-reduce:transition-none",
-						utils.IfElse(checked, "opacity-60", "")) }
-					>
-						<form action={ shoppingListURL(actor, l, "items", itemID, "check") } method="post" { shoppingSwap(actor, l, "items", itemID, "check")... }>
-							<input type="hidden" name="checked" value={ utils.IfElse(checked, "0", "1") }/>
-							<button
-								type="submit"
-								role="checkbox"
-								aria-checked={ utils.IfElse(checked, "true", "false") }
-								aria-label={ utils.IfElse(checked, utils.T(ctx, locales.LK_ShoppingUncheck), utils.T(ctx, locales.LK_ShoppingCheck)) + ": " + it.Text }
-								class="-ml-2 flex size-11 shrink-0 items-center justify-center rounded-full outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
-							>
-								<span
-									id={ "tick-" + itemID }
-									aria-hidden="true"
-									class={ utils.CN("flex size-7 items-center justify-center rounded-full border-2 border-primary text-sm font-bold transition-colors duration-150 motion-reduce:transition-none",
-									utils.IfElse(checked, "bg-primary text-primary-foreground", "text-transparent")) }
-								>
-									✓
-								</span>
-							</button>
-						</form>
-						<div class="min-w-0 flex-1">
-							// the item's own page holds its files
-							<a href={ shoppingListURL(actor, l, "items", itemID) } class={ utils.CN("break-words underline-offset-4 hover:underline", utils.IfElse(checked, "line-through", "")) }>
-								{ it.Text }
-							</a>
-							if it.Qty != "" {
-								<span class="text-sm text-muted-foreground">{ it.Qty }</span>
-							}
-							if it.FileCount > 0 {
-								<span class="text-sm text-muted-foreground">
-									<span aria-hidden="true">📎 { it.FileCount }</span>
-									<span class="sr-only">{ utils.T(ctx, locales.LK_FilesCount, it.FileCount) }</span>
-								</span>
-							}
-							if checked && it.CheckedByName != nil {
-								<div class="text-xs text-muted-foreground">
-									{ utils.T(ctx, locales.LK_ShoppingBoughtBy, *it.CheckedByName) } ·
-									<a href={ newExpenseURL(actor.HouseholdID, it.Text) } class="inline-block py-2 underline underline-offset-4 hover:text-foreground">
-										@components.T(locales.LK_ExpensesAdd)
-									</a>
-								</div>
-							} else if !checked && it.ClaimedByName != nil {
-								<div>
-									@badge.Badge(badge.Props{Class: "mt-0.5 h-auto max-w-full whitespace-normal bg-claim text-claim-foreground"}) {
-										{ utils.T(ctx, locales.LK_ShoppingBuyingBy, *it.ClaimedByName) }
-									}
-								</div>
-							}
-						</div>
-						if !checked {
-							<form action={ shoppingListURL(actor, l, "items", itemID, "claim") } method="post" { shoppingSwap(actor, l, "items", itemID, "claim")... }>
-								<input type="hidden" name="claim" value={ utils.IfElse(it.ClaimedBy == actor.UserID, "0", "1") }/>
-								@button.Button(button.Props{
-									Type:    button.TypeSubmit,
-									Variant: button.VariantGhost,
-									Class:   "h-11 px-3",
-								}) {
-									if it.ClaimedBy == actor.UserID {
-										@components.T(locales.LK_ShoppingStopBuying)
-									} else {
-										@components.T(locales.LK_ShoppingBuying)
-									}
-								}
-							</form>
+	}
+}
+
+// shoppingListContent is the pad of what is still to buy, a new item goes on its next
+// blank line, and under it what is in the bag already
+templ shoppingListContent(actor services.Membership, l services.ShoppingList, errorMessage string) {
+	{{ open, bought := splitBought(l.Items) }}
+	<div id="shopping-list" class="space-y-8">
+		<div class="shopping-pad">
+			@liveRegion("shopping-items", events.TopicShopping, events.TopicFiles) {
+				if len(open) == 0 {
+					<p class="pad-note">
+						if len(bought) > 0 {
+							@components.T(locales.LK_ShoppingAllBought)
+						} else {
+							@components.T(locales.LK_ShoppingEmpty)
 						}
-						if it.CreatedBy == actor.UserID {
-							<form action={ shoppingListURL(actor, l, "items", itemID, "delete") } method="post" { shoppingSwap(actor, l, "items", itemID, "delete")... }>
-								@button.Button(button.Props{
-									Type:    button.TypeSubmit,
-									Variant: button.VariantGhost,
-									Class:   "h-11 px-3 text-destructive",
-								}) {
-									@components.T(locales.LK_CommonDelete)
-								}
-							</form>
+					</p>
+				} else {
+					<ul>
+						for _, it := range open {
+							@shoppingOpenItem(actor, l, it)
 						}
-					</li>
+					</ul>
 				}
-			</ul>
-			if hasChecked {
-				<form action={ shoppingListURL(actor, l, "clear") } method="post" { shoppingSwap(actor, l, "clear")... }>
-					@button.Button(button.Props{Type: button.TypeSubmit, Variant: button.VariantSecondary}) {
-						@components.T(locales.LK_ShoppingClear)
+			}
+			// the add form stays out of the regions, a flatmate's change must not clear what is typed
+			<form
+				action={ shoppingListURL(actor, l, "items") }
+				method="post"
+				{ shoppingSwap(actor, l, "items")... }
+				class="pad-line pad-add"
+			>
+				// the id brings the focus back after the swap, so the next item can be typed right away
+				@input.Input(input.Props{
+					ID:          "item-text",
+					Name:        "text",
+					Type:        "text",
+					Placeholder: utils.T(ctx, locales.LK_ShoppingItem),
+					Required:    true,
+					Class:       padInputClass + " col-start-2",
+					Attributes: templ.Attributes{
+						"maxlength":  services.MaxShoppingItemTextLength,
+						"aria-label": utils.T(ctx, locales.LK_ShoppingItem),
+						"list":       "item-history",
+					},
+				})
+				<datalist id="item-history">
+					for _, old := range l.BuyAgain {
+						<option value={ old.Text }></option>
 					}
-				</form>
+				</datalist>
+				<div class="flex items-center gap-1">
+					@input.Input(input.Props{
+						ID:          "item-qty",
+						Name:        "qty",
+						Type:        "text",
+						Placeholder: utils.T(ctx, locales.LK_ShoppingQty),
+						Class:       padInputClass + " w-24",
+						Attributes: templ.Attributes{
+							"maxlength":  services.MaxShoppingItemQtyLength,
+							"aria-label": utils.T(ctx, locales.LK_ShoppingQty),
+						},
+					})
+					@button.Button(button.Props{
+						Type:  button.TypeSubmit,
+						Size:  button.SizeIconLg,
+						Class: "size-11",
+						Attributes: templ.Attributes{
+							"aria-label": utils.T(ctx, locales.LK_ShoppingAdd),
+						},
+					}) {
+						@navIcon("plus", "size-5")
+					}
+				</div>
+			</form>
+			<div class="pad-note empty:hidden">
+				@formError(errorMessage)
+			</div>
+		</div>
+		@liveRegion("shopping-bought", events.TopicShopping, events.TopicFiles, events.TopicExpenses) {
+			if len(bought) > 0 {
+				<section aria-labelledby="bought-title" class="shopping-bought">
+					<div class="flex flex-wrap items-center gap-2">
+						<h2 id="bought-title" class="mr-auto text-xl font-semibold">
+							@components.T(locales.LK_ShoppingInBag)
+						</h2>
+						if hasUnlinked(bought) {
+							// one receipt usually pays for the whole shop
+							@button.Button(button.Props{Href: string(newExpenseURL(actor.HouseholdID, l.List.ID, pgtype.UUID{})), Variant: button.VariantSecondary, Size: button.SizeSm}) {
+								@components.T(locales.LK_ShoppingAddBagExpense)
+							}
+						}
+						<form action={ shoppingListURL(actor, l, "clear") } method="post" { shoppingSwap(actor, l, "clear")... }>
+							@button.Button(button.Props{Type: button.TypeSubmit, Variant: button.VariantGhost, Size: button.SizeSm}) {
+								@components.T(locales.LK_ShoppingClear)
+							}
+						</form>
+					</div>
+					<ul class="mt-1">
+						for _, it := range bought {
+							@shoppingBoughtItem(actor, l, it)
+						}
+					</ul>
+				</section>
+			}
+			if len(l.BuyAgain) > 0 {
+				<section aria-labelledby="again-title" class={ utils.IfElse(len(bought) > 0, "mt-8", "") }>
+					<h2 id="again-title" class="text-xl font-semibold">
+						@components.T(locales.LK_ShoppingBuyAgain)
+					</h2>
+					// a tap fills the pad's blank line, shopping-reuse.js, the quantity is new each time
+					<ul class="mt-2 flex flex-wrap gap-2">
+						for _, old := range l.BuyAgain[:min(len(l.BuyAgain), shoppingBuyAgainShown)] {
+							<li>
+								<button type="button" data-reuse-text={ old.Text } data-reuse-qty={ old.Qty } class="reuse-pill">
+									{ old.Text }
+								</button>
+							</li>
+						}
+					</ul>
+				</section>
 			}
 		}
 	</div>
+}
+
+// padInputClass writes on the pad's line, the line shows the focus (.pad-add)
+const padInputClass = "h-11 rounded-none border-0 bg-transparent px-0 text-lg shadow-none focus-visible:ring-0 dark:bg-transparent md:text-lg"
+
+templ shoppingOpenItem(actor services.Membership, l services.ShoppingList, it dbqueries.ListShoppingItemsRow) {
+	{{ itemID := it.ID.String() }}
+	<li id={ "item-" + itemID } class="pad-line" style={ itemTransitionName(itemID) }>
+		@shoppingTick(actor, l, it)
+		<div class="pad-body">
+			@shoppingItemName(actor, l, it)
+			if it.ClaimedByName != nil {
+				<div class="text-sm text-muted-foreground">
+					{ utils.T(ctx, locales.LK_ShoppingBuyingBy, *it.ClaimedByName) }
+				</div>
+			}
+		</div>
+		// a place for a person at the end of the line, taken by whoever is buying it
+		<form action={ shoppingListURL(actor, l, "items", itemID, "claim") } method="post" { shoppingSwap(actor, l, "items", itemID, "claim")... }>
+			<input type="hidden" name="claim" value={ utils.IfElse(it.ClaimedBy == actor.UserID, "0", "1") }/>
+			<button
+				type="submit"
+				aria-label={ utils.IfElse(it.ClaimedBy == actor.UserID, utils.T(ctx, locales.LK_ShoppingStopBuying), utils.T(ctx, locales.LK_ShoppingBuying)) + ": " + it.Text }
+				class="group/claim flex size-11 items-center justify-center rounded-full outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+			>
+				if it.ClaimedByName != nil {
+					@personAvatar(it.ClaimedBy, it.ClaimedByAvatarKey, *it.ClaimedByName, avatar.SizeDefault, "")
+				} else {
+					<span aria-hidden="true" class="size-8 rounded-full border-2 border-dashed border-muted-foreground/60 group-hover/claim:border-foreground"></span>
+				}
+			</button>
+		</form>
+	</li>
+}
+
+templ shoppingBoughtItem(actor services.Membership, l services.ShoppingList, it dbqueries.ListShoppingItemsRow) {
+	{{ itemID := it.ID.String() }}
+	<li id={ "item-" + itemID } class="pad-line text-muted-foreground" style={ itemTransitionName(itemID) }>
+		@shoppingTick(actor, l, it)
+		<div class="pad-body">
+			@shoppingItemName(actor, l, it)
+			if it.CheckedByName != nil {
+				<div class="text-xs">
+					{ utils.T(ctx, locales.LK_ShoppingBoughtBy, *it.CheckedByName) } ·
+					if it.ExpenseID.Valid {
+						<a href={ householdURL(actor.HouseholdID, "expenses", it.ExpenseID.String()) } class={ boughtLinkClass }>
+							@components.T(locales.LK_ShoppingSeeExpense)
+						</a>
+					} else {
+						<a href={ newExpenseURL(actor.HouseholdID, l.List.ID, it.ID) } class={ boughtLinkClass }>
+							@components.T(locales.LK_ExpensesAdd)
+						</a>
+					}
+				</div>
+			}
+		</div>
+	</li>
+}
+
+const boughtLinkClass = "inline-block py-2 underline underline-offset-4 hover:text-foreground"
+
+// shoppingTick crosses an item off or brings it back
+templ shoppingTick(actor services.Membership, l services.ShoppingList, it dbqueries.ListShoppingItemsRow) {
+	{{ checked := it.CheckedAt.Valid }}
+	{{ itemID := it.ID.String() }}
+	<form action={ shoppingListURL(actor, l, "items", itemID, "check") } method="post" { shoppingSwap(actor, l, "items", itemID, "check")... } class="flex justify-center">
+		<input type="hidden" name="checked" value={ utils.IfElse(checked, "0", "1") }/>
+		<button
+			type="submit"
+			role="checkbox"
+			aria-checked={ utils.IfElse(checked, "true", "false") }
+			aria-label={ utils.IfElse(checked, utils.T(ctx, locales.LK_ShoppingUncheck), utils.T(ctx, locales.LK_ShoppingCheck)) + ": " + it.Text }
+			class="flex size-11 shrink-0 items-center justify-center rounded-full outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+		>
+			// ids let htmx settle old into new classes, so the tick and the pen stroke animate
+			<span
+				id={ "tick-" + itemID }
+				aria-hidden="true"
+				class={ utils.CN("flex size-7 items-center justify-center rounded-full border-2 border-primary text-sm font-bold transition-colors duration-150 motion-reduce:transition-none",
+				utils.IfElse(checked, "bg-primary text-primary-foreground", "text-transparent")) }
+			>
+				✓
+			</span>
+		</button>
+	</form>
+}
+
+// shoppingItemName is the words on the line, the link opens the item's own page with its files
+templ shoppingItemName(actor services.Membership, l services.ShoppingList, it dbqueries.ListShoppingItemsRow) {
+	{{ itemID := it.ID.String() }}
+	<a
+		id={ "item-name-" + itemID }
+		href={ shoppingListURL(actor, l, "items", itemID) }
+		class={ utils.CN("item-strike text-lg break-words underline-offset-4 hover:underline", utils.IfElse(it.CheckedAt.Valid, "is-struck", "")) }
+	>
+		{ it.Text }
+	</a>
+	if it.Qty != "" {
+		<span class="text-muted-foreground">{ it.Qty }</span>
+	}
+	if it.FileCount > 0 {
+		<span class="text-sm text-muted-foreground">
+			<span aria-hidden="true">📎 { it.FileCount }</span>
+			<span class="sr-only">{ utils.T(ctx, locales.LK_FilesCount, it.FileCount) }</span>
+		</span>
+	}
+	if it.Description != "" {
+		<p class="line-clamp-2 text-sm break-words text-muted-foreground">{ it.Description }</p>
+	}
 }

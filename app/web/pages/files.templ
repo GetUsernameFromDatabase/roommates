@@ -2,6 +2,7 @@ package pages
 
 import "roommates/web/components"
 import "roommates/web/components/button"
+import "roommates/web/components/textarea"
 import "roommates/internal/db/dbqueries"
 import "roommates/internal/services"
 import "roommates/internal/events"
@@ -57,13 +58,19 @@ templ HouseholdFiles(actor services.Membership, files []dbqueries.ListFilesRow, 
 
 const fileContextClass = "block text-xs text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
 
-// attachedFiles are the files of a note or shopping item on page back, and a form to add one
-templ attachedFiles(actor services.Membership, back templ.SafeURL, files []services.AttachedFile, errorMessage string) {
+// attachedFiles are the files of a note, shopping item or expense on page back, and a form to add one,
+// hint says what belongs here if anything
+templ attachedFiles(actor services.Membership, back templ.SafeURL, files []services.AttachedFile, hint locales.LK, errorMessage string) {
 	{{ uploadAction := back + "/files" }}
 	<section class={ utils.CN(sheetClass, "space-y-3") } aria-labelledby="attachments-title">
 		<h2 id="attachments-title" class="text-xl font-semibold">
 			@components.T(locales.LK_FilesAttachments)
 		</h2>
+		if hint != "" {
+			<p class="text-sm text-muted-foreground">
+				@components.T(hint)
+			</p>
+		}
 		@liveRegion("attachments", events.TopicFiles) {
 			if len(files) > 0 {
 				<ul class="divide-y">
@@ -184,13 +191,63 @@ templ FilePage(actor services.Membership, f services.FileMeta) {
 	}
 }
 
-// ShoppingItemPage is one item of a list with its files, a photo of the right product say
-templ ShoppingItemPage(actor services.Membership, listID pgtype.UUID, it services.ShoppingItem, files []services.AttachedFile, errorMessage string) {
+// ShoppingItemPage is one item of a list with its description and files, a photo of the right product say,
+// and the expense it was bought under with the receipt, expense is nil until there is one
+templ ShoppingItemPage(actor services.Membership, listID pgtype.UUID, it services.ShoppingItem, expense *services.Expense, files []services.AttachedFile, errorMessage string) {
+	{{ itemURL := householdURL(actor.HouseholdID, "lists", listID.String(), "items", it.ID.String()) }}
 	@appShell(it.Text, &HouseholdNav{HouseholdID: actor.HouseholdID, Section: SectionShopping}) {
 		@doorplateHeader(householdURL(actor.HouseholdID, "lists", listID.String()), utils.T(ctx, locales.LK_ShoppingItemBack), it.Text)
 		if it.Qty != "" {
 			<p class="-mt-6 text-muted-foreground">{ it.Qty }</p>
 		}
-		@attachedFiles(actor, householdURL(actor.HouseholdID, "lists", listID.String(), "items", it.ID.String()), files, errorMessage)
+		<form action={ itemURL + "/description" } method="post" class={ utils.CN(sheetClass, "space-y-3") }>
+			<label for="item-description" class="block font-heading text-xl font-semibold tracking-tight">
+				@components.T(locales.LK_ShoppingDescription)
+			</label>
+			@textarea.Textarea(textarea.Props{
+				ID:          "item-description",
+				Name:        "description",
+				Value:       it.Description,
+				Placeholder: utils.T(ctx, locales.LK_ShoppingDescriptionPlaceholder),
+				Attributes: templ.Attributes{
+					"maxlength": services.MaxShoppingItemDescriptionLength,
+				},
+			})
+			@button.Button(button.Props{Type: button.TypeSubmit, Variant: button.VariantSecondary}) {
+				@components.T(locales.LK_CommonSave)
+			}
+		</form>
+		@attachedFiles(actor, itemURL, files, locales.LK_ShoppingItemFilesHint, errorMessage)
+		if expense != nil {
+			{{ expenseURL := householdURL(actor.HouseholdID, "expenses", expense.Expense.ID.String()) }}
+			<section class={ utils.CN(sheetClass, "space-y-3") } aria-labelledby="item-expense-title">
+				<h2 id="item-expense-title" class="text-xl font-semibold">
+					@components.T(locales.LK_ShoppingItemExpense)
+				</h2>
+				<a href={ expenseURL } class="flex min-h-11 items-center justify-between gap-3 hover:underline">
+					<span class="min-w-0 font-medium break-words">{ expense.Expense.Title }</span>
+					<span class="shrink-0 font-semibold tabular-nums">{ utils.FormatMoney(ctx, expense.Expense.AmountCents, actor.Currency) }</span>
+				</a>
+				if len(expense.Files) > 0 {
+					<ul class="divide-y border-t">
+						for _, f := range expense.Files {
+							@fileRow(actor, itemURL, f.ID, f.Name, f.HasThumb, f.SizeBytes, f.UploaderID, f.UploaderName, f.CreatedAt)
+						}
+					</ul>
+				}
+			</section>
+		}
+		if it.CreatedBy == actor.UserID {
+			// not boosted: the handler redirects to the list only for a plain post
+			<form action={ householdURL(actor.HouseholdID, "lists", listID.String(), "items", it.ID.String(), "delete") } method="post">
+				@button.Button(button.Props{
+					Type:    button.TypeSubmit,
+					Variant: button.VariantGhost,
+					Class:   "-ml-3 text-destructive hover:text-destructive",
+				}) {
+					@components.T(locales.LK_CommonDelete)
+				}
+			</form>
+		}
 	}
 }

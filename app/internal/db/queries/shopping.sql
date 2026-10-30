@@ -1,12 +1,13 @@
 -- name: InsertShoppingList :one
-INSERT INTO shopping_lists (household_id, name, created_by)
-VALUES ($1, $2, $3)
+INSERT INTO shopping_lists (household_id, name, category, created_by)
+VALUES ($1, $2, $3, $4)
 RETURNING id;
 -- name: ListShoppingLists :many
 SELECT l.id,
   l.name,
   count(i.id) FILTER (
     WHERE i.checked_at IS NULL
+      AND i.cleared_at IS NULL
   ) AS open_items
 FROM shopping_lists l
   LEFT JOIN shopping_items i ON i.list_id = l.id
@@ -16,8 +17,21 @@ ORDER BY l.created_at;
 -- name: GetShoppingList :one
 SELECT id,
   name,
+  category,
   created_by
 FROM shopping_lists
+WHERE id = $1
+  AND household_id = $2;
+-- any member renames a list
+-- name: SetShoppingListName :execrows
+UPDATE shopping_lists
+SET name = $3
+WHERE id = $1
+  AND household_id = $2;
+-- any member files a list under another category
+-- name: SetShoppingListCategory :execrows
+UPDATE shopping_lists
+SET category = $3
 WHERE id = $1
   AND household_id = $2;
 -- only the creator deletes a list
@@ -35,11 +49,14 @@ VALUES ($1, $2, $3, $4, $5);
 SELECT i.id,
   i.text,
   i.qty,
+  i.description,
   i.created_by,
   i.claimed_by,
   claimer.username AS claimed_by_name,
+  claimer.avatar_key AS claimed_by_avatar_key,
   i.checked_at,
   checker.username AS checked_by_name,
+  i.expense_id,
   (
     SELECT count(*)
     FROM files f
@@ -50,13 +67,17 @@ FROM shopping_items i
   LEFT JOIN users checker ON checker.id = i.checked_by
 WHERE i.list_id = $1
   AND i.household_id = $2
+  AND i.cleared_at IS NULL
 ORDER BY i.checked_at IS NOT NULL,
   i.checked_at DESC,
   i.created_at;
 -- name: GetShoppingItem :one
 SELECT id,
   text,
-  qty
+  qty,
+  description,
+  created_by,
+  expense_id
 FROM shopping_items
 WHERE id = $1
   AND list_id = $2
@@ -72,7 +93,8 @@ SET claimed_by = CASE
 WHERE id = sqlc.arg(id)
   AND list_id = sqlc.arg(list_id)
   AND household_id = sqlc.arg(household_id);
--- checking an already checked item keeps who bought it and when
+-- checking an already checked item keeps who bought it and when, unchecking drops the
+-- expense, buying it later is a new purchase
 -- name: SetShoppingItemChecked :execrows
 UPDATE shopping_items
 SET checked_at = CASE
@@ -80,6 +102,9 @@ SET checked_at = CASE
   END,
   checked_by = CASE
     WHEN sqlc.arg(checked)::boolean THEN COALESCE(checked_by, sqlc.arg(user_id)::uuid)
+  END,
+  expense_id = CASE
+    WHEN sqlc.arg(checked)::boolean THEN expense_id
   END
 WHERE id = sqlc.arg(id)
   AND list_id = sqlc.arg(list_id)
@@ -91,8 +116,81 @@ WHERE id = $1
   AND list_id = $2
   AND household_id = $3
   AND created_by = $4;
--- name: DeleteCheckedShoppingItems :exec
-DELETE FROM shopping_items
+-- any member describes an item
+-- name: SetShoppingItemDescription :execrows
+UPDATE shopping_items
+SET description = sqlc.arg(description)
+WHERE id = sqlc.arg(id)
+  AND list_id = sqlc.arg(list_id)
+  AND household_id = sqlc.arg(household_id);
+-- removing bought items hides them, they can be bought again
+-- name: HideCheckedShoppingItems :exec
+UPDATE shopping_items
+SET cleared_at = CURRENT_TIMESTAMP,
+  claimed_by = NULL
 WHERE list_id = $1
   AND household_id = $2
-  AND checked_at IS NOT NULL;
+  AND checked_at IS NOT NULL
+  AND cleared_at IS NULL;
+-- buying again brings back the household's latest hidden item of that name with its
+-- description and files, on list_id at the end of it, the old expense stays but this
+-- purchase is a new one and must not show its receipt
+-- name: ReviveShoppingItem :execrows
+UPDATE shopping_items
+SET list_id = sqlc.arg(list_id),
+  qty = sqlc.arg(qty),
+  created_by = sqlc.arg(created_by),
+  created_at = CURRENT_TIMESTAMP,
+  cleared_at = NULL,
+  checked_at = NULL,
+  checked_by = NULL,
+  claimed_by = NULL,
+  expense_id = NULL
+WHERE id = (
+    SELECT h.id
+    FROM shopping_items h
+    WHERE h.household_id = sqlc.arg(household_id)
+      AND h.cleared_at IS NOT NULL
+      AND lower(h.text) = lower(sqlc.arg(text))
+    ORDER BY h.cleared_at DESC
+    LIMIT 1
+  );
+-- what can be bought again on list_id, newest first, each name once with its last
+-- quantity, not what is on the list already
+-- shortcut: capped at 100 rows, a household with more only sees its latest
+-- name: ListBuyAgain :many
+SELECT h.text,
+  h.qty
+FROM (
+    SELECT DISTINCT ON (lower(i.text)) i.text,
+      i.qty,
+      i.cleared_at
+    FROM shopping_items i
+    WHERE i.household_id = sqlc.arg(household_id)
+      AND i.cleared_at IS NOT NULL
+      AND NOT EXISTS (
+        SELECT 1
+        FROM shopping_items o
+        WHERE o.list_id = sqlc.arg(list_id)
+          AND o.cleared_at IS NULL
+          AND lower(o.text) = lower(i.text)
+      )
+    ORDER BY lower(i.text),
+      i.cleared_at DESC
+  ) h
+ORDER BY h.cleared_at DESC
+LIMIT 100;
+-- the bought items of a list a new expense paid for, one item_id or all not linked yet,
+-- anything that is not this household's bought item simply links nothing
+-- name: LinkShoppingItems :exec
+UPDATE shopping_items
+SET expense_id = sqlc.arg(expense_id)
+WHERE household_id = sqlc.arg(household_id)
+  AND list_id = sqlc.arg(list_id)
+  AND checked_at IS NOT NULL
+  AND cleared_at IS NULL
+  AND expense_id IS NULL
+  AND (
+    sqlc.narg(item_id)::uuid IS NULL
+    OR id = sqlc.narg(item_id)::uuid
+  );
