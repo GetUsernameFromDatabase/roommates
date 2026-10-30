@@ -93,6 +93,14 @@ if (!window.avatarCropLoaded) {
         img.src = url;
       });
 
+      // the Cancel button, it clears the file but a reset fires no change
+      form.addEventListener("reset", () => {
+        URL.revokeObjectURL(url);
+        // a picture still loading must not open the box again
+        img.removeAttribute("src");
+        box.hidden = true;
+      });
+
       img.addEventListener("load", () => {
         zoom.value = "1";
         cx = img.naturalWidth / 2;

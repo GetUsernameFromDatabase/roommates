@@ -3,6 +3,7 @@ package pages
 import "roommates/web/components"
 import "roommates/web/components/avatar"
 import "roommates/web/components/button"
+import "roommates/web/components/switch"
 import "roommates/internal/locales"
 import g "roommates/internal/config"
 import "roommates/internal/db/dbqueries"
@@ -40,8 +41,9 @@ templ Settings(pushKey string, nav *HouseholdNav, path string, user dbqueries.Ge
 }
 
 // avatarForm uploads the user's picture, or removes it, errorMessage is why the upload failed
+// while a new picture is chosen the only way back is cancelling it, the current one can't be removed
 templ avatarForm(path string, user dbqueries.GetUserRow, errorMessage string) {
-	<section aria-labelledby="avatar-title" class={ sheetClass + " flex flex-col gap-4" }>
+	<section aria-labelledby="avatar-title" class={ sheetClass + " group/avatar flex flex-col gap-4" }>
 		<div class="flex items-center gap-4">
 			@personAvatar(user.ID, user.AvatarKey, user.Username, avatar.SizeLg, "size-20 shrink-0 text-2xl")
 			<div class="min-w-0">
@@ -60,16 +62,20 @@ templ avatarForm(path string, user dbqueries.GetUserRow, errorMessage string) {
 				accept="image/png,image/jpeg,image/gif,image/webp"
 				required
 				aria-label={ utils.T(ctx, locales.LK_AvatarTitle) }
-				class="min-h-11 w-full min-w-0 text-sm file:mr-3 file:h-11 file:cursor-pointer file:rounded-full file:border-0 file:bg-secondary file:px-4 file:font-medium file:text-secondary-foreground"
+				class="peer min-h-11 w-full min-w-0 text-sm file:mr-3 file:h-11 file:cursor-pointer file:rounded-full file:border-0 file:bg-secondary file:px-4 file:font-medium file:text-secondary-foreground"
 			/>
 			@avatarCrop()
-			@button.Button(button.Props{Type: button.TypeSubmit, Class: "h-11"}) {
+			// the required input is :invalid until a file is chosen
+			@button.Button(button.Props{Type: button.TypeSubmit, Class: "h-11 peer-invalid:hidden"}) {
 				@components.T(locales.LK_AvatarUpload)
+			}
+			@button.Button(button.Props{Type: button.TypeReset, Variant: button.VariantLink, Class: "-mt-1 hidden h-11 px-0 peer-valid:inline-flex"}) {
+				@components.T(locales.LK_AvatarCancel)
 			}
 			@formError(errorMessage)
 		</form>
 		if user.AvatarKey != nil {
-			<form action={ templ.SafeURL(path + g.RouteAvatarDelete) } method="post" class="-mt-1">
+			<form action={ templ.SafeURL(path + g.RouteAvatarDelete) } method="post" class="-mt-1 group-has-[input[type=file]:valid]/avatar:hidden">
 				@button.Button(button.Props{Type: button.TypeSubmit, Variant: button.VariantLink, Class: "h-11 px-0 text-destructive"}) {
 					@components.T(locales.LK_AvatarRemove)
 				}
@@ -116,20 +122,15 @@ templ pushSwitch(pushKey string) {
 	<div
 		data-push
 		data-vapid-key={ pushKey }
-		data-enable={ utils.T(ctx, locales.LK_PushEnable) }
-		data-disable={ utils.T(ctx, locales.LK_PushDisable) }
 		data-denied={ utils.T(ctx, locales.LK_PushDenied) }
 		data-install={ utils.T(ctx, locales.LK_PushInstall) }
-		class="flex flex-col items-stretch gap-2 border-b pb-5 sm:items-start"
+		class="flex flex-col gap-2 border-b pb-5"
 		hidden
 	>
-		@button.Button(button.Props{
-			Type:    button.TypeButton,
-			Variant: button.VariantOutline,
-			Class:   "h-11",
-		}) {
-			@components.T(locales.LK_PushEnable)
-		}
+		<label class="flex min-h-11 cursor-pointer items-center justify-between gap-3 text-sm font-medium">
+			@components.T(locales.LK_PushLabel)
+			@switchcomp.Switch()
+		</label>
 		<p data-push-hint class="text-sm text-muted-foreground" aria-live="polite" hidden></p>
 	</div>
 }

@@ -198,8 +198,7 @@ et:
     cancel-reply: Tühista vastamine
     reply-file: Fail
   push:
-    enable: Lülita sellel seadmel teavitused sisse
-    disable: Lülita sellel seadmel teavitused välja
+    label: Teavitused
     denied: Teavitused on sellele saidile brauseri seadetes keelatud
     install: Teavituste saamiseks lisa rakendus esmalt avaekraanile (Jaga, siis Lisa avaekraanile)
     chat-title: "%s · %s"
@@ -225,6 +224,7 @@ et:
     description: Kaaslased näevad seda vestluses ja inimeste all
     upload: Lae pilt üles
     remove: Eemalda pilt
+    cancel: Loobu
     invalid: Vali pilt (PNG, JPEG, GIF või WebP)
     zoom: Suurendus
     crop-hint: Lohista ringi või kasuta nooleklahve, et valida, mida kaaslased näevad

@@ -198,8 +198,7 @@ en:
     cancel-reply: Cancel reply
     reply-file: File
   push:
-    enable: Turn on notifications on this device
-    disable: Turn off notifications on this device
+    label: Notifications
     denied: Notifications are blocked for this site in the browser settings
     install: To get notifications, first add the app to your home screen (Share, then Add to Home Screen)
     chat-title: "%s · %s"
@@ -225,6 +224,7 @@ en:
     description: Housemates see it in the chat and under people
     upload: Upload picture
     remove: Remove picture
+    cancel: Cancel
     invalid: Choose an image (PNG, JPEG, GIF or WebP)
     zoom: Zoom
     crop-hint: Drag the circle, or use the arrow keys, to choose what housemates see

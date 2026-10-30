@@ -31,7 +31,7 @@
 
   const setup = async (box) => {
     const key = box.dataset.vapidKey;
-    const button = box.querySelector("button");
+    const toggle = box.querySelector('[data-slot="switch"] + input');
     const hint = box.querySelector("[data-push-hint]");
     const show = (text) => {
       hint.textContent = text;
@@ -40,24 +40,32 @@
     if (!key) {
       return;
     }
-    box.hidden = false;
     if (!supported) {
+      box.hidden = false;
       // iOS only has push in an app added to the home screen
-      button.hidden = true;
+      toggle.closest("label").hidden = true;
       show(box.dataset.install);
       return;
     }
     const reg = await ready;
     const render = async () => {
-      const on = (await reg.pushManager.getSubscription()) !== null;
-      button.textContent = on ? box.dataset.disable : box.dataset.enable;
-      button.setAttribute("aria-pressed", String(on));
+      toggle.checked = (await reg.pushManager.getSubscription()) !== null;
+      // switch.js paints from this event
+      toggle.dispatchEvent(new Event("change", { bubbles: true }));
       show(Notification.permission === "denied" ? box.dataset.denied : "");
     };
-    button.addEventListener("click", async () => {
-      button.disabled = true;
+    await render();
+    // only now, a tap before the listener below would do nothing
+    box.hidden = false;
+    // change and not switch-change, a click on the label text only reaches the input
+    toggle.addEventListener("change", async () => {
+      // render's own change comes while it is disabled
+      if (toggle.disabled) {
+        return;
+      }
+      toggle.disabled = true;
       try {
-        if (await reg.pushManager.getSubscription()) {
+        if (!toggle.checked) {
           await unsubscribe();
         } else if ((await Notification.requestPermission()) === "granted") {
           const sub = await reg.pushManager.subscribe({
@@ -70,11 +78,10 @@
           }
         }
       } finally {
-        button.disabled = false;
         await render();
+        toggle.disabled = false;
       }
     });
-    await render();
   };
 
   htmx.onLoad((root) => {

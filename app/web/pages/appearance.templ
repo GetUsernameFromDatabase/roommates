@@ -20,14 +20,24 @@ var modeNames = map[string]locales.LK{
 
 var appearancePreviewScript = templ.NewOnceHandle()
 
-// AppearanceForm picks the theme and mode of this device, next is where to go after saving
+// AppearanceForm picks the theme and mode of this device, a pick is saved right away,
+// without JS Save does it and next is where to go after
 templ AppearanceForm(next string) {
 	@appearancePreviewScript.Once() {
 		<script src="/assets/appearance-preview.js"></script>
 	}
 	{{ a := utils.GetAppearance(ctx) }}
-	// autocomplete off: a reload must not keep a picked but unsaved theme the page no longer shows
-	<form action={ g.RouteAppearance } method="post" autocomplete="off" data-appearance class="flex flex-col gap-5">
+	// autocomplete off: after a reload the radios show what the server has, not what the browser remembers
+	<form
+		action={ g.RouteAppearance }
+		method="post"
+		hx-post={ g.RouteAppearance }
+		hx-trigger="change"
+		hx-swap="none"
+		autocomplete="off"
+		data-appearance
+		class="flex flex-col gap-5"
+	>
 		<input type="hidden" name={ g.QueryNext } value={ next }/>
 		@field.Set() {
 			@field.Legend() {
@@ -52,9 +62,11 @@ templ AppearanceForm(next string) {
 				}
 			</div>
 		}
-		@button.Button(button.Props{Type: button.TypeSubmit, Variant: button.VariantSecondary, Class: "h-11 self-end"}) {
-			@components.T(locales.LK_CommonSave)
-		}
+		<noscript class="self-end">
+			@button.Button(button.Props{Type: button.TypeSubmit, Variant: button.VariantSecondary, Class: "h-11"}) {
+				@components.T(locales.LK_CommonSave)
+			}
+		</noscript>
 	</form>
 }
 
