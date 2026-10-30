@@ -6,6 +6,7 @@ import (
 	"roommates/internal/locales"
 	"roommates/internal/services"
 	"roommates/internal/utils"
+	"slices"
 	"time"
 
 	"github.com/a-h/templ"
@@ -75,6 +76,16 @@ func formatSignedMoney(ctx context.Context, cents int64, code string) string {
 		return "−" + utils.FormatMoney(ctx, -cents, code)
 	}
 	return "+" + utils.FormatMoney(ctx, cents, code)
+}
+
+// yoursFirst puts the debts the actor is part of before the others', each in their order
+func yoursFirst(debts []services.Debt, actor services.Membership) []services.Debt {
+	others := func(d services.Debt) bool { return d.From != actor.UserID && d.To != actor.UserID }
+	sorted := slices.Clone(debts)
+	slices.SortStableFunc(sorted, func(a, b services.Debt) int {
+		return utils.IfElse(others(a), 1, 0) - utils.IfElse(others(b), 1, 0)
+	})
+	return sorted
 }
 
 // itemClass colours a breakdown amount green when it is in the actor's favour and red

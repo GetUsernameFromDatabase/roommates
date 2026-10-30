@@ -252,7 +252,9 @@
   .note-fold,
   .note-private,
   .bag-rail,
-  .shopping-pad {
+  .shopping-pad,
+  .till-slip,
+  .till-roll {
     --door-frame: color-mix(in oklab, var(--primary) 55%, var(--foreground));
   }
   .front-door-wall {
@@ -761,6 +763,80 @@
     .item-strike {
       transition: none;
     }
+  }
+}
+
+/* the money on paper from the till: a slip torn off for each debt, the expenses on one roll
+ * feeding out of its slot so the newest line is nearest it, states in rubber stamp ink
+ */
+@layer components {
+  /* the shadow is on the wrapper, the paper's mask would clip its own, it follows the teeth
+   * and is the paper's edge on the plain theme, where the card is the wall's white
+   */
+  .till-slip,
+  .till-roll {
+    min-width: 0;
+    filter: drop-shadow(0 0 0.5px var(--door-frame)) drop-shadow(0 2px 0 var(--door-frame));
+  }
+  .till-roll::before {
+    content: "";
+    display: block;
+    height: 0.5rem;
+    margin-inline: -0.25rem;
+    border-radius: 9999px;
+    background: var(--door-frame);
+  }
+  .till-paper {
+    --tooth: 0.75rem;
+    padding: 1rem 1rem calc(1rem + var(--tooth) / 2);
+    background: var(--card);
+    color: var(--card-foreground);
+    /* the mask would cut off a long name instead of letting it spill */
+    overflow-wrap: anywhere;
+    /* a row of teeth along the bottom and everything above them */
+    mask:
+      conic-gradient(from -45deg at 50% 100%, #000 90deg, #0000 0) 0 100% / var(--tooth) calc(var(--tooth) / 2) repeat-x,
+      linear-gradient(#000 0 0) 0 0 / 100% calc(100% - var(--tooth) / 2 + 0.5px) no-repeat;
+  }
+  /* a printed line, the dots lead the eye from the words to the amount */
+  .till-line {
+    display: flex;
+    align-items: baseline;
+    gap: 0.5rem;
+  }
+  .till-leader {
+    flex: 1;
+    min-width: 1rem;
+    border-bottom: 2px dotted var(--input);
+  }
+  /* where the stub tears off, across the whole slip */
+  .till-perforation {
+    margin: 0.875rem -1rem 0;
+    padding: 0.875rem 1rem 0;
+    border-top: 2px dashed var(--input);
+  }
+  .stamp {
+    display: inline-block;
+    padding: 0.125rem 0.5rem;
+    border: 2px solid currentColor;
+    border-radius: 0.25rem;
+    /* darkened toward the text, the plain theme's --claim is almost the card's white */
+    color: color-mix(in oklab, var(--claim) 45%, var(--foreground));
+    font-family: var(--theme-font-heading);
+    font-size: 0.875rem;
+    font-weight: 700;
+    line-height: 1.2;
+    text-align: center;
+    overflow-wrap: anywhere;
+    rotate: -3deg;
+  }
+  .stamp-paid {
+    color: var(--favour);
+  }
+  .stamp-settled {
+    padding: 0.5rem 1rem;
+    color: var(--favour);
+    font-size: 1.5rem;
   }
 }
 
