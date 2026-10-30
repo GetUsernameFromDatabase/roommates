@@ -289,16 +289,155 @@ func (s *DefaultService) DeleteExpense(ctx context.Context, actor Membership, ex
 	}))
 }
 
-// SetExpenseSharePaid returns [g.ErrorNotFound] unless the actor paid the expense
-// and userID is still a member
+// SetExpenseSharePaid lets the actor who paid the expense mark the share of userID, who must
+// still be a member, paid or not, this spends or gives back what userID has paid them,
+// the rest of the share counts as paid outside the app
+//
+// the debtor marks their own share paid only when confirmed payments cover all of it,
+// anything else is [g.ErrorNotFound]
 func (s *DefaultService) SetExpenseSharePaid(ctx context.Context, actor Membership, expenseID, userID pgtype.UUID, paid bool) error {
-	return rowsAffected(s.db.SetExpenseSharePaid(ctx, dbqueries.SetExpenseSharePaidParams{
-		Paid:        paid,
+	return s.inTx(ctx, func(q *dbqueries.Queries) error {
+		sh, err := q.GetShareToMark(ctx, dbqueries.GetShareToMarkParams{
+			ExpenseID:   expenseID,
+			UserID:      userID,
+			HouseholdID: actor.HouseholdID,
+		})
+		if err != nil {
+			return noRowsAs(err, g.ErrorNotFound)
+		}
+		debtor := userID == actor.UserID && sh.PayerID != actor.UserID
+		if (sh.PayerID != actor.UserID && !debtor) || (debtor && !paid) {
+			return g.ErrorNotFound
+		}
+		if paid {
+			if sh.PaidAt.Valid {
+				return nil
+			}
+			uncovered, err := payShare(ctx, q, actor.HouseholdID, expenseID, userID, sh.PayerID, sh.AmountCents)
+			if err != nil {
+				return err
+			}
+			if debtor && uncovered > 0 {
+				return g.ErrorNotFound
+			}
+			return nil
+		}
+		if err := rowsAffected(q.SetExpenseSharePaid(ctx, dbqueries.SetExpenseSharePaidParams{
+			Paid:        false,
+			ExpenseID:   expenseID,
+			UserID:      userID,
+			HouseholdID: actor.HouseholdID,
+			PayerID:     sh.PayerID,
+		})); err != nil {
+			return err
+		}
+		return q.DeleteSettlementShares(ctx, dbqueries.DeleteSettlementSharesParams{ExpenseID: expenseID, UserID: userID})
+	})
+}
+
+// payShare marks an unpaid share of cents paid and spends userID's confirmed payments to
+// payerID on it, oldest first, it returns how much of the share they did not cover
+func payShare(ctx context.Context, q *dbqueries.Queries, householdID, expenseID, userID, payerID pgtype.UUID, cents int64) (int64, error) {
+	if err := q.LockSettlementCredit(ctx, dbqueries.LockSettlementCreditParams{
+		HouseholdID: householdID,
+		FromUser:    userID,
+		ToUser:      payerID,
+	}); err != nil {
+		return cents, err
+	}
+	credits, err := q.ListSettlementCredit(ctx, dbqueries.ListSettlementCreditParams{
+		HouseholdID: householdID,
+		FromUser:    userID,
+		ToUser:      payerID,
+	})
+	if err != nil {
+		return cents, err
+	}
+	for _, c := range credits {
+		spend := min(cents, c.LeftCents)
+		if spend <= 0 {
+			continue
+		}
+		if err := q.InsertSettlementShare(ctx, dbqueries.InsertSettlementShareParams{
+			SettlementID: c.ID,
+			ExpenseID:    expenseID,
+			UserID:       userID,
+			Cents:        spend,
+		}); err != nil {
+			return cents, err
+		}
+		cents -= spend
+	}
+	return cents, rowsAffected(q.SetExpenseSharePaid(ctx, dbqueries.SetExpenseSharePaidParams{
+		Paid:        true,
 		ExpenseID:   expenseID,
 		UserID:      userID,
-		HouseholdID: actor.HouseholdID,
-		PayerID:     actor.UserID,
+		HouseholdID: householdID,
+		PayerID:     payerID,
 	}))
+}
+
+// closePaidDebt marks the shares paid once from no longer owes to anything, after a payment
+// from from to to: when the two are exactly even all shares both ways, when from overpaid
+// only those of from's shares the payments cover, marking more would change the balance
+func closePaidDebt(ctx context.Context, q *dbqueries.Queries, householdID, from, to pgtype.UUID) error {
+	rows, err := q.ListDebtItems(ctx, dbqueries.ListDebtItemsParams{HouseholdID: householdID, UserID: from})
+	if err != nil {
+		return err
+	}
+	var net, credit int64
+	var owed, owing []dbqueries.ListDebtItemsRow
+	for _, r := range rows {
+		switch {
+		case r.FromUser == from && r.ToUser == to:
+			net += r.AmountCents
+			if r.ExpenseID.Valid {
+				owed = append(owed, r)
+			}
+		case r.FromUser == to && r.ToUser == from:
+			net -= r.AmountCents
+			if r.ExpenseID.Valid {
+				owing = append(owing, r)
+			} else {
+				credit += r.AmountCents
+			}
+		}
+	}
+	if net > 0 {
+		return nil
+	}
+	if net == 0 {
+		owed = append(owed, owing...)
+	} else {
+		covered := 0
+		for covered < len(owed) && owed[covered].AmountCents <= credit {
+			credit -= owed[covered].AmountCents
+			covered++
+		}
+		owed = owed[:covered]
+	}
+	// all shares before any settlement, marking one locks them in that order too,
+	// the list was read without a lock, someone can have marked a share since
+	unpaid := make([]dbqueries.ListDebtItemsRow, 0, len(owed))
+	for _, r := range owed {
+		sh, err := q.GetShareToMark(ctx, dbqueries.GetShareToMarkParams{
+			ExpenseID:   r.ExpenseID,
+			UserID:      r.FromUser,
+			HouseholdID: householdID,
+		})
+		if err != nil {
+			return noRowsAs(err, g.ErrorNotFound)
+		}
+		if !sh.PaidAt.Valid {
+			unpaid = append(unpaid, r)
+		}
+	}
+	for _, r := range unpaid {
+		if _, err := payShare(ctx, q, householdID, r.ExpenseID, r.FromUser, r.ToUser, r.AmountCents); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // -----------------------------------------------------------------------------
@@ -318,6 +457,22 @@ type Debt struct {
 type DebtItem struct {
 	Row   dbqueries.ListDebtItemsRow
 	Cents int64
+}
+
+// Credit is what is left of the payments that lower d, money confirmed but not yet spent on a share
+func (d Debt) Credit() int64 {
+	var credit int64
+	for _, it := range d.Items {
+		if !it.Row.ExpenseID.Valid && it.Cents < 0 {
+			credit -= it.Cents
+		}
+	}
+	return credit
+}
+
+// Covered says whether it is a share of d the [Debt.Credit] pays for in full
+func (d Debt) Covered(it DebtItem) bool {
+	return it.Row.ExpenseID.Valid && it.Cents > 0 && it.Cents <= d.Credit()
 }
 
 // flipped is d the other way round
@@ -433,13 +588,20 @@ func (s *DefaultService) ListPendingSettlements(ctx context.Context, actor Membe
 	})
 }
 
-// ConfirmSettlement returns [g.ErrorNotFound] unless the actor receives the pending settlement
+// ConfirmSettlement returns [g.ErrorNotFound] unless the actor receives the pending settlement,
+// a payment that clears the debt marks its shares paid, see [closePaidDebt]
 func (s *DefaultService) ConfirmSettlement(ctx context.Context, actor Membership, settlementID pgtype.UUID) error {
-	return rowsAffected(s.db.ConfirmSettlement(ctx, dbqueries.ConfirmSettlementParams{
-		ID:          settlementID,
-		HouseholdID: actor.HouseholdID,
-		ToUser:      actor.UserID,
-	}))
+	return s.inTx(ctx, func(q *dbqueries.Queries) error {
+		st, err := q.ConfirmSettlement(ctx, dbqueries.ConfirmSettlementParams{
+			ID:          settlementID,
+			HouseholdID: actor.HouseholdID,
+			ToUser:      actor.UserID,
+		})
+		if err != nil {
+			return noRowsAs(err, g.ErrorNotFound)
+		}
+		return closePaidDebt(ctx, q, actor.HouseholdID, st.FromUser, st.ToUser)
+	})
 }
 
 // DeleteSettlement lets the sender cancel or the receiver reject a pending settlement

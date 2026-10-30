@@ -9,6 +9,7 @@ import (
 	g "roommates/internal/config"
 	"roommates/internal/db/dbqueries"
 	"roommates/internal/images"
+	"slices"
 	"strings"
 	"time"
 	"unicode"
@@ -19,6 +20,8 @@ import (
 const (
 	MaxFileSize       = 25 << 20
 	MaxFileNameLength = 200
+	// MaxReferablePicks is how many files the chat's picker shows, typing narrows them down
+	MaxReferablePicks = 20
 	// longest side of a thumbnail, sharp at 48px on a 3x screen
 	thumbnailSide = 256
 )
@@ -29,6 +32,24 @@ var ImageMimes = map[string]bool{
 	"image/jpeg": true,
 	"image/gif":  true,
 	"image/webp": true,
+}
+
+// what [FileFilter] can narrow files down to, the place "none" is not attached to anything
+var (
+	FileKinds  = []string{"image", "pdf", "other"}
+	FilePlaces = []string{"note", "item", "expense", "message", "none"}
+)
+
+// FileFilter narrows a file list, empty fields do not, Query is a part of the name in any case
+type FileFilter struct {
+	Query string
+	Kind  string
+	Place string
+}
+
+// Active says whether f narrows anything down
+func (f FileFilter) Active() bool {
+	return strings.TrimSpace(f.Query) != "" || slices.Contains(FileKinds, f.Kind) || slices.Contains(FilePlaces, f.Place)
 }
 
 // FileTarget is what an upload attaches to: a note, an item of a list, an expense,
@@ -170,12 +191,36 @@ func (s *DefaultService) UploadFile(ctx context.Context, actor Membership, t Fil
 	return fileID, err
 }
 
-// ListFiles returns the household's files except those on others' private notes
-func (s *DefaultService) ListFiles(ctx context.Context, actor Membership) ([]dbqueries.ListFilesRow, error) {
+// ListFiles returns the household's files that match filter, except those on others' private notes
+func (s *DefaultService) ListFiles(ctx context.Context, actor Membership, filter FileFilter) ([]dbqueries.ListFilesRow, error) {
+	if !slices.Contains(FileKinds, filter.Kind) {
+		filter.Kind = ""
+	}
+	if !slices.Contains(FilePlaces, filter.Place) {
+		filter.Place = ""
+	}
 	return s.db.ListFiles(ctx, dbqueries.ListFilesParams{
 		HouseholdID: actor.HouseholdID,
 		UserID:      actor.UserID,
+		SharedOnly:  false,
+		Q:           strings.TrimSpace(filter.Query),
+		Kind:        filter.Kind,
+		Place:       filter.Place,
 	})
+}
+
+// ListReferableFiles returns up to [MaxReferablePicks] files whose name has q that a chat
+// message can refer to: all but those on private notes, the others could not open them
+func (s *DefaultService) ListReferableFiles(ctx context.Context, actor Membership, q string) ([]dbqueries.ListFilesRow, error) {
+	rows, err := s.db.ListFiles(ctx, dbqueries.ListFilesParams{
+		HouseholdID: actor.HouseholdID,
+		UserID:      actor.UserID,
+		SharedOnly:  true,
+		Q:           strings.TrimSpace(q),
+		Kind:        "",
+		Place:       "",
+	})
+	return rows[:min(len(rows), MaxReferablePicks)], err
 }
 
 // AttachedFiles returns the files of a note, item or expense the actor has already loaded

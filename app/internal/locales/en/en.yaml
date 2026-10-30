@@ -196,7 +196,25 @@ en:
     all: All files
     on-expense: "On expense: %s"
     on-message: In the chat
+    search: Search by name
+    no-match: No files match
+    type: File type
+    any-type: All types
+    type-image: Images
+    type-pdf: PDFs
+    type-other: Other files
+    place: Attached to
+    any-place: Anywhere
+    place-note: Notes
+    place-item: Shopping items
+    place-expense: Expenses
+    place-message: Chat
+    place-none: Not attached
   chat:
+    reference: Add an existing file
+    reference-search: Search files
+    reference-none: No files found
+    file-gone: File no longer available
     files-too-large: Files together can be at most %d MB
     title: Chat
     message: Message

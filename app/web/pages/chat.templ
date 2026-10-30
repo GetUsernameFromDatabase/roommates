@@ -4,9 +4,11 @@ import "roommates/web/components"
 import "roommates/web/components/avatar"
 import "roommates/web/components/bubble"
 import "roommates/web/components/button"
+import "roommates/web/components/input"
 import "roommates/web/components/message"
 import "roommates/web/components/textarea"
 import "roommates/web/components/tooltip"
+import "roommates/internal/db/dbqueries"
 import "roommates/internal/events"
 import "roommates/internal/services"
 import "roommates/internal/locales"
@@ -83,6 +85,8 @@ templ ChatPage(actor services.Membership, c services.Chat, older bool, reply *se
 				// one row: attach, the message growing with its text, send; on touch screens attach sends
 				// the files on their own as soon as they are picked, with a mouse they show here first (chat-keyboard.js)
 				<div data-chat-previews data-remove={ utils.T(ctx, locales.LK_CommonDelete) } class="flex flex-wrap gap-3 pt-2" hidden></div>
+				// the existing files picked in [chatFilePicker], with their hidden file_ref inputs (chat-keyboard.js)
+				<div data-chat-refs data-remove={ utils.T(ctx, locales.LK_CommonDelete) } class="flex flex-wrap gap-3 pt-2 empty:hidden"></div>
 				<div class="flex items-end gap-2">
 					<label
 						title={ utils.T(ctx, locales.LK_ChatAttach) }
@@ -94,6 +98,7 @@ templ ChatPage(actor services.Membership, c services.Chat, older bool, reply *se
 							<path d="m16 6-8.414 8.586a2 2 0 0 0 2.829 2.829l8.414-8.586a4 4 0 1 0-5.657-5.657l-8.379 8.551a6 6 0 1 0 8.485 8.485l8.379-8.551"></path>
 						</svg>
 					</label>
+					@chatFilePicker(actor)
 					@textarea.Textarea(textarea.Props{
 						Name:        "body",
 						Value:       draft,
@@ -113,6 +118,72 @@ templ ChatPage(actor services.Membership, c services.Chat, older bool, reply *se
 			</form>
 		</section>
 	}
+}
+
+// chatFilePicker lets the message refer to files that already exist, the list is fetched when
+// it opens; a native disclosure, the composer's swap would leave a portaled popover behind
+templ chatFilePicker(actor services.Membership) {
+	{{
+	picks := templ.Attributes{
+		"hx-get":    string(householdURL(actor.HouseholdID, "chat", "files")),
+		"hx-target": "#chat-file-picks",
+		"hx-select": "#chat-file-picks",
+		"hx-swap":   "outerHTML",
+	}
+	}}
+	<details data-menu class="relative shrink-0">
+		<summary
+			aria-label={ utils.T(ctx, locales.LK_ChatReference) }
+			title={ utils.T(ctx, locales.LK_ChatReference) }
+			hx-trigger="click"
+			{ picks... }
+			class="flex size-11 cursor-pointer list-none items-center justify-center rounded-full bg-secondary text-secondary-foreground outline-none hover:bg-secondary/80 focus-visible:ring-3 focus-visible:ring-ring/50 [&::-webkit-details-marker]:hidden"
+		>
+			// lucide file-search
+			<svg class="size-5" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+				<path d="M14 2v4a2 2 0 0 0 2 2h4"></path>
+				<path d="M4.268 21a2 2 0 0 0 1.727 1H18a2 2 0 0 0 2-2V7l-5-5H6a2 2 0 0 0-2 2v3"></path>
+				<path d="m9 18-1.5-1.5"></path>
+				<circle cx="5" cy="14" r="3"></circle>
+			</svg>
+		</summary>
+		<div class="absolute bottom-full left-0 z-20 mb-2 w-72 max-w-[calc(100vw-7rem)] space-y-2 rounded-xl bg-popover p-2 text-popover-foreground shadow-md ring-1 ring-foreground/10">
+			@input.Input(input.Props{
+				Name:        "q",
+				Type:        "search",
+				Placeholder: utils.T(ctx, locales.LK_ChatReferenceSearch),
+				Class:       "h-11",
+				Attributes: utils.MergeAttributes(picks, templ.Attributes{
+					"hx-trigger":           "input delay:200ms",
+					"aria-label":           utils.T(ctx, locales.LK_ChatReferenceSearch),
+					"data-chat-ref-search": true,
+				}),
+			})
+			<ul id="chat-file-picks"></ul>
+		</div>
+	</details>
+}
+
+// ChatFilePicks is the list of [chatFilePicker], a pick is added to the message by chat-keyboard.js
+templ ChatFilePicks(actor services.Membership, files []dbqueries.ListFilesRow) {
+	<ul id="chat-file-picks" class="max-h-60 overflow-y-auto">
+		if len(files) == 0 {
+			<li class="p-2 text-sm text-muted-foreground">
+				@components.T(locales.LK_ChatReferenceNone)
+			</li>
+		}
+		for _, f := range files {
+			<li>
+				<button type="button" data-chat-ref={ f.ID.String() } data-name={ f.Name } class="flex min-h-11 w-full items-center gap-2 rounded-lg px-2 text-left text-sm outline-none hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/50">
+					if f.HasThumb {
+						<img src={ string(householdURL(actor.HouseholdID, "files", f.ID.String())) + "/thumb" } alt="" loading="lazy" class="size-8 shrink-0 rounded object-cover"/>
+					}
+					<span class="min-w-0 flex-1 truncate">{ f.Name }</span>
+					<span class="shrink-0 text-xs text-muted-foreground">{ formatSize(f.SizeBytes) }</span>
+				</button>
+			</li>
+		}
+	</ul>
 }
 
 // chatMessages scrolls by itself, column-reverse keeps it at the newest message
@@ -177,6 +248,11 @@ templ chatMessages(actor services.Membership, c services.Chat, older bool) {
 							if m.Body != "" {
 								@bubble.Content(bubble.ContentProps{Class: "whitespace-pre-wrap text-base", Attributes: templ.Attributes{"data-chat-body": true}}) {
 									{ m.Body }
+								}
+							} else if len(m.Files) == 0 {
+								// its files were deleted, or turned private since
+								@bubble.Content(bubble.ContentProps{Class: "text-sm text-muted-foreground"}) {
+									@components.T(locales.LK_ChatFileGone)
 								}
 							}
 							// files sent together stay together: the images in one bubble, the other files in another

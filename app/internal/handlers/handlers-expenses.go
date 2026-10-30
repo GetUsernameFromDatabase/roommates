@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"cmp"
 	"errors"
 	"maps"
 	"net/http"
@@ -208,7 +209,8 @@ func (h *DefaultHandler) DeleteExpense(ctx *gin.Context) {
 	Redirect(ctx, expensesPath(actor.HouseholdID))
 }
 
-// SetExpenseSharePaid takes the wanted state, not a toggle, so a stale page cannot undo it
+// SetExpenseSharePaid takes the wanted state, not a toggle, so a stale page cannot undo it,
+// it goes back to the form's "next" page, by default the expense
 func (h *DefaultHandler) SetExpenseSharePaid(ctx *gin.Context) {
 	expenseID, errExpense := utils.ParseUUID(ctx.Param(g.ParamExpenseID))
 	userID, errUser := utils.ParseUUID(ctx.Param(g.ParamUserID))
@@ -221,7 +223,7 @@ func (h *DefaultHandler) SetExpenseSharePaid(ctx *gin.Context) {
 		pageError(ctx, err)
 		return
 	}
-	Redirect(ctx, expensePath(actor.HouseholdID, expenseID))
+	Redirect(ctx, safeNextPath(cmp.Or(ctx.PostForm(g.QueryNext), expensePath(actor.HouseholdID, expenseID))))
 }
 
 // -----------------------------------------------------------------------------

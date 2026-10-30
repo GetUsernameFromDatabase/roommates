@@ -56,7 +56,7 @@ func TestHouseholdExpensesSettledStamp(t *testing.T) {
 	you, ben := pgtype.UUID{Bytes: [16]byte{1}, Valid: true}, pgtype.UUID{Bytes: [16]byte{2}, Valid: true}
 	actor := services.Membership{HouseholdID: pgtype.UUID{}, UserID: you, Role: "", Currency: "EUR", UnreadMessages: 0}
 	expenses := []dbqueries.ListExpensesRow{{ID: pgtype.UUID{}, Category: "other", Title: "Bread", AmountCents: 1,
-		IncurredOn: pgtype.Date{}, PayerID: ben, PayerName: "Ben"}}
+		IncurredOn: pgtype.Date{}, PayerID: ben, PayerName: "Ben", FullyPaid: false}}
 	debts := []services.Debt{{From: you, FromName: "", To: ben, ToName: "Ben", Cents: 1, Items: nil}}
 	pending := []dbqueries.ListPendingSettlementsRow{{ID: pgtype.UUID{}, FromUser: you, FromName: "", ToUser: ben, ToName: "Ben",
 		AmountCents: 1, CreatedAt: pgtype.Timestamptz{}}}

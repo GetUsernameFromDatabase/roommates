@@ -55,22 +55,39 @@ func (s *DefaultService) GetReplyPreview(ctx context.Context, actor Membership, 
 	return p, noRowsAs(err, g.ErrorNotFound)
 }
 
-// PostMessage sends body with up to [MaxMessageFiles] files as an answer to replyTo when it is valid,
-// [g.ErrorInvalidInput] when body and files are both missing, there are too many files
-// or body is longer than [MaxMessageLength],
+// PostMessage sends body with up to [MaxMessageFiles] new files and references to existing ones
+// as an answer to replyTo when it is valid,
+// [g.ErrorInvalidInput] when body, files and refs are all missing, there are too many of them,
+// body is longer than [MaxMessageLength] or a reference is to a file the household cannot see,
 // [g.ErrorNotFound] when replyTo is not (or no longer) in the actor's household,
 // file errors are those of [DefaultService.UploadFile]
-func (s *DefaultService) PostMessage(ctx context.Context, actor Membership, body string, replyTo pgtype.UUID, files []Upload) error {
+func (s *DefaultService) PostMessage(ctx context.Context, actor Membership, body string, replyTo pgtype.UUID, files []Upload, refs []pgtype.UUID) error {
 	// forms send CRLF but maxlength counts a line break once
 	body = strings.TrimSpace(strings.ReplaceAll(body, "\r\n", "\n"))
-	if (body == "" && len(files) == 0) || len(files) > MaxMessageFiles || utf8.RuneCountInString(body) > MaxMessageLength {
+	if (body == "" && len(files)+len(refs) == 0) || len(files)+len(refs) > MaxMessageFiles || utf8.RuneCountInString(body) > MaxMessageLength {
 		return g.ErrorInvalidInput
 	}
-	messageID, err := s.db.InsertMessage(ctx, dbqueries.InsertMessageParams{
-		HouseholdID: actor.HouseholdID,
-		AuthorID:    actor.UserID,
-		Body:        body,
-		ReplyToID:   replyTo,
+	var messageID pgtype.UUID
+	err := s.inTx(ctx, func(q *dbqueries.Queries) error {
+		var err error
+		messageID, err = q.InsertMessage(ctx, dbqueries.InsertMessageParams{
+			HouseholdID: actor.HouseholdID,
+			AuthorID:    actor.UserID,
+			Body:        body,
+			ReplyToID:   replyTo,
+		})
+		if err != nil || len(refs) == 0 {
+			return err
+		}
+		n, err := q.InsertMessageFileRefs(ctx, dbqueries.InsertMessageFileRefsParams{
+			MessageID:   messageID,
+			FileIds:     refs,
+			HouseholdID: actor.HouseholdID,
+		})
+		if err == nil && n != int64(len(refs)) {
+			return g.ErrorInvalidInput
+		}
+		return err
 	})
 	if err != nil {
 		var pgErr *pgconn.PgError
@@ -144,6 +161,7 @@ func (s *DefaultService) ListChat(ctx context.Context, actor Membership, before 
 	files, err := s.db.ListMessageFiles(ctx, dbqueries.ListMessageFilesParams{
 		HouseholdID: actor.HouseholdID,
 		MessageIds:  ids,
+		UserID:      actor.UserID,
 	})
 	if err != nil {
 		return Chat{}, err

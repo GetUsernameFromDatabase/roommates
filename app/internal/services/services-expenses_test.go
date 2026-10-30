@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"strings"
 	"testing"
+	"time"
 
 	g "roommates/internal/config"
 	"roommates/internal/db/dbqueries"
@@ -248,7 +249,7 @@ func TestExpenses(t *testing.T) {
 	if err := s.DeleteExpense(ctx, ownerM, pizzaID); err != nil {
 		t.Fatal(err)
 	}
-	files, _ := s.ListFiles(ctx, ownerM)
+	files, _ := s.ListFiles(ctx, ownerM, FileFilter{})
 	if slices.ContainsFunc(files, func(f dbqueries.ListFilesRow) bool { return f.ExpenseID == pizzaID }) {
 		t.Error("file of a deleted expense is still listed")
 	}
@@ -280,4 +281,228 @@ func TestExpenses(t *testing.T) {
 	wantErr(t, "unpay former member's share", s.SetExpenseSharePaid(ctx, ownerM, expenseID, memberM.UserID, false), g.ErrorNotFound)
 	wantErr(t, "delete expense former member shared", s.DeleteExpense(ctx, ownerM, expenseID), g.ErrorNotFound)
 	wantDebt("after leaving", 0)
+}
+
+// settlementHelpers are the steps of the settlement tests between the owner and the member
+func settlementHelpers(t *testing.T, s *DefaultService, ownerM, memberM Membership) (
+	expense func(payer, debtor Membership, amount string) pgtype.UUID,
+	pay func(from, to Membership, amount string),
+	wantDebt func(step string, cents int64),
+	wantPaid func(step string, id pgtype.UUID, want bool),
+) {
+	t.Helper()
+	ctx := context.Background()
+
+	// payer paid an expense that is all on debtor
+	expense = func(payer, debtor Membership, amount string) pgtype.UUID {
+		t.Helper()
+		id, err := s.CreateExpense(ctx, payer, ExpenseInput{
+			Title:      "Bill",
+			Amount:     amount,
+			Category:   "other",
+			IncurredOn: "2026-10-01",
+			Custom:     true,
+			Members:    nil,
+			Shares:     map[pgtype.UUID]string{debtor.UserID: amount},
+			ListID:     pgtype.UUID{},
+			ItemID:     pgtype.UUID{},
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		return id
+	}
+	pay = func(from, to Membership, amount string) {
+		t.Helper()
+		if err := s.CreateSettlement(ctx, from, to.UserID, amount); err != nil {
+			t.Fatal(err)
+		}
+		pending, err := s.ListPendingSettlements(ctx, to)
+		if err != nil || len(pending) != 1 {
+			t.Fatalf("pending = %+v, %v", pending, err)
+		}
+		if err := s.ConfirmSettlement(ctx, to, pending[0].ID); err != nil {
+			t.Fatal(err)
+		}
+	}
+	// positive when the member owes the owner
+	wantDebt = func(step string, cents int64) {
+		t.Helper()
+		debts, err := s.Debts(ctx, memberM)
+		if err != nil {
+			t.Fatal(err)
+		}
+		var got int64
+		for _, d := range debts {
+			got = d.Cents
+			if d.From == ownerM.UserID {
+				got = -d.Cents
+			}
+		}
+		if len(debts) > 1 || got != cents {
+			t.Fatalf("%s: debts = %+v, want %d", step, debts, cents)
+		}
+	}
+	wantPaid = func(step string, id pgtype.UUID, want bool) {
+		t.Helper()
+		e, err := s.GetExpense(ctx, ownerM, id)
+		if err != nil {
+			t.Fatal(err)
+		}
+		for _, sh := range e.Shares {
+			if sh.AmountCents > 0 && sh.PaidAt.Valid != want {
+				t.Fatalf("%s: share = %+v, want paid %v", step, sh, want)
+			}
+		}
+	}
+	return expense, pay, wantDebt, wantPaid
+}
+
+// a payment can close a debt while one of its shares is being marked: the confirm waits
+// for the mark and leaves that share alone, and the two never wait for each other
+func TestConfirmWaitsForMarkInFlight(t *testing.T) {
+	s := newTestService(t)
+	ctx := context.Background()
+	ownerM, memberM, _ := newTestHousehold(t, s)
+	expense, pay, wantDebt, wantPaid := settlementHelpers(t, s, ownerM, memberM)
+
+	older, newer := expense(ownerM, memberM, "15"), expense(ownerM, memberM, "15")
+	pay(memberM, ownerM, "20")
+	if err := s.CreateSettlement(ctx, memberM, ownerM.UserID, "25"); err != nil {
+		t.Fatal(err)
+	}
+	pending, err := s.ListPendingSettlements(ctx, ownerM)
+	if err != nil || len(pending) != 1 {
+		t.Fatalf("pending = %+v, %v", pending, err)
+	}
+
+	// the mark in flight, as far as SetExpenseSharePaid gets before it spends anything
+	tx, err := s.pool.Begin(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer tx.Rollback(ctx) //nolint:errcheck // no-op after commit
+	q := s.db.WithTx(tx)
+	sh, err := q.GetShareToMark(ctx, dbqueries.GetShareToMarkParams{
+		ExpenseID:   newer,
+		UserID:      memberM.UserID,
+		HouseholdID: ownerM.HouseholdID,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	var markPID int32
+	if err := tx.QueryRow(ctx, "SELECT pg_backend_pid()").Scan(&markPID); err != nil {
+		t.Fatal(err)
+	}
+
+	confirmed := make(chan error, 1)
+	go func() { confirmed <- s.ConfirmSettlement(ctx, ownerM, pending[0].ID) }()
+
+	// the mark goes on only once the confirm is stuck behind it
+	deadline := time.Now().Add(5 * time.Second)
+	for blocked := false; !blocked; time.Sleep(10 * time.Millisecond) {
+		if time.Now().After(deadline) {
+			t.Fatal("the confirm never waited for the mark")
+		}
+		if err := s.pool.QueryRow(ctx,
+			"SELECT EXISTS (SELECT 1 FROM pg_stat_activity WHERE $1::int = ANY(pg_blocking_pids(pid)))", markPID,
+		).Scan(&blocked); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if _, err := payShare(ctx, q, ownerM.HouseholdID, newer, memberM.UserID, ownerM.UserID, sh.AmountCents); err != nil {
+		t.Fatal(err)
+	}
+	if err := tx.Commit(ctx); err != nil {
+		t.Fatal(err)
+	}
+	if err := <-confirmed; err != nil {
+		t.Fatal(err)
+	}
+
+	wantPaid("the share marked in flight", newer, true)
+	wantPaid("the share the confirm closed", older, true)
+	// 45 paid against 30 of shares, a second spend on the marked share would leave 0
+	wantDebt("after both", -1500)
+}
+
+func TestSettlementCoversShares(t *testing.T) {
+	s := newTestService(t)
+	ctx := context.Background()
+	ownerM, memberM, strangerM := newTestHousehold(t, s)
+	expense, pay, wantDebt, wantPaid := settlementHelpers(t, s, ownerM, memberM)
+
+	first, second := expense(ownerM, memberM, "15"), expense(ownerM, memberM, "15")
+	pay(memberM, ownerM, "20")
+	wantDebt("partial payment", 1000)
+	wantPaid("partial payment leaves the shares", first, false)
+	debts, _ := s.Debts(ctx, memberM)
+	if d := debts[0]; d.Credit() != 2000 || !d.Covered(d.Items[0]) || !d.Covered(d.Items[1]) {
+		t.Fatalf("debt = %+v, credit %d", d, d.Credit())
+	}
+
+	wantErr(t, "stranger marks", s.SetExpenseSharePaid(ctx, strangerM, first, memberM.UserID, true), g.ErrorNotFound)
+	if err := s.SetExpenseSharePaid(ctx, memberM, first, memberM.UserID, true); err != nil {
+		t.Fatal(err)
+	}
+	wantDebt("debtor marks a covered share", 1000)
+	wantPaid("debtor marks a covered share", first, true)
+	if err := s.SetExpenseSharePaid(ctx, memberM, first, memberM.UserID, true); err != nil {
+		t.Fatal(err)
+	}
+	wantDebt("marking twice spends once", 1000)
+	wantErr(t, "only 5 left of the payment", s.SetExpenseSharePaid(ctx, memberM, second, memberM.UserID, true), g.ErrorNotFound)
+	wantPaid("the refused mark changes nothing", second, false)
+	wantDebt("the refused mark changes nothing", 1000)
+	wantErr(t, "debtor unmarks", s.SetExpenseSharePaid(ctx, memberM, first, memberM.UserID, false), g.ErrorNotFound)
+
+	if err := s.SetExpenseSharePaid(ctx, ownerM, first, memberM.UserID, false); err != nil {
+		t.Fatal(err)
+	}
+	wantDebt("unmarking gives the money back", 1000)
+	if err := s.SetExpenseSharePaid(ctx, ownerM, first, memberM.UserID, true); err != nil {
+		t.Fatal(err)
+	}
+	wantDebt("the payer's mark spends the payment, the debt does not flip", 1000)
+
+	pay(memberM, ownerM, "10")
+	wantDebt("paid in full", 0)
+	wantPaid("paid in full", first, true)
+	wantPaid("paid in full", second, true)
+	if o, err := s.GetExpensesOverview(ctx, ownerM); err != nil || len(o.Expenses) != 2 || !o.Expenses[0].FullyPaid {
+		t.Fatalf("overview = %+v, %v", o, err)
+	}
+
+	// shares both ways are netted, paying the difference closes them all
+	theirs, ours := expense(ownerM, memberM, "30"), expense(memberM, ownerM, "10")
+	pay(memberM, ownerM, "20")
+	wantDebt("netted", 0)
+	wantPaid("netted, the debtor's share", theirs, true)
+	e, _ := s.GetExpense(ctx, ownerM, ours)
+	if e.Shares[0].AmountCents == 0 || !e.Shares[0].PaidAt.Valid {
+		t.Fatalf("netted, the other share = %+v", e.Shares)
+	}
+
+	// overpaying marks the shares and leaves the rest as money owed back
+	over := expense(ownerM, memberM, "5")
+	pay(memberM, ownerM, "7")
+	wantPaid("overpaid", over, true)
+	wantDebt("overpaid", -200)
+
+	// a share paid only in part by payments counts the rest as paid outside the app
+	partly := expense(ownerM, memberM, "9")
+	wantDebt("the overpayment lowers a new share", 700)
+	if err := s.SetExpenseSharePaid(ctx, ownerM, partly, memberM.UserID, true); err != nil {
+		t.Fatal(err)
+	}
+	wantDebt("the payer marks more than the payments", 0)
+
+	// overpaying with shares both ways keeps the balance, the payment does not cover the 12
+	bigger, smaller := expense(ownerM, memberM, "12"), expense(memberM, ownerM, "10")
+	wantDebt("shares both ways", 200)
+	pay(memberM, ownerM, "5")
+	wantDebt("overpaid against shares both ways", -300)
+	wantPaid("overpaid, the share it does not cover", bigger, false)
+	wantPaid("overpaid, the other way", smaller, false)
 }

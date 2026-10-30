@@ -119,7 +119,7 @@ func TestPushNotifications(t *testing.T) {
 	memberDevice := subscribeTestDevice(t, s, memberM.UserID, "et")
 	subscribeTestDevice(t, s, strangerM.UserID, "en")
 
-	if err := s.PostMessage(ctx, memberM, "Who took my milk?", pgtype.UUID{}, nil); err != nil {
+	if err := s.PostMessage(ctx, memberM, "Who took my milk?", pgtype.UUID{}, nil, nil); err != nil {
 		t.Fatal(err)
 	}
 	got := takePushes(s)
@@ -154,7 +154,7 @@ func TestPushNotifications(t *testing.T) {
 	wantPushes(t, "settlement", takePushes(s), ownerDevice)
 
 	s.pusher.(*fakePusher).gone[ownerDevice] = true
-	if err := s.PostMessage(ctx, memberM, "hello?", pgtype.UUID{}, nil); err != nil {
+	if err := s.PostMessage(ctx, memberM, "hello?", pgtype.UUID{}, nil, nil); err != nil {
 		t.Fatal(err)
 	}
 	wantPushes(t, "gone", takePushes(s))
@@ -166,7 +166,7 @@ func TestPushNotifications(t *testing.T) {
 	if err := s.UnsubscribePush(ctx, memberM.UserID, memberDevice); err != nil {
 		t.Fatal(err)
 	}
-	if err := s.PostMessage(ctx, ownerM, "bye", pgtype.UUID{}, nil); err != nil {
+	if err := s.PostMessage(ctx, ownerM, "bye", pgtype.UUID{}, nil, nil); err != nil {
 		t.Fatal(err)
 	}
 	wantPushes(t, "unsubscribed", takePushes(s))

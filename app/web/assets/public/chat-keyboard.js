@@ -38,8 +38,45 @@ if (!window.chatKeyboardLoaded) {
     if (!form) return;
     var body = form.querySelector("textarea[name=body]");
     var files = form.querySelector("[data-chat-attach]");
-    form.querySelector("[data-chat-send]").disabled = !body.value.trim() && !files.files.length;
+    var refs = form.querySelector("[name=file_ref]");
+    form.querySelector("[data-chat-send]").disabled = !body.value.trim() && !files.files.length && !refs;
   }
+
+  // Enter in the file search looks for files, it must not send the message around it
+  document.addEventListener("keydown", function (e) {
+    if (e.key === "Enter" && e.target.matches("[data-chat-ref-search]")) e.preventDefault();
+  });
+
+  // a picked existing file waits above the message box like an attached one
+  document.addEventListener("click", function (e) {
+    var pick = e.target.closest("[data-chat-ref]");
+    if (!pick) return;
+    pick.closest("details").open = false;
+    var box = document.querySelector("#chat-composer [data-chat-refs]");
+    var id = pick.dataset.chatRef;
+    if (box.querySelector('[value="' + id + '"]')) return;
+    var item = document.createElement("div");
+    item.className = "relative flex h-11 items-center rounded-lg bg-muted";
+    var input = document.createElement("input");
+    input.type = "hidden";
+    input.name = "file_ref";
+    input.value = id;
+    var name = document.createElement("span");
+    name.textContent = pick.dataset.name;
+    name.className = "max-w-40 truncate px-3 pr-8 text-sm";
+    var remove = document.createElement("button");
+    remove.type = "button";
+    remove.textContent = "✕";
+    remove.setAttribute("aria-label", box.dataset.remove + " " + pick.dataset.name);
+    remove.className = "absolute -top-2 -right-2 flex size-6 items-center justify-center rounded-full bg-foreground text-xs text-background";
+    remove.addEventListener("click", function () {
+      item.remove();
+      chatSendState();
+    });
+    item.append(input, name, remove);
+    box.append(item);
+    chatSendState();
+  });
   document.addEventListener("input", function (e) {
     if (e.target.matches("#chat textarea[name=body]")) chatSendState();
   });

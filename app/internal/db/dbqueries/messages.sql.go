@@ -106,22 +106,80 @@ func (q *Queries) InsertMessage(ctx context.Context, arg InsertMessageParams) (p
 	return id, err
 }
 
-const listMessageFiles = `-- name: ListMessageFiles :many
-SELECT f.id,
-  f.message_id,
-  f.name,
-  f.mime,
-  f.size_bytes,
-  (f.thumb_key IS NOT NULL)::boolean AS has_thumb
+const insertMessageFileRefs = `-- name: InsertMessageFileRefs :execrows
+INSERT INTO message_file_refs (message_id, file_id, household_id)
+SELECT $1::uuid,
+  f.id,
+  f.household_id
 FROM files f
-WHERE f.household_id = $1
-  AND f.message_id = ANY($2::uuid [])
-ORDER BY f.created_at
+  LEFT JOIN notes n ON n.id = f.note_id
+WHERE f.id = ANY($2::uuid [])
+  AND f.household_id = $3
+  AND (
+    n.id IS NULL
+    OR n.visibility = 'household'
+  )
+`
+
+type InsertMessageFileRefsParams struct {
+	MessageID   pgtype.UUID   `json:"message_id"`
+	FileIds     []pgtype.UUID `json:"file_ids"`
+	HouseholdID pgtype.UUID   `json:"household_id"`
+}
+
+// refers to the files everyone in the household can see, the others are skipped
+func (q *Queries) InsertMessageFileRefs(ctx context.Context, arg InsertMessageFileRefsParams) (int64, error) {
+	result, err := q.db.Exec(ctx, insertMessageFileRefs, arg.MessageID, arg.FileIds, arg.HouseholdID)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
+const listMessageFiles = `-- name: ListMessageFiles :many
+SELECT mf.id,
+  mf.message_id,
+  mf.name,
+  mf.mime,
+  mf.size_bytes,
+  mf.has_thumb
+FROM (
+    SELECT f.id,
+      f.message_id,
+      f.name,
+      f.mime,
+      f.size_bytes,
+      (f.thumb_key IS NOT NULL)::boolean AS has_thumb,
+      f.created_at
+    FROM files f
+    WHERE f.household_id = $1
+      AND f.message_id = ANY($2::uuid [])
+    UNION ALL
+    SELECT f.id,
+      r.message_id,
+      f.name,
+      f.mime,
+      f.size_bytes,
+      (f.thumb_key IS NOT NULL)::boolean AS has_thumb,
+      f.created_at
+    FROM message_file_refs r
+      JOIN files f ON f.id = r.file_id
+      LEFT JOIN notes n ON n.id = f.note_id
+    WHERE r.household_id = $1
+      AND r.message_id = ANY($2::uuid [])
+      AND (
+        n.id IS NULL
+        OR n.visibility = 'household'
+        OR n.author_id = $3
+      )
+  ) mf
+ORDER BY mf.created_at
 `
 
 type ListMessageFilesParams struct {
 	HouseholdID pgtype.UUID   `json:"household_id"`
 	MessageIds  []pgtype.UUID `json:"message_ids"`
+	UserID      pgtype.UUID   `json:"user_id"`
 }
 
 type ListMessageFilesRow struct {
@@ -133,8 +191,10 @@ type ListMessageFilesRow struct {
 	HasThumb  bool        `json:"has_thumb"`
 }
 
+// the files sent with the messages and those they refer to, a referred file the user may
+// not see is left out, its note can have turned private since
 func (q *Queries) ListMessageFiles(ctx context.Context, arg ListMessageFilesParams) ([]ListMessageFilesRow, error) {
-	rows, err := q.db.Query(ctx, listMessageFiles, arg.HouseholdID, arg.MessageIds)
+	rows, err := q.db.Query(ctx, listMessageFiles, arg.HouseholdID, arg.MessageIds, arg.UserID)
 	if err != nil {
 		return nil, err
 	}

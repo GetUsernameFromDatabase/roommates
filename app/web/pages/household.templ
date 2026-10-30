@@ -97,7 +97,7 @@ templ HouseholdPeople(actor services.Membership, o services.HouseholdOverview, i
 			<h2 id="members-title" class="sr-only">
 				@components.T(locales.LK_HouseholdMembers)
 			</h2>
-			@liveRegion("members", events.TopicPeople) {
+			@liveRegionWith("members", "#invites", events.TopicPeople) {
 				<p class="text-sm text-muted-foreground">
 					@components.N(locales.LK_HouseholdCount, len(o.Members), i18n.M{"count": len(o.Members)})
 				</p>
@@ -174,7 +174,7 @@ templ HouseholdPeople(actor services.Membership, o services.HouseholdOverview, i
 					@components.T(locales.LK_HouseholdInvitesDescription)
 				</p>
 				<div class={ utils.CN(sheetClass, "mt-3") }>
-					@liveRegion("invites", events.TopicPeople) {
+					<div id="invites">
 						if len(o.Invites) == 0 {
 							<p class="text-sm text-muted-foreground">
 								@components.T(locales.LK_HouseholdNoInvites)
@@ -213,7 +213,7 @@ templ HouseholdPeople(actor services.Membership, o services.HouseholdOverview, i
 								}
 							</ul>
 						}
-					}
+					</div>
 					<div class="mt-4 border-t pt-4">
 						if o.ActorEmailValidated {
 							<form action={ householdURL(actor.HouseholdID, "invites") } method="post" hx-boost="true">

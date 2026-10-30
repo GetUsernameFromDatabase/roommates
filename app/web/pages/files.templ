@@ -2,6 +2,8 @@ package pages
 
 import "roommates/web/components"
 import "roommates/web/components/button"
+import "roommates/web/components/input"
+import "roommates/web/components/select"
 import "roommates/web/components/textarea"
 import "roommates/internal/db/dbqueries"
 import "roommates/internal/services"
@@ -10,9 +12,27 @@ import g "roommates/internal/config"
 import "roommates/internal/locales"
 import "roommates/internal/utils"
 import "github.com/jackc/pgx/v5/pgtype"
+import "cmp"
 
-// HouseholdFiles lists every file the actor may see, newest first, errorMessage is the outcome of an upload
-templ HouseholdFiles(actor services.Membership, files []dbqueries.ListFilesRow, errorMessage string) {
+// names of the [services.FileKinds] and [services.FilePlaces] options
+var (
+	fileKindNames = map[string]locales.LK{
+		"image": locales.LK_FilesTypeImage,
+		"pdf":   locales.LK_FilesTypePdf,
+		"other": locales.LK_FilesTypeOther,
+	}
+	filePlaceNames = map[string]locales.LK{
+		"note":    locales.LK_FilesPlaceNote,
+		"item":    locales.LK_FilesPlaceItem,
+		"expense": locales.LK_FilesPlaceExpense,
+		"message": locales.LK_FilesPlaceMessage,
+		"none":    locales.LK_FilesPlaceNone,
+	}
+)
+
+// HouseholdFiles lists the files the actor may see that match filter, newest first,
+// errorMessage is the outcome of an upload
+templ HouseholdFiles(actor services.Membership, files []dbqueries.ListFilesRow, filter services.FileFilter, errorMessage string) {
 	@appShell(utils.T(ctx, locales.LK_NavFiles), &HouseholdNav{HouseholdID: actor.HouseholdID, Section: SectionFiles}) {
 		<header>
 			<h1 class="doorplate">
@@ -21,10 +41,11 @@ templ HouseholdFiles(actor services.Membership, files []dbqueries.ListFilesRow, 
 		</header>
 		<section class={ utils.CN(sheetClass, "space-y-4") }>
 			@fileUploadForm(householdURL(actor.HouseholdID, "files"), errorMessage)
+			@fileFilters(actor, filter)
 			@liveRegion("files", events.TopicFiles) {
 				if len(files) == 0 {
 					<p class="text-muted-foreground">
-						@components.T(locales.LK_FilesNone)
+						@components.T(utils.IfElse(filter.Active(), locales.LK_FilesNoMatch, locales.LK_FilesNone))
 					</p>
 				} else {
 					<ul class="divide-y">
@@ -57,6 +78,46 @@ templ HouseholdFiles(actor services.Membership, files []dbqueries.ListFilesRow, 
 }
 
 const fileContextClass = "block text-xs text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
+
+// fileFilters swaps in the matching files while typing and keeps the filter in the address,
+// the live region then refetches the same filter; it stays out of the region, a refetch would clear what is typed
+templ fileFilters(actor services.Membership, filter services.FileFilter) {
+	{{ filesURL := householdURL(actor.HouseholdID, "files") }}
+	<form
+		role="search"
+		action={ filesURL }
+		method="get"
+		hx-get={ string(filesURL) }
+		hx-trigger="input delay:300ms, change from:input[name=type], change from:input[name=place]"
+		hx-target="#files"
+		hx-select="#files"
+		hx-swap="outerHTML"
+		hx-replace-url="true"
+		class="flex flex-wrap gap-2"
+	>
+		@input.Input(input.Props{
+			Name:        "q",
+			Type:        "search",
+			Value:       filter.Query,
+			Placeholder: utils.T(ctx, locales.LK_FilesSearch),
+			Class:       "h-11 min-w-48 flex-1",
+			Attributes:  templ.Attributes{"aria-label": utils.T(ctx, locales.LK_FilesSearch)},
+		})
+		@fileFilterSelect("file-type", "type", filter.Kind, locales.LK_FilesType, locales.LK_FilesAnyType, services.FileKinds, fileKindNames)
+		@fileFilterSelect("file-place", "place", filter.Place, locales.LK_FilesPlace, locales.LK_FilesAnyPlace, services.FilePlaces, filePlaceNames)
+	</form>
+}
+
+// fileFilterSelect submits name, "all" narrows nothing down
+templ fileFilterSelect(id, name, value string, label, all locales.LK, options []string, names map[string]locales.LK) {
+	{{
+	items := []selectcomp.ItemData{{Value: "all", Label: utils.T(ctx, all)}}
+	for _, o := range options {
+		items = append(items, selectcomp.ItemData{Value: o, Label: utils.T(ctx, names[o])})
+	}
+	}}
+	@optionSelect(id, name, cmp.Or(value, "all"), "data-[size=default]:h-11", templ.Attributes{"aria-label": utils.T(ctx, label)}, items)
+}
 
 // attachedFiles are the files of a note, shopping item or expense on page back, and a form to add one,
 // hint says what belongs here if anything

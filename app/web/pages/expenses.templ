@@ -16,6 +16,7 @@ import "roommates/internal/events"
 import g "roommates/internal/config"
 import "roommates/internal/locales"
 import "roommates/internal/utils"
+import "fmt"
 import "slices"
 import "time"
 
@@ -121,6 +122,11 @@ templ HouseholdExpenses(actor services.Membership, o services.ExpensesOverview, 
 												<span>{ paidByLine(ctx, actor, e.PayerID, e.PayerName, e.IncurredOn) }</span>
 												<span>{ CategoryName(ctx, e.Category) }</span>
 											</span>
+											if e.FullyPaid {
+												<span class="mt-1 block">
+													@sharePaidStamp(true)
+												</span>
+											}
 										</a>
 									</li>
 								}
@@ -169,10 +175,11 @@ templ pendingSlip(actor services.Membership, p dbqueries.ListPendingSettlementsR
 }
 
 // debtBreakdown is "who owes whom how much", opening to the unpaid shares and
-// payments between the two that add up to it
+// payments between the two that add up to it, either of the two can mark a share paid
+// that a partial payment covers, it starts open then so they see they can
 templ debtBreakdown(actor services.Membership, d services.Debt) {
 	{{ yours := d.From == actor.UserID || d.To == actor.UserID }}
-	<details class="group">
+	<details class="group" open?={ yours && slices.ContainsFunc(d.Items, d.Covered) }>
 		<summary class="flex cursor-pointer list-none items-start justify-between gap-3 rounded-lg outline-none focus-visible:ring-3 focus-visible:ring-ring/50 [&::-webkit-details-marker]:hidden">
 			<span class="min-w-0 break-words">
 				{ pairPhrase(ctx, actor, d.From, d.FromName, d.To, d.ToName,
@@ -204,6 +211,15 @@ templ debtBreakdown(actor services.Membership, d services.Debt) {
 							{ formatDay(it.Row.OnDate) }
 						}
 					</span>
+					if yours && d.Covered(it) {
+						<form action={ householdURL(actor.HouseholdID, "expenses", it.Row.ExpenseID.String(), "shares", d.From.String(), "paid") } method="post" hx-boost="true">
+							<input type="hidden" name="paid" value="1"/>
+							<input type="hidden" name={ g.QueryNext } value={ string(householdURL(actor.HouseholdID, "expenses")) }/>
+							@button.Button(button.Props{Type: button.TypeSubmit, Variant: button.VariantSecondary, Class: "mt-1 h-11 px-3"}) {
+								@components.T(locales.LK_ExpensesMarkPaid)
+							}
+						</form>
+					}
 				</li>
 			}
 			<li class="mt-1.5 flex items-baseline justify-between gap-3 border-t border-dashed pt-1.5 font-semibold">
@@ -457,22 +473,27 @@ templ datePicker(id, name, value string) {
 	}
 }
 
-// categorySelect submits the category, class and attrs go on the trigger, a label points
-// at id + "-trigger"
+// categorySelect submits the category, see [optionSelect]
 templ categorySelect(id, selected, class string, attrs templ.Attributes) {
 	{{
 	items := utils.Map(g.ExpenseCategories, func(c string) selectcomp.ItemData {
 		return selectcomp.ItemData{Value: c, Label: CategoryName(ctx, c)}
 	})
 	}}
-	@selectcomp.Select(selectcomp.Props{ID: id, Name: "category", Items: items, DefaultValue: selected}) {
+	@optionSelect(id, "category", selected, class, attrs, items)
+}
+
+// optionSelect submits name, class and attrs go on the trigger, a label points
+// at id + "-trigger"
+templ optionSelect(id, name, selected, class string, attrs templ.Attributes, items []selectcomp.ItemData) {
+	@selectcomp.Select(selectcomp.Props{ID: id, Name: name, Items: items, DefaultValue: selected}) {
 		@selectcomp.Trigger(selectcomp.TriggerProps{Class: class, Attributes: attrs}) {
 			@selectcomp.Value()
 		}
 		@selectcomp.Content() {
 			for _, it := range items {
 				@selectcomp.Item(selectcomp.ItemProps{Value: it.Value}) {
-					{ CategoryName(ctx, it.Value) }
+					{ fmt.Sprint(it.Label) }
 				}
 			}
 		}

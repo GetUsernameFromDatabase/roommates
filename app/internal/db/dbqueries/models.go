@@ -95,6 +95,12 @@ type Message struct {
 	ReplyToID   pgtype.UUID        `json:"reply_to_id"`
 }
 
+type MessageFileRef struct {
+	MessageID   pgtype.UUID `json:"message_id"`
+	FileID      pgtype.UUID `json:"file_id"`
+	HouseholdID pgtype.UUID `json:"household_id"`
+}
+
 type Note struct {
 	ID          pgtype.UUID        `json:"id"`
 	HouseholdID pgtype.UUID        `json:"household_id"`
@@ -126,6 +132,13 @@ type Settlement struct {
 	AmountCents int64              `json:"amount_cents"`
 	CreatedAt   pgtype.Timestamptz `json:"created_at"`
 	ConfirmedAt pgtype.Timestamptz `json:"confirmed_at"`
+}
+
+type SettlementShare struct {
+	SettlementID pgtype.UUID `json:"settlement_id"`
+	ExpenseID    pgtype.UUID `json:"expense_id"`
+	UserID       pgtype.UUID `json:"user_id"`
+	Cents        int64       `json:"cents"`
 }
 
 type ShoppingItem struct {

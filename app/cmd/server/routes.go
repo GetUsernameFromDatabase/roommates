@@ -150,6 +150,7 @@ func initRoutes(r *gin.Engine, h *handlers.DefaultHandler, service *services.Def
 			household.GET("/chat", h.PageChat)
 			household.POST("/chat", h.PostMessage)
 			household.GET("/chat/badge", h.ChatBadge)
+			household.GET("/chat/files", h.ChatFilePicks)
 			household.POST("/chat/:"+g.ParamMessageID+"/delete", h.DeleteMessage)
 
 			household.GET("/files", h.PageFiles)

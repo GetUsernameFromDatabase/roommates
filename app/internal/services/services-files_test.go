@@ -7,6 +7,9 @@ import (
 	"image/png"
 	"io"
 	g "roommates/internal/config"
+	"roommates/internal/db/dbqueries"
+	"roommates/internal/utils"
+	"slices"
 	"sync"
 	"testing"
 
@@ -140,20 +143,50 @@ func TestFiles(t *testing.T) {
 	wantErr(t, "member opens private thumbnail", err, g.ErrorNotFound)
 	_, _, err = s.OpenFile(ctx, memberM, secret, false)
 	wantErr(t, "member opens private file", err, g.ErrorNotFound)
-	memberFiles, err := s.ListFiles(ctx, memberM)
+	memberFiles, err := s.ListFiles(ctx, memberM, FileFilter{})
 	if err != nil {
 		t.Fatal(err)
 	}
 	if len(memberFiles) != 1 || memberFiles[0].ID != loose {
 		t.Fatalf("member lists %+v", memberFiles)
 	}
-	ownerFiles, err := s.ListFiles(ctx, ownerM)
+	ownerFiles, err := s.ListFiles(ctx, ownerM, FileFilter{})
 	if err != nil {
 		t.Fatal(err)
 	}
 	if len(ownerFiles) != 2 || ownerFiles[0].ID != secret || ownerFiles[0].NoteTitle == nil ||
 		!ownerFiles[0].HasThumb || ownerFiles[1].HasThumb {
 		t.Fatalf("owner lists %+v", ownerFiles)
+	}
+
+	// the owner has the private lease.png on a note and the loose file
+	filtered := func(f FileFilter) []pgtype.UUID {
+		t.Helper()
+		rows, err := s.ListFiles(ctx, ownerM, f)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return utils.Map(rows, func(r dbqueries.ListFilesRow) pgtype.UUID { return r.ID })
+	}
+	for _, tt := range []struct {
+		filter FileFilter
+		want   []pgtype.UUID
+	}{
+		{FileFilter{Query: " LEASE ", Kind: "", Place: ""}, []pgtype.UUID{secret}},
+		{FileFilter{Query: "%", Kind: "", Place: ""}, nil},
+		{FileFilter{Query: "", Kind: "image", Place: ""}, []pgtype.UUID{secret, loose}},
+		{FileFilter{Query: "", Kind: "other", Place: ""}, nil},
+		{FileFilter{Query: "", Kind: "pdf", Place: ""}, nil},
+		{FileFilter{Query: "", Kind: "", Place: "note"}, []pgtype.UUID{secret}},
+		{FileFilter{Query: "", Kind: "", Place: "none"}, []pgtype.UUID{loose}},
+		{FileFilter{Query: "", Kind: "all", Place: "all"}, []pgtype.UUID{secret, loose}},
+	} {
+		if got := filtered(tt.filter); !slices.Equal(got, tt.want) {
+			t.Errorf("filter %+v = %v, want %v", tt.filter, got, tt.want)
+		}
+	}
+	if (FileFilter{Query: " ", Kind: "all", Place: ""}).Active() || !(FileFilter{Query: "", Kind: "pdf", Place: ""}).Active() {
+		t.Error("Active is wrong")
 	}
 
 	// files attach to an item of the household's list only

@@ -11,13 +11,15 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
-const confirmSettlement = `-- name: ConfirmSettlement :execrows
+const confirmSettlement = `-- name: ConfirmSettlement :one
 UPDATE settlements
 SET confirmed_at = CURRENT_TIMESTAMP
 WHERE id = $1
   AND household_id = $2
   AND to_user = $3
   AND confirmed_at IS NULL
+RETURNING from_user,
+  to_user
 `
 
 type ConfirmSettlementParams struct {
@@ -26,13 +28,17 @@ type ConfirmSettlementParams struct {
 	ToUser      pgtype.UUID `json:"to_user"`
 }
 
+type ConfirmSettlementRow struct {
+	FromUser pgtype.UUID `json:"from_user"`
+	ToUser   pgtype.UUID `json:"to_user"`
+}
+
 // only the receiver confirms
-func (q *Queries) ConfirmSettlement(ctx context.Context, arg ConfirmSettlementParams) (int64, error) {
-	result, err := q.db.Exec(ctx, confirmSettlement, arg.ID, arg.HouseholdID, arg.ToUser)
-	if err != nil {
-		return 0, err
-	}
-	return result.RowsAffected(), nil
+func (q *Queries) ConfirmSettlement(ctx context.Context, arg ConfirmSettlementParams) (ConfirmSettlementRow, error) {
+	row := q.db.QueryRow(ctx, confirmSettlement, arg.ID, arg.HouseholdID, arg.ToUser)
+	var i ConfirmSettlementRow
+	err := row.Scan(&i.FromUser, &i.ToUser)
+	return i, err
 }
 
 const deleteExpense = `-- name: DeleteExpense :execrows
@@ -90,6 +96,23 @@ func (q *Queries) DeleteSettlement(ctx context.Context, arg DeleteSettlementPara
 	return result.RowsAffected(), nil
 }
 
+const deleteSettlementShares = `-- name: DeleteSettlementShares :exec
+DELETE FROM settlement_shares
+WHERE expense_id = $1
+  AND user_id = $2
+`
+
+type DeleteSettlementSharesParams struct {
+	ExpenseID pgtype.UUID `json:"expense_id"`
+	UserID    pgtype.UUID `json:"user_id"`
+}
+
+// gives back what a share spent
+func (q *Queries) DeleteSettlementShares(ctx context.Context, arg DeleteSettlementSharesParams) error {
+	_, err := q.db.Exec(ctx, deleteSettlementShares, arg.ExpenseID, arg.UserID)
+	return err
+}
+
 const getExpense = `-- name: GetExpense :one
 SELECT e.id,
   e.category,
@@ -131,6 +154,38 @@ func (q *Queries) GetExpense(ctx context.Context, arg GetExpenseParams) (GetExpe
 		&i.PayerID,
 		&i.PayerName,
 	)
+	return i, err
+}
+
+const getShareToMark = `-- name: GetShareToMark :one
+SELECT s.amount_cents,
+  s.paid_at,
+  e.payer_id
+FROM expense_shares s
+  JOIN expenses e ON e.id = s.expense_id
+WHERE s.expense_id = $1
+  AND s.user_id = $2
+  AND e.household_id = $3 FOR
+UPDATE OF s
+`
+
+type GetShareToMarkParams struct {
+	ExpenseID   pgtype.UUID `json:"expense_id"`
+	UserID      pgtype.UUID `json:"user_id"`
+	HouseholdID pgtype.UUID `json:"household_id"`
+}
+
+type GetShareToMarkRow struct {
+	AmountCents int64              `json:"amount_cents"`
+	PaidAt      pgtype.Timestamptz `json:"paid_at"`
+	PayerID     pgtype.UUID        `json:"payer_id"`
+}
+
+// locks the share while it is marked
+func (q *Queries) GetShareToMark(ctx context.Context, arg GetShareToMarkParams) (GetShareToMarkRow, error) {
+	row := q.db.QueryRow(ctx, getShareToMark, arg.ExpenseID, arg.UserID, arg.HouseholdID)
+	var i GetShareToMarkRow
+	err := row.Scan(&i.AmountCents, &i.PaidAt, &i.PayerID)
 	return i, err
 }
 
@@ -209,6 +264,28 @@ func (q *Queries) InsertSettlement(ctx context.Context, arg InsertSettlementPara
 	return err
 }
 
+const insertSettlementShare = `-- name: InsertSettlementShare :exec
+INSERT INTO settlement_shares (settlement_id, expense_id, user_id, cents)
+VALUES ($1, $2, $3, $4)
+`
+
+type InsertSettlementShareParams struct {
+	SettlementID pgtype.UUID `json:"settlement_id"`
+	ExpenseID    pgtype.UUID `json:"expense_id"`
+	UserID       pgtype.UUID `json:"user_id"`
+	Cents        int64       `json:"cents"`
+}
+
+func (q *Queries) InsertSettlementShare(ctx context.Context, arg InsertSettlementShareParams) error {
+	_, err := q.db.Exec(ctx, insertSettlementShare,
+		arg.SettlementID,
+		arg.ExpenseID,
+		arg.UserID,
+		arg.Cents,
+	)
+	return err
+}
+
 const listDebtItems = `-- name: ListDebtItems :many
 SELECT f.from_user,
   fu.username AS from_name,
@@ -232,15 +309,26 @@ FROM (
       AND s.user_id <> e.payer_id
       AND s.amount_cents > 0
     UNION ALL
-    SELECT to_user,
-      from_user,
+    SELECT st.to_user,
+      st.from_user,
       NULL::uuid,
       ''::text,
-      confirmed_at::date,
-      amount_cents
-    FROM settlements
-    WHERE household_id = $1
-      AND confirmed_at IS NOT NULL
+      st.confirmed_at::date,
+      st.left_cents
+    FROM (
+        SELECT c.to_user,
+          c.from_user,
+          c.confirmed_at,
+          c.amount_cents - (
+            SELECT COALESCE(SUM(ss.cents), 0)::bigint
+            FROM settlement_shares ss
+            WHERE ss.settlement_id = c.id
+          ) AS left_cents
+        FROM settlements c
+        WHERE c.household_id = $1
+          AND c.confirmed_at IS NOT NULL
+      ) st
+    WHERE st.left_cents > 0
   ) f
   JOIN users fu ON fu.id = f.from_user
   JOIN users tu ON tu.id = f.to_user
@@ -266,8 +354,8 @@ type ListDebtItemsRow struct {
 }
 
 // what from_user owes to_user, one row per unpaid share of others' expenses and per
-// confirmed settlement (a settlement is a debt the other way, so to_user paid it),
-// only rows involving user_id when it is given, oldest first
+// confirmed settlement with money left (a settlement is a debt the other way, so to_user
+// paid it), only rows involving user_id when it is given, oldest first
 func (q *Queries) ListDebtItems(ctx context.Context, arg ListDebtItemsParams) ([]ListDebtItemsRow, error) {
 	rows, err := q.db.Query(ctx, listDebtItems, arg.HouseholdID, arg.UserID)
 	if err != nil {
@@ -348,7 +436,25 @@ SELECT e.id,
   e.amount_cents,
   e.incurred_on,
   e.payer_id,
-  payer.username AS payer_name
+  payer.username AS payer_name,
+  -- someone else owed a part of it and nothing of that is open
+  (
+    EXISTS (
+      SELECT 1
+      FROM expense_shares s
+      WHERE s.expense_id = e.id
+        AND s.user_id <> e.payer_id
+        AND s.amount_cents > 0
+    )
+    AND NOT EXISTS (
+      SELECT 1
+      FROM expense_shares s
+      WHERE s.expense_id = e.id
+        AND s.user_id <> e.payer_id
+        AND s.amount_cents > 0
+        AND s.paid_at IS NULL
+    )
+  )::boolean AS fully_paid
 FROM expenses e
   JOIN users payer ON payer.id = e.payer_id
 WHERE e.household_id = $1
@@ -365,6 +471,7 @@ type ListExpensesRow struct {
 	IncurredOn  pgtype.Date `json:"incurred_on"`
 	PayerID     pgtype.UUID `json:"payer_id"`
 	PayerName   string      `json:"payer_name"`
+	FullyPaid   bool        `json:"fully_paid"`
 }
 
 // newest first
@@ -386,6 +493,7 @@ func (q *Queries) ListExpenses(ctx context.Context, householdID pgtype.UUID) ([]
 			&i.IncurredOn,
 			&i.PayerID,
 			&i.PayerName,
+			&i.FullyPaid,
 		); err != nil {
 			return nil, err
 		}
@@ -458,6 +566,75 @@ func (q *Queries) ListPendingSettlements(ctx context.Context, arg ListPendingSet
 	return items, nil
 }
 
+const listSettlementCredit = `-- name: ListSettlementCredit :many
+SELECT st.id,
+  (st.amount_cents - (
+    SELECT COALESCE(SUM(ss.cents), 0)::bigint
+    FROM settlement_shares ss
+    WHERE ss.settlement_id = st.id
+  ))::bigint AS left_cents
+FROM settlements st
+WHERE st.household_id = $1
+  AND st.from_user = $2
+  AND st.to_user = $3
+  AND st.confirmed_at IS NOT NULL
+ORDER BY st.confirmed_at
+`
+
+type ListSettlementCreditParams struct {
+	HouseholdID pgtype.UUID `json:"household_id"`
+	FromUser    pgtype.UUID `json:"from_user"`
+	ToUser      pgtype.UUID `json:"to_user"`
+}
+
+type ListSettlementCreditRow struct {
+	ID        pgtype.UUID `json:"id"`
+	LeftCents int64       `json:"left_cents"`
+}
+
+// what is left of the confirmed settlements from_user paid to_user, oldest first
+func (q *Queries) ListSettlementCredit(ctx context.Context, arg ListSettlementCreditParams) ([]ListSettlementCreditRow, error) {
+	rows, err := q.db.Query(ctx, listSettlementCredit, arg.HouseholdID, arg.FromUser, arg.ToUser)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListSettlementCreditRow
+	for rows.Next() {
+		var i ListSettlementCreditRow
+		if err := rows.Scan(&i.ID, &i.LeftCents); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const lockSettlementCredit = `-- name: LockSettlementCredit :exec
+SELECT id
+FROM settlements
+WHERE household_id = $1
+  AND from_user = $2
+  AND to_user = $3
+  AND confirmed_at IS NOT NULL FOR
+UPDATE
+`
+
+type LockSettlementCreditParams struct {
+	HouseholdID pgtype.UUID `json:"household_id"`
+	FromUser    pgtype.UUID `json:"from_user"`
+	ToUser      pgtype.UUID `json:"to_user"`
+}
+
+// its own statement, so ListSettlementCredit then sees what others spent while this waited
+func (q *Queries) LockSettlementCredit(ctx context.Context, arg LockSettlementCreditParams) error {
+	_, err := q.db.Exec(ctx, lockSettlementCredit, arg.HouseholdID, arg.FromUser, arg.ToUser)
+	return err
+}
+
 const setExpenseSharePaid = `-- name: SetExpenseSharePaid :execrows
 UPDATE expense_shares s
 SET paid_at = CASE
@@ -486,8 +663,7 @@ type SetExpenseSharePaidParams struct {
 	PayerID     pgtype.UUID `json:"payer_id"`
 }
 
-// only the payer, who got the money, marks a share paid, and only of an active member,
-// marking an already paid share keeps when it was paid
+// only of an active member, marking an already paid share keeps when it was paid
 func (q *Queries) SetExpenseSharePaid(ctx context.Context, arg SetExpenseSharePaidParams) (int64, error) {
 	result, err := q.db.Exec(ctx, setExpenseSharePaid,
 		arg.Paid,

@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"errors"
+	"mime/multipart"
 	"net/http"
 	g "roommates/internal/config"
 	"roommates/internal/locales"
@@ -103,9 +104,17 @@ func (h *DefaultHandler) postMessage(ctx *gin.Context, actor services.Membership
 		return g.ErrorFileTooLarge
 	case errors.Is(err, http.ErrNotMultipart):
 		// a form without files, the composer always sends multipart
-		return h.service.PostMessage(ctx, actor, ctx.PostForm("body"), replyTo, nil)
+		form = &multipart.Form{}
 	case err != nil:
 		return g.ErrorInvalidInput
+	}
+	var refs []pgtype.UUID
+	for _, v := range ctx.PostFormArray("file_ref") {
+		id, err := utils.ParseUUID(v)
+		if err != nil {
+			return g.ErrorInvalidInput
+		}
+		refs = append(refs, id)
 	}
 	var files []services.Upload
 	for _, header := range form.File["file"] {
@@ -116,7 +125,18 @@ func (h *DefaultHandler) postMessage(ctx *gin.Context, actor services.Membership
 		defer f.Close() //nolint:errcheck // read only
 		files = append(files, services.Upload{Name: header.Filename, Body: f, Size: header.Size})
 	}
-	return h.service.PostMessage(ctx, actor, ctx.PostForm("body"), replyTo, files)
+	return h.service.PostMessage(ctx, actor, ctx.PostForm("body"), replyTo, files, refs)
+}
+
+// ChatFilePicks lists the existing files a message can refer to, ?q= narrows them down
+func (h *DefaultHandler) ChatFilePicks(ctx *gin.Context) {
+	actor := membershipFromContext(ctx)
+	files, err := h.service.ListReferableFiles(ctx, actor, ctx.Query("q"))
+	if err != nil {
+		InternalError(ctx, err)
+		return
+	}
+	RenderTempl(ctx, pages.ChatFilePicks(actor, files))
 }
 
 func (h *DefaultHandler) DeleteMessage(ctx *gin.Context) {

@@ -196,7 +196,25 @@ et:
     all: Kõik failid
     on-expense: "Kulul: %s"
     on-message: Vestluses
+    search: Otsi nime järgi
+    no-match: Ühtegi sobivat faili pole
+    type: Faili tüüp
+    any-type: Kõik tüübid
+    type-image: Pildid
+    type-pdf: PDF-id
+    type-other: Muud failid
+    place: Lisatud kuhu
+    any-place: Kõikjal
+    place-note: Märkmed
+    place-item: Ostud
+    place-expense: Kulud
+    place-message: Vestlus
+    place-none: Lisamata
   chat:
+    reference: Lisa olemasolev fail
+    reference-search: Otsi faile
+    reference-none: Faile ei leitud
+    file-gone: Fail pole enam saadaval
     files-too-large: Failid kokku võivad olla kuni %d MB
     title: Vestlus
     message: Sõnum

@@ -308,12 +308,47 @@ WHERE f.household_id = $1
     OR n.visibility = 'household'
     OR n.author_id = $2
   )
+  AND (
+    NOT $3::boolean
+    OR n.id IS NULL
+    OR n.visibility = 'household'
+  )
+  AND (
+    $4::text = ''
+    OR strpos(lower(f.name), lower($4)) > 0
+  )
+  AND CASE
+    $5::text
+    WHEN '' THEN TRUE
+    WHEN 'image' THEN f.mime LIKE 'image/%'
+    WHEN 'pdf' THEN f.mime = 'application/pdf'
+    ELSE f.mime NOT LIKE 'image/%'
+    AND f.mime <> 'application/pdf'
+  END
+  AND CASE
+    $6::text
+    WHEN '' THEN TRUE
+    WHEN 'note' THEN f.note_id IS NOT NULL
+    WHEN 'item' THEN f.shopping_item_id IS NOT NULL
+    WHEN 'expense' THEN f.expense_id IS NOT NULL
+    WHEN 'message' THEN f.message_id IS NOT NULL
+    ELSE num_nonnulls(
+      f.note_id,
+      f.shopping_item_id,
+      f.expense_id,
+      f.message_id
+    ) = 0
+  END
 ORDER BY f.created_at DESC
 `
 
 type ListFilesParams struct {
 	HouseholdID pgtype.UUID `json:"household_id"`
 	UserID      pgtype.UUID `json:"user_id"`
+	SharedOnly  bool        `json:"shared_only"`
+	Q           string      `json:"q"`
+	Kind        string      `json:"kind"`
+	Place       string      `json:"place"`
 }
 
 type ListFilesRow struct {
@@ -335,9 +370,18 @@ type ListFilesRow struct {
 	MessageID      pgtype.UUID        `json:"message_id"`
 }
 
-// every file the user may see, newest first, with what it is attached to
+// every file the user may see, newest first, with what it is attached to,
+// q, kind and place narrow it down unless they are empty,
+// shared_only leaves out the user's own private notes too
 func (q *Queries) ListFiles(ctx context.Context, arg ListFilesParams) ([]ListFilesRow, error) {
-	rows, err := q.db.Query(ctx, listFiles, arg.HouseholdID, arg.UserID)
+	rows, err := q.db.Query(ctx, listFiles,
+		arg.HouseholdID,
+		arg.UserID,
+		arg.SharedOnly,
+		arg.Q,
+		arg.Kind,
+		arg.Place,
+	)
 	if err != nil {
 		return nil, err
 	}

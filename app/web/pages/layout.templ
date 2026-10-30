@@ -272,9 +272,6 @@ templ navIcon(name, class string) {
 			case "plus":
 				<path d="M5 12h14"></path>
 				<path d="M12 5v14"></path>
-			case "pencil":
-				<path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"></path>
-				<path d="m15 5 4 4"></path>
 		}
 	</svg>
 }
@@ -296,8 +293,26 @@ templ ChatBadge(householdID pgtype.UUID, unread int64) {
 //
 // it must not hold a form that is typed in, the refetch would clear it
 templ liveRegion(id string, topics ...string) {
+	@liveRegionWith(id, "", topics...) {
+		{ children... }
+	}
+}
+
+// liveRegionWith also swaps in the elements of selector oob from the same response, regions
+// of one page that listen to the same topic share a refetch this way, the others are plain divs
+templ liveRegionWith(id, oob string, topics ...string) {
 	// hx-disinherit: these only refresh the region, a boosted link inside must not swap with them
-	<div id={ id } hx-get="" hx-trigger={ sseTrigger(topics) } hx-select={ "#" + id } hx-swap="outerHTML" hx-disinherit="*">
+	<div
+		id={ id }
+		hx-get=""
+		hx-trigger={ sseTrigger(topics) }
+		hx-select={ "#" + id }
+		if oob != "" {
+			hx-select-oob={ oob }
+		}
+		hx-swap="outerHTML"
+		hx-disinherit="*"
+	>
 		{ children... }
 	</div>
 }
@@ -395,12 +410,16 @@ templ toast(message string) {
 // doorplateHeader is a back link and the name of what the page is about, children sit beside the name
 templ doorplateHeader(back templ.SafeURL, backText, name string) {
 	<header>
-		<a href={ back } class="inline-flex min-h-11 items-center text-sm text-muted-foreground underline-offset-4 hover:text-foreground hover:underline">
-			{ backText }
-		</a>
+		@backLink(back, backText)
 		<div class="mt-1 flex flex-wrap items-center gap-x-1 gap-y-2">
 			<h1 class="doorplate min-w-0">{ name }</h1>
 			{ children... }
 		</div>
 	</header>
+}
+
+templ backLink(back templ.SafeURL, backText string) {
+	<a href={ back } class="inline-flex min-h-11 items-center text-sm text-muted-foreground underline-offset-4 hover:text-foreground hover:underline">
+		{ backText }
+	</a>
 }

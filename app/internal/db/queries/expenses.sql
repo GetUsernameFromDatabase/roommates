@@ -21,7 +21,25 @@ SELECT e.id,
   e.amount_cents,
   e.incurred_on,
   e.payer_id,
-  payer.username AS payer_name
+  payer.username AS payer_name,
+  -- someone else owed a part of it and nothing of that is open
+  (
+    EXISTS (
+      SELECT 1
+      FROM expense_shares s
+      WHERE s.expense_id = e.id
+        AND s.user_id <> e.payer_id
+        AND s.amount_cents > 0
+    )
+    AND NOT EXISTS (
+      SELECT 1
+      FROM expense_shares s
+      WHERE s.expense_id = e.id
+        AND s.user_id <> e.payer_id
+        AND s.amount_cents > 0
+        AND s.paid_at IS NULL
+    )
+  )::boolean AS fully_paid
 FROM expenses e
   JOIN users payer ON payer.id = e.payer_id
 WHERE e.household_id = $1
@@ -66,8 +84,18 @@ WHERE e.id = $1
     WHERE s.expense_id = e.id
       AND m.user_id IS NULL
   );
--- only the payer, who got the money, marks a share paid, and only of an active member,
--- marking an already paid share keeps when it was paid
+-- locks the share while it is marked
+-- name: GetShareToMark :one
+SELECT s.amount_cents,
+  s.paid_at,
+  e.payer_id
+FROM expense_shares s
+  JOIN expenses e ON e.id = s.expense_id
+WHERE s.expense_id = $1
+  AND s.user_id = $2
+  AND e.household_id = $3 FOR
+UPDATE OF s;
+-- only of an active member, marking an already paid share keeps when it was paid
 -- name: SetExpenseSharePaid :execrows
 UPDATE expense_shares s
 SET paid_at = CASE
@@ -87,8 +115,8 @@ WHERE e.id = s.expense_id
       AND m.left_at IS NULL
   );
 -- what from_user owes to_user, one row per unpaid share of others' expenses and per
--- confirmed settlement (a settlement is a debt the other way, so to_user paid it),
--- only rows involving user_id when it is given, oldest first
+-- confirmed settlement with money left (a settlement is a debt the other way, so to_user
+-- paid it), only rows involving user_id when it is given, oldest first
 -- name: ListDebtItems :many
 SELECT f.from_user,
   fu.username AS from_name,
@@ -112,15 +140,26 @@ FROM (
       AND s.user_id <> e.payer_id
       AND s.amount_cents > 0
     UNION ALL
-    SELECT to_user,
-      from_user,
+    SELECT st.to_user,
+      st.from_user,
       NULL::uuid,
       ''::text,
-      confirmed_at::date,
-      amount_cents
-    FROM settlements
-    WHERE household_id = sqlc.arg(household_id)
-      AND confirmed_at IS NOT NULL
+      st.confirmed_at::date,
+      st.left_cents
+    FROM (
+        SELECT c.to_user,
+          c.from_user,
+          c.confirmed_at,
+          c.amount_cents - (
+            SELECT COALESCE(SUM(ss.cents), 0)::bigint
+            FROM settlement_shares ss
+            WHERE ss.settlement_id = c.id
+          ) AS left_cents
+        FROM settlements c
+        WHERE c.household_id = sqlc.arg(household_id)
+          AND c.confirmed_at IS NOT NULL
+      ) st
+    WHERE st.left_cents > 0
   ) f
   JOIN users fu ON fu.id = f.from_user
   JOIN users tu ON tu.id = f.to_user
@@ -148,13 +187,46 @@ WHERE s.household_id = sqlc.arg(household_id)
   AND sqlc.arg(user_id)::uuid IN (s.from_user, s.to_user)
 ORDER BY s.created_at;
 -- only the receiver confirms
--- name: ConfirmSettlement :execrows
+-- name: ConfirmSettlement :one
 UPDATE settlements
 SET confirmed_at = CURRENT_TIMESTAMP
 WHERE id = $1
   AND household_id = $2
   AND to_user = $3
-  AND confirmed_at IS NULL;
+  AND confirmed_at IS NULL
+RETURNING from_user,
+  to_user;
+-- its own statement, so ListSettlementCredit then sees what others spent while this waited
+-- name: LockSettlementCredit :exec
+SELECT id
+FROM settlements
+WHERE household_id = $1
+  AND from_user = $2
+  AND to_user = $3
+  AND confirmed_at IS NOT NULL FOR
+UPDATE;
+-- what is left of the confirmed settlements from_user paid to_user, oldest first
+-- name: ListSettlementCredit :many
+SELECT st.id,
+  (st.amount_cents - (
+    SELECT COALESCE(SUM(ss.cents), 0)::bigint
+    FROM settlement_shares ss
+    WHERE ss.settlement_id = st.id
+  ))::bigint AS left_cents
+FROM settlements st
+WHERE st.household_id = $1
+  AND st.from_user = $2
+  AND st.to_user = $3
+  AND st.confirmed_at IS NOT NULL
+ORDER BY st.confirmed_at;
+-- name: InsertSettlementShare :exec
+INSERT INTO settlement_shares (settlement_id, expense_id, user_id, cents)
+VALUES ($1, $2, $3, $4);
+-- gives back what a share spent
+-- name: DeleteSettlementShares :exec
+DELETE FROM settlement_shares
+WHERE expense_id = $1
+  AND user_id = $2;
 -- the sender cancels or the receiver rejects a pending settlement
 -- name: DeleteSettlement :execrows
 DELETE FROM settlements

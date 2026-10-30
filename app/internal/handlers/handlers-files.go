@@ -73,12 +73,13 @@ func (h *DefaultHandler) PageFiles(ctx *gin.Context) {
 
 func (h *DefaultHandler) renderFiles(ctx *gin.Context, status int, errorMessage string) {
 	actor := membershipFromContext(ctx)
-	files, err := h.service.ListFiles(ctx, actor)
+	filter := services.FileFilter{Query: ctx.Query("q"), Kind: ctx.Query("type"), Place: ctx.Query("place")}
+	files, err := h.service.ListFiles(ctx, actor, filter)
 	if err != nil {
 		InternalError(ctx, err)
 		return
 	}
-	RenderTemplStatus(ctx, status, pages.HouseholdFiles(actor, files, errorMessage))
+	RenderTemplStatus(ctx, status, pages.HouseholdFiles(actor, files, filter, errorMessage))
 }
 
 // UploadFile adds a file that is not attached to anything
