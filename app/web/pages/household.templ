@@ -62,9 +62,9 @@ templ HouseholdShopping(actor services.Membership, o services.HouseholdOverview,
 						"aria-label": utils.T(ctx, locales.LK_ShoppingNewList),
 					},
 				})
-				<select name="category" aria-label={ utils.T(ctx, locales.LK_ExpensesCategory) } class={ utils.CN(selectClass, "h-10 bg-card dark:bg-card") }>
-					@categoryOptions(g.ExpenseCategories[0])
-				</select>
+				@categorySelect("new-list-category", g.ExpenseCategories[0], "w-full bg-card data-[size=default]:h-10 dark:bg-card", templ.Attributes{
+					"aria-label": utils.T(ctx, locales.LK_ExpensesCategory),
+				})
 				@button.Button(button.Props{Type: button.TypeSubmit, Size: button.SizeLg, Class: "h-10"}) {
 					@components.T(locales.LK_ShoppingCreateList)
 				}

@@ -22,15 +22,23 @@ func TestExpenseEditorCarriesTheItemLink(t *testing.T) {
 	}
 	list, item := pgtype.UUID{Bytes: [16]byte{1}, Valid: true}, pgtype.UUID{Bytes: [16]byte{2}, Valid: true}
 	actor := services.Membership{HouseholdID: pgtype.UUID{}, UserID: pgtype.UUID{}, Role: "", Currency: "", UnreadMessages: 0}
-	in := services.ExpenseInput{Title: "", Amount: "", Category: "groceries", IncurredOn: "", Custom: false,
+	in := services.ExpenseInput{Title: "", Amount: "", Category: "groceries", IncurredOn: "2026-10-01", Custom: false,
 		Members: nil, Shares: nil, ListID: list, ItemID: item}
+	members := []dbqueries.ListActiveMembersRow{{UserID: item, Username: "Ben", AvatarKey: nil, Role: "", JoinedAt: pgtype.Timestamptz{}}}
 	var b strings.Builder
-	if err := ExpenseEditor(actor, nil, in, "").Render(ctx, &b); err != nil {
+	if err := ExpenseEditor(actor, members, in, "").Render(ctx, &b); err != nil {
 		t.Fatal(err)
 	}
 	for _, want := range []string{
 		`name="list" value="` + list.String() + `"`,
 		`name="item" value="` + item.String() + `"`,
+		`name="incurred_on" value="2026-10-01"`,
+		`data-date-input="expense-date"`,
+		`id="expense-date-text"`,
+		`id="expense-date-popover-trigger"`,
+		`id="expense-category-trigger"`,
+		`name="category" value="groceries"`,
+		`name="member" value="` + item.String() + `"`,
 	} {
 		if !strings.Contains(b.String(), want) {
 			t.Errorf("the form does not have %s", want)

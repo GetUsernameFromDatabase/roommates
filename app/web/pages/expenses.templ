@@ -2,9 +2,14 @@ package pages
 
 import "roommates/web/components"
 import "roommates/web/components/button"
+import "roommates/web/components/calendar"
+import "roommates/web/components/checkbox"
 import "roommates/web/components/field"
+import "roommates/web/components/icon"
 import "roommates/web/components/input"
+import "roommates/web/components/popover"
 import "roommates/web/components/radiogroup"
+import "roommates/web/components/select"
 import "roommates/internal/db/dbqueries"
 import "roommates/internal/services"
 import "roommates/internal/events"
@@ -12,6 +17,7 @@ import g "roommates/internal/config"
 import "roommates/internal/locales"
 import "roommates/internal/utils"
 import "slices"
+import "time"
 
 // HouseholdExpenses shows who owes whom, settlements waiting for confirmation and the expenses,
 // errorMessage is the outcome of an "I paid"
@@ -260,25 +266,16 @@ templ ExpenseEditor(actor services.Membership, members []dbqueries.ListActiveMem
 				}
 				<div class="grid grid-cols-2 gap-3">
 					@field.Field() {
-						@field.Label(field.LabelProps{For: "expense-date"}) {
+						@field.Label(field.LabelProps{For: "expense-date-popover-trigger"}) {
 							@components.T(locales.LK_ExpensesDate)
 						}
-						@input.Input(input.Props{
-							ID:       "expense-date",
-							Name:     "incurred_on",
-							Type:     "date",
-							Value:    in.IncurredOn,
-							Required: true,
-							Class:    tillFieldClass,
-						})
+						@datePicker("expense-date", "incurred_on", in.IncurredOn)
 					}
 					@field.Field() {
-						@field.Label(field.LabelProps{For: "expense-category"}) {
+						@field.Label(field.LabelProps{For: "expense-category-trigger"}) {
 							@components.T(locales.LK_ExpensesCategory)
 						}
-						<select id="expense-category" name="category" class={ utils.CN(selectClass, tillFieldClass) }>
-							@categoryOptions(in.Category)
-						</select>
+						@categorySelect("expense-category", in.Category, utils.CN(tillFieldClass, "w-full data-[size=default]:h-11"), nil)
 					}
 				</div>
 				<fieldset class="space-y-2">
@@ -293,13 +290,12 @@ templ ExpenseEditor(actor services.Membership, members []dbqueries.ListActiveMem
 						for _, m := range members {
 							<li class="till-line items-center py-1">
 								<label class="flex min-h-11 min-w-0 items-center gap-3">
-									<input
-										type="checkbox"
-										name="member"
-										value={ m.UserID.String() }
-										checked?={ slices.Contains(in.Members, m.UserID) }
-										class="size-5 shrink-0 accent-primary"
-									/>
+									@checkbox.Checkbox(checkbox.Props{
+										Name:           "member",
+										Value:          m.UserID.String(),
+										DefaultChecked: slices.Contains(in.Members, m.UserID),
+										Class:          "size-5",
+									})
 									<span class="break-words">{ m.Username }</span>
 								</label>
 								<span aria-hidden="true" class="till-leader"></span>
@@ -423,12 +419,63 @@ templ ExpensePage(actor services.Membership, e services.Expense, uploadError str
 // a read only share has no border to show it
 const tillFieldClass = "h-11 rounded-none border-0 border-b-2 border-dotted border-foreground/40 bg-transparent px-1 shadow-none dark:bg-transparent"
 
-// selectClass is a native select among the form's inputs
-const selectClass = "h-11 w-full rounded-lg border border-input bg-transparent px-3 text-base outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 md:text-sm"
+var datePickerScript = templ.NewOnceHandle()
 
-templ categoryOptions(selected string) {
-	for _, c := range g.ExpenseCategories {
-		<option value={ c } selected?={ c == selected }>{ CategoryName(ctx, c) }</option>
+// datePicker is a required day as the server's DateLayout, web/assets/public/date-picker.js
+// copies the calendar's pick to the hidden input, the calendar itself is portaled out of the form
+templ datePicker(id, name, value string) {
+	@datePickerScript.Once() {
+		<script src="/assets/date-picker.js"></script>
+	}
+	{{ day, _ := time.Parse(services.DateLayout, value) }}
+	<input type="hidden" id={ id } name={ name } value={ value }/>
+	@popover.Popover(popover.Props{ID: id + "-popover"}) {
+		@button.Button(button.Props{
+			Variant:    button.VariantGhost,
+			Class:      utils.CN(tillFieldClass, "w-full justify-between font-normal tabular-nums hover:bg-transparent dark:hover:bg-transparent aria-expanded:bg-transparent"),
+			Attributes: popover.Trigger(ctx),
+		}) {
+			<span id={ id + "-text" }>{ value }</span>
+			@icon.ChevronDown(icon.Props{Class: "size-4 text-muted-foreground", Attributes: templ.Attributes{"aria-hidden": "true"}})
+		}
+		@popover.Content(popover.ContentProps{Class: "w-auto p-0", Side: popover.SideBottom, Align: popover.AlignStart}) {
+			@calendar.Calendar(calendar.Props{
+				Mode:         calendar.ModeSingle,
+				Selected:     day,
+				DefaultMonth: day,
+				Required:     utils.Ptr(true),
+				Locale:       utils.GetLocaleString(ctx),
+				Attributes: templ.Attributes{
+					"data-date-input":     id,
+					"data-label-previous": utils.T(ctx, locales.LK_ExpensesDatePreviousMonth),
+					"data-label-next":     utils.T(ctx, locales.LK_ExpensesDateNextMonth),
+					"data-label-today":    utils.T(ctx, locales.LK_ExpensesDateToday),
+					"data-label-selected": utils.T(ctx, locales.LK_ExpensesDateSelected),
+				},
+			})
+		}
+	}
+}
+
+// categorySelect submits the category, class and attrs go on the trigger, a label points
+// at id + "-trigger"
+templ categorySelect(id, selected, class string, attrs templ.Attributes) {
+	{{
+	items := utils.Map(g.ExpenseCategories, func(c string) selectcomp.ItemData {
+		return selectcomp.ItemData{Value: c, Label: CategoryName(ctx, c)}
+	})
+	}}
+	@selectcomp.Select(selectcomp.Props{ID: id, Name: "category", Items: items, DefaultValue: selected}) {
+		@selectcomp.Trigger(selectcomp.TriggerProps{Class: class, Attributes: attrs}) {
+			@selectcomp.Value()
+		}
+		@selectcomp.Content() {
+			for _, it := range items {
+				@selectcomp.Item(selectcomp.ItemProps{Value: it.Value}) {
+					{ CategoryName(ctx, it.Value) }
+				}
+			}
+		}
 	}
 }
 

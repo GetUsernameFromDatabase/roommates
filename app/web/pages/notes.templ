@@ -2,6 +2,7 @@ package pages
 
 import "roommates/web/components"
 import "roommates/web/components/button"
+import "roommates/web/components/checkbox"
 import "roommates/web/components/field"
 import "roommates/web/components/input"
 import "roommates/web/components/textarea"
@@ -379,13 +380,7 @@ templ NoteEditor(actor services.Membership, f NoteForm) {
 				<div class="flex flex-wrap items-center gap-3">
 					if f.IsAuthor {
 						<label class="flex min-h-11 items-center gap-3">
-							<input
-								type="checkbox"
-								name="private"
-								value="1"
-								checked?={ f.Input.Private }
-								class="size-5 accent-primary"
-							/>
+							@checkbox.Checkbox(checkbox.Props{Name: "private", Value: "1", DefaultChecked: f.Input.Private, Class: "size-5"})
 							@components.T(locales.LK_NotesPrivate)
 						</label>
 					}

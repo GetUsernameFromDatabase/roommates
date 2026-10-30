@@ -124,6 +124,10 @@ en:
     category: Category
     receipt-hint: Add a picture of the receipt
     date: Date
+    date-previous-month: Go to the previous month
+    date-next-month: Go to the next month
+    date-today: Today
+    date-selected: selected
     split: Split
     split-equal: Equally between the ticked
     split-custom: By the amounts typed

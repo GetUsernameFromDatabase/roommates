@@ -124,6 +124,10 @@ et:
     category: Kategooria
     receipt-hint: Lisa pilt tšekist
     date: Kuupäev
+    date-previous-month: Mine eelmisele kuule
+    date-next-month: Mine järgmisele kuule
+    date-today: Täna
+    date-selected: valitud
     split: Jagamine
     split-equal: Võrdselt märgitute vahel
     split-custom: Sisestatud summade järgi

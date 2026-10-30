@@ -15,6 +15,7 @@ import (
 	"roommates/internal/storage"
 	"roommates/web/assets"
 	"roommates/web/renderer"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -176,7 +177,14 @@ func registerAssets(r *gin.Engine) {
 		log.Fatal().Err(err).Msg("could not get public assets")
 	}
 
-	r.StaticFS("/assets", http.FS(publicFS))
+	// the bundle's name changes with its content, a missing one stays uncached for the next deploy
+	assetRoutes := r.Group("/assets", func(c *gin.Context) {
+		name, isBundle := strings.CutPrefix(c.Request.URL.Path, "/assets/js/")
+		if _, err := fs.Stat(publicFS, "js/"+name); isBundle && err == nil {
+			c.Header("Cache-Control", "public, max-age=31536000, immutable")
+		}
+	})
+	assetRoutes.StaticFS("/", http.FS(publicFS))
 	r.StaticFileFS("/favicon.ico", "favicon/favicon.ico", http.FS(assetFS))
 	for _, icon := range []string{"web-app-manifest-192x192.png", "web-app-manifest-512x512.png", "apple-touch-icon.png", "favicon.svg"} {
 		r.StaticFileFS("/icons/"+icon, "favicon/"+icon, http.FS(assetFS))

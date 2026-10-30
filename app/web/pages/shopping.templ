@@ -28,12 +28,10 @@ templ ShoppingList(actor services.Membership, l services.ShoppingList, errorMess
 		@shoppingListHeader(actor, l)
 		// saved on pick, what the list's expenses start from
 		<form hx-post={ string(shoppingListURL(actor, l, "category")) } hx-trigger="change" hx-swap="none" class="-mt-5 flex items-center gap-2">
-			<label for="list-category" class="text-sm text-muted-foreground">
+			<label for="list-category-trigger" class="text-sm text-muted-foreground">
 				@components.T(locales.LK_ExpensesCategory)
 			</label>
-			<select id="list-category" name="category" class={ utils.CN(selectClass, "h-9 w-auto bg-card dark:bg-card") }>
-				@categoryOptions(l.List.Category)
-			</select>
+			@categorySelect("list-category", l.List.Category, "bg-card data-[size=default]:h-9 dark:bg-card", nil)
 		</form>
 		@shoppingListContent(actor, l, errorMessage)
 		if l.List.CreatedBy == actor.UserID {
