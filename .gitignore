@@ -3,7 +3,7 @@ server.pem
 
 .env
 logs/
-# Task's sources checksums, e.g. assets-signal
+# Task's sources checksums, e.g. restart-signal
 .task/
 
 # --- [https://shadcn-templ.com/docs/installation#build-and-deploy] ---

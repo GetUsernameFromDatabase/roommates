@@ -1,7 +1,7 @@
 # Graph Report - roommates  (2026-10-31)
 
 ## Corpus Check
-- 286 files · ~298,469 words
+- 286 files · ~298,473 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 55 file(s) not represented in the graph (top: .templ 38, (none) 6, .css 5)
 
@@ -11,7 +11,7 @@
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `d98f96df`
+- Built from commit: `0f1c0542`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -156,10 +156,10 @@
 - select_templ.go
 - useListNavigation
 - server
-- assets-signal
+- restart-signal
 - dev
 - error-page
-- build
+- vendor
 - tailwind-version
 - scripts-watch
 - forgot-password-page
@@ -605,8 +605,8 @@ Cohesion: 0.22
 Nodes (6): buildMessage(), Message, TestBuildMessage(), LogMailer, SMTPMailer, fakeMailer
 
 ### Community 112 - "tasks"
-Cohesion: 0.20
-Nodes (10): cmds, desc, tasks, assets-watch, templ, vendor, cmds, desc (+2 more)
+Cohesion: 0.18
+Nodes (11): cmds, desc, task, cmds, desc, tasks, build, restart-watch (+3 more)
 
 ### Community 113 - "card_templ.go"
 Cohesion: 0.11
@@ -708,9 +708,9 @@ Nodes (12): doSwitch(), isCrossOrientationCloseKey(), isCrossOrientationOpenKey(
 Cohesion: 0.33
 Nodes (6): SERVER_PORT, cmds, desc, dotenv, env, server
 
-### Community 152 - "assets-signal"
+### Community 152 - "restart-signal"
 Cohesion: 0.33
-Nodes (6): cmds, desc, sources, use_gitignore, exclude, assets-signal
+Nodes (6): cmds, desc, sources, use_gitignore, exclude, restart-signal
 
 ### Community 153 - "dev"
 Cohesion: 0.40
@@ -720,9 +720,9 @@ Nodes (5): cmds, desc, env, SHADCN_TEMPL_DEV, dev
 Cohesion: 0.50
 Nodes (4): back, description, title, error-page
 
-### Community 155 - "build"
-Cohesion: 0.50
-Nodes (4): cmds, desc, task, build
+### Community 155 - "vendor"
+Cohesion: 0.67
+Nodes (3): vendor, cmds, desc
 
 ### Community 156 - "tailwind-version"
 Cohesion: 0.50
