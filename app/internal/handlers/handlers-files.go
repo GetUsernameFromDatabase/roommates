@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"cmp"
+	"context"
 	"errors"
 	"mime"
 	"net/http"
@@ -11,6 +12,7 @@ import (
 	"roommates/internal/utils"
 	"roommates/web/pages"
 
+	"github.com/a-h/templ"
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5/pgtype"
 )
@@ -178,6 +180,79 @@ func (h *DefaultHandler) UploadShoppingItemFile(ctx *gin.Context) {
 
 // -----------------------------------------------------------------------------
 
+// FileTargetLoader gets what the route points at and the path of its page,
+// or shows the error page and returns false
+type FileTargetLoader func(ctx *gin.Context) (services.FileTarget, string, bool)
+
+func (h *DefaultHandler) ShoppingItemFileTarget(ctx *gin.Context) (services.FileTarget, string, bool) {
+	listID, it, ok := h.loadShoppingItem(ctx)
+	return services.FileTarget{NoteID: pgtype.UUID{}, ListID: listID, ShoppingItemID: it.ID, ExpenseID: pgtype.UUID{}, MessageID: pgtype.UUID{}},
+		shoppingItemPath(membershipFromContext(ctx).HouseholdID, listID, it.ID), ok
+}
+
+func (h *DefaultHandler) NoteFileTarget(ctx *gin.Context) (services.FileTarget, string, bool) {
+	n, ok := h.loadNote(ctx)
+	return services.FileTarget{NoteID: n.ID, ListID: pgtype.UUID{}, ShoppingItemID: pgtype.UUID{}, ExpenseID: pgtype.UUID{}, MessageID: pgtype.UUID{}},
+		notePath(membershipFromContext(ctx).HouseholdID, n.ID), ok
+}
+
+func (h *DefaultHandler) ExpenseFileTarget(ctx *gin.Context) (services.FileTarget, string, bool) {
+	e, ok := h.loadExpense(ctx)
+	return services.FileTarget{NoteID: pgtype.UUID{}, ListID: pgtype.UUID{}, ShoppingItemID: pgtype.UUID{}, ExpenseID: e.Expense.ID, MessageID: pgtype.UUID{}},
+		expensePath(membershipFromContext(ctx).HouseholdID, e.Expense.ID), ok
+}
+
+// FileRefRoutes adds the routes that attach existing files to what load gets
+func (h *DefaultHandler) FileRefRoutes(group gin.IRoutes, load FileTargetLoader) {
+	group.GET("/files/picks", h.attachFilePicks(load))
+	group.POST("/files/attach", h.changeFileRef(load, h.service.AttachFile))
+	group.POST("/files/detach", h.changeFileRef(load, h.service.DetachFile))
+}
+
+// attachFilePicks lists the existing files that can be attached, ?q= narrows them down
+func (h *DefaultHandler) attachFilePicks(load FileTargetLoader) gin.HandlerFunc {
+	return func(ctx *gin.Context) {
+		t, back, ok := load(ctx)
+		if !ok {
+			return
+		}
+		actor := membershipFromContext(ctx)
+		files, err := h.service.ListAttachableFiles(ctx, actor, t, ctx.Query("q"))
+		if err != nil {
+			pageError(ctx, err)
+			return
+		}
+		RenderTempl(ctx, pages.AttachFilePicks(actor, templ.SafeURL(back), files))
+	}
+}
+
+// changeFileRef applies change to the "file_id" form field and goes back to the page,
+// or to the one in the form: a receipt is also listed on the items bought under its expense
+func (h *DefaultHandler) changeFileRef(load FileTargetLoader,
+	change func(context.Context, services.Membership, services.FileTarget, pgtype.UUID) error) gin.HandlerFunc {
+	return func(ctx *gin.Context) {
+		t, back, ok := load(ctx)
+		if !ok {
+			return
+		}
+		fileID, err := utils.ParseUUID(ctx.PostForm("file_id"))
+		if err != nil {
+			RenderTemplStatus(ctx, http.StatusNotFound, pages.NotFound())
+			return
+		}
+		if err := change(ctx, membershipFromContext(ctx), t, fileID); err != nil {
+			pageError(ctx, err)
+			return
+		}
+		if next := ctx.PostForm(g.QueryNext); next != "" {
+			back = safeNextPath(next)
+		}
+		Redirect(ctx, back)
+	}
+}
+
+// -----------------------------------------------------------------------------
+
 // PageFile shows a file inside the app, with a way back to where it is attached
 func (h *DefaultHandler) PageFile(ctx *gin.Context) {
 	fileID, err := utils.ParseUUID(ctx.Param(g.ParamFileID))
@@ -255,6 +330,20 @@ func (h *DefaultHandler) serveFile(ctx *gin.Context, thumb bool) {
 		// the contents never change, its id would, the name can: the Download link has it in the address
 		"Cache-Control": "private, max-age=86400",
 	})
+}
+
+// KeepFile goes back to the page in the form, like [DefaultHandler.DeleteFile]
+func (h *DefaultHandler) KeepFile(ctx *gin.Context) {
+	fileID, err := utils.ParseUUID(ctx.Param(g.ParamFileID))
+	if err != nil {
+		RenderTemplStatus(ctx, http.StatusNotFound, pages.NotFound())
+		return
+	}
+	if err := h.service.KeepFile(ctx, membershipFromContext(ctx), fileID); err != nil {
+		pageError(ctx, err)
+		return
+	}
+	Redirect(ctx, safeNextPath(ctx.PostForm(g.QueryNext)))
 }
 
 // DeleteFile goes back to the page in the form, the Referer holds only the origin (Referrer-Policy strict-origin)

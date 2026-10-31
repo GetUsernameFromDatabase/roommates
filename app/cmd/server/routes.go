@@ -121,6 +121,7 @@ func initRoutes(r *gin.Engine, h *handlers.DefaultHandler, service *services.Def
 			list.GET("/items/:"+g.ParamItemID, h.PageShoppingItem)
 			list.POST("/items/:"+g.ParamItemID+"/description", h.SetShoppingItemDescription)
 			list.POST("/items/:"+g.ParamItemID+"/files", h.UploadShoppingItemFile)
+			h.FileRefRoutes(list.Group("/items/:"+g.ParamItemID), h.ShoppingItemFileTarget)
 
 			household.GET("/expenses", h.PageExpenses)
 			household.GET("/expenses/new", h.PageNewExpense)
@@ -130,6 +131,7 @@ func initRoutes(r *gin.Engine, h *handlers.DefaultHandler, service *services.Def
 			expense.POST("/delete", h.DeleteExpense)
 			expense.POST("/shares/:"+g.ParamUserID+"/paid", h.SetExpenseSharePaid)
 			expense.POST("/files", h.UploadExpenseFile)
+			h.FileRefRoutes(expense, h.ExpenseFileTarget)
 			household.POST("/settlements", h.CreateSettlement)
 			household.POST("/settlements/:"+g.ParamSettleID+"/confirm", h.ConfirmSettlement)
 			household.POST("/settlements/:"+g.ParamSettleID+"/delete", h.DeleteSettlement)
@@ -145,6 +147,7 @@ func initRoutes(r *gin.Engine, h *handlers.DefaultHandler, service *services.Def
 			note.POST("/pin", h.SetNotePinned)
 			note.POST("/delete", h.DeleteNote)
 			note.POST("/files", h.UploadNoteFile)
+			h.FileRefRoutes(note, h.NoteFileTarget)
 
 			household.GET("/events", h.Events)
 			household.GET("/chat", h.PageChat)
@@ -159,6 +162,7 @@ func initRoutes(r *gin.Engine, h *handlers.DefaultHandler, service *services.Def
 			household.GET("/files/:"+g.ParamFileID+"/raw", h.DownloadFile)
 			household.GET("/files/:"+g.ParamFileID+"/thumb", h.DownloadFileThumb)
 			household.POST("/files/:"+g.ParamFileID+"/name", h.RenameFile)
+			household.POST("/files/:"+g.ParamFileID+"/keep", h.KeepFile)
 			household.POST("/files/:"+g.ParamFileID+"/delete", h.DeleteFile)
 		}
 	}

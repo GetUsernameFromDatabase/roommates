@@ -2,6 +2,7 @@ et:
   common:
     delete: Kustuta
     save: Salvesta
+    cancel: Tühista
     link-invalid: Link on vigane
   app:
     title: Toakaaslased
@@ -45,6 +46,7 @@ et:
     remove: Eemalda
     promote: Tee omanikuks
     leave: Lahku leibkonnast
+    leave-confirm: Lahku
     invites: Kutsed
     invites-description: Igaüks, kellel on link või kood, saab liituda kuni selle aegumiseni.
     no-invites: Aktiivseid kutseid pole
@@ -218,6 +220,13 @@ et:
     place-expense: Kulud
     place-message: Vestlus
     place-none: Lisamata
+    detach: Eemalda
+    detach-last: "Kas eemaldada %s?\nFail kaob samuti\nSee on viimane koht, kus fail on. Säilitamiseks kasuta enne valikut „Hoia failide all”."
+    deleted-with:
+      one: "1 fail kaob samuti\nSee on lisatud ainult siia. Säilitamiseks kasuta enne valikut „Hoia failide all”."
+      other: "%{count} faili kaob samuti\nNeed on lisatud ainult siia. Säilitamiseks kasuta enne valikut „Hoia failide all”."
+    delete-shared: "Eemaldatakse %d kohast\nFaili kustutamine eemaldab selle kõikjalt, kuhu see on lisatud."
+    keep: Hoia failide all
   chat:
     reference: Lisa olemasolev fail
     reference-search: Otsi faile

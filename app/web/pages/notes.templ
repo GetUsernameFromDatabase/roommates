@@ -189,7 +189,7 @@ templ NotePage(actor services.Membership, n services.Note, files []services.Atta
 							action={ noteURL + "/delete" }
 							method="post"
 							hx-boost="true"
-							hx-confirm={ utils.T(ctx, locales.LK_NotesDelete) + "?" }
+							hx-confirm={ deleteConfirm(ctx, utils.T(ctx, locales.LK_NotesDelete)+"?", lastRefs(files)) }
 							class="ml-auto"
 						>
 							@button.Button(button.Props{

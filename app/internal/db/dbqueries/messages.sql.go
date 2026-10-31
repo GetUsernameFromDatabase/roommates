@@ -24,7 +24,8 @@ type DeleteMessageParams struct {
 	AuthorID    pgtype.UUID `json:"author_id"`
 }
 
-// only the author deletes a message, its files go with it
+// only the author deletes a message, its references go with it, and with the last
+// reference a file that is not kept
 func (q *Queries) DeleteMessage(ctx context.Context, arg DeleteMessageParams) (int64, error) {
 	result, err := q.db.Exec(ctx, deleteMessage, arg.ID, arg.HouseholdID, arg.AuthorID)
 	if err != nil {
@@ -107,18 +108,14 @@ func (q *Queries) InsertMessage(ctx context.Context, arg InsertMessageParams) (p
 }
 
 const insertMessageFileRefs = `-- name: InsertMessageFileRefs :execrows
-INSERT INTO message_file_refs (message_id, file_id, household_id)
+INSERT INTO file_refs (message_id, file_id, household_id)
 SELECT $1::uuid,
   f.id,
   f.household_id
 FROM files f
-  LEFT JOIN notes n ON n.id = f.note_id
 WHERE f.id = ANY($2::uuid [])
   AND f.household_id = $3
-  AND (
-    n.id IS NULL
-    OR n.visibility = 'household'
-  )
+  AND file_visible(f.id, NULL)
 `
 
 type InsertMessageFileRefsParams struct {
@@ -137,43 +134,26 @@ func (q *Queries) InsertMessageFileRefs(ctx context.Context, arg InsertMessageFi
 }
 
 const listMessageFiles = `-- name: ListMessageFiles :many
-SELECT mf.id,
-  mf.message_id,
-  mf.name,
-  mf.mime,
-  mf.size_bytes,
-  mf.has_thumb
-FROM (
-    SELECT f.id,
-      f.message_id,
-      f.name,
-      f.mime,
-      f.size_bytes,
-      (f.thumb_key IS NOT NULL)::boolean AS has_thumb,
-      f.created_at
-    FROM files f
-    WHERE f.household_id = $1
-      AND f.message_id = ANY($2::uuid [])
-    UNION ALL
-    SELECT f.id,
-      r.message_id,
-      f.name,
-      f.mime,
-      f.size_bytes,
-      (f.thumb_key IS NOT NULL)::boolean AS has_thumb,
-      f.created_at
-    FROM message_file_refs r
-      JOIN files f ON f.id = r.file_id
-      LEFT JOIN notes n ON n.id = f.note_id
-    WHERE r.household_id = $1
-      AND r.message_id = ANY($2::uuid [])
-      AND (
-        n.id IS NULL
-        OR n.visibility = 'household'
-        OR n.author_id = $3
-      )
-  ) mf
-ORDER BY mf.created_at
+SELECT f.id,
+  r.message_id,
+  f.name,
+  f.mime,
+  f.size_bytes,
+  (f.thumb_key IS NOT NULL)::boolean AS has_thumb,
+  (
+    NOT f.kept
+    AND (
+      SELECT count(*)
+      FROM file_refs o
+      WHERE o.file_id = f.id
+    ) = 1
+  )::boolean AS last_ref
+FROM file_refs r
+  JOIN files f ON f.id = r.file_id
+WHERE r.household_id = $1
+  AND r.message_id = ANY($2::uuid [])
+  AND file_visible(f.id, $3)
+ORDER BY r.created_at
 `
 
 type ListMessageFilesParams struct {
@@ -189,10 +169,11 @@ type ListMessageFilesRow struct {
 	Mime      string      `json:"mime"`
 	SizeBytes int64       `json:"size_bytes"`
 	HasThumb  bool        `json:"has_thumb"`
+	LastRef   bool        `json:"last_ref"`
 }
 
-// the files sent with the messages and those they refer to, a referred file the user may
-// not see is left out, its note can have turned private since
+// the files of the messages, a file the user may not see is left out, its note can have
+// turned private since
 func (q *Queries) ListMessageFiles(ctx context.Context, arg ListMessageFilesParams) ([]ListMessageFilesRow, error) {
 	rows, err := q.db.Query(ctx, listMessageFiles, arg.HouseholdID, arg.MessageIds, arg.UserID)
 	if err != nil {
@@ -209,6 +190,7 @@ func (q *Queries) ListMessageFiles(ctx context.Context, arg ListMessageFilesPara
 			&i.Mime,
 			&i.SizeBytes,
 			&i.HasThumb,
+			&i.LastRef,
 		); err != nil {
 			return nil, err
 		}

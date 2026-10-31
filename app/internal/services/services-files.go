@@ -183,18 +183,32 @@ func (s *DefaultService) UploadFile(ctx context.Context, actor Membership, t Fil
 		stored = append(stored, k)
 		thumbKey = &k
 	}
-	fileID, err := s.db.InsertFile(ctx, dbqueries.InsertFileParams{
-		HouseholdID:    actor.HouseholdID,
-		UploaderID:     actor.UserID,
-		ObjectKey:      key,
-		ThumbKey:       thumbKey,
-		Name:           name,
-		Mime:           mime,
-		SizeBytes:      size,
-		NoteID:         t.NoteID,
-		ShoppingItemID: t.ShoppingItemID,
-		ExpenseID:      t.ExpenseID,
-		MessageID:      t.MessageID,
+	// a file on nothing is kept, without a reference nothing else would hold it
+	kept := !t.NoteID.Valid && !t.ShoppingItemID.Valid && !t.ExpenseID.Valid && !t.MessageID.Valid
+	var fileID pgtype.UUID
+	err = s.inTx(ctx, func(q *dbqueries.Queries) error {
+		var err error
+		fileID, err = q.InsertFile(ctx, dbqueries.InsertFileParams{
+			HouseholdID: actor.HouseholdID,
+			UploaderID:  actor.UserID,
+			ObjectKey:   key,
+			ThumbKey:    thumbKey,
+			Name:        name,
+			Mime:        mime,
+			SizeBytes:   size,
+			Kept:        kept,
+		})
+		if err != nil || kept {
+			return err
+		}
+		return q.InsertFileRef(ctx, dbqueries.InsertFileRefParams{
+			FileID:         fileID,
+			HouseholdID:    actor.HouseholdID,
+			NoteID:         t.NoteID,
+			ShoppingItemID: t.ShoppingItemID,
+			ExpenseID:      t.ExpenseID,
+			MessageID:      t.MessageID,
+		})
 	})
 	if err != nil {
 		deleteStored()
@@ -223,6 +237,12 @@ func (s *DefaultService) ListFiles(ctx context.Context, actor Membership, filter
 // ListReferableFiles returns up to [MaxReferablePicks] files whose name has q that a chat
 // message can refer to: all but those on private notes, the others could not open them
 func (s *DefaultService) ListReferableFiles(ctx context.Context, actor Membership, q string) ([]dbqueries.ListFilesRow, error) {
+	return s.filePicks(ctx, actor, q, nil)
+}
+
+// filePicks returns up to [MaxReferablePicks] files whose name has q that all members can see,
+// except those in skip
+func (s *DefaultService) filePicks(ctx context.Context, actor Membership, q string, skip []AttachedFile) ([]dbqueries.ListFilesRow, error) {
 	rows, err := s.db.ListFiles(ctx, dbqueries.ListFilesParams{
 		HouseholdID: actor.HouseholdID,
 		UserID:      actor.UserID,
@@ -231,7 +251,72 @@ func (s *DefaultService) ListReferableFiles(ctx context.Context, actor Membershi
 		Kind:        "",
 		Place:       "",
 	})
+	rows = slices.DeleteFunc(rows, func(r dbqueries.ListFilesRow) bool {
+		return slices.ContainsFunc(skip, func(a AttachedFile) bool { return a.ID == r.ID })
+	})
 	return rows[:min(len(rows), MaxReferablePicks)], err
+}
+
+// ListAttachableFiles returns up to [MaxReferablePicks] files whose name has q that are not on t
+// yet: all but those on private notes, the others could not open them
+func (s *DefaultService) ListAttachableFiles(ctx context.Context, actor Membership, t FileTarget, q string) ([]dbqueries.ListFilesRow, error) {
+	if err := s.checkFileTarget(ctx, actor, t); err != nil {
+		return nil, err
+	}
+	attached, err := s.AttachedFiles(ctx, actor, t)
+	if err != nil {
+		return nil, err
+	}
+	return s.filePicks(ctx, actor, q, attached)
+}
+
+// checkFileRefTarget is [DefaultService.checkFileTarget] for attaching and removing, which needs
+// a note, item or expense, a message gets its files when it is posted
+func (s *DefaultService) checkFileRefTarget(ctx context.Context, actor Membership, t FileTarget) error {
+	if !t.NoteID.Valid && !t.ShoppingItemID.Valid && !t.ExpenseID.Valid {
+		return g.ErrorInvalidInput
+	}
+	return s.checkFileTarget(ctx, actor, t)
+}
+
+// AttachFile shows an existing file on t too, a file that cannot go there is skipped, see
+// [dbqueries.Queries.InsertFileRef]; returns [g.ErrorNotFound] if the actor may not see t
+func (s *DefaultService) AttachFile(ctx context.Context, actor Membership, t FileTarget, fileID pgtype.UUID) error {
+	if err := s.checkFileRefTarget(ctx, actor, t); err != nil {
+		return err
+	}
+	return s.db.InsertFileRef(ctx, dbqueries.InsertFileRefParams{
+		FileID:         fileID,
+		HouseholdID:    actor.HouseholdID,
+		NoteID:         t.NoteID,
+		ShoppingItemID: t.ShoppingItemID,
+		ExpenseID:      t.ExpenseID,
+		MessageID:      t.MessageID,
+	})
+}
+
+// KeepFile makes the file stay after its last reference goes, there is no way back;
+// returns [g.ErrorNotFound] if the actor may not see the file
+func (s *DefaultService) KeepFile(ctx context.Context, actor Membership, fileID pgtype.UUID) error {
+	if _, err := s.GetFile(ctx, actor, fileID); err != nil {
+		return err
+	}
+	return rowsAffected(s.db.KeepFile(ctx, dbqueries.KeepFileParams{ID: fileID, HouseholdID: actor.HouseholdID}))
+}
+
+// DetachFile takes a file off t, a trigger deletes it with its last reference unless it is kept;
+// returns [g.ErrorNotFound] if the actor may not see t
+func (s *DefaultService) DetachFile(ctx context.Context, actor Membership, t FileTarget, fileID pgtype.UUID) error {
+	if err := s.checkFileRefTarget(ctx, actor, t); err != nil {
+		return err
+	}
+	return s.db.DeleteFileRef(ctx, dbqueries.DeleteFileRefParams{
+		FileID:         fileID,
+		HouseholdID:    actor.HouseholdID,
+		NoteID:         t.NoteID,
+		ShoppingItemID: t.ShoppingItemID,
+		ExpenseID:      t.ExpenseID,
+	})
 }
 
 // AttachedFiles returns the files of a note, item or expense the actor has already loaded
@@ -242,6 +327,7 @@ func (s *DefaultService) AttachedFiles(ctx context.Context, actor Membership, t 
 		ShoppingItemID: t.ShoppingItemID,
 		ExpenseID:      t.ExpenseID,
 		MessageID:      t.MessageID,
+		UserID:         actor.UserID,
 	})
 }
 

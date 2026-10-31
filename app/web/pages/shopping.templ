@@ -39,7 +39,7 @@ templ ShoppingList(actor services.Membership, l services.ShoppingList, errorMess
 				action={ shoppingListURL(actor, l, "delete") }
 				method="post"
 				hx-boost="true"
-				hx-confirm={ utils.T(ctx, locales.LK_ShoppingDeleteList) + "?" }
+				hx-confirm={ deleteConfirm(ctx, utils.T(ctx, locales.LK_ShoppingDeleteList)+"?", int(l.LastFiles)) }
 			>
 				@button.Button(button.Props{
 					Type:    button.TypeSubmit,

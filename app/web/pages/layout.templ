@@ -1,6 +1,7 @@
 package pages
 
 import "roommates/web/components"
+import "roommates/web/components/alertdialog"
 import "roommates/web/components/badge"
 import "roommates/web/components/button"
 import g "roommates/internal/config"
@@ -62,7 +63,48 @@ templ appShell(title string, nav *HouseholdNav) {
 			<main class={ utils.CN(pageMainClass, utils.IfElse(nav != nil, "pb-28 lg:pb-10", "")) }>
 				{ children... }
 			</main>
+			@confirmDialog()
 		</body>
+	}
+}
+
+// confirmDialog is the one dialog behind every hx-confirm, confirm-dialog.js fills it in and
+// opens it, so a list of messages does not need a dialog each
+templ confirmDialog() {
+	@alertdialog.AlertDialog(alertdialog.Props{ID: "confirm-dialog", Open: nil, DefaultOpen: false}) {
+		@alertdialog.Content(alertdialog.ContentProps{
+			Class:      "till-roll w-[calc(100vw-2rem)] gap-0 rounded-none bg-transparent p-0 ring-0",
+			Attributes: nil,
+			Size:       "",
+		}) {
+			<div class="till-paper">
+				@alertdialog.Title(alertdialog.TitleProps{
+					ID:         "",
+					Class:      "text-[1.375rem]/[1.15] font-[650] tracking-tight",
+					Attributes: templ.Attributes{"data-confirm-title": true},
+				})
+				@alertdialog.Description(alertdialog.DescriptionProps{ID: "", Class: "text-pretty", Attributes: nil}) {
+					<span class="stamp stamp-void" data-confirm-stamp></span>
+					<span class="block whitespace-pre-line" data-confirm-text></span>
+				}
+				<div class="till-perforation grid grid-cols-2 gap-2">
+					@alertdialog.Cancel(alertdialog.CancelProps{ID: "", Class: "h-11", Attributes: nil, Variant: "", Size: ""}) {
+						@components.T(locales.LK_CommonCancel)
+					}
+					@alertdialog.Action(alertdialog.ActionProps{
+						ID:      "",
+						Class:   "h-11",
+						Variant: button.VariantDestructive,
+						Size:    "",
+						Attributes: utils.MergeAttributes(alertdialog.CloseFor("confirm-dialog"), templ.Attributes{
+							"data-confirm-ok": utils.T(ctx, locales.LK_CommonDelete),
+						}),
+					}) {
+						@components.T(locales.LK_CommonDelete)
+					}
+				</div>
+			</div>
+		}
 	}
 }
 

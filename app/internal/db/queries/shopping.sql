@@ -34,6 +34,26 @@ UPDATE shopping_lists
 SET category = $3
 WHERE id = $1
   AND household_id = $2;
+-- the files that go with the list, cleared items hold on to their files too
+-- name: CountListOnlyFiles :one
+SELECT count(*)
+FROM files f
+WHERE f.household_id = sqlc.arg(household_id)
+  AND NOT f.kept
+  AND EXISTS (
+    SELECT 1
+    FROM file_refs r
+      JOIN shopping_items i ON i.id = r.shopping_item_id
+    WHERE r.file_id = f.id
+      AND i.list_id = sqlc.arg(list_id)
+  )
+  AND NOT EXISTS (
+    SELECT 1
+    FROM file_refs r
+      LEFT JOIN shopping_items i ON i.id = r.shopping_item_id
+    WHERE r.file_id = f.id
+      AND i.list_id IS DISTINCT FROM sqlc.arg(list_id)
+  );
 -- only the creator deletes a list
 -- name: DeleteShoppingList :execrows
 DELETE FROM shopping_lists
@@ -57,10 +77,12 @@ SELECT i.id,
   i.checked_at,
   checker.username AS checked_by_name,
   i.expense_id,
+  -- shortcut: counts a file only on a private note too, the item page hides it,
+  -- use file_visible here if the two ever need to agree
   (
     SELECT count(*)
-    FROM files f
-    WHERE f.shopping_item_id = i.id
+    FROM file_refs r
+    WHERE r.shopping_item_id = i.id
   ) AS file_count
 FROM shopping_items i
   LEFT JOIN users claimer ON claimer.id = i.claimed_by

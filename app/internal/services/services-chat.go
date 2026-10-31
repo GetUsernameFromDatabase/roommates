@@ -37,6 +37,8 @@ type MessageFile = dbqueries.ListMessageFilesRow
 type Message struct {
 	dbqueries.ListMessagesRow
 	Files []MessageFile
+	// LastFiles is how many files go with the message when it is deleted
+	LastFiles int
 }
 
 // Chat is a page of messages, newest first
@@ -155,7 +157,7 @@ func (s *DefaultService) ListChat(ctx context.Context, actor Membership, before 
 	c := Chat{Messages: make([]Message, 0, len(rows)), HasOlder: len(rows) > ChatPageSize}
 	ids := make([]pgtype.UUID, 0, len(rows))
 	for _, r := range rows[:min(len(rows), ChatPageSize)] {
-		c.Messages = append(c.Messages, Message{ListMessagesRow: r, Files: nil})
+		c.Messages = append(c.Messages, Message{ListMessagesRow: r, Files: nil, LastFiles: 0})
 		ids = append(ids, r.ID)
 	}
 	files, err := s.db.ListMessageFiles(ctx, dbqueries.ListMessageFilesParams{
@@ -172,6 +174,11 @@ func (s *DefaultService) ListChat(ctx context.Context, actor Membership, before 
 	}
 	for i := range c.Messages {
 		c.Messages[i].Files = byMessage[c.Messages[i].ID]
+		for _, f := range c.Messages[i].Files {
+			if f.LastRef {
+				c.Messages[i].LastFiles++
+			}
+		}
 	}
 	if !before.Valid {
 		if err := s.db.MarkChatRead(ctx, dbqueries.MarkChatReadParams{HouseholdID: actor.HouseholdID, UserID: actor.UserID}); err != nil {

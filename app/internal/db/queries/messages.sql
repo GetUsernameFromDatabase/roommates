@@ -40,66 +40,46 @@ FROM messages m
   JOIN users author ON author.id = m.author_id
 WHERE m.id = $1
   AND m.household_id = $2;
--- the files sent with the messages and those they refer to, a referred file the user may
--- not see is left out, its note can have turned private since
+-- the files of the messages, a file the user may not see is left out, its note can have
+-- turned private since
 -- name: ListMessageFiles :many
-SELECT mf.id,
-  mf.message_id,
-  mf.name,
-  mf.mime,
-  mf.size_bytes,
-  mf.has_thumb
-FROM (
-    SELECT f.id,
-      f.message_id,
-      f.name,
-      f.mime,
-      f.size_bytes,
-      (f.thumb_key IS NOT NULL)::boolean AS has_thumb,
-      f.created_at
-    FROM files f
-    WHERE f.household_id = sqlc.arg(household_id)
-      AND f.message_id = ANY(sqlc.arg(message_ids)::uuid [])
-    UNION ALL
-    SELECT f.id,
-      r.message_id,
-      f.name,
-      f.mime,
-      f.size_bytes,
-      (f.thumb_key IS NOT NULL)::boolean AS has_thumb,
-      f.created_at
-    FROM message_file_refs r
-      JOIN files f ON f.id = r.file_id
-      LEFT JOIN notes n ON n.id = f.note_id
-    WHERE r.household_id = sqlc.arg(household_id)
-      AND r.message_id = ANY(sqlc.arg(message_ids)::uuid [])
-      AND (
-        n.id IS NULL
-        OR n.visibility = 'household'
-        OR n.author_id = sqlc.arg(user_id)
-      )
-  ) mf
-ORDER BY mf.created_at;
+SELECT f.id,
+  r.message_id,
+  f.name,
+  f.mime,
+  f.size_bytes,
+  (f.thumb_key IS NOT NULL)::boolean AS has_thumb,
+  (
+    NOT f.kept
+    AND (
+      SELECT count(*)
+      FROM file_refs o
+      WHERE o.file_id = f.id
+    ) = 1
+  )::boolean AS last_ref
+FROM file_refs r
+  JOIN files f ON f.id = r.file_id
+WHERE r.household_id = sqlc.arg(household_id)
+  AND r.message_id = ANY(sqlc.arg(message_ids)::uuid [])
+  AND file_visible(f.id, sqlc.arg(user_id))
+ORDER BY r.created_at;
 -- refers to the files everyone in the household can see, the others are skipped
 -- name: InsertMessageFileRefs :execrows
-INSERT INTO message_file_refs (message_id, file_id, household_id)
+INSERT INTO file_refs (message_id, file_id, household_id)
 SELECT sqlc.arg(message_id)::uuid,
   f.id,
   f.household_id
 FROM files f
-  LEFT JOIN notes n ON n.id = f.note_id
 WHERE f.id = ANY(sqlc.arg(file_ids)::uuid [])
   AND f.household_id = sqlc.arg(household_id)
-  AND (
-    n.id IS NULL
-    OR n.visibility = 'household'
-  );
+  AND file_visible(f.id, NULL);
 -- name: GetMessageAuthor :one
 SELECT author_id
 FROM messages
 WHERE id = $1
   AND household_id = $2;
--- only the author deletes a message, its files go with it
+-- only the author deletes a message, its references go with it, and with the last
+-- reference a file that is not kept
 -- name: DeleteMessage :execrows
 DELETE FROM messages
 WHERE id = $1

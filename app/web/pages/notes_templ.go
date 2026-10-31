@@ -892,9 +892,9 @@ func NotePage(actor services.Membership, n services.Note, files []services.Attac
 						return templ_7745c5c3_Err
 					}
 					var templ_7745c5c3_Var38 string
-					templ_7745c5c3_Var38, templ_7745c5c3_Err = templruntime.NewAttributeExpression(utils.T(ctx, locales.LK_NotesDelete) + "?").Resolve(ctx)
+					templ_7745c5c3_Var38, templ_7745c5c3_Err = templruntime.NewAttributeExpression(deleteConfirm(ctx, utils.T(ctx, locales.LK_NotesDelete)+"?", lastRefs(files))).Resolve(ctx)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/notes.templ`, Line: 192, Col: 62}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/notes.templ`, Line: 192, Col: 97}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var38)
 					if templ_7745c5c3_Err != nil {

@@ -218,7 +218,7 @@ func HeaderComponent(title string) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 17, "\"><script src=\"/assets/lib/htmx.min.js\"></script><script src=\"/assets/lib/sse.min.js\"></script><script src=\"/assets/live-resync.js\"></script><script src=\"/assets/push.js\"></script><script src=\"/assets/menus.js\"></script>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 17, "\"><script src=\"/assets/lib/htmx.min.js\"></script><script src=\"/assets/lib/sse.min.js\"></script><script src=\"/assets/live-resync.js\"></script><script src=\"/assets/push.js\"></script><script src=\"/assets/menus.js\"></script><script src=\"/assets/confirm-dialog.js\"></script>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

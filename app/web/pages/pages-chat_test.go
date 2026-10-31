@@ -23,7 +23,7 @@ func TestChatRuns(t *testing.T) {
 			ReplyBody:       "",
 			AuthorID:        author,
 			CreatedAt:       pgtype.Timestamptz{Time: at.Add(time.Duration(minutes) * time.Minute), InfinityModifier: pgtype.Finite, Valid: true},
-		}, Files: nil}
+		}, Files: nil, LastFiles: 0}
 	}
 	// newest first: jaan 14:20, mari 14:10, mari 14:06, mari 14:00
 	ms := []services.Message{msg(jaan, 20), msg(mari, 10), msg(mari, 6), msg(mari, 0)}
@@ -38,7 +38,7 @@ func TestChatRuns(t *testing.T) {
 		}
 	}
 	file := func(name string, thumb bool) services.MessageFile {
-		return services.MessageFile{ID: pgtype.UUID{}, MessageID: pgtype.UUID{}, Name: name, Mime: "", SizeBytes: 0, HasThumb: thumb}
+		return services.MessageFile{ID: pgtype.UUID{}, MessageID: pgtype.UUID{}, Name: name, Mime: "", SizeBytes: 0, HasThumb: thumb, LastRef: false}
 	}
 	images, others := splitFiles([]services.MessageFile{file("a.jpg", true), file("b.pdf", false), file("c.png", true)})
 	if len(images) != 2 || images[0].Name != "a.jpg" || images[1].Name != "c.png" || len(others) != 1 || others[0].Name != "b.pdf" {

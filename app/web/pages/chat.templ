@@ -174,12 +174,8 @@ templ ChatFilePicks(actor services.Membership, files []dbqueries.ListFilesRow) {
 		}
 		for _, f := range files {
 			<li>
-				<button type="button" data-chat-ref={ f.ID.String() } data-name={ f.Name } class="flex min-h-11 w-full items-center gap-2 rounded-lg px-2 text-left text-sm outline-none hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/50">
-					if f.HasThumb {
-						<img src={ string(householdURL(actor.HouseholdID, "files", f.ID.String())) + "/thumb" } alt="" loading="lazy" class="size-8 shrink-0 rounded object-cover"/>
-					}
-					<span class="min-w-0 flex-1 truncate">{ f.Name }</span>
-					<span class="shrink-0 text-xs text-muted-foreground">{ formatSize(f.SizeBytes) }</span>
+				<button type="button" data-chat-ref={ f.ID.String() } data-name={ f.Name } class={ filePickClass }>
+					@filePickContent(actor, f)
 				</button>
 			</li>
 		}
@@ -314,7 +310,7 @@ templ chatMessages(actor services.Membership, c services.Chat, older bool) {
 									hx-target="#chat-messages"
 									hx-select="#chat-messages"
 									hx-swap="outerHTML"
-									hx-confirm={ utils.T(ctx, locales.LK_ChatDelete) + "?" }
+									hx-confirm={ deleteConfirm(ctx, utils.T(ctx, locales.LK_ChatDelete)+"?", m.LastFiles) }
 								>
 									@tooltip.Tooltip() {
 										@button.Button(button.Props{Type: button.TypeSubmit, Variant: button.VariantGhost, Size: button.SizeSm, Class: chatControlClass + " hover:text-destructive", Attributes: tooltip.Trigger(ctx)}) {

@@ -100,6 +100,291 @@ func TestSplitFileName(t *testing.T) {
 	}
 }
 
+func TestFileRefs(t *testing.T) {
+	s := newTestService(t)
+	ctx := context.Background()
+	ownerM, memberM, strangerM := newTestHousehold(t, s)
+	body := []byte("a file")
+	upload := func(actor Membership, target FileTarget, name string) pgtype.UUID {
+		t.Helper()
+		id, err := s.UploadFile(ctx, actor, target, name, bytes.NewReader(body), int64(len(body)))
+		if err != nil {
+			t.Fatal(err)
+		}
+		return id
+	}
+	newItem := func(text string) (pgtype.UUID, FileTarget) {
+		t.Helper()
+		listID, err := s.CreateShoppingList(ctx, ownerM, text, "groceries")
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err := s.AddShoppingItem(ctx, ownerM, listID, text, ""); err != nil {
+			t.Fatal(err)
+		}
+		list, err := s.GetShoppingList(ctx, ownerM, listID)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return listID, FileTarget{NoteID: pgtype.UUID{}, ListID: listID, ShoppingItemID: list.Items[0].ID, ExpenseID: pgtype.UUID{}, MessageID: pgtype.UUID{}}
+	}
+	listID, item := newItem("Cheese")
+	own := upload(memberM, item, "own.txt")
+	loose := upload(ownerM, FileTarget{NoteID: pgtype.UUID{}, ListID: pgtype.UUID{}, ShoppingItemID: pgtype.UUID{}, ExpenseID: pgtype.UUID{}, MessageID: pgtype.UUID{}}, "loose.txt")
+	foreign := upload(strangerM, FileTarget{NoteID: pgtype.UUID{}, ListID: pgtype.UUID{}, ShoppingItemID: pgtype.UUID{}, ExpenseID: pgtype.UUID{}, MessageID: pgtype.UUID{}}, "foreign.txt")
+	private, err := s.CreateNote(ctx, ownerM, NoteInput{Title: "Secret", BodyMD: "", Private: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	secret := upload(ownerM, FileTarget{NoteID: private, ListID: pgtype.UUID{}, ShoppingItemID: pgtype.UUID{}, ExpenseID: pgtype.UUID{}, MessageID: pgtype.UUID{}}, "secret.txt")
+
+	attachedIDs := func(actor Membership) []pgtype.UUID {
+		t.Helper()
+		files, err := s.AttachedFiles(ctx, actor, item)
+		if err != nil {
+			t.Fatal(err)
+		}
+		ids := []pgtype.UUID{}
+		for _, f := range files {
+			// loose is kept, the others are only on the item
+			if f.LastRef == (f.ID == loose) {
+				t.Errorf("file %s has LastRef %v", f.Name, f.LastRef)
+			}
+			ids = append(ids, f.ID)
+		}
+		return ids
+	}
+	gone := func(what string, id pgtype.UUID) {
+		t.Helper()
+		_, err := s.GetFile(ctx, ownerM, id)
+		wantErr(t, what, err, g.ErrorNotFound)
+	}
+	pickIDs := func(actor Membership) []pgtype.UUID {
+		t.Helper()
+		files, err := s.ListAttachableFiles(ctx, actor, item, "")
+		if err != nil {
+			t.Fatal(err)
+		}
+		ids := []pgtype.UUID{}
+		for _, f := range files {
+			ids = append(ids, f.ID)
+		}
+		return ids
+	}
+
+	// a file already on the item and one on a private note cannot be picked
+	if got := pickIDs(ownerM); !slices.Equal(got, []pgtype.UUID{loose}) {
+		t.Fatalf("picks %v, want only %v", got, loose)
+	}
+	_, err = s.ListAttachableFiles(ctx, strangerM, item, "")
+	wantErr(t, "stranger lists picks", err, g.ErrorNotFound)
+
+	// the second attach, the item's own file, another household's and a private one are skipped
+	for _, id := range []pgtype.UUID{loose, loose, own, foreign, secret} {
+		if err := s.AttachFile(ctx, memberM, item, id); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if got := attachedIDs(ownerM); !slices.Equal(got, []pgtype.UUID{own, loose}) {
+		t.Fatalf("attached %v", got)
+	}
+	if got := pickIDs(ownerM); len(got) != 0 {
+		t.Fatalf("attached file still picked: %v", got)
+	}
+	list, err := s.GetShoppingList(ctx, ownerM, listID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if list.Items[0].FileCount != 2 {
+		t.Fatalf("file count %d", list.Items[0].FileCount)
+	}
+
+	wantErr(t, "stranger attaches", s.AttachFile(ctx, strangerM, item, foreign), g.ErrorNotFound)
+	wantErr(t, "stranger detaches", s.DetachFile(ctx, strangerM, item, loose), g.ErrorNotFound)
+	none := FileTarget{NoteID: pgtype.UUID{}, ListID: pgtype.UUID{}, ShoppingItemID: pgtype.UUID{}, ExpenseID: pgtype.UUID{}, MessageID: pgtype.UUID{}}
+	wantErr(t, "attach to nothing", s.AttachFile(ctx, ownerM, none, loose), g.ErrorInvalidInput)
+
+	// a kept file stays when its last reference goes, back among the unattached files
+	if err := s.DetachFile(ctx, ownerM, item, loose); err != nil {
+		t.Fatal(err)
+	}
+	if got := attachedIDs(ownerM); !slices.Equal(got, []pgtype.UUID{own}) {
+		t.Fatalf("after detaching %v", got)
+	}
+	unattached, err := s.ListFiles(ctx, ownerM, FileFilter{Query: "", Kind: "", Place: "none"})
+	if err != nil || len(unattached) != 1 || unattached[0].ID != loose {
+		t.Fatalf("unattached %+v, %v", unattached, err)
+	}
+
+	// any member can take off the last reference, which deletes the file and queues its object
+	var key string
+	if err := s.pool.QueryRow(ctx, "SELECT object_key FROM files WHERE id = $1", own).Scan(&key); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.DetachFile(ctx, ownerM, item, own); err != nil {
+		t.Fatal(err)
+	}
+	gone("file without references", own)
+	var queued int
+	if err := s.pool.QueryRow(ctx, "SELECT count(*) FROM file_purges WHERE object_key = $1", key).Scan(&queued); err != nil || queued != 1 {
+		t.Fatalf("queued %d, %v", queued, err)
+	}
+
+	// a file stays while something else refers to it, even where it was uploaded is gone
+	ours, err := s.CreateNote(ctx, ownerM, NoteInput{Title: "Ours", BodyMD: "", Private: false})
+	if err != nil {
+		t.Fatal(err)
+	}
+	onNote := upload(memberM, FileTarget{NoteID: ours, ListID: pgtype.UUID{}, ShoppingItemID: pgtype.UUID{}, ExpenseID: pgtype.UUID{}, MessageID: pgtype.UUID{}}, "note.txt")
+	if err := s.AttachFile(ctx, ownerM, item, onNote); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.DeleteNote(ctx, ownerM, ours); err != nil {
+		t.Fatal(err)
+	}
+	if got := attachedIDs(ownerM); !slices.Equal(got, []pgtype.UUID{onNote}) {
+		t.Fatalf("after deleting the note %v", got)
+	}
+	f, err := s.GetFile(ctx, memberM, onNote)
+	if err != nil || !f.ShoppingItemID.Valid {
+		t.Fatalf("after deleting the note %+v, %v", f, err)
+	}
+
+	// any member who sees the file can keep it, then it outlives the deleted item
+	wantErr(t, "stranger keeps", s.KeepFile(ctx, strangerM, onNote), g.ErrorNotFound)
+	if err := s.KeepFile(ctx, ownerM, onNote); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.DeleteShoppingItem(ctx, ownerM, listID, item.ShoppingItemID); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := s.GetFile(ctx, ownerM, onNote); err != nil {
+		t.Fatal(err)
+	}
+
+	// a deleted item takes along what only it holds
+	otherList, other := newItem("Bread")
+	onOther := upload(memberM, other, "bread.txt")
+	if err := s.DeleteShoppingItem(ctx, ownerM, otherList, other.ShoppingItemID); err != nil {
+		t.Fatal(err)
+	}
+	gone("file of the deleted item", onOther)
+
+	// deleting a message that refers to a kept file of another member leaves it
+	if err := s.PostMessage(ctx, ownerM, "", pgtype.UUID{}, nil, []pgtype.UUID{onNote}); err != nil {
+		t.Fatal(err)
+	}
+	c, err := s.ListChat(ctx, ownerM, pgtype.UUID{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := s.DeleteMessage(ctx, ownerM, c.Messages[0].ID); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := s.GetFile(ctx, ownerM, onNote); err != nil {
+		t.Fatal(err)
+	}
+
+	// the references go with the file
+	thirdList, third := newItem("Milk")
+	if err := s.AttachFile(ctx, ownerM, third, onNote); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.DeleteFile(ctx, memberM, onNote); err != nil {
+		t.Fatal(err)
+	}
+	if files, err := s.AttachedFiles(ctx, ownerM, third); err != nil || len(files) != 0 {
+		t.Fatalf("after deleting the file %+v, %v", files, err)
+	}
+
+	// what a delete would take along: on one item, on two items of the list counted once,
+	// not a kept file and not one that is also elsewhere
+	if err := s.AddShoppingItem(ctx, ownerM, thirdList, "Eggs", ""); err != nil {
+		t.Fatal(err)
+	}
+	counted, err := s.GetShoppingList(ctx, ownerM, thirdList)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if counted.LastFiles != 0 {
+		t.Fatalf("empty list would delete %d files", counted.LastFiles)
+	}
+	sibling := third
+	sibling.ShoppingItemID = counted.Items[0].ID
+	if sibling.ShoppingItemID == third.ShoppingItemID {
+		sibling.ShoppingItemID = counted.Items[1].ID
+	}
+	_, elsewhere := newItem("Tea")
+	alone := upload(memberM, third, "alone.txt")
+	twice := upload(memberM, third, "twice.txt")
+	shared := upload(memberM, third, "shared.txt")
+	keptOnList := upload(ownerM, none, "kept.txt")
+	for _, a := range []struct {
+		target FileTarget
+		id     pgtype.UUID
+	}{{sibling, twice}, {elsewhere, shared}, {third, keptOnList}} {
+		if err := s.AttachFile(ctx, ownerM, a.target, a.id); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if counted, err = s.GetShoppingList(ctx, ownerM, thirdList); err != nil {
+		t.Fatal(err)
+	}
+	if counted.LastFiles != 2 {
+		t.Fatalf("list would delete %d files, want alone and twice", counted.LastFiles)
+	}
+	if err := s.DetachFile(ctx, ownerM, third, alone); err != nil {
+		t.Fatal(err)
+	}
+
+	// a delete of the file itself takes it from every place
+	f, err = s.GetFile(ctx, ownerM, shared)
+	if err != nil || f.RefCount != 2 {
+		t.Fatalf("file on two places %+v, %v", f, err)
+	}
+
+	// a message tells a file that goes with it from a kept one
+	sent := FileTarget{NoteID: pgtype.UUID{}, ListID: pgtype.UUID{}, ShoppingItemID: pgtype.UUID{}, ExpenseID: pgtype.UUID{}, MessageID: pgtype.UUID{}}
+	if err := s.PostMessage(ctx, ownerM, "", pgtype.UUID{}, nil, []pgtype.UUID{keptOnList}); err != nil {
+		t.Fatal(err)
+	}
+	c, err = s.ListChat(ctx, ownerM, pgtype.UUID{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	sent.MessageID = c.Messages[0].ID
+	upload(ownerM, sent, "photo.txt")
+	if c, err = s.ListChat(ctx, ownerM, pgtype.UUID{}); err != nil {
+		t.Fatal(err)
+	}
+	if c.Messages[0].LastFiles != 1 || len(c.Messages[0].Files) != 2 {
+		t.Errorf("message would delete %d of its %d files, want 1 of 2", c.Messages[0].LastFiles, len(c.Messages[0].Files))
+	}
+
+	// attaching to a private note does not take a file away from its uploader
+	onPrivate := FileTarget{NoteID: private, ListID: pgtype.UUID{}, ShoppingItemID: pgtype.UUID{}, ExpenseID: pgtype.UUID{}, MessageID: pgtype.UUID{}}
+	mine := upload(memberM, third, "mine.txt")
+	if err := s.AttachFile(ctx, ownerM, onPrivate, mine); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.DetachFile(ctx, memberM, third, mine); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := s.GetFile(ctx, memberM, mine); err != nil {
+		t.Fatal(err)
+	}
+
+	// nor a kept file from anyone, keeping a private note's file shares it
+	_, err = s.GetFile(ctx, memberM, secret)
+	wantErr(t, "member opens private file", err, g.ErrorNotFound)
+	if err := s.KeepFile(ctx, ownerM, secret); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := s.GetFile(ctx, memberM, secret); err != nil {
+		t.Fatal(err)
+	}
+}
+
 func TestRenameFile(t *testing.T) {
 	s := newTestService(t)
 	ctx := context.Background()

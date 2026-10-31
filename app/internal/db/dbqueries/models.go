@@ -39,24 +39,31 @@ type ExpenseShare struct {
 }
 
 type File struct {
-	ID             pgtype.UUID        `json:"id"`
-	HouseholdID    pgtype.UUID        `json:"household_id"`
-	UploaderID     pgtype.UUID        `json:"uploader_id"`
-	ObjectKey      string             `json:"object_key"`
-	ThumbKey       *string            `json:"thumb_key"`
-	Name           string             `json:"name"`
-	Mime           string             `json:"mime"`
-	SizeBytes      int64              `json:"size_bytes"`
-	NoteID         pgtype.UUID        `json:"note_id"`
-	ShoppingItemID pgtype.UUID        `json:"shopping_item_id"`
-	CreatedAt      pgtype.Timestamptz `json:"created_at"`
-	ExpenseID      pgtype.UUID        `json:"expense_id"`
-	MessageID      pgtype.UUID        `json:"message_id"`
+	ID          pgtype.UUID        `json:"id"`
+	HouseholdID pgtype.UUID        `json:"household_id"`
+	UploaderID  pgtype.UUID        `json:"uploader_id"`
+	ObjectKey   string             `json:"object_key"`
+	ThumbKey    *string            `json:"thumb_key"`
+	Name        string             `json:"name"`
+	Mime        string             `json:"mime"`
+	SizeBytes   int64              `json:"size_bytes"`
+	CreatedAt   pgtype.Timestamptz `json:"created_at"`
+	Kept        bool               `json:"kept"`
 }
 
 type FilePurge struct {
 	ObjectKey string             `json:"object_key"`
 	CreatedAt pgtype.Timestamptz `json:"created_at"`
+}
+
+type FileRef struct {
+	FileID         pgtype.UUID        `json:"file_id"`
+	HouseholdID    pgtype.UUID        `json:"household_id"`
+	NoteID         pgtype.UUID        `json:"note_id"`
+	ShoppingItemID pgtype.UUID        `json:"shopping_item_id"`
+	ExpenseID      pgtype.UUID        `json:"expense_id"`
+	MessageID      pgtype.UUID        `json:"message_id"`
+	CreatedAt      pgtype.Timestamptz `json:"created_at"`
 }
 
 type Household struct {
@@ -93,12 +100,6 @@ type Message struct {
 	Body        string             `json:"body"`
 	CreatedAt   pgtype.Timestamptz `json:"created_at"`
 	ReplyToID   pgtype.UUID        `json:"reply_to_id"`
-}
-
-type MessageFileRef struct {
-	MessageID   pgtype.UUID `json:"message_id"`
-	FileID      pgtype.UUID `json:"file_id"`
-	HouseholdID pgtype.UUID `json:"household_id"`
 }
 
 type Note struct {

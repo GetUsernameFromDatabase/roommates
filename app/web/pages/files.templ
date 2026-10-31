@@ -11,8 +11,10 @@ import "roommates/internal/events"
 import g "roommates/internal/config"
 import "roommates/internal/locales"
 import "roommates/internal/utils"
+import "github.com/invopop/ctxi18n/i18n"
 import "github.com/jackc/pgx/v5/pgtype"
 import "cmp"
+import "context"
 import "net/url"
 import "unicode/utf8"
 
@@ -52,7 +54,7 @@ templ HouseholdFiles(actor services.Membership, files []dbqueries.ListFilesRow, 
 				} else {
 					<ul class="divide-y">
 						for _, f := range files {
-							@fileRow(actor, householdURL(actor.HouseholdID, "files"), f.ID, f.Name, f.HasThumb, f.SizeBytes, f.UploaderID, f.UploaderName, f.CreatedAt) {
+							@fileRow(actor, householdURL(actor.HouseholdID, "files"), "", false, f.RefCount, f.ID, f.Name, f.HasThumb, f.SizeBytes, f.UploaderID, f.UploaderName, f.CreatedAt) {
 								if f.NoteTitle != nil {
 									<a href={ householdURL(actor.HouseholdID, "notes", f.NoteID.String()) } class={ fileContextClass }>
 										{ utils.T(ctx, locales.LK_FilesOnNote, *f.NoteTitle) }
@@ -79,7 +81,35 @@ templ HouseholdFiles(actor services.Membership, files []dbqueries.ListFilesRow, 
 	}
 }
 
-const fileContextClass = "block text-xs text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
+// deleteConfirm adds to question how many files would go with the deletion
+func deleteConfirm(ctx context.Context, question string, files int) string {
+	if files == 0 {
+		return question
+	}
+	return question + "\n" + utils.N(ctx, locales.LK_FilesDeletedWith, files, i18n.M{"count": files})
+}
+
+// deleteFileConfirm says where else a file on refs places goes from, the Files list shows only its first
+func deleteFileConfirm(ctx context.Context, name string, refs int64) string {
+	question := utils.T(ctx, locales.LK_CommonDelete) + " " + name + "?"
+	if refs < 2 {
+		return question
+	}
+	return question + "\n" + utils.T(ctx, locales.LK_FilesDeleteShared, refs)
+}
+
+// lastRefs counts the files that go with what they are attached to
+func lastRefs(files []services.AttachedFile) int {
+	n := 0
+	for _, f := range files {
+		if f.LastRef {
+			n++
+		}
+	}
+	return n
+}
+
+const fileContextClass ="block text-xs text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
 
 // fileFilters swaps in the matching files while typing and keeps the filter in the address,
 // the live region then refetches the same filter; it stays out of the region, a refetch would clear what is typed
@@ -121,8 +151,8 @@ templ fileFilterSelect(id, name, value string, label, all locales.LK, options []
 	@optionSelect(id, name, cmp.Or(value, "all"), "data-[size=default]:h-11", templ.Attributes{"aria-label": utils.T(ctx, label)}, items)
 }
 
-// attachedFiles are the files of a note, shopping item or expense on page back, and a form to add one,
-// hint says what belongs here if anything
+// attachedFiles are the files of a note, shopping item or expense on page back, with a form to add
+// one and a picker of existing ones, hint says what belongs here if anything
 templ attachedFiles(actor services.Membership, back templ.SafeURL, files []services.AttachedFile, hint locales.LK, errorMessage string) {
 	{{ uploadAction := back + "/files" }}
 	<section class={ utils.CN(sheetClass, "space-y-3") } aria-labelledby="attachments-title">
@@ -138,13 +168,80 @@ templ attachedFiles(actor services.Membership, back templ.SafeURL, files []servi
 			if len(files) > 0 {
 				<ul class="divide-y">
 					for _, f := range files {
-						@fileRow(actor, back, f.ID, f.Name, f.HasThumb, f.SizeBytes, f.UploaderID, f.UploaderName, f.CreatedAt)
+						@fileRow(actor, back, back+"/files/detach", f.LastRef, 0, f.ID, f.Name, f.HasThumb, f.SizeBytes, f.UploaderID, f.UploaderName, f.CreatedAt)
 					}
 				</ul>
 			}
 		}
 		@fileUploadForm(uploadAction, errorMessage)
+		@attachFilePicker(back)
 	</section>
+}
+
+// attachFilePicker lets the page at back show a file that already exists, the list is fetched
+// the first time it opens, after that it follows the search box
+templ attachFilePicker(back templ.SafeURL) {
+	{{
+	picks := templ.Attributes{
+		"hx-get":    string(back + "/files/picks"),
+		"hx-target": "#attach-file-picks",
+		"hx-select": "#attach-file-picks",
+		"hx-swap":   "outerHTML",
+	}
+	}}
+	<details data-menu>
+		<summary
+			hx-trigger="click once"
+			{ picks... }
+			class="inline-flex min-h-11 cursor-pointer list-none items-center rounded-full bg-secondary px-4 text-sm font-medium text-secondary-foreground outline-none hover:bg-secondary/80 focus-visible:ring-3 focus-visible:ring-ring/50 [&::-webkit-details-marker]:hidden"
+		>
+			@components.T(locales.LK_ChatReference)
+		</summary>
+		<div class="mt-2 space-y-2 rounded-xl bg-popover p-2 text-popover-foreground ring-1 ring-foreground/10">
+			@input.Input(input.Props{
+				Name:        "q",
+				Type:        "search",
+				Placeholder: utils.T(ctx, locales.LK_ChatReferenceSearch),
+				Class:       "h-11",
+				Attributes: utils.MergeAttributes(picks, templ.Attributes{
+					"hx-trigger": "input delay:200ms",
+					"aria-label": utils.T(ctx, locales.LK_ChatReferenceSearch),
+				}),
+			})
+			<div id="attach-file-picks"></div>
+		</div>
+	</details>
+}
+
+// AttachFilePicks is the list of [attachFilePicker], the page reloads after a pick like after an upload
+templ AttachFilePicks(actor services.Membership, back templ.SafeURL, files []dbqueries.ListFilesRow) {
+	<form id="attach-file-picks" action={ back + "/files/attach" } method="post" class="max-h-60 overflow-y-auto">
+		if len(files) == 0 {
+			<p class="p-2 text-sm text-muted-foreground">
+				@components.T(locales.LK_ChatReferenceNone)
+			</p>
+		}
+		<ul>
+			for _, f := range files {
+				<li>
+					<button type="submit" name="file_id" value={ f.ID.String() } class={ filePickClass }>
+						@filePickContent(actor, f)
+					</button>
+				</li>
+			}
+		</ul>
+	</form>
+}
+
+const filePickClass = "flex min-h-11 w-full items-center gap-2 rounded-lg px-2 text-left text-sm outline-none hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/50"
+
+// filePickContent is a row of a list of existing files to pick from
+templ filePickContent(actor services.Membership, f dbqueries.ListFilesRow) {
+	if f.HasThumb {
+		<img src={ string(householdURL(actor.HouseholdID, "files", f.ID.String())) + "/thumb" } alt="" loading="lazy" class="size-8 shrink-0 rounded object-cover"/>
+	}
+	<span class="min-w-0 flex-1 truncate">{ f.Name }</span>
+	<span class="shrink-0 text-xs text-muted-foreground">{ formatSize(f.SizeBytes) }</span>
 }
 
 // fileUploadForm is a plain form, not boosted, the page reloads after an upload
@@ -168,8 +265,10 @@ templ fileUploadForm(action templ.SafeURL, errorMessage string) {
 }
 
 // fileRow links the file, an image with its thumbnail, children say where it is attached;
-// a delete goes back to page back
-templ fileRow(actor services.Membership, back templ.SafeURL, id pgtype.UUID, name string, hasThumb bool, size int64,
+// a delete goes back to page back, a file with a detach address is attached and is taken off
+// there instead, lastRef warns that this deletes it and offers to keep it, refs is how many
+// places a delete takes it from
+templ fileRow(actor services.Membership, back, detach templ.SafeURL, lastRef bool, refs int64, id pgtype.UUID, name string, hasThumb bool, size int64,
 	uploaderID pgtype.UUID, uploaderName string, createdAt pgtype.Timestamptz) {
 	{{ href := householdURL(actor.HouseholdID, "files", id.String()) }}
 	<li class="flex min-h-14 items-center gap-3 py-2">
@@ -185,8 +284,33 @@ templ fileRow(actor services.Membership, back templ.SafeURL, id pgtype.UUID, nam
 			</div>
 			{ children... }
 		</div>
-		if uploaderID == actor.UserID {
-			<form action={ href + "/delete" } method="post" hx-boost="true" hx-confirm={ utils.T(ctx, locales.LK_CommonDelete) + " " + name + "?" }>
+		if detach != "" {
+			<div class="flex shrink-0 flex-wrap justify-end">
+				if lastRef {
+					@keepFileForm(href, back, button.VariantGhost, button.SizeDefault, "h-11 px-3")
+				}
+				<form
+					action={ detach }
+					method="post"
+					hx-boost="true"
+					if lastRef {
+						hx-confirm={ utils.T(ctx, locales.LK_FilesDetachLast, name) }
+						data-confirm-label={ utils.T(ctx, locales.LK_FilesDetach) }
+					}
+				>
+					<input type="hidden" name="file_id" value={ id.String() }/>
+					<input type="hidden" name={ g.QueryNext } value={ string(back) }/>
+					@button.Button(button.Props{
+						Type:    button.TypeSubmit,
+						Variant: button.VariantGhost,
+						Class:   utils.CN("h-11 px-3", utils.IfElse(lastRef, "text-destructive", "")),
+					}) {
+						@components.T(locales.LK_FilesDetach)
+					}
+				</form>
+			</div>
+		} else if uploaderID == actor.UserID {
+			<form action={ href + "/delete" } method="post" hx-boost="true" hx-confirm={ deleteFileConfirm(ctx, name, refs) }>
 				<input type="hidden" name={ g.QueryNext } value={ string(back) }/>
 				@button.Button(button.Props{
 					Type:    button.TypeSubmit,
@@ -198,6 +322,16 @@ templ fileRow(actor services.Membership, back templ.SafeURL, id pgtype.UUID, nam
 			</form>
 		}
 	</li>
+}
+
+// keepFileForm makes the file at href stay after its last reference, and goes back to page back
+templ keepFileForm(href, back templ.SafeURL, variant button.Variant, size button.Size, class string) {
+	<form action={ href + "/keep" } method="post" hx-boost="true">
+		<input type="hidden" name={ g.QueryNext } value={ string(back) }/>
+		@button.Button(button.Props{Type: button.TypeSubmit, Variant: variant, Size: size, Class: class}) {
+			@components.T(locales.LK_FilesKeep)
+		}
+	</form>
 }
 
 // FilePage shows one file inside the app, an image as large as fits the screen, opening the raw
@@ -247,12 +381,15 @@ templ FilePage(actor services.Membership, f services.FileMeta, errorMessage stri
 			}) {
 				@components.T(locales.LK_FilesDownload)
 			}
+			if !f.Kept {
+				@keepFileForm(fileURL, fileURL, button.VariantOutline, button.SizeLg, "")
+			}
 			if f.UploaderID == actor.UserID {
 				<form
 					action={ fileURL + "/delete" }
 					method="post"
 					hx-boost="true"
-					hx-confirm={ utils.T(ctx, locales.LK_CommonDelete) + " " + f.Name + "?" }
+					hx-confirm={ deleteFileConfirm(ctx, f.Name, f.RefCount) }
 					class="ml-auto"
 				>
 					<input type="hidden" name={ g.QueryNext } value={ string(back) }/>
@@ -310,15 +447,19 @@ templ ShoppingItemPage(actor services.Membership, listID pgtype.UUID, it service
 				if len(expense.Files) > 0 {
 					<ul class="divide-y border-t">
 						for _, f := range expense.Files {
-							@fileRow(actor, itemURL, f.ID, f.Name, f.HasThumb, f.SizeBytes, f.UploaderID, f.UploaderName, f.CreatedAt)
+							@fileRow(actor, itemURL, expenseURL+"/files/detach", f.LastRef, 0, f.ID, f.Name, f.HasThumb, f.SizeBytes, f.UploaderID, f.UploaderName, f.CreatedAt)
 						}
 					</ul>
 				}
 			</section>
 		}
 		if it.CreatedBy == actor.UserID {
-			// not boosted: the handler redirects to the list only for a plain post
-			<form action={ householdURL(actor.HouseholdID, "lists", listID.String(), "items", it.ID.String(), "delete") } method="post">
+			<form
+				action={ householdURL(actor.HouseholdID, "lists", listID.String(), "items", it.ID.String(), "delete") }
+				method="post"
+				hx-boost="true"
+				hx-confirm={ deleteConfirm(ctx, utils.T(ctx, locales.LK_CommonDelete)+" "+it.Text+"?", lastRefs(files)) }
+			>
 				@button.Button(button.Props{
 					Type:    button.TypeSubmit,
 					Variant: button.VariantGhost,

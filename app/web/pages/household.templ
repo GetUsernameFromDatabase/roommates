@@ -145,6 +145,7 @@ templ HouseholdPeople(actor services.Membership, o services.HouseholdOverview, i
 										method="post"
 										hx-boost="true"
 										hx-confirm={ utils.T(ctx, locales.LK_HouseholdRemove) + " " + m.Username + "?" }
+										data-confirm-label={ utils.T(ctx, locales.LK_HouseholdRemove) }
 									>
 										@button.Button(button.Props{
 											Type:    button.TypeSubmit,
@@ -261,6 +262,7 @@ templ HouseholdPeople(actor services.Membership, o services.HouseholdOverview, i
 			method="post"
 			hx-boost="true"
 			hx-confirm={ utils.T(ctx, locales.LK_HouseholdLeave) + "?" }
+			data-confirm-label={ utils.T(ctx, locales.LK_HouseholdLeaveConfirm) }
 			class="space-y-2"
 		>
 			@formError(errorFor(PeopleAtLeave))

@@ -53,6 +53,8 @@ type ShoppingList struct {
 	List     dbqueries.GetShoppingListRow
 	Items    []dbqueries.ListShoppingItemsRow
 	BuyAgain []dbqueries.ListBuyAgainRow
+	// LastFiles is how many files go with the list when it is deleted
+	LastFiles int64
 }
 
 // GetShoppingList returns [g.ErrorNotFound] if the list is not in the actor's household
@@ -74,6 +76,13 @@ func (s *DefaultService) GetShoppingList(ctx context.Context, actor Membership, 
 		return l, err
 	}
 	l.BuyAgain, err = s.db.ListBuyAgain(ctx, dbqueries.ListBuyAgainParams{
+		HouseholdID: actor.HouseholdID,
+		ListID:      listID,
+	})
+	if err != nil {
+		return l, err
+	}
+	l.LastFiles, err = s.db.CountListOnlyFiles(ctx, dbqueries.CountListOnlyFilesParams{
 		HouseholdID: actor.HouseholdID,
 		ListID:      listID,
 	})

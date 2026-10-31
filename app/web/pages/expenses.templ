@@ -456,7 +456,7 @@ templ ExpensePage(actor services.Membership, e services.Expense, uploadError str
 					action={ expenseURL + "/delete" }
 					method="post"
 					hx-boost="true"
-					hx-confirm={ utils.T(ctx, locales.LK_CommonDelete) + "?" }
+					hx-confirm={ deleteConfirm(ctx, utils.T(ctx, locales.LK_CommonDelete)+"?", lastRefs(e.Files)) }
 					class="ml-auto"
 				>
 					@button.Button(button.Props{

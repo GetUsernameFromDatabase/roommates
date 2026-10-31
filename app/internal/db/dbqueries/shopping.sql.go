@@ -11,6 +11,40 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const countListOnlyFiles = `-- name: CountListOnlyFiles :one
+SELECT count(*)
+FROM files f
+WHERE f.household_id = $1
+  AND NOT f.kept
+  AND EXISTS (
+    SELECT 1
+    FROM file_refs r
+      JOIN shopping_items i ON i.id = r.shopping_item_id
+    WHERE r.file_id = f.id
+      AND i.list_id = $2
+  )
+  AND NOT EXISTS (
+    SELECT 1
+    FROM file_refs r
+      LEFT JOIN shopping_items i ON i.id = r.shopping_item_id
+    WHERE r.file_id = f.id
+      AND i.list_id IS DISTINCT FROM $2
+  )
+`
+
+type CountListOnlyFilesParams struct {
+	HouseholdID pgtype.UUID `json:"household_id"`
+	ListID      pgtype.UUID `json:"list_id"`
+}
+
+// the files that go with the list, cleared items hold on to their files too
+func (q *Queries) CountListOnlyFiles(ctx context.Context, arg CountListOnlyFilesParams) (int64, error) {
+	row := q.db.QueryRow(ctx, countListOnlyFiles, arg.HouseholdID, arg.ListID)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
 const deleteShoppingItem = `-- name: DeleteShoppingItem :execrows
 DELETE FROM shopping_items
 WHERE id = $1
@@ -311,10 +345,12 @@ SELECT i.id,
   i.checked_at,
   checker.username AS checked_by_name,
   i.expense_id,
+  -- shortcut: counts a file only on a private note too, the item page hides it,
+  -- use file_visible here if the two ever need to agree
   (
     SELECT count(*)
-    FROM files f
-    WHERE f.shopping_item_id = i.id
+    FROM file_refs r
+    WHERE r.shopping_item_id = i.id
   ) AS file_count
 FROM shopping_items i
   LEFT JOIN users claimer ON claimer.id = i.claimed_by

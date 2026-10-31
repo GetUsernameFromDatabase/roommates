@@ -2,6 +2,7 @@ en:
   common:
     delete: Delete
     save: Save
+    cancel: Cancel
     link-invalid: Link is invalid
   app:
     title: Roommates
@@ -45,6 +46,7 @@ en:
     remove: Remove
     promote: Make owner
     leave: Leave household
+    leave-confirm: Leave
     invites: Invites
     invites-description: Anyone with the link or code can join until it expires.
     no-invites: No active invites
@@ -218,6 +220,13 @@ en:
     place-expense: Expenses
     place-message: Chat
     place-none: Not attached
+    detach: Remove
+    detach-last: "Remove %s?\nThe file goes too\nThis is the last place it is attached. Use Keep in Files first to save it."
+    deleted-with:
+      one: "1 file goes too\nIt is attached only here. Use Keep in Files first to save it."
+      other: "%{count} files go too\nThey are attached only here. Use Keep in Files first to save them."
+    delete-shared: "Removed from %d places\nDeleting the file takes it off everything it is attached to."
+    keep: Keep in Files
   chat:
     reference: Add an existing file
     reference-search: Search files

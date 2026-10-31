@@ -181,8 +181,16 @@ func (h *DefaultHandler) SetShoppingItemChecked(ctx *gin.Context) {
 	})
 }
 
+// DeleteShoppingItem goes back to the list, the item's own page is gone with it
 func (h *DefaultHandler) DeleteShoppingItem(ctx *gin.Context) {
-	h.shoppingItemAction(ctx, func(actor services.Membership, listID, itemID pgtype.UUID) error {
-		return h.service.DeleteShoppingItem(ctx, actor, listID, itemID)
-	})
+	listID, it, ok := h.loadShoppingItem(ctx)
+	if !ok {
+		return
+	}
+	actor := membershipFromContext(ctx)
+	if err := h.service.DeleteShoppingItem(ctx, actor, listID, it.ID); err != nil {
+		pageError(ctx, err)
+		return
+	}
+	Redirect(ctx, shoppingListPath(actor.HouseholdID, listID))
 }

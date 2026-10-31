@@ -43,6 +43,37 @@ func (q *Queries) DeleteFilePurge(ctx context.Context, objectKey string) error {
 	return err
 }
 
+const deleteFileRef = `-- name: DeleteFileRef :exec
+DELETE FROM file_refs
+WHERE file_id = $1
+  AND household_id = $2
+  AND (
+    note_id = $3
+    OR shopping_item_id = $4
+    OR expense_id = $5
+  )
+`
+
+type DeleteFileRefParams struct {
+	FileID         pgtype.UUID `json:"file_id"`
+	HouseholdID    pgtype.UUID `json:"household_id"`
+	NoteID         pgtype.UUID `json:"note_id"`
+	ShoppingItemID pgtype.UUID `json:"shopping_item_id"`
+	ExpenseID      pgtype.UUID `json:"expense_id"`
+}
+
+// a trigger deletes the file with its last reference unless it is kept
+func (q *Queries) DeleteFileRef(ctx context.Context, arg DeleteFileRefParams) error {
+	_, err := q.db.Exec(ctx, deleteFileRef,
+		arg.FileID,
+		arg.HouseholdID,
+		arg.NoteID,
+		arg.ShoppingItemID,
+		arg.ExpenseID,
+	)
+	return err
+}
+
 const getFile = `-- name: GetFile :one
 SELECT f.id,
   f.object_key,
@@ -51,34 +82,52 @@ SELECT f.id,
   f.mime,
   f.size_bytes,
   f.created_at,
+  f.kept,
   f.uploader_id,
   uploader.username AS uploader_name,
-  f.note_id,
+  (
+    SELECT count(*)
+    FROM file_refs c
+    WHERE c.file_id = f.id
+  ) AS ref_count,
+  r.note_id,
   n.title AS note_title,
   i.list_id AS item_list_id,
-  f.shopping_item_id,
+  r.shopping_item_id,
   i.text AS item_text,
-  f.expense_id,
+  r.expense_id,
   e.title AS expense_title,
-  f.message_id
+  r.message_id
 FROM files f
   JOIN users uploader ON uploader.id = f.uploader_id
-  LEFT JOIN notes n ON n.id = f.note_id
-  LEFT JOIN shopping_items i ON i.id = f.shopping_item_id
-  LEFT JOIN expenses e ON e.id = f.expense_id
-WHERE f.id = $1
-  AND f.household_id = $2
-  AND (
-    n.id IS NULL
-    OR n.visibility = 'household'
-    OR n.author_id = $3
-  )
+  LEFT JOIN LATERAL (
+    SELECT p.note_id,
+      p.shopping_item_id,
+      p.expense_id,
+      p.message_id
+    FROM file_refs p
+      LEFT JOIN notes pn ON pn.id = p.note_id
+    WHERE p.file_id = f.id
+      AND (
+        pn.id IS NULL
+        OR pn.visibility = 'household'
+        OR pn.author_id = $1
+      )
+    ORDER BY p.created_at
+    LIMIT 1
+  ) r ON TRUE
+  LEFT JOIN notes n ON n.id = r.note_id
+  LEFT JOIN shopping_items i ON i.id = r.shopping_item_id
+  LEFT JOIN expenses e ON e.id = r.expense_id
+WHERE f.id = $2
+  AND f.household_id = $3
+  AND file_visible(f.id, $1)
 `
 
 type GetFileParams struct {
+	UserID      pgtype.UUID `json:"user_id"`
 	ID          pgtype.UUID `json:"id"`
 	HouseholdID pgtype.UUID `json:"household_id"`
-	UserID      pgtype.UUID `json:"user_id"`
 }
 
 type GetFileRow struct {
@@ -89,8 +138,10 @@ type GetFileRow struct {
 	Mime           string             `json:"mime"`
 	SizeBytes      int64              `json:"size_bytes"`
 	CreatedAt      pgtype.Timestamptz `json:"created_at"`
+	Kept           bool               `json:"kept"`
 	UploaderID     pgtype.UUID        `json:"uploader_id"`
 	UploaderName   string             `json:"uploader_name"`
+	RefCount       int64              `json:"ref_count"`
 	NoteID         pgtype.UUID        `json:"note_id"`
 	NoteTitle      *string            `json:"note_title"`
 	ItemListID     pgtype.UUID        `json:"item_list_id"`
@@ -102,7 +153,7 @@ type GetFileRow struct {
 }
 
 func (q *Queries) GetFile(ctx context.Context, arg GetFileParams) (GetFileRow, error) {
-	row := q.db.QueryRow(ctx, getFile, arg.ID, arg.HouseholdID, arg.UserID)
+	row := q.db.QueryRow(ctx, getFile, arg.UserID, arg.ID, arg.HouseholdID)
 	var i GetFileRow
 	err := row.Scan(
 		&i.ID,
@@ -112,8 +163,10 @@ func (q *Queries) GetFile(ctx context.Context, arg GetFileParams) (GetFileRow, e
 		&i.Mime,
 		&i.SizeBytes,
 		&i.CreatedAt,
+		&i.Kept,
 		&i.UploaderID,
 		&i.UploaderName,
+		&i.RefCount,
 		&i.NoteID,
 		&i.NoteTitle,
 		&i.ItemListID,
@@ -135,27 +188,21 @@ INSERT INTO files (
     name,
     mime,
     size_bytes,
-    note_id,
-    shopping_item_id,
-    expense_id,
-    message_id
+    kept
   )
-VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
 RETURNING id
 `
 
 type InsertFileParams struct {
-	HouseholdID    pgtype.UUID `json:"household_id"`
-	UploaderID     pgtype.UUID `json:"uploader_id"`
-	ObjectKey      string      `json:"object_key"`
-	ThumbKey       *string     `json:"thumb_key"`
-	Name           string      `json:"name"`
-	Mime           string      `json:"mime"`
-	SizeBytes      int64       `json:"size_bytes"`
-	NoteID         pgtype.UUID `json:"note_id"`
-	ShoppingItemID pgtype.UUID `json:"shopping_item_id"`
-	ExpenseID      pgtype.UUID `json:"expense_id"`
-	MessageID      pgtype.UUID `json:"message_id"`
+	HouseholdID pgtype.UUID `json:"household_id"`
+	UploaderID  pgtype.UUID `json:"uploader_id"`
+	ObjectKey   string      `json:"object_key"`
+	ThumbKey    *string     `json:"thumb_key"`
+	Name        string      `json:"name"`
+	Mime        string      `json:"mime"`
+	SizeBytes   int64       `json:"size_bytes"`
+	Kept        bool        `json:"kept"`
 }
 
 func (q *Queries) InsertFile(ctx context.Context, arg InsertFileParams) (pgtype.UUID, error) {
@@ -167,14 +214,76 @@ func (q *Queries) InsertFile(ctx context.Context, arg InsertFileParams) (pgtype.
 		arg.Name,
 		arg.Mime,
 		arg.SizeBytes,
-		arg.NoteID,
-		arg.ShoppingItemID,
-		arg.ExpenseID,
-		arg.MessageID,
+		arg.Kept,
 	)
 	var id pgtype.UUID
 	err := row.Scan(&id)
 	return id, err
+}
+
+const insertFileRef = `-- name: InsertFileRef :exec
+INSERT INTO file_refs (
+    file_id,
+    household_id,
+    note_id,
+    shopping_item_id,
+    expense_id,
+    message_id
+  )
+SELECT f.id,
+  f.household_id,
+  $1::uuid,
+  $2::uuid,
+  $3::uuid,
+  $4::uuid
+FROM files f
+WHERE f.id = $5
+  AND f.household_id = $6
+  AND file_visible(f.id, NULL) ON CONFLICT DO NOTHING
+`
+
+type InsertFileRefParams struct {
+	NoteID         pgtype.UUID `json:"note_id"`
+	ShoppingItemID pgtype.UUID `json:"shopping_item_id"`
+	ExpenseID      pgtype.UUID `json:"expense_id"`
+	MessageID      pgtype.UUID `json:"message_id"`
+	FileID         pgtype.UUID `json:"file_id"`
+	HouseholdID    pgtype.UUID `json:"household_id"`
+}
+
+// attaches a file everyone in the household can see, a file that is not one, or is already
+// there, is skipped
+func (q *Queries) InsertFileRef(ctx context.Context, arg InsertFileRefParams) error {
+	_, err := q.db.Exec(ctx, insertFileRef,
+		arg.NoteID,
+		arg.ShoppingItemID,
+		arg.ExpenseID,
+		arg.MessageID,
+		arg.FileID,
+		arg.HouseholdID,
+	)
+	return err
+}
+
+const keepFile = `-- name: KeepFile :execrows
+UPDATE files
+SET kept = TRUE
+WHERE id = $1
+  AND household_id = $2
+`
+
+type KeepFileParams struct {
+	ID          pgtype.UUID `json:"id"`
+	HouseholdID pgtype.UUID `json:"household_id"`
+}
+
+// a kept file stays after its last reference, there is no way back
+func (q *Queries) KeepFile(ctx context.Context, arg KeepFileParams) (int64, error) {
+	result, err := q.db.Exec(ctx, keepFile, arg.ID, arg.HouseholdID)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
 }
 
 const listAttachedFiles = `-- name: ListAttachedFiles :many
@@ -185,17 +294,27 @@ SELECT f.id,
   f.created_at,
   f.uploader_id,
   uploader.username AS uploader_name,
-  (f.thumb_key IS NOT NULL)::boolean AS has_thumb
-FROM files f
+  (f.thumb_key IS NOT NULL)::boolean AS has_thumb,
+  (
+    NOT f.kept
+    AND (
+      SELECT count(*)
+      FROM file_refs o
+      WHERE o.file_id = f.id
+    ) = 1
+  )::boolean AS last_ref
+FROM file_refs r
+  JOIN files f ON f.id = r.file_id
   JOIN users uploader ON uploader.id = f.uploader_id
-WHERE f.household_id = $1
+WHERE r.household_id = $1
   AND (
-    f.note_id = $2
-    OR f.shopping_item_id = $3
-    OR f.expense_id = $4
-    OR f.message_id = $5
+    r.note_id = $2
+    OR r.shopping_item_id = $3
+    OR r.expense_id = $4
+    OR r.message_id = $5
   )
-ORDER BY f.created_at
+  AND file_visible(f.id, $6)
+ORDER BY r.created_at
 `
 
 type ListAttachedFilesParams struct {
@@ -204,6 +323,7 @@ type ListAttachedFilesParams struct {
 	ShoppingItemID pgtype.UUID `json:"shopping_item_id"`
 	ExpenseID      pgtype.UUID `json:"expense_id"`
 	MessageID      pgtype.UUID `json:"message_id"`
+	UserID         pgtype.UUID `json:"user_id"`
 }
 
 type ListAttachedFilesRow struct {
@@ -215,9 +335,12 @@ type ListAttachedFilesRow struct {
 	UploaderID   pgtype.UUID        `json:"uploader_id"`
 	UploaderName string             `json:"uploader_name"`
 	HasThumb     bool               `json:"has_thumb"`
+	LastRef      bool               `json:"last_ref"`
 }
 
-// the caller has already checked that the user sees the note or item
+// the caller has already checked that the user sees the note or item, a file the user may
+// not see is left out, its note can have turned private since, last_ref says that taking the
+// file off here deletes it
 func (q *Queries) ListAttachedFiles(ctx context.Context, arg ListAttachedFilesParams) ([]ListAttachedFilesRow, error) {
 	rows, err := q.db.Query(ctx, listAttachedFiles,
 		arg.HouseholdID,
@@ -225,6 +348,7 @@ func (q *Queries) ListAttachedFiles(ctx context.Context, arg ListAttachedFilesPa
 		arg.ShoppingItemID,
 		arg.ExpenseID,
 		arg.MessageID,
+		arg.UserID,
 	)
 	if err != nil {
 		return nil, err
@@ -242,6 +366,7 @@ func (q *Queries) ListAttachedFiles(ctx context.Context, arg ListAttachedFilesPa
 			&i.UploaderID,
 			&i.UploaderName,
 			&i.HasThumb,
+			&i.LastRef,
 		); err != nil {
 			return nil, err
 		}
@@ -289,29 +414,45 @@ SELECT f.id,
   f.uploader_id,
   uploader.username AS uploader_name,
   (f.thumb_key IS NOT NULL)::boolean AS has_thumb,
-  f.note_id,
+  (
+    SELECT count(*)
+    FROM file_refs c
+    WHERE c.file_id = f.id
+  ) AS ref_count,
+  r.note_id,
   n.title AS note_title,
   i.list_id AS item_list_id,
-  f.shopping_item_id,
+  r.shopping_item_id,
   i.text AS item_text,
-  f.expense_id,
+  r.expense_id,
   e.title AS expense_title,
-  f.message_id
+  r.message_id
 FROM files f
   JOIN users uploader ON uploader.id = f.uploader_id
-  LEFT JOIN notes n ON n.id = f.note_id
-  LEFT JOIN shopping_items i ON i.id = f.shopping_item_id
-  LEFT JOIN expenses e ON e.id = f.expense_id
-WHERE f.household_id = $1
-  AND (
-    n.id IS NULL
-    OR n.visibility = 'household'
-    OR n.author_id = $2
-  )
+  LEFT JOIN LATERAL (
+    SELECT p.note_id,
+      p.shopping_item_id,
+      p.expense_id,
+      p.message_id
+    FROM file_refs p
+      LEFT JOIN notes pn ON pn.id = p.note_id
+    WHERE p.file_id = f.id
+      AND (
+        pn.id IS NULL
+        OR pn.visibility = 'household'
+        OR pn.author_id = $1
+      )
+    ORDER BY p.created_at
+    LIMIT 1
+  ) r ON TRUE
+  LEFT JOIN notes n ON n.id = r.note_id
+  LEFT JOIN shopping_items i ON i.id = r.shopping_item_id
+  LEFT JOIN expenses e ON e.id = r.expense_id
+WHERE f.household_id = $2
+  AND file_visible(f.id, $1)
   AND (
     NOT $3::boolean
-    OR n.id IS NULL
-    OR n.visibility = 'household'
+    OR file_visible(f.id, NULL)
   )
   AND (
     $4::text = ''
@@ -328,23 +469,42 @@ WHERE f.household_id = $1
   AND CASE
     $6::text
     WHEN '' THEN TRUE
-    WHEN 'note' THEN f.note_id IS NOT NULL
-    WHEN 'item' THEN f.shopping_item_id IS NOT NULL
-    WHEN 'expense' THEN f.expense_id IS NOT NULL
-    WHEN 'message' THEN f.message_id IS NOT NULL
-    ELSE num_nonnulls(
-      f.note_id,
-      f.shopping_item_id,
-      f.expense_id,
-      f.message_id
-    ) = 0
+    WHEN 'note' THEN EXISTS (
+      SELECT 1
+      FROM file_refs x
+      WHERE x.file_id = f.id
+        AND x.note_id IS NOT NULL
+    )
+    WHEN 'item' THEN EXISTS (
+      SELECT 1
+      FROM file_refs x
+      WHERE x.file_id = f.id
+        AND x.shopping_item_id IS NOT NULL
+    )
+    WHEN 'expense' THEN EXISTS (
+      SELECT 1
+      FROM file_refs x
+      WHERE x.file_id = f.id
+        AND x.expense_id IS NOT NULL
+    )
+    WHEN 'message' THEN EXISTS (
+      SELECT 1
+      FROM file_refs x
+      WHERE x.file_id = f.id
+        AND x.message_id IS NOT NULL
+    )
+    ELSE NOT EXISTS (
+      SELECT 1
+      FROM file_refs x
+      WHERE x.file_id = f.id
+    )
   END
 ORDER BY f.created_at DESC
 `
 
 type ListFilesParams struct {
-	HouseholdID pgtype.UUID `json:"household_id"`
 	UserID      pgtype.UUID `json:"user_id"`
+	HouseholdID pgtype.UUID `json:"household_id"`
 	SharedOnly  bool        `json:"shared_only"`
 	Q           string      `json:"q"`
 	Kind        string      `json:"kind"`
@@ -360,6 +520,7 @@ type ListFilesRow struct {
 	UploaderID     pgtype.UUID        `json:"uploader_id"`
 	UploaderName   string             `json:"uploader_name"`
 	HasThumb       bool               `json:"has_thumb"`
+	RefCount       int64              `json:"ref_count"`
 	NoteID         pgtype.UUID        `json:"note_id"`
 	NoteTitle      *string            `json:"note_title"`
 	ItemListID     pgtype.UUID        `json:"item_list_id"`
@@ -370,13 +531,13 @@ type ListFilesRow struct {
 	MessageID      pgtype.UUID        `json:"message_id"`
 }
 
-// every file the user may see, newest first, with what it is attached to,
-// q, kind and place narrow it down unless they are empty,
-// shared_only leaves out the user's own private notes too
+// every file the user may see, newest first, with the first place it is attached to that
+// the user may see, q, kind and place narrow it down unless they are empty,
+// shared_only leaves out what only the user's own private notes hold too
 func (q *Queries) ListFiles(ctx context.Context, arg ListFilesParams) ([]ListFilesRow, error) {
 	rows, err := q.db.Query(ctx, listFiles,
-		arg.HouseholdID,
 		arg.UserID,
+		arg.HouseholdID,
 		arg.SharedOnly,
 		arg.Q,
 		arg.Kind,
@@ -398,6 +559,7 @@ func (q *Queries) ListFiles(ctx context.Context, arg ListFilesParams) ([]ListFil
 			&i.UploaderID,
 			&i.UploaderName,
 			&i.HasThumb,
+			&i.RefCount,
 			&i.NoteID,
 			&i.NoteTitle,
 			&i.ItemListID,

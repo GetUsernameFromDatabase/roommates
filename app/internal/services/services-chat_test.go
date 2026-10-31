@@ -74,7 +74,7 @@ func TestChatFileRefs(t *testing.T) {
 		t.Fatalf("after deleting the file: %+v, %v", c, err)
 	}
 
-	// a note made private later hides the file from the chat of the others
+	// a note made private later hides a file only on it, one also in the chat stays visible
 	shared, err := s.CreateNote(ctx, ownerM, NoteInput{Title: "Ours", BodyMD: "", Private: false})
 	if err != nil {
 		t.Fatal(err)
@@ -98,9 +98,16 @@ func TestChatFileRefs(t *testing.T) {
 		}
 		return len(c.Messages[0].Files)
 	}
-	if owner, member := seen(ownerM), seen(memberM); owner != 1 || member != 0 {
+	if owner, member := seen(ownerM), seen(memberM); owner != 1 || member != 1 {
 		t.Fatalf("after going private the owner sees %d files, the member %d", owner, member)
 	}
+	onNote.NoteID = shared
+	hidden, err := s.UploadFile(ctx, ownerM, onNote, "hidden.txt", strings.NewReader("hidden"), 6)
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, err = s.GetFile(ctx, memberM, hidden)
+	wantErr(t, "member opens a file only on a private note", err, g.ErrorNotFound)
 }
 
 func TestChat(t *testing.T) {

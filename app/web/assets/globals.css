@@ -838,6 +838,30 @@
     color: var(--favour);
     font-size: 1.5rem;
   }
+  /* what a confirmation takes with it, in the ink of what is against you */
+  .stamp-void {
+    margin-block: 0.75rem 0.5rem;
+    color: var(--against);
+  }
+  .stamp-void:empty {
+    display: none;
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    /* lands once the slip has faded in */
+    [data-slot="alert-dialog-content"][data-open] .stamp-void {
+      animation: stamp-down 0.16s 0.12s cubic-bezier(0.3, 0.7, 0.3, 1) backwards;
+    }
+  }
+}
+@keyframes stamp-down {
+  from {
+    opacity: 0;
+    scale: 1.5;
+  }
+}
+/* outside the layers to beat the kit's utility; black, the theme's --foreground would lighten dark pages */
+[data-slot="alert-dialog-overlay"] {
+  background: rgb(0 0 0 / 40%);
 }
 
 /* a bought item slides from the pad to the bag, only the items move and the page holds still */
