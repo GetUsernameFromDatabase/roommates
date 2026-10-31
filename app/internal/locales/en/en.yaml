@@ -102,6 +102,12 @@ en:
   expenses:
     new: New expense
     none: No expenses yet
+    none-unpaid: Nothing unpaid
+    no-match: No expenses match
+    search: Search by title
+    show: Show
+    show-unpaid: Unpaid
+    show-all: All
     balances: Balances
     settled: Everyone is settled up
     owes: "%s owes %s"
@@ -189,6 +195,8 @@ en:
     count: "%d attachments"
     too-large: The file can be at most %d MB
     invalid: Choose a file that is not empty and whose name is at most %d characters
+    rename: File name
+    name-invalid: The name can be 1 to %d characters long with its extension
     added-by: Added by %s on %s · %s
     on-note: "On note: %s"
     on-item: "On item: %s"

@@ -13,6 +13,8 @@ import "roommates/internal/locales"
 import "roommates/internal/utils"
 import "github.com/jackc/pgx/v5/pgtype"
 import "cmp"
+import "net/url"
+import "unicode/utf8"
 
 // names of the [services.FileKinds] and [services.FilePlaces] options
 var (
@@ -155,9 +157,10 @@ templ fileUploadForm(action templ.SafeURL, errorMessage string) {
 				name="file"
 				required
 				aria-label={ utils.T(ctx, locales.LK_FilesFile) }
-				class="min-h-11 min-w-0 flex-1 text-sm file:mr-3 file:h-11 file:cursor-pointer file:rounded-full file:border-0 file:bg-secondary file:px-4 file:font-medium file:text-secondary-foreground"
+				class="peer min-h-11 min-w-0 flex-1 text-sm file:mr-3 file:h-11 file:cursor-pointer file:rounded-full file:border-0 file:bg-secondary file:px-4 file:font-medium file:text-secondary-foreground"
 			/>
-			@button.Button(button.Props{Type: button.TypeSubmit, Size: button.SizeLg, Class: "h-11"}) {
+			// the required input is :invalid until a file is chosen, the browser refuses to submit it then
+			@button.Button(button.Props{Type: button.TypeSubmit, Size: button.SizeLg, Class: "h-11 peer-invalid:pointer-events-none peer-invalid:opacity-50"}) {
 				@components.T(locales.LK_FilesUpload)
 			}
 		</div>
@@ -197,9 +200,10 @@ templ fileRow(actor services.Membership, back templ.SafeURL, id pgtype.UUID, nam
 	</li>
 }
 
-// FilePage shows one file inside the app, an image large, with a way back to where it is attached;
+// FilePage shows one file inside the app, an image as large as fits the screen, opening the raw
+// file in a new tab, with a way back to where it is attached, errorMessage is the outcome of a rename;
 // the raw file at /raw has no way back
-templ FilePage(actor services.Membership, f services.FileMeta) {
+templ FilePage(actor services.Membership, f services.FileMeta, errorMessage string) {
 	{{ fileURL := householdURL(actor.HouseholdID, "files", f.ID.String()) }}
 	{{ back, backText, section := householdURL(actor.HouseholdID, "files"), utils.T(ctx, locales.LK_FilesAll), SectionFiles }}
 	if f.NoteTitle != nil {
@@ -214,16 +218,30 @@ templ FilePage(actor services.Membership, f services.FileMeta) {
 		{{ back, backText, section = householdURL(actor.HouseholdID, "chat"), utils.T(ctx, locales.LK_FilesOnMessage), SectionChat }}
 	}
 	@appShell(f.Name, &HouseholdNav{HouseholdID: actor.HouseholdID, Section: section}) {
-		@doorplateHeader(back, backText, f.Name)
+		if f.UploaderID == actor.UserID {
+			// the extension stays
+			{{ stem, ext := services.SplitFileName(f.Name) }}
+			@nameHeader(back, backText, fileURL+"/name", stem,
+				services.MaxFileNameLength-utf8.RuneCountInString(ext), utils.T(ctx, locales.LK_FilesRename)) {
+				<span class="shrink-0">{ ext }</span>
+			}
+		} else {
+			@doorplateHeader(back, backText, f.Name)
+		}
 		<p class="-mt-6 text-xs text-muted-foreground">
 			{ utils.T(ctx, locales.LK_FilesAddedBy, f.UploaderName, formatDate(f.CreatedAt), formatSize(f.SizeBytes)) }
 		</p>
+		@formError(errorMessage)
 		if services.ImageMimes[f.Mime] {
-			<img src={ string(fileURL) + "/raw" } alt={ f.Name } class="w-full rounded-2xl ring-1 ring-foreground/10"/>
+			// the rem are what else is on the page, with the phone's header and nav
+			<a href={ fileURL + "/raw" } target="_blank" rel="noopener" class="mx-auto block w-fit max-w-full cursor-zoom-in">
+				<img src={ string(fileURL) + "/raw" } alt={ f.Name } class="max-h-[max(12rem,calc(100dvh-26rem))] max-w-full rounded-2xl object-contain ring-1 ring-foreground/10 lg:max-h-[max(12rem,calc(100dvh-20rem))]"/>
+			</a>
 		}
 		<div class="flex flex-wrap gap-2">
 			@button.Button(button.Props{
-				Href:       string(fileURL) + "/raw",
+				// its own address, the image's cached response has the name from before a rename
+				Href:       string(fileURL) + "/raw?name=" + url.QueryEscape(f.Name),
 				Size:       button.SizeLg,
 				Attributes: templ.Attributes{"download": f.Name},
 			}) {

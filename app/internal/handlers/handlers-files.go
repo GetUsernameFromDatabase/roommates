@@ -185,13 +185,37 @@ func (h *DefaultHandler) PageFile(ctx *gin.Context) {
 		RenderTemplStatus(ctx, http.StatusNotFound, pages.NotFound())
 		return
 	}
+	h.renderFile(ctx, http.StatusOK, fileID, "")
+}
+
+func (h *DefaultHandler) renderFile(ctx *gin.Context, status int, fileID pgtype.UUID, errorMessage string) {
 	actor := membershipFromContext(ctx)
 	f, err := h.service.GetFile(ctx, actor, fileID)
 	if err != nil {
 		pageError(ctx, err)
 		return
 	}
-	RenderTempl(ctx, pages.FilePage(actor, f))
+	RenderTemplStatus(ctx, status, pages.FilePage(actor, f, errorMessage))
+}
+
+// RenameFile shows the file again, an invalid name shows on it
+func (h *DefaultHandler) RenameFile(ctx *gin.Context) {
+	fileID, err := utils.ParseUUID(ctx.Param(g.ParamFileID))
+	if err != nil {
+		RenderTemplStatus(ctx, http.StatusNotFound, pages.NotFound())
+		return
+	}
+	actor := membershipFromContext(ctx)
+	err = h.service.RenameFile(ctx, actor, fileID, ctx.PostForm("name"))
+	switch {
+	case err == nil:
+		Redirect(ctx, filesPath(actor.HouseholdID)+"/"+fileID.String())
+	case errors.Is(err, g.ErrorInvalidInput):
+		h.renderFile(ctx, http.StatusUnprocessableEntity, fileID,
+			utils.T(ctx.Request.Context(), locales.LK_FilesNameInvalid, services.MaxFileNameLength))
+	default:
+		pageError(ctx, err)
+	}
 }
 
 // DownloadFile streams the file from storage, images and PDFs are shown in the browser,
@@ -228,7 +252,7 @@ func (h *DefaultHandler) serveFile(ctx *gin.Context, thumb bool) {
 	ctx.DataFromReader(http.StatusOK, size, mimeType, body, map[string]string{
 		// encodes names that are not ASCII as RFC 2231
 		"Content-Disposition": cmp.Or(mime.FormatMediaType(disposition, map[string]string{"filename": f.Name}), disposition),
-		// a file never changes, its id would
+		// the contents never change, its id would, the name can: the Download link has it in the address
 		"Cache-Control": "private, max-age=86400",
 	})
 }

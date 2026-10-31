@@ -20,9 +20,9 @@ import "fmt"
 import "slices"
 import "time"
 
-// HouseholdExpenses shows who owes whom, settlements waiting for confirmation and the expenses,
-// errorMessage is the outcome of an "I paid"
-templ HouseholdExpenses(actor services.Membership, o services.ExpensesOverview, errorMessage string) {
+// HouseholdExpenses shows who owes whom, settlements waiting for confirmation and the expenses
+// that match filter, errorMessage is the outcome of an "I paid"
+templ HouseholdExpenses(actor services.Membership, o services.ExpensesOverview, filter services.ExpenseFilter, errorMessage string) {
 	{{ expensesURL := householdURL(actor.HouseholdID, "expenses") }}
 	@appShell(utils.T(ctx, locales.LK_NavExpenses), &HouseholdNav{HouseholdID: actor.HouseholdID, Section: SectionExpenses}) {
 		<header class="flex items-end justify-between gap-3">
@@ -35,10 +35,10 @@ templ HouseholdExpenses(actor services.Membership, o services.ExpensesOverview, 
 		</header>
 		// outside the region, a refetch would clear it before it is read
 		@formError(errorMessage)
-		// the "I paid" amount is the debt, when that changes the amount should too
-		@liveRegion("expenses", events.TopicExpenses) {
-			{{ settled := len(o.Debts) == 0 && len(o.Pending) == 0 && len(o.Expenses) > 0 }}
-			<div class="flex flex-col gap-8 lg:grid lg:grid-cols-[minmax(0,1fr)_20rem] lg:items-start">
+		<div class="flex flex-col gap-8 lg:grid lg:grid-cols-[minmax(0,1fr)_20rem] lg:items-start">
+			// the "I paid" amount is the debt, when that changes the amount should too
+			@liveRegionWith("expenses", "#expense-list", events.TopicExpenses) {
+				{{ settled := len(o.Debts) == 0 && len(o.Pending) == 0 && o.HasExpenses }}
 				if len(o.Pending) > 0 || len(o.Debts) > 0 || settled {
 					<div class="flex min-w-0 flex-col gap-6">
 						if len(o.Pending) > 0 {
@@ -102,11 +102,18 @@ templ HouseholdExpenses(actor services.Membership, o services.ExpensesOverview, 
 						}
 					</div>
 				}
-				<section class="till-roll">
+			}
+			<div class="flex min-w-0 flex-col gap-4">
+				@expenseFilters(actor, filter)
+				<section id="expense-list" class="till-roll">
 					<div class="till-paper">
 						if len(o.Expenses) == 0 {
 							<p class="text-muted-foreground">
-								@components.T(locales.LK_ExpensesNone)
+								if !o.HasExpenses {
+									@components.T(locales.LK_ExpensesNone)
+								} else {
+									@components.T(utils.IfElse(filter.Active(), locales.LK_ExpensesNoMatch, locales.LK_ExpensesNoneUnpaid))
+								}
 							</p>
 						} else {
 							<ul class="divide-y divide-dashed">
@@ -135,8 +142,43 @@ templ HouseholdExpenses(actor services.Membership, o services.ExpensesOverview, 
 					</div>
 				</section>
 			</div>
-		}
+		</div>
 	}
+}
+
+// expenseFilters swaps in the matching expenses while typing and keeps the filter in the address,
+// the live region then refetches the same filter; it stays out of the region, a refetch would clear what is typed
+templ expenseFilters(actor services.Membership, filter services.ExpenseFilter) {
+	{{ expensesURL := householdURL(actor.HouseholdID, "expenses") }}
+	{{
+	items := []selectcomp.ItemData{
+		{Value: "unpaid", Label: utils.T(ctx, locales.LK_ExpensesShowUnpaid)},
+		{Value: services.ExpenseShowAll, Label: utils.T(ctx, locales.LK_ExpensesShowAll)},
+	}
+	}}
+	<form
+		role="search"
+		action={ expensesURL }
+		method="get"
+		hx-get={ string(expensesURL) }
+		hx-trigger="input delay:300ms, change from:input[name=show]"
+		hx-target="#expense-list"
+		hx-select="#expense-list"
+		hx-swap="outerHTML"
+		hx-replace-url="true"
+		class="flex flex-wrap gap-2"
+	>
+		@input.Input(input.Props{
+			Name:        "q",
+			Type:        "search",
+			Value:       filter.Query,
+			Placeholder: utils.T(ctx, locales.LK_ExpensesSearch),
+			Class:       "h-11 min-w-32 flex-1",
+			Attributes:  templ.Attributes{"aria-label": utils.T(ctx, locales.LK_ExpensesSearch)},
+		})
+		@optionSelect("expense-show", "show", utils.IfElse(filter.Show == services.ExpenseShowAll, services.ExpenseShowAll, "unpaid"),
+			"data-[size=default]:h-11", templ.Attributes{"aria-label": utils.T(ctx, locales.LK_ExpensesShow)}, items)
+	</form>
 }
 
 // pendingSlip is a payment the receiver has not confirmed yet, stamped until they do

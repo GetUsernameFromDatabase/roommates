@@ -189,6 +189,21 @@ func (q *Queries) GetShareToMark(ctx context.Context, arg GetShareToMarkParams) 
 	return i, err
 }
 
+const householdHasExpenses = `-- name: HouseholdHasExpenses :one
+SELECT EXISTS (
+    SELECT 1
+    FROM expenses
+    WHERE household_id = $1
+  )
+`
+
+func (q *Queries) HouseholdHasExpenses(ctx context.Context, householdID pgtype.UUID) (bool, error) {
+	row := q.db.QueryRow(ctx, householdHasExpenses, householdID)
+	var exists bool
+	err := row.Scan(&exists)
+	return exists, err
+}
+
 const insertExpense = `-- name: InsertExpense :one
 INSERT INTO expenses (
     household_id,
@@ -458,10 +473,34 @@ SELECT e.id,
 FROM expenses e
   JOIN users payer ON payer.id = e.payer_id
 WHERE e.household_id = $1
+  AND strpos(lower(e.title), lower($2::text)) > 0
+  AND (
+    NOT $3::boolean
+    OR EXISTS (
+      SELECT 1
+      FROM expense_shares s
+        JOIN memberships sharer ON sharer.household_id = e.household_id
+        AND sharer.user_id = s.user_id
+        JOIN memberships payer_member ON payer_member.household_id = e.household_id
+        AND payer_member.user_id = e.payer_id
+      WHERE s.expense_id = e.id
+        AND s.user_id <> e.payer_id
+        AND s.amount_cents > 0
+        AND s.paid_at IS NULL
+        AND sharer.left_at IS NULL
+        AND payer_member.left_at IS NULL
+    )
+  )
 ORDER BY e.incurred_on DESC,
   e.created_at DESC
 LIMIT 200
 `
+
+type ListExpensesParams struct {
+	HouseholdID pgtype.UUID `json:"household_id"`
+	Q           string      `json:"q"`
+	OpenOnly    bool        `json:"open_only"`
+}
 
 type ListExpensesRow struct {
 	ID          pgtype.UUID `json:"id"`
@@ -474,10 +513,12 @@ type ListExpensesRow struct {
 	FullyPaid   bool        `json:"fully_paid"`
 }
 
-// newest first
+// newest first, q is a part of the title in any case, open_only keeps those
+// someone else still owes a part of, a share of or to a former member nets to zero
+// and nobody can mark it paid, so it does not count
 // shortcut: capped at 200 rows, add paging when a household gets there
-func (q *Queries) ListExpenses(ctx context.Context, householdID pgtype.UUID) ([]ListExpensesRow, error) {
-	rows, err := q.db.Query(ctx, listExpenses, householdID)
+func (q *Queries) ListExpenses(ctx context.Context, arg ListExpensesParams) ([]ListExpensesRow, error) {
+	rows, err := q.db.Query(ctx, listExpenses, arg.HouseholdID, arg.Q, arg.OpenOnly)
 	if err != nil {
 		return nil, err
 	}

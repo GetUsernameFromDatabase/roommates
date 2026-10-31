@@ -102,6 +102,12 @@ et:
   expenses:
     new: Uus kulu
     none: Kulusid pole veel
+    none-unpaid: Tasumata kulusid pole
+    no-match: Ühtegi sobivat kulu pole
+    search: Otsi pealkirja järgi
+    show: Näita
+    show-unpaid: Tasumata
+    show-all: Kõik
     balances: Saldod
     settled: Kõik on arveldatud
     owes: "%s võlgneb kasutajale %s"
@@ -189,6 +195,8 @@ et:
     count: "%d manust"
     too-large: Fail võib olla kõige rohkem %d MB
     invalid: Vali fail, mis pole tühi ja mille nimi on kuni %d märki
+    rename: Faili nimi
+    name-invalid: Nimi koos laiendiga on 1 kuni %d märki
     added-by: Lisas %s, %s · %s
     on-note: "Märkmes: %s"
     on-item: "Ostus: %s"

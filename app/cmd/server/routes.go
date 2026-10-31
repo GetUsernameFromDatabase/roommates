@@ -158,6 +158,7 @@ func initRoutes(r *gin.Engine, h *handlers.DefaultHandler, service *services.Def
 			household.GET("/files/:"+g.ParamFileID, h.PageFile)
 			household.GET("/files/:"+g.ParamFileID+"/raw", h.DownloadFile)
 			household.GET("/files/:"+g.ParamFileID+"/thumb", h.DownloadFileThumb)
+			household.POST("/files/:"+g.ParamFileID+"/name", h.RenameFile)
 			household.POST("/files/:"+g.ParamFileID+"/delete", h.DeleteFile)
 		}
 	}

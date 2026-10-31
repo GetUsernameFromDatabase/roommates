@@ -127,6 +127,13 @@ WHERE f.id = sqlc.arg(id)
     OR n.visibility = 'household'
     OR n.author_id = sqlc.arg(user_id)
   );
+-- only the uploader renames a file
+-- name: RenameFile :execrows
+UPDATE files
+SET name = $1
+WHERE id = $2
+  AND household_id = $3
+  AND uploader_id = $4;
 -- only the uploader deletes a file
 -- name: DeleteFile :execrows
 DELETE FROM files

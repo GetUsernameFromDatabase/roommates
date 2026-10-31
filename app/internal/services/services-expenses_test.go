@@ -10,6 +10,7 @@ import (
 
 	g "roommates/internal/config"
 	"roommates/internal/db/dbqueries"
+	"roommates/internal/utils"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
@@ -427,6 +428,81 @@ func TestConfirmWaitsForMarkInFlight(t *testing.T) {
 	wantDebt("after both", -1500)
 }
 
+func TestExpenseFilter(t *testing.T) {
+	s := newTestService(t)
+	ctx := context.Background()
+	ownerM, memberM, _ := newTestHousehold(t, s)
+	expense := func(title string, debtor Membership) pgtype.UUID {
+		t.Helper()
+		id, err := s.CreateExpense(ctx, ownerM, ExpenseInput{
+			Title:      title,
+			Amount:     "10",
+			Category:   "other",
+			IncurredOn: "2026-10-01",
+			Custom:     true,
+			Members:    nil,
+			Shares:     map[pgtype.UUID]string{debtor.UserID: "10"},
+			ListID:     pgtype.UUID{},
+			ItemID:     pgtype.UUID{},
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		return id
+	}
+	want := func(what string, filter ExpenseFilter, titles ...string) {
+		t.Helper()
+		o, err := s.GetExpensesOverview(ctx, ownerM, filter)
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := utils.Map(o.Expenses, func(e dbqueries.ListExpensesRow) string { return e.Title })
+		slices.Sort(got)
+		if !slices.Equal(got, titles) {
+			t.Errorf("%s: got %v, want %v", what, got, titles)
+		}
+	}
+
+	paid := expense("Rent March", memberM)
+	expense("Rent April", memberM)
+	// only the payer shares it, nobody owes anything
+	expense("Own lunch", ownerM)
+	if err := s.SetExpenseSharePaid(ctx, ownerM, paid, memberM.UserID, true); err != nil {
+		t.Fatal(err)
+	}
+
+	want("default", ExpenseFilter{Query: "", Show: ""}, "Rent April")
+	want("unknown show is the default", ExpenseFilter{Query: "", Show: "x"}, "Rent April")
+	want("search stays in unpaid", ExpenseFilter{Query: " rent ", Show: ""}, "Rent April")
+	want("all", ExpenseFilter{Query: "", Show: ExpenseShowAll}, "Own lunch", "Rent April", "Rent March")
+	want("search all in any case", ExpenseFilter{Query: "rENT m", Show: ExpenseShowAll}, "Rent March")
+	want("no match", ExpenseFilter{Query: "water", Show: ExpenseShowAll})
+}
+
+// shares that net to zero let someone leave, then nobody can mark them paid
+func TestExpenseFilterLeftMember(t *testing.T) {
+	s := newTestService(t)
+	ctx := context.Background()
+	ownerM, memberM, _ := newTestHousehold(t, s)
+	expense, _, _, _ := settlementHelpers(t, s, ownerM, memberM)
+	expense(ownerM, memberM, "10")
+	expense(memberM, ownerM, "10")
+	unpaid := ExpenseFilter{Query: "", Show: ""}
+	if o, err := s.GetExpensesOverview(ctx, ownerM, unpaid); err != nil || len(o.Expenses) != 2 {
+		t.Fatalf("before leaving = %+v, %v", o.Expenses, err)
+	}
+
+	if err := s.Leave(ctx, memberM); err != nil {
+		t.Fatal(err)
+	}
+	if o, err := s.GetExpensesOverview(ctx, ownerM, unpaid); err != nil || len(o.Expenses) != 0 {
+		t.Fatalf("after leaving = %+v, %v", o.Expenses, err)
+	}
+	if o, err := s.GetExpensesOverview(ctx, ownerM, ExpenseFilter{Query: "", Show: ExpenseShowAll}); err != nil || len(o.Expenses) != 2 {
+		t.Fatalf("all after leaving = %+v, %v", o.Expenses, err)
+	}
+}
+
 func TestSettlementCoversShares(t *testing.T) {
 	s := newTestService(t)
 	ctx := context.Background()
@@ -470,8 +546,11 @@ func TestSettlementCoversShares(t *testing.T) {
 	wantDebt("paid in full", 0)
 	wantPaid("paid in full", first, true)
 	wantPaid("paid in full", second, true)
-	if o, err := s.GetExpensesOverview(ctx, ownerM); err != nil || len(o.Expenses) != 2 || !o.Expenses[0].FullyPaid {
-		t.Fatalf("overview = %+v, %v", o, err)
+	if o, err := s.GetExpensesOverview(ctx, ownerM, ExpenseFilter{Query: "", Show: ""}); err != nil || len(o.Expenses) != 0 || !o.HasExpenses {
+		t.Fatalf("all paid, default overview = %+v, %v", o, err)
+	}
+	if o, err := s.GetExpensesOverview(ctx, ownerM, ExpenseFilter{Query: "", Show: ExpenseShowAll}); err != nil || len(o.Expenses) != 2 || !o.Expenses[0].FullyPaid {
+		t.Fatalf("overview of all = %+v, %v", o, err)
 	}
 
 	// shares both ways are netted, paying the difference closes them all

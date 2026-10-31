@@ -209,13 +209,30 @@ func (s *DefaultService) ListMembers(ctx context.Context, actor Membership) ([]d
 	return s.db.ListActiveMembers(ctx, actor.HouseholdID)
 }
 
-type ExpensesOverview struct {
-	Debts    []Debt
-	Pending  []dbqueries.ListPendingSettlementsRow
-	Expenses []dbqueries.ListExpensesRow
+// ExpenseShowAll is the [ExpenseFilter] Show that lists paid expenses too
+const ExpenseShowAll = "all"
+
+// ExpenseFilter narrows the expense list, Query is a part of the title in any case,
+// only those someone still owes a part of are shown unless Show is [ExpenseShowAll]
+type ExpenseFilter struct {
+	Query string
+	Show  string
 }
 
-func (s *DefaultService) GetExpensesOverview(ctx context.Context, actor Membership) (ExpensesOverview, error) {
+// Active says whether f differs from the default list
+func (f ExpenseFilter) Active() bool {
+	return strings.TrimSpace(f.Query) != "" || f.Show == ExpenseShowAll
+}
+
+type ExpensesOverview struct {
+	Debts   []Debt
+	Pending []dbqueries.ListPendingSettlementsRow
+	// Expenses match the filter, HasExpenses says whether the household has any at all
+	Expenses    []dbqueries.ListExpensesRow
+	HasExpenses bool
+}
+
+func (s *DefaultService) GetExpensesOverview(ctx context.Context, actor Membership, filter ExpenseFilter) (ExpensesOverview, error) {
 	var o ExpensesOverview
 	var err error
 	if o.Debts, err = s.Debts(ctx, actor); err != nil {
@@ -224,7 +241,14 @@ func (s *DefaultService) GetExpensesOverview(ctx context.Context, actor Membersh
 	if o.Pending, err = s.ListPendingSettlements(ctx, actor); err != nil {
 		return o, err
 	}
-	o.Expenses, err = s.db.ListExpenses(ctx, actor.HouseholdID)
+	if o.HasExpenses, err = s.db.HouseholdHasExpenses(ctx, actor.HouseholdID); err != nil {
+		return o, err
+	}
+	o.Expenses, err = s.db.ListExpenses(ctx, dbqueries.ListExpensesParams{
+		HouseholdID: actor.HouseholdID,
+		Q:           strings.TrimSpace(filter.Query),
+		OpenOnly:    filter.Show != ExpenseShowAll,
+	})
 	return o, err
 }
 

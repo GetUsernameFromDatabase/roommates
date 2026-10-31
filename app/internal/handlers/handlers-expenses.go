@@ -33,12 +33,13 @@ func (h *DefaultHandler) PageExpenses(ctx *gin.Context) {
 // renderExpenses shows balances, pending settlements and expenses, errorMessage is the outcome of a settlement
 func (h *DefaultHandler) renderExpenses(ctx *gin.Context, status int, errorMessage string) {
 	actor := membershipFromContext(ctx)
-	o, err := h.service.GetExpensesOverview(ctx, actor)
+	filter := services.ExpenseFilter{Query: ctx.Query("q"), Show: ctx.Query("show")}
+	o, err := h.service.GetExpensesOverview(ctx, actor, filter)
 	if err != nil {
 		InternalError(ctx, err)
 		return
 	}
-	RenderTemplStatus(ctx, status, pages.HouseholdExpenses(actor, o, errorMessage))
+	RenderTemplStatus(ctx, status, pages.HouseholdExpenses(actor, o, filter, errorMessage))
 }
 
 // PageNewExpense starts empty, as a copy of ?from=<expenseID>, or for the bought items of ?list=<listID>,

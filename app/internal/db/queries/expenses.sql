@@ -12,7 +12,15 @@ RETURNING id;
 -- name: InsertExpenseShare :exec
 INSERT INTO expense_shares (expense_id, user_id, amount_cents)
 VALUES ($1, $2, $3);
--- newest first
+-- name: HouseholdHasExpenses :one
+SELECT EXISTS (
+    SELECT 1
+    FROM expenses
+    WHERE household_id = $1
+  );
+-- newest first, q is a part of the title in any case, open_only keeps those
+-- someone else still owes a part of, a share of or to a former member nets to zero
+-- and nobody can mark it paid, so it does not count
 -- shortcut: capped at 200 rows, add paging when a household gets there
 -- name: ListExpenses :many
 SELECT e.id,
@@ -42,7 +50,25 @@ SELECT e.id,
   )::boolean AS fully_paid
 FROM expenses e
   JOIN users payer ON payer.id = e.payer_id
-WHERE e.household_id = $1
+WHERE e.household_id = sqlc.arg(household_id)
+  AND strpos(lower(e.title), lower(sqlc.arg(q)::text)) > 0
+  AND (
+    NOT sqlc.arg(open_only)::boolean
+    OR EXISTS (
+      SELECT 1
+      FROM expense_shares s
+        JOIN memberships sharer ON sharer.household_id = e.household_id
+        AND sharer.user_id = s.user_id
+        JOIN memberships payer_member ON payer_member.household_id = e.household_id
+        AND payer_member.user_id = e.payer_id
+      WHERE s.expense_id = e.id
+        AND s.user_id <> e.payer_id
+        AND s.amount_cents > 0
+        AND s.paid_at IS NULL
+        AND sharer.left_at IS NULL
+        AND payer_member.left_at IS NULL
+    )
+  )
 ORDER BY e.incurred_on DESC,
   e.created_at DESC
 LIMIT 200;

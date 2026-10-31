@@ -10,6 +10,7 @@ import (
 	"roommates/internal/db/dbqueries"
 	"roommates/internal/utils"
 	"slices"
+	"strings"
 	"sync"
 	"testing"
 
@@ -82,6 +83,58 @@ func TestCleanFileName(t *testing.T) {
 			t.Errorf("cleanFileName(%q) should fail", in)
 		}
 	}
+}
+
+func TestSplitFileName(t *testing.T) {
+	for in, want := range map[string][2]string{
+		"a.png":    {"a", ".png"},
+		"a.tar.gz": {"a.tar", ".gz"},
+		".bashrc":  {".bashrc", ""},
+		"noext":    {"noext", ""},
+
+		"Report v1.2 final": {"Report v1.2 final", ""},
+	} {
+		if stem, ext := SplitFileName(in); stem != want[0] || ext != want[1] {
+			t.Errorf("SplitFileName(%q) = %q, %q, want %v", in, stem, ext, want)
+		}
+	}
+}
+
+func TestRenameFile(t *testing.T) {
+	s := newTestService(t)
+	ctx := context.Background()
+	ownerM, memberM, strangerM := newTestHousehold(t, s)
+	none := FileTarget{NoteID: pgtype.UUID{}, ListID: pgtype.UUID{}, ShoppingItemID: pgtype.UUID{}, ExpenseID: pgtype.UUID{}, MessageID: pgtype.UUID{}}
+	body := []byte("\x89PNG\r\n\x1a\n rest of the image")
+	id, err := s.UploadFile(ctx, memberM, none, "photo.png", bytes.NewReader(body), int64(len(body)))
+	if err != nil {
+		t.Fatal(err)
+	}
+	wantName := func(what, want string) {
+		t.Helper()
+		f, err := s.GetFile(ctx, memberM, id)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if f.Name != want || f.Mime != "image/png" {
+			t.Errorf("%s: name %q, mime %q, want %q", what, f.Name, f.Mime, want)
+		}
+	}
+
+	if err := s.RenameFile(ctx, memberM, id, " holiday "); err != nil {
+		t.Fatal(err)
+	}
+	wantName("renamed", "holiday.png")
+	if err := s.RenameFile(ctx, memberM, id, "fake.exe"); err != nil {
+		t.Fatal(err)
+	}
+	wantName("a typed extension is part of the name", "fake.exe.png")
+
+	wantErr(t, "blank", s.RenameFile(ctx, memberM, id, "   "), g.ErrorInvalidInput)
+	wantErr(t, "too long with the extension", s.RenameFile(ctx, memberM, id, strings.Repeat("a", MaxFileNameLength-3)), g.ErrorInvalidInput)
+	wantErr(t, "owner renames member's file", s.RenameFile(ctx, ownerM, id, "x"), g.ErrorNotFound)
+	wantErr(t, "stranger renames", s.RenameFile(ctx, strangerM, id, "x"), g.ErrorNotFound)
+	wantName("refused renames change nothing", "fake.exe.png")
 }
 
 func TestFiles(t *testing.T) {

@@ -6,6 +6,7 @@ import (
 	"crypto/rand"
 	"io"
 	"net/http"
+	"path"
 	g "roommates/internal/config"
 	"roommates/internal/db/dbqueries"
 	"roommates/internal/images"
@@ -82,6 +83,16 @@ func cleanFileName(name string) (string, error) {
 		return "", g.ErrorInvalidInput
 	}
 	return name, nil
+}
+
+// SplitFileName cuts the extension off name, a name that is all extension like .bashrc has none,
+// and neither has one whose last dot is inside a sentence, like "Report v1.2 final"
+func SplitFileName(name string) (stem, ext string) {
+	ext = path.Ext(name)
+	if ext == name || strings.Contains(ext, " ") {
+		return name, ""
+	}
+	return strings.TrimSuffix(name, ext), ext
 }
 
 // checkFileTarget returns [g.ErrorNotFound] unless the actor sees the note, item or expense,
@@ -260,6 +271,33 @@ func (s *DefaultService) OpenFile(ctx context.Context, actor Membership, fileID 
 	}
 	r, err := s.store.Get(ctx, key)
 	return f, r, err
+}
+
+// RenameFile gives the file a new name before its extension, which stays, the type is
+// the sniffed mime and does not change either
+//
+// returns [g.ErrorNotFound] unless the actor uploaded the file, [g.ErrorInvalidInput] for a bad name
+func (s *DefaultService) RenameFile(ctx context.Context, actor Membership, fileID pgtype.UUID, stem string) error {
+	f, err := s.GetFile(ctx, actor, fileID)
+	if err != nil {
+		return err
+	}
+	// checked alone too, or a blank stem would leave only the extension
+	stem, err = cleanFileName(stem)
+	if err != nil {
+		return err
+	}
+	_, ext := SplitFileName(f.Name)
+	name, err := cleanFileName(stem + ext)
+	if err != nil {
+		return err
+	}
+	return rowsAffected(s.db.RenameFile(ctx, dbqueries.RenameFileParams{
+		Name:        name,
+		ID:          fileID,
+		HouseholdID: actor.HouseholdID,
+		UploaderID:  actor.UserID,
+	}))
 }
 
 // DeleteFile returns [g.ErrorNotFound] unless the actor uploaded the file,

@@ -65,13 +65,13 @@ func TestHouseholdExpensesSettledStamp(t *testing.T) {
 		o    services.ExpensesOverview
 		want bool
 	}{
-		{"all paid", services.ExpensesOverview{Debts: nil, Pending: nil, Expenses: expenses}, true},
-		{"a debt", services.ExpensesOverview{Debts: debts, Pending: nil, Expenses: expenses}, false},
-		{"a pending payment", services.ExpensesOverview{Debts: nil, Pending: pending, Expenses: expenses}, false},
-		{"nothing yet", services.ExpensesOverview{Debts: nil, Pending: nil, Expenses: nil}, false},
+		{"all paid, none listed", services.ExpensesOverview{Debts: nil, Pending: nil, Expenses: nil, HasExpenses: true}, true},
+		{"a debt", services.ExpensesOverview{Debts: debts, Pending: nil, Expenses: expenses, HasExpenses: true}, false},
+		{"a pending payment", services.ExpensesOverview{Debts: nil, Pending: pending, Expenses: expenses, HasExpenses: true}, false},
+		{"nothing yet", services.ExpensesOverview{Debts: nil, Pending: nil, Expenses: nil, HasExpenses: false}, false},
 	} {
 		var b strings.Builder
-		if err := HouseholdExpenses(actor, tc.o, "").Render(ctx, &b); err != nil {
+		if err := HouseholdExpenses(actor, tc.o, services.ExpenseFilter{Query: "", Show: ""}, "").Render(ctx, &b); err != nil {
 			t.Fatal(err)
 		}
 		if got := strings.Contains(b.String(), utils.T(ctx, locales.LK_ExpensesSettled)); got != tc.want {

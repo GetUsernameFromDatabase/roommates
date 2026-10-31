@@ -416,3 +416,32 @@ func (q *Queries) ListFiles(ctx context.Context, arg ListFilesParams) ([]ListFil
 	}
 	return items, nil
 }
+
+const renameFile = `-- name: RenameFile :execrows
+UPDATE files
+SET name = $1
+WHERE id = $2
+  AND household_id = $3
+  AND uploader_id = $4
+`
+
+type RenameFileParams struct {
+	Name        string      `json:"name"`
+	ID          pgtype.UUID `json:"id"`
+	HouseholdID pgtype.UUID `json:"household_id"`
+	UploaderID  pgtype.UUID `json:"uploader_id"`
+}
+
+// only the uploader renames a file
+func (q *Queries) RenameFile(ctx context.Context, arg RenameFileParams) (int64, error) {
+	result, err := q.db.Exec(ctx, renameFile,
+		arg.Name,
+		arg.ID,
+		arg.HouseholdID,
+		arg.UploaderID,
+	)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}

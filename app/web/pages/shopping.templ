@@ -10,7 +10,6 @@ import "roommates/internal/events"
 import "roommates/internal/locales"
 import "roommates/internal/utils"
 import "github.com/jackc/pgx/v5/pgtype"
-import "strconv"
 
 var shoppingReuseScript = templ.NewOnceHandle()
 
@@ -54,44 +53,9 @@ templ ShoppingList(actor services.Membership, l services.ShoppingList, errorMess
 	}
 }
 
-var dirtySaveScript = templ.NewOnceHandle()
-
-// shoppingListHeader edits the name in place, Save shows once it is changed (dirty-save.js),
-// Enter saves without it
 templ shoppingListHeader(actor services.Membership, l services.ShoppingList) {
-	@dirtySaveScript.Once() {
-		<script src="/assets/dirty-save.js"></script>
-	}
-	<header>
-		@backLink(householdURL(actor.HouseholdID), utils.T(ctx, locales.LK_ShoppingBack))
-		<form
-			action={ shoppingListURL(actor, l, "name") }
-			method="post"
-			hx-boost="true"
-			data-dirty-save
-			class="mt-1 flex flex-wrap items-center gap-x-2 gap-y-2"
-		>
-			<h1 class="doorplate max-w-full min-w-0">
-				<input
-					type="text"
-					name="name"
-					value={ l.List.Name }
-					required
-					maxlength={ strconv.Itoa(services.MaxShoppingListNameLength) }
-					aria-label={ utils.T(ctx, locales.LK_ShoppingRenameList) }
-					class="max-w-full min-w-0 field-sizing-content border-b-2 border-dashed border-transparent bg-transparent outline-none hover:border-muted-foreground/60 focus:border-foreground"
-				/>
-			</h1>
-			@button.Button(button.Props{
-				Type:       button.TypeSubmit,
-				Size:       button.SizeLg,
-				Class:      "h-11",
-				Attributes: templ.Attributes{"hidden": true, "data-save": true},
-			}) {
-				@components.T(locales.LK_CommonSave)
-			}
-		</form>
-	</header>
+	@nameHeader(householdURL(actor.HouseholdID), utils.T(ctx, locales.LK_ShoppingBack), shoppingListURL(actor, l, "name"),
+		l.List.Name, services.MaxShoppingListNameLength, utils.T(ctx, locales.LK_ShoppingRenameList))
 }
 
 // shoppingListContent is the pad of what is still to buy, a new item goes on its next
