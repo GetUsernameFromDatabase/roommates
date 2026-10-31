@@ -83,6 +83,7 @@ SELECT f.id,
   f.size_bytes,
   f.created_at,
   f.kept,
+  file_visible(f.id, NULL)::boolean AS shared,
   f.uploader_id,
   uploader.username AS uploader_name,
   (
@@ -139,6 +140,7 @@ type GetFileRow struct {
 	SizeBytes      int64              `json:"size_bytes"`
 	CreatedAt      pgtype.Timestamptz `json:"created_at"`
 	Kept           bool               `json:"kept"`
+	Shared         bool               `json:"shared"`
 	UploaderID     pgtype.UUID        `json:"uploader_id"`
 	UploaderName   string             `json:"uploader_name"`
 	RefCount       int64              `json:"ref_count"`
@@ -164,6 +166,7 @@ func (q *Queries) GetFile(ctx context.Context, arg GetFileParams) (GetFileRow, e
 		&i.SizeBytes,
 		&i.CreatedAt,
 		&i.Kept,
+		&i.Shared,
 		&i.UploaderID,
 		&i.UploaderName,
 		&i.RefCount,
@@ -302,7 +305,8 @@ SELECT f.id,
       FROM file_refs o
       WHERE o.file_id = f.id
     ) = 1
-  )::boolean AS last_ref
+  )::boolean AS last_ref,
+  file_visible(f.id, NULL)::boolean AS shared
 FROM file_refs r
   JOIN files f ON f.id = r.file_id
   JOIN users uploader ON uploader.id = f.uploader_id
@@ -336,6 +340,7 @@ type ListAttachedFilesRow struct {
 	UploaderName string             `json:"uploader_name"`
 	HasThumb     bool               `json:"has_thumb"`
 	LastRef      bool               `json:"last_ref"`
+	Shared       bool               `json:"shared"`
 }
 
 // the caller has already checked that the user sees the note or item, a file the user may
@@ -367,6 +372,7 @@ func (q *Queries) ListAttachedFiles(ctx context.Context, arg ListAttachedFilesPa
 			&i.UploaderName,
 			&i.HasThumb,
 			&i.LastRef,
+			&i.Shared,
 		); err != nil {
 			return nil, err
 		}

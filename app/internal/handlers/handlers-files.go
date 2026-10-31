@@ -206,7 +206,14 @@ func (h *DefaultHandler) ExpenseFileTarget(ctx *gin.Context) (services.FileTarge
 func (h *DefaultHandler) FileRefRoutes(group gin.IRoutes, load FileTargetLoader) {
 	group.GET("/files/picks", h.attachFilePicks(load))
 	group.POST("/files/attach", h.changeFileRef(load, h.service.AttachFile))
-	group.POST("/files/detach", h.changeFileRef(load, h.service.DetachFile))
+	detach, keepAndDetach := h.changeFileRef(load, h.service.DetachFile), h.changeFileRef(load, h.service.KeepAndDetachFile)
+	group.POST("/files/detach", func(ctx *gin.Context) {
+		if ctx.PostForm("keep") != "" {
+			keepAndDetach(ctx)
+			return
+		}
+		detach(ctx)
+	})
 }
 
 // attachFilePicks lists the existing files that can be attached, ?q= narrows them down

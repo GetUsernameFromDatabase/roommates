@@ -445,7 +445,7 @@ templ ExpensePage(actor services.Membership, e services.Expense, uploadError str
 					</p>
 				</div>
 			</section>
-			@attachedFiles(actor, expenseURL, e.Files, locales.LK_ExpensesReceiptHint, uploadError)
+			@attachedFilesTill(actor, expenseURL, e.Files, locales.LK_ExpensesReceiptHint, uploadError)
 		</div>
 		<div class="flex flex-wrap gap-2">
 			@button.Button(button.Props{Href: string(householdURL(actor.HouseholdID, "expenses", "new")) + "?from=" + e.Expense.ID.String(), Variant: button.VariantSecondary, Size: button.SizeLg}) {
@@ -456,7 +456,10 @@ templ ExpensePage(actor services.Membership, e services.Expense, uploadError str
 					action={ expenseURL + "/delete" }
 					method="post"
 					hx-boost="true"
-					hx-confirm={ deleteConfirm(ctx, utils.T(ctx, locales.LK_CommonDelete)+"?", lastRefs(e.Files)) }
+					hx-confirm={ deleteKeepConfirm(ctx, utils.T(ctx, locales.LK_CommonDelete)+"?", lastRefs(e.Files)) }
+					if lastRefs(e.Files) > 0 {
+						data-confirm-keep={ utils.T(ctx, locales.LK_FilesDeleteKeep) }
+					}
 					class="ml-auto"
 				>
 					@button.Button(button.Props{

@@ -313,6 +313,22 @@ func (s *DefaultService) DeleteExpense(ctx context.Context, actor Membership, ex
 	}))
 }
 
+// DeleteExpenseKeepingFiles is [DefaultService.DeleteExpense] that leaves the files only the
+// expense holds in Files, a refused delete keeps nothing
+func (s *DefaultService) DeleteExpenseKeepingFiles(ctx context.Context, actor Membership, expenseID pgtype.UUID) error {
+	return s.inTx(ctx, func(q *dbqueries.Queries) error {
+		err := q.KeepExpenseFiles(ctx, dbqueries.KeepExpenseFilesParams{ExpenseID: expenseID, HouseholdID: actor.HouseholdID})
+		if err != nil {
+			return err
+		}
+		return rowsAffected(q.DeleteExpense(ctx, dbqueries.DeleteExpenseParams{
+			ID:          expenseID,
+			HouseholdID: actor.HouseholdID,
+			PayerID:     actor.UserID,
+		}))
+	})
+}
+
 // SetExpenseSharePaid lets the actor who paid the expense mark the share of userID, who must
 // still be a member, paid or not, this spends or gives back what userID has paid them,
 // the rest of the share counts as paid outside the app

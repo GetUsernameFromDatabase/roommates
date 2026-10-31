@@ -304,6 +304,18 @@ func (s *DefaultService) KeepFile(ctx context.Context, actor Membership, fileID 
 	return rowsAffected(s.db.KeepFile(ctx, dbqueries.KeepFileParams{ID: fileID, HouseholdID: actor.HouseholdID}))
 }
 
+// KeepAndDetachFile takes a file off t and leaves it in Files, kept first so that a failure
+// cannot lose it; returns [g.ErrorNotFound] if the actor may not see t or the file
+func (s *DefaultService) KeepAndDetachFile(ctx context.Context, actor Membership, t FileTarget, fileID pgtype.UUID) error {
+	if err := s.checkFileRefTarget(ctx, actor, t); err != nil {
+		return err
+	}
+	if err := s.KeepFile(ctx, actor, fileID); err != nil {
+		return err
+	}
+	return s.DetachFile(ctx, actor, t, fileID)
+}
+
 // DetachFile takes a file off t, a trigger deletes it with its last reference unless it is kept;
 // returns [g.ErrorNotFound] if the actor may not see t
 func (s *DefaultService) DetachFile(ctx context.Context, actor Membership, t FileTarget, fileID pgtype.UUID) error {

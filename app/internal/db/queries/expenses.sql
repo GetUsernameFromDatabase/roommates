@@ -94,6 +94,19 @@ FROM expense_shares s
   JOIN users u ON u.id = s.user_id
 WHERE s.expense_id = $1
 ORDER BY u.username;
+-- keeps what would go with the expense, a file with another reference outlives it anyway
+-- name: KeepExpenseFiles :exec
+UPDATE files f
+SET kept = TRUE
+FROM file_refs r
+WHERE r.file_id = f.id
+  AND r.expense_id = $1
+  AND r.household_id = $2
+  AND (
+    SELECT count(*)
+    FROM file_refs o
+    WHERE o.file_id = f.id
+  ) = 1;
 -- only the payer deletes an expense, and not once someone sharing it has left,
 -- their settled balance would change with nobody left to settle it
 -- name: DeleteExpense :execrows

@@ -102,6 +102,18 @@ templ confirmDialog() {
 					}) {
 						@components.T(locales.LK_CommonDelete)
 					}
+					// shown for a form with data-confirm-keep, the kit's button would lose its display to a hidden class
+					<div hidden class="col-span-2">
+						@alertdialog.Action(alertdialog.ActionProps{
+							ID:      "",
+							Class:   "h-11 w-full",
+							Variant: button.VariantSecondary,
+							Size:    "",
+							Attributes: utils.MergeAttributes(alertdialog.CloseFor("confirm-dialog"), templ.Attributes{
+								"data-confirm-keep": true,
+							}),
+						})
+					</div>
 				</div>
 			</div>
 		}

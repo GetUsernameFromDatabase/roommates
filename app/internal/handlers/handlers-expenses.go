@@ -203,7 +203,11 @@ func (h *DefaultHandler) DeleteExpense(ctx *gin.Context) {
 		return
 	}
 	actor := membershipFromContext(ctx)
-	if err := h.service.DeleteExpense(ctx, actor, expenseID); err != nil {
+	deleteExpense := h.service.DeleteExpense
+	if ctx.PostForm("keep") != "" {
+		deleteExpense = h.service.DeleteExpenseKeepingFiles
+	}
+	if err := deleteExpense(ctx, actor, expenseID); err != nil {
 		pageError(ctx, err)
 		return
 	}

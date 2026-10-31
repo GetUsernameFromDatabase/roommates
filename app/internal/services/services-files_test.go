@@ -262,6 +262,20 @@ func TestFileRefs(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	// a file can be taken off its last place and stay, a stranger changes nothing
+	_, soap := newItem("Soap")
+	onSoap := upload(memberM, soap, "soap.txt")
+	wantErr(t, "stranger keeps and detaches", s.KeepAndDetachFile(ctx, strangerM, soap, onSoap), g.ErrorNotFound)
+	if f, err := s.GetFile(ctx, ownerM, onSoap); err != nil || f.Kept {
+		t.Fatalf("after the stranger %+v, %v", f, err)
+	}
+	if err := s.KeepAndDetachFile(ctx, ownerM, soap, onSoap); err != nil {
+		t.Fatal(err)
+	}
+	if f, err := s.GetFile(ctx, ownerM, onSoap); err != nil || !f.Kept || f.RefCount != 0 {
+		t.Fatalf("kept and detached %+v, %v", f, err)
+	}
+
 	// a deleted item takes along what only it holds
 	otherList, other := newItem("Bread")
 	onOther := upload(memberM, other, "bread.txt")
@@ -372,6 +386,17 @@ func TestFileRefs(t *testing.T) {
 	}
 	if _, err := s.GetFile(ctx, memberM, mine); err != nil {
 		t.Fatal(err)
+	}
+
+	// the pages offer to keep only what is shared, keeping would show this one to everyone
+	if f, err := s.GetFile(ctx, ownerM, secret); err != nil || f.Shared {
+		t.Fatalf("file of a private note %+v, %v", f, err)
+	}
+	if f, err := s.GetFile(ctx, ownerM, upload(memberM, third, "open.txt")); err != nil || !f.Shared {
+		t.Fatalf("file of a shopping item %+v, %v", f, err)
+	}
+	if rows, err := s.AttachedFiles(ctx, ownerM, onPrivate); err != nil || !slices.ContainsFunc(rows, func(r AttachedFile) bool { return r.ID == secret && !r.Shared }) {
+		t.Fatalf("attached to a private note %+v, %v", rows, err)
 	}
 
 	// nor a kept file from anyone, keeping a private note's file shares it

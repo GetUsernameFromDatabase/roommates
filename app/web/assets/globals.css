@@ -815,6 +815,27 @@
     padding: 0.875rem 1rem 0;
     border-top: 2px dashed var(--input);
   }
+  /* a receipt's picture stapled to the slip, hung a little crooked */
+  .till-paper .file-thumb {
+    position: relative;
+    margin-top: 0.25rem;
+    rotate: -2deg;
+  }
+  .till-paper .file-thumb::before {
+    content: "";
+    position: absolute;
+    z-index: 1;
+    top: 0.3125rem;
+    left: 50%;
+    width: 1.5rem;
+    height: 0.1875rem;
+    border-radius: 1px;
+    /* steel in every theme, the shadow lifts it off a pale receipt */
+    background: linear-gradient(#eef0f2, #9aa1a8);
+    box-shadow: 0 1px 1px rgb(0 0 0 / 45%);
+    translate: -50% 0;
+    rotate: -5deg;
+  }
   .stamp {
     display: inline-block;
     padding: 0.125rem 0.5rem;
@@ -862,6 +883,14 @@
 /* outside the layers to beat the kit's utility; black, the theme's --foreground would lighten dark pages */
 [data-slot="alert-dialog-overlay"] {
   background: rgb(0 0 0 / 40%);
+}
+
+/* outside the layers to beat the row's utilities: the shape of a receipt, from its top where the shop's name is */
+.till-paper .file-thumb img {
+  width: 3.5rem;
+  height: 4.5rem;
+  border-radius: 1px;
+  object-position: top;
 }
 
 /* a bought item slides from the pad to the bag, only the items move and the page holds still */

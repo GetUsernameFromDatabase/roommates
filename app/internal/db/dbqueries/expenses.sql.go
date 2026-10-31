@@ -301,6 +301,31 @@ func (q *Queries) InsertSettlementShare(ctx context.Context, arg InsertSettlemen
 	return err
 }
 
+const keepExpenseFiles = `-- name: KeepExpenseFiles :exec
+UPDATE files f
+SET kept = TRUE
+FROM file_refs r
+WHERE r.file_id = f.id
+  AND r.expense_id = $1
+  AND r.household_id = $2
+  AND (
+    SELECT count(*)
+    FROM file_refs o
+    WHERE o.file_id = f.id
+  ) = 1
+`
+
+type KeepExpenseFilesParams struct {
+	ExpenseID   pgtype.UUID `json:"expense_id"`
+	HouseholdID pgtype.UUID `json:"household_id"`
+}
+
+// keeps what would go with the expense, a file with another reference outlives it anyway
+func (q *Queries) KeepExpenseFiles(ctx context.Context, arg KeepExpenseFilesParams) error {
+	_, err := q.db.Exec(ctx, keepExpenseFiles, arg.ExpenseID, arg.HouseholdID)
+	return err
+}
+
 const listDebtItems = `-- name: ListDebtItems :many
 SELECT f.from_user,
   fu.username AS from_name,

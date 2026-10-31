@@ -191,8 +191,7 @@ et:
     empty: See märge on tühi
   files:
     none: Faile veel pole
-    file: Fail
-    upload: Lae üles
+    upload: Lae fail üles
     attachments: Manused
     count: "%d manust"
     too-large: Fail võib olla kõige rohkem %d MB
@@ -221,10 +220,15 @@ et:
     place-message: Vestlus
     place-none: Lisamata
     detach: Eemalda
-    detach-last: "Kas eemaldada %s?\nFail kaob samuti\nSee on viimane koht, kus fail on. Säilitamiseks kasuta enne valikut „Hoia failide all”."
+    detach-last: "Kas eemaldada %s?\nFail kaob samuti\nSee on ainus koht, kus faili kasutatakse."
+    detach-keep: Eemalda, hoia failide all
     deleted-with:
-      one: "1 fail kaob samuti\nSee on lisatud ainult siia. Säilitamiseks kasuta enne valikut „Hoia failide all”."
-      other: "%{count} faili kaob samuti\nNeed on lisatud ainult siia. Säilitamiseks kasuta enne valikut „Hoia failide all”."
+      one: "1 fail kaob samuti\nSee on lisatud ainult siia. Säilitamiseks ava see ja kasuta enne valikut „Hoia failide all”."
+      other: "%{count} faili kaob samuti\nNeed on lisatud ainult siia. Säilitamiseks ava need ja kasuta enne valikut „Hoia failide all”."
+    deleted-with-keep:
+      one: "1 fail kaob samuti\nSee on lisatud ainult siia."
+      other: "%{count} faili kaob samuti\nNeed on lisatud ainult siia."
+    delete-keep: Kustuta, hoia failide all
     delete-shared: "Eemaldatakse %d kohast\nFaili kustutamine eemaldab selle kõikjalt, kuhu see on lisatud."
     keep: Hoia failide all
   chat:

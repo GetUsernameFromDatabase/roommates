@@ -255,6 +255,42 @@ func TestExpenses(t *testing.T) {
 		t.Error("file of a deleted expense is still listed")
 	}
 
+	// files can stay when their expense goes: only what it alone holds is kept, and a refused delete keeps nothing
+	keepingID, err := s.CreateExpense(ctx, ownerM, custom)
+	if err != nil {
+		t.Fatal(err)
+	}
+	onKeeping := FileTarget{NoteID: pgtype.UUID{}, ListID: pgtype.UUID{}, ShoppingItemID: pgtype.UUID{}, ExpenseID: keepingID, MessageID: pgtype.UUID{}}
+	alone, err := s.UploadFile(ctx, memberM, onKeeping, "alone.txt", strings.NewReader("bill"), 4)
+	if err != nil {
+		t.Fatal(err)
+	}
+	noteID, err := s.CreateNote(ctx, ownerM, NoteInput{Title: "Bills", BodyMD: "", Private: false})
+	if err != nil {
+		t.Fatal(err)
+	}
+	onNote := FileTarget{NoteID: noteID, ListID: pgtype.UUID{}, ShoppingItemID: pgtype.UUID{}, ExpenseID: pgtype.UUID{}, MessageID: pgtype.UUID{}}
+	both, err := s.UploadFile(ctx, ownerM, onNote, "both.txt", strings.NewReader("bill"), 4)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := s.AttachFile(ctx, ownerM, onKeeping, both); err != nil {
+		t.Fatal(err)
+	}
+	wantErr(t, "member deletes keeping files", s.DeleteExpenseKeepingFiles(ctx, memberM, keepingID), g.ErrorNotFound)
+	if f, err := s.GetFile(ctx, ownerM, alone); err != nil || f.Kept {
+		t.Fatalf("after the refused delete %+v, %v", f, err)
+	}
+	if err := s.DeleteExpenseKeepingFiles(ctx, ownerM, keepingID); err != nil {
+		t.Fatal(err)
+	}
+	if f, err := s.GetFile(ctx, ownerM, alone); err != nil || !f.Kept || f.RefCount != 0 {
+		t.Fatalf("file only the expense held %+v, %v", f, err)
+	}
+	if f, err := s.GetFile(ctx, ownerM, both); err != nil || f.Kept || f.RefCount != 1 {
+		t.Fatalf("file also on a note %+v, %v", f, err)
+	}
+
 	// back to the member being owed 0.50, paid back by the owner
 	if err := s.CreateSettlement(ctx, ownerM, memberM.UserID, "0.5"); err != nil {
 		t.Fatal(err)

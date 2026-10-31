@@ -128,7 +128,8 @@ SELECT f.id,
       FROM file_refs o
       WHERE o.file_id = f.id
     ) = 1
-  )::boolean AS last_ref
+  )::boolean AS last_ref,
+  file_visible(f.id, NULL)::boolean AS shared
 FROM file_refs r
   JOIN files f ON f.id = r.file_id
   JOIN users uploader ON uploader.id = f.uploader_id
@@ -187,6 +188,7 @@ SELECT f.id,
   f.size_bytes,
   f.created_at,
   f.kept,
+  file_visible(f.id, NULL)::boolean AS shared,
   f.uploader_id,
   uploader.username AS uploader_name,
   (

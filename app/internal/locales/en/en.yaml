@@ -191,8 +191,7 @@ en:
     empty: This note is empty
   files:
     none: No files yet
-    file: File
-    upload: Upload
+    upload: Upload a file
     attachments: Attachments
     count: "%d attachments"
     too-large: The file can be at most %d MB
@@ -221,10 +220,15 @@ en:
     place-message: Chat
     place-none: Not attached
     detach: Remove
-    detach-last: "Remove %s?\nThe file goes too\nThis is the last place it is attached. Use Keep in Files first to save it."
+    detach-last: "Remove %s?\nThe file goes too\nThis is the only place it is used."
+    detach-keep: Remove, keep in Files
     deleted-with:
-      one: "1 file goes too\nIt is attached only here. Use Keep in Files first to save it."
-      other: "%{count} files go too\nThey are attached only here. Use Keep in Files first to save them."
+      one: "1 file goes too\nIt is attached only here. To save it, open it and use Keep in Files first."
+      other: "%{count} files go too\nThey are attached only here. To save them, open them and use Keep in Files first."
+    deleted-with-keep:
+      one: "1 file goes too\nIt is attached only here."
+      other: "%{count} files go too\nThey are attached only here."
+    delete-keep: Delete, keep in Files
     delete-shared: "Removed from %d places\nDeleting the file takes it off everything it is attached to."
     keep: Keep in Files
   chat:
