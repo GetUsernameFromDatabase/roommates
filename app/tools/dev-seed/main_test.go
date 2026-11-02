@@ -31,9 +31,17 @@ func TestCheckDevelopment(t *testing.T) {
 	t.Cleanup(func() { gin.SetMode(mode) })
 
 	gin.SetMode(gin.DebugMode)
-	if err := checkDevelopment(); err != nil {
-		t.Fatalf("debug mode: %v", err)
+	for _, host := range []string{"localhost", "127.0.0.1", "::1"} {
+		t.Setenv(g.EVK_DatabaseHost.String(), host)
+		if err := checkDevelopment(); err != nil {
+			t.Fatalf("debug mode, %s: %v", host, err)
+		}
 	}
+	t.Setenv(g.EVK_DatabaseHost.String(), "db.example.com")
+	if err := checkDevelopment(); err == nil {
+		t.Fatal("remote database: want an error")
+	}
+	t.Setenv(g.EVK_DatabaseHost.String(), "localhost")
 	gin.SetMode(gin.ReleaseMode)
 	if err := checkDevelopment(); err == nil {
 		t.Fatal("release mode: want an error")

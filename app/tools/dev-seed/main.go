@@ -10,6 +10,7 @@ import (
 	"image"
 	"image/png"
 	"log"
+	"net"
 	"time"
 
 	g "roommates/internal/config"
@@ -53,6 +54,11 @@ func main() {
 func checkDevelopment() error {
 	if !g.IsDevelopment() {
 		return errors.New("dev-seed only runs in development, its password is public")
+	}
+	// gin defaults to debug mode, so also require a local database
+	host := g.GetEnv(g.EVK_DatabaseHost, "")
+	if ip := net.ParseIP(host); host != "localhost" && (ip == nil || !ip.IsLoopback()) {
+		return fmt.Errorf("dev-seed only runs against a local database, not %q", host)
 	}
 	return nil
 }
