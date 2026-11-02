@@ -1,5 +1,6 @@
 package components
 
+import "roommates/web/assets"
 import "roommates/internal/locales"
 import "roommates/internal/utils"
 
@@ -44,7 +45,7 @@ templ HeaderComponent(title string) {
 			<link rel="preload" href="/assets/fonts/atkinson-hyperlegible-next-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin/>
 			<link rel="preload" href="/assets/fonts/bricolage-grotesque-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin/>
 		}
-		<link rel="stylesheet" href="/assets/output.css"/>
+		<link rel="stylesheet" href={ assets.URL("output.css") }/>
 		// installable app, see web/assets/pwa
 		<link rel="manifest" href="/manifest.webmanifest"/>
 		<link rel="icon" href="/icons/favicon.svg" type="image/svg+xml"/>
@@ -58,15 +59,15 @@ templ HeaderComponent(title string) {
 			content={ `{"allowEval":false,"responseHandling":[{"code":"204","swap":false},{"code":"[23]..","swap":true},{"code":"[45]..","swap":true,"error":true},{"code":"...","swap":false}]}` }
 		/>
 		// https://htmx.org/docs/#installing
-		<script src="/assets/lib/htmx.min.js"></script>
+		<script src={ assets.URL("lib/htmx.min.js") }></script>
 		// live updates, see appShell
-		<script src="/assets/lib/sse.min.js"></script>
-		<script src="/assets/live-resync.js"></script>
+		<script src={ assets.URL("lib/sse.min.js") }></script>
+		<script src={ assets.URL("live-resync.js") }></script>
 		// a page or component renders its own scripts, with a templ.OnceHandle
-		<script src="/assets/push.js"></script>
-		<script src="/assets/menus.js"></script>
-		<script src="/assets/file-upload.js"></script>
-		<script src="/assets/confirm-dialog.js"></script>
+		<script src={ assets.URL("push.js") }></script>
+		<script src={ assets.URL("menus.js") }></script>
+		<script src={ assets.URL("file-upload.js") }></script>
+		<script src={ assets.URL("confirm-dialog.js") }></script>
 		@Scripts()
 	</head>
 }

@@ -1,5 +1,6 @@
 package pages
 
+import "roommates/web/assets"
 import "roommates/web/components"
 import "roommates/web/components/button"
 import "roommates/web/components/checkbox"
@@ -30,7 +31,7 @@ type NoteForm struct {
 templ HouseholdNotes(actor services.Membership, notes []dbqueries.ListNotesRow) {
 	@appShell(utils.T(ctx, locales.LK_NavNotes), &HouseholdNav{HouseholdID: actor.HouseholdID, Section: SectionNotes}) {
 		@localTimeScript.Once() {
-			<script src="/assets/local-time.js"></script>
+			<script src={ assets.URL("local-time.js") }></script>
 		}
 		<header class="flex items-end justify-between gap-3">
 			<h1 class="doorplate">
@@ -139,7 +140,7 @@ templ NotePage(actor services.Membership, n services.Note, files []services.Atta
 	{{ noteURL := householdURL(actor.HouseholdID, "notes", n.ID.String()) }}
 	@appShell(n.Title, &HouseholdNav{HouseholdID: actor.HouseholdID, Section: SectionNotes}) {
 		@localTimeScript.Once() {
-			<script src="/assets/local-time.js"></script>
+			<script src={ assets.URL("local-time.js") }></script>
 		}
 		<a href={ householdURL(actor.HouseholdID, "notes") } class="inline-flex min-h-11 items-center self-start text-sm text-muted-foreground underline-offset-4 hover:text-foreground hover:underline">
 			@components.T(locales.LK_NotesBack)
@@ -221,9 +222,9 @@ templ NoteEditor(actor services.Membership, f NoteForm) {
 	}
 	@appShell(utils.IfElse(f.Input.Title != "", f.Input.Title, utils.T(ctx, locales.LK_NotesNew)), &HouseholdNav{HouseholdID: actor.HouseholdID, Section: SectionNotes}) {
 		@noteEditorScript.Once() {
-			<script src="/assets/lib/turndown.js"></script>
-			<script src="/assets/lib/turndown-plugin-gfm.js"></script>
-			<script src="/assets/note-editor.js"></script>
+			<script src={ assets.URL("lib/turndown.js") }></script>
+			<script src={ assets.URL("lib/turndown-plugin-gfm.js") }></script>
+			<script src={ assets.URL("note-editor.js") }></script>
 		}
 		<a href={ cancel } class="inline-flex min-h-11 items-center self-start text-sm text-muted-foreground underline-offset-4 hover:text-foreground hover:underline">
 			@components.T(locales.LK_NotesCancel)

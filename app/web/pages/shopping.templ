@@ -1,5 +1,6 @@
 package pages
 
+import "roommates/web/assets"
 import "roommates/web/components"
 import "roommates/web/components/avatar"
 import "roommates/web/components/button"
@@ -23,7 +24,7 @@ const shoppingBuyAgainShown = 8
 templ ShoppingList(actor services.Membership, l services.ShoppingList, errorMessage string) {
 	@appShell(l.List.Name, &HouseholdNav{HouseholdID: actor.HouseholdID, Section: SectionShopping}) {
 		@shoppingReuseScript.Once() {
-			<script src="/assets/shopping-reuse.js"></script>
+			<script src={ assets.URL("shopping-reuse.js") }></script>
 		}
 		@shoppingListHeader(actor, l)
 		// saved on pick, what the list's expenses start from

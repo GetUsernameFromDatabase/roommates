@@ -1,5 +1,6 @@
 package pages
 
+import "roommates/web/assets"
 import "roommates/web/components"
 import "roommates/web/components/avatar"
 import "roommates/web/components/bubble"
@@ -26,11 +27,11 @@ var chatScript = templ.NewOnceHandle()
 templ ChatPage(actor services.Membership, c services.Chat, older bool, reply *services.ReplyPreview, draft, errorMessage string) {
 	@appShell(utils.T(ctx, locales.LK_ChatTitle), &HouseholdNav{HouseholdID: actor.HouseholdID, Section: SectionChat}) {
 		@chatScript.Once() {
-			<script src="/assets/chat-hold.js"></script>
-			<script src="/assets/chat-keyboard.js"></script>
+			<script src={ assets.URL("chat-hold.js") }></script>
+			<script src={ assets.URL("chat-keyboard.js") }></script>
 			// here, not in localTime: an empty chat has none, and a script swapped in later misses its htmx.onLoad
 			@localTimeScript.Once() {
-				<script src="/assets/local-time.js"></script>
+				<script src={ assets.URL("local-time.js") }></script>
 			}
 		}
 		// with the keyboard open (chat-keyboard.js) the page is only the chat, sized to what the keyboard leaves,

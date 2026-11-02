@@ -9,6 +9,7 @@ package pages
 import "github.com/a-h/templ"
 import templruntime "github.com/a-h/templ/runtime"
 
+import "roommates/web/assets"
 import "roommates/web/components"
 import "roommates/web/components/avatar"
 import "roommates/web/components/button"
@@ -105,7 +106,7 @@ func HouseholdShopping(actor services.Membership, o services.HouseholdOverview, 
 					var templ_7745c5c3_Var4 string
 					templ_7745c5c3_Var4, templ_7745c5c3_Err = templruntime.NewAttributeExpression(householdURL(actor.HouseholdID, "lists", l.ID.String())).ResolveURL(ctx)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/household.templ`, Line: 35, Col: 72}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/household.templ`, Line: 36, Col: 72}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var4)
 					if templ_7745c5c3_Err != nil {
@@ -128,7 +129,7 @@ func HouseholdShopping(actor services.Membership, o services.HouseholdOverview, 
 					var templ_7745c5c3_Var5 string
 					templ_7745c5c3_Var5, templ_7745c5c3_Err = templ.JoinStringErrs(l.Name)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/household.templ`, Line: 36, Col: 40}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/household.templ`, Line: 37, Col: 40}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var5))
 					if templ_7745c5c3_Err != nil {
@@ -141,7 +142,7 @@ func HouseholdShopping(actor services.Membership, o services.HouseholdOverview, 
 					var templ_7745c5c3_Var6 string
 					templ_7745c5c3_Var6, templ_7745c5c3_Err = templ.JoinStringErrs(utils.T(ctx, locales.LK_ShoppingOpenItems, l.OpenItems))
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/household.templ`, Line: 37, Col: 87}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/household.templ`, Line: 38, Col: 87}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var6))
 					if templ_7745c5c3_Err != nil {
@@ -183,7 +184,7 @@ func HouseholdShopping(actor services.Membership, o services.HouseholdOverview, 
 			var templ_7745c5c3_Var7 string
 			templ_7745c5c3_Var7, templ_7745c5c3_Err = templruntime.NewAttributeExpression(householdURL(actor.HouseholdID, "lists")).ResolveURL(ctx)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/household.templ`, Line: 52, Col: 58}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/household.templ`, Line: 53, Col: 58}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var7)
 			if templ_7745c5c3_Err != nil {
@@ -406,7 +407,7 @@ func HouseholdPeople(actor services.Membership, o services.HouseholdOverview, in
 					var templ_7745c5c3_Var14 string
 					templ_7745c5c3_Var14, templ_7745c5c3_Err = templ.JoinStringErrs(m.Username)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/household.templ`, Line: 111, Col: 96}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/household.templ`, Line: 112, Col: 96}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var14))
 					if templ_7745c5c3_Err != nil {
@@ -437,7 +438,7 @@ func HouseholdPeople(actor services.Membership, o services.HouseholdOverview, in
 					var templ_7745c5c3_Var15 string
 					templ_7745c5c3_Var15, templ_7745c5c3_Err = templ.JoinStringErrs(utils.T(ctx, locales.LK_HouseholdSince, RoleName(ctx, m.Role), formatDate(m.JoinedAt)))
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/household.templ`, Line: 119, Col: 97}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/household.templ`, Line: 120, Col: 97}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var15))
 					if templ_7745c5c3_Err != nil {
@@ -455,7 +456,7 @@ func HouseholdPeople(actor services.Membership, o services.HouseholdOverview, in
 						var templ_7745c5c3_Var16 string
 						templ_7745c5c3_Var16, templ_7745c5c3_Err = templruntime.NewAttributeExpression("manage-" + m.UserID.String()).Resolve(ctx)
 						if templ_7745c5c3_Err != nil {
-							return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/household.templ`, Line: 125, Col: 51}
+							return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/household.templ`, Line: 126, Col: 51}
 						}
 						_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var16)
 						if templ_7745c5c3_Err != nil {
@@ -468,7 +469,7 @@ func HouseholdPeople(actor services.Membership, o services.HouseholdOverview, in
 						var templ_7745c5c3_Var17 string
 						templ_7745c5c3_Var17, templ_7745c5c3_Err = templruntime.NewAttributeExpression(utils.T(ctx, locales.LK_HouseholdManage) + " " + m.Username).Resolve(ctx)
 						if templ_7745c5c3_Err != nil {
-							return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/household.templ`, Line: 127, Col: 82}
+							return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/household.templ`, Line: 128, Col: 82}
 						}
 						_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var17)
 						if templ_7745c5c3_Err != nil {
@@ -489,7 +490,7 @@ func HouseholdPeople(actor services.Membership, o services.HouseholdOverview, in
 						var templ_7745c5c3_Var18 string
 						templ_7745c5c3_Var18, templ_7745c5c3_Err = templruntime.NewAttributeExpression(householdURL(actor.HouseholdID, "members", m.UserID.String(), "promote")).ResolveURL(ctx)
 						if templ_7745c5c3_Err != nil {
-							return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/household.templ`, Line: 135, Col: 91}
+							return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/household.templ`, Line: 136, Col: 91}
 						}
 						_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var18)
 						if templ_7745c5c3_Err != nil {
@@ -502,7 +503,7 @@ func HouseholdPeople(actor services.Membership, o services.HouseholdOverview, in
 						var templ_7745c5c3_Var19 string
 						templ_7745c5c3_Var19, templ_7745c5c3_Err = templruntime.NewAttributeExpression(utils.T(ctx, locales.LK_HouseholdPromoteConfirm, m.Username)).Resolve(ctx)
 						if templ_7745c5c3_Err != nil {
-							return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/household.templ`, Line: 138, Col: 83}
+							return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/household.templ`, Line: 139, Col: 83}
 						}
 						_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var19)
 						if templ_7745c5c3_Err != nil {
@@ -515,7 +516,7 @@ func HouseholdPeople(actor services.Membership, o services.HouseholdOverview, in
 						var templ_7745c5c3_Var20 string
 						templ_7745c5c3_Var20, templ_7745c5c3_Err = templruntime.NewAttributeExpression(utils.T(ctx, locales.LK_HouseholdPromote)).Resolve(ctx)
 						if templ_7745c5c3_Err != nil {
-							return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/household.templ`, Line: 139, Col: 72}
+							return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/household.templ`, Line: 140, Col: 72}
 						}
 						_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var20)
 						if templ_7745c5c3_Err != nil {
@@ -558,7 +559,7 @@ func HouseholdPeople(actor services.Membership, o services.HouseholdOverview, in
 						var templ_7745c5c3_Var22 string
 						templ_7745c5c3_Var22, templ_7745c5c3_Err = templruntime.NewAttributeExpression(householdURL(actor.HouseholdID, "members", m.UserID.String(), "remove")).ResolveURL(ctx)
 						if templ_7745c5c3_Err != nil {
-							return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/household.templ`, Line: 150, Col: 90}
+							return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/household.templ`, Line: 151, Col: 90}
 						}
 						_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var22)
 						if templ_7745c5c3_Err != nil {
@@ -571,7 +572,7 @@ func HouseholdPeople(actor services.Membership, o services.HouseholdOverview, in
 						var templ_7745c5c3_Var23 string
 						templ_7745c5c3_Var23, templ_7745c5c3_Err = templruntime.NewAttributeExpression(utils.T(ctx, locales.LK_HouseholdRemoveConfirm, m.Username)).Resolve(ctx)
 						if templ_7745c5c3_Err != nil {
-							return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/household.templ`, Line: 153, Col: 82}
+							return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/household.templ`, Line: 154, Col: 82}
 						}
 						_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var23)
 						if templ_7745c5c3_Err != nil {
@@ -584,7 +585,7 @@ func HouseholdPeople(actor services.Membership, o services.HouseholdOverview, in
 						var templ_7745c5c3_Var24 string
 						templ_7745c5c3_Var24, templ_7745c5c3_Err = templruntime.NewAttributeExpression(utils.T(ctx, locales.LK_HouseholdRemove)).Resolve(ctx)
 						if templ_7745c5c3_Err != nil {
-							return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/household.templ`, Line: 154, Col: 71}
+							return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/household.templ`, Line: 155, Col: 71}
 						}
 						_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var24)
 						if templ_7745c5c3_Err != nil {
@@ -739,7 +740,7 @@ func HouseholdPeople(actor services.Membership, o services.HouseholdOverview, in
 						var templ_7745c5c3_Var28 string
 						templ_7745c5c3_Var28, templ_7745c5c3_Err = templ.JoinStringErrs(inv.Code)
 						if templ_7745c5c3_Err != nil {
-							return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/household.templ`, Line: 194, Col: 51}
+							return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/household.templ`, Line: 195, Col: 51}
 						}
 						_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var28))
 						if templ_7745c5c3_Err != nil {
@@ -760,7 +761,7 @@ func HouseholdPeople(actor services.Membership, o services.HouseholdOverview, in
 						var templ_7745c5c3_Var29 string
 						templ_7745c5c3_Var29, templ_7745c5c3_Err = templruntime.NewAttributeExpression(householdURL(actor.HouseholdID, "invites", inv.ID.String(), "delete")).ResolveURL(ctx)
 						if templ_7745c5c3_Err != nil {
-							return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/household.templ`, Line: 196, Col: 95}
+							return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/household.templ`, Line: 197, Col: 95}
 						}
 						_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var29)
 						if templ_7745c5c3_Err != nil {
@@ -803,7 +804,7 @@ func HouseholdPeople(actor services.Membership, o services.HouseholdOverview, in
 						var templ_7745c5c3_Var31 string
 						templ_7745c5c3_Var31, templ_7745c5c3_Err = templruntime.NewAttributeExpression(inviteBaseURL + inv.Code).Resolve(ctx)
 						if templ_7745c5c3_Err != nil {
-							return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/household.templ`, Line: 210, Col: 44}
+							return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/household.templ`, Line: 211, Col: 44}
 						}
 						_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var31)
 						if templ_7745c5c3_Err != nil {
@@ -816,7 +817,7 @@ func HouseholdPeople(actor services.Membership, o services.HouseholdOverview, in
 						var templ_7745c5c3_Var32 string
 						templ_7745c5c3_Var32, templ_7745c5c3_Err = templruntime.NewAttributeExpression(utils.T(ctx, locales.LK_HouseholdInvites)).Resolve(ctx)
 						if templ_7745c5c3_Err != nil {
-							return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/household.templ`, Line: 211, Col: 66}
+							return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/household.templ`, Line: 212, Col: 66}
 						}
 						_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var32)
 						if templ_7745c5c3_Err != nil {
@@ -837,7 +838,7 @@ func HouseholdPeople(actor services.Membership, o services.HouseholdOverview, in
 						var templ_7745c5c3_Var33 string
 						templ_7745c5c3_Var33, templ_7745c5c3_Err = templ.JoinStringErrs(utils.T(ctx, locales.LK_HouseholdExpires, formatDate(inv.ExpiresAt)))
 						if templ_7745c5c3_Err != nil {
-							return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/household.templ`, Line: 217, Col: 81}
+							return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/household.templ`, Line: 218, Col: 81}
 						}
 						_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var33))
 						if templ_7745c5c3_Err != nil {
@@ -865,7 +866,7 @@ func HouseholdPeople(actor services.Membership, o services.HouseholdOverview, in
 					var templ_7745c5c3_Var34 string
 					templ_7745c5c3_Var34, templ_7745c5c3_Err = templruntime.NewAttributeExpression(householdURL(actor.HouseholdID, "invites")).ResolveURL(ctx)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/household.templ`, Line: 226, Col: 64}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/household.templ`, Line: 227, Col: 64}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var34)
 					if templ_7745c5c3_Err != nil {
@@ -912,7 +913,7 @@ func HouseholdPeople(actor services.Membership, o services.HouseholdOverview, in
 					var templ_7745c5c3_Var36 string
 					templ_7745c5c3_Var36, templ_7745c5c3_Err = templruntime.NewAttributeExpression(householdURL(actor.HouseholdID, "invites", "email")).ResolveURL(ctx)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/household.templ`, Line: 235, Col: 68}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/household.templ`, Line: 236, Col: 68}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var36)
 					if templ_7745c5c3_Err != nil {
@@ -1018,7 +1019,7 @@ func HouseholdPeople(actor services.Membership, o services.HouseholdOverview, in
 			var templ_7745c5c3_Var39 string
 			templ_7745c5c3_Var39, templ_7745c5c3_Err = templruntime.NewAttributeExpression(householdURL(actor.HouseholdID, "leave")).ResolveURL(ctx)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/household.templ`, Line: 267, Col: 52}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/household.templ`, Line: 268, Col: 52}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var39)
 			if templ_7745c5c3_Err != nil {
@@ -1031,7 +1032,7 @@ func HouseholdPeople(actor services.Membership, o services.HouseholdOverview, in
 			var templ_7745c5c3_Var40 string
 			templ_7745c5c3_Var40, templ_7745c5c3_Err = templruntime.NewAttributeExpression(utils.T(ctx, locales.LK_HouseholdLeave) + "?").Resolve(ctx)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/household.templ`, Line: 270, Col: 61}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/household.templ`, Line: 271, Col: 61}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var40)
 			if templ_7745c5c3_Err != nil {
@@ -1044,7 +1045,7 @@ func HouseholdPeople(actor services.Membership, o services.HouseholdOverview, in
 			var templ_7745c5c3_Var41 string
 			templ_7745c5c3_Var41, templ_7745c5c3_Err = templruntime.NewAttributeExpression(utils.T(ctx, locales.LK_HouseholdLeaveConfirm)).Resolve(ctx)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/household.templ`, Line: 271, Col: 70}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/household.templ`, Line: 272, Col: 70}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var41)
 			if templ_7745c5c3_Err != nil {
@@ -1130,7 +1131,20 @@ func copyButton(value string, label locales.LK) templ.Component {
 				}()
 			}
 			ctx = templ.InitializeContext(ctx)
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 87, "<script src=\"/assets/copy.js\"></script>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 87, "<script src=\"")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			var templ_7745c5c3_Var45 string
+			templ_7745c5c3_Var45, templ_7745c5c3_Err = templruntime.NewAttributeExpression(assets.URL("copy.js")).ResolveURL(ctx)
+			if templ_7745c5c3_Err != nil {
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/household.templ`, Line: 292, Col: 37}
+			}
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var45)
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 88, "\"></script>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -1140,7 +1154,7 @@ func copyButton(value string, label locales.LK) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Var45 := templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
+		templ_7745c5c3_Var46 := templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 			templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 			templ_7745c5c3_Buffer, templ_7745c5c3_IsBuffer := templruntime.GetBuffer(templ_7745c5c3_W)
 			if !templ_7745c5c3_IsBuffer {
@@ -1167,7 +1181,7 @@ func copyButton(value string, label locales.LK) templ.Component {
 				"data-copy":   value,
 				"data-copied": utils.T(ctx, locales.LK_HouseholdCopied),
 			},
-		}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var45), templ_7745c5c3_Buffer)
+		}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var46), templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1194,7 +1208,7 @@ func personAvatar(userID pgtype.UUID, avatarKey *string, name string, size avata
 		}
 		ctx = templ.InitializeContext(ctx)
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Var47 := templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
+		templ_7745c5c3_Var48 := templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 			templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 			templ_7745c5c3_Buffer, templ_7745c5c3_IsBuffer := templruntime.GetBuffer(templ_7745c5c3_W)
 			if !templ_7745c5c3_IsBuffer {
@@ -1212,11 +1226,11 @@ func personAvatar(userID pgtype.UUID, avatarKey *string, name string, size avata
 					return templ_7745c5c3_Err
 				}
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 88, " ")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 89, " ")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Var48 := templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
+			templ_7745c5c3_Var49 := templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 				templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 				templ_7745c5c3_Buffer, templ_7745c5c3_IsBuffer := templruntime.GetBuffer(templ_7745c5c3_W)
 				if !templ_7745c5c3_IsBuffer {
@@ -1228,24 +1242,24 @@ func personAvatar(userID pgtype.UUID, avatarKey *string, name string, size avata
 					}()
 				}
 				ctx = templ.InitializeContext(ctx)
-				var templ_7745c5c3_Var49 string
-				templ_7745c5c3_Var49, templ_7745c5c3_Err = templ.JoinStringErrs(initial(name))
+				var templ_7745c5c3_Var50 string
+				templ_7745c5c3_Var50, templ_7745c5c3_Err = templ.JoinStringErrs(initial(name))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/household.templ`, Line: 315, Col: 18}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/household.templ`, Line: 316, Col: 18}
 				}
-				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var49))
+				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var50))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				return nil
 			})
-			templ_7745c5c3_Err = avatar.Fallback(avatar.FallbackProps{Class: "bg-claim font-heading font-semibold text-claim-foreground group-data-[size=lg]/avatar:text-base"}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var48), templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = avatar.Fallback(avatar.FallbackProps{Class: "bg-claim font-heading font-semibold text-claim-foreground group-data-[size=lg]/avatar:text-base"}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var49), templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			return nil
 		})
-		templ_7745c5c3_Err = avatar.Avatar(avatar.Props{Size: size, Class: class, Attributes: templ.Attributes{"aria-hidden": "true"}}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var47), templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = avatar.Avatar(avatar.Props{Size: size, Class: class, Attributes: templ.Attributes{"aria-hidden": "true"}}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var48), templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

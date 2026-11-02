@@ -1,5 +1,6 @@
 package pages
 
+import "roommates/web/assets"
 import "roommates/web/components"
 import "roommates/web/components/alertdialog"
 import "roommates/web/components/badge"
@@ -481,7 +482,7 @@ var dirtySaveScript = templ.NewOnceHandle()
 // Save shows once it is changed (dirty-save.js), Enter saves without it, children follow the input
 templ nameHeader(back templ.SafeURL, backText string, action templ.SafeURL, name string, maxLength int, label string) {
 	@dirtySaveScript.Once() {
-		<script src="/assets/dirty-save.js"></script>
+		<script src={ assets.URL("dirty-save.js") }></script>
 	}
 	<header>
 		@backLink(back, backText)

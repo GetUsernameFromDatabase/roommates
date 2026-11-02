@@ -1,5 +1,6 @@
 package pages
 
+import "roommates/web/assets"
 import "roommates/web/components"
 import "roommates/web/components/avatar"
 import "roommates/web/components/button"
@@ -90,7 +91,7 @@ var avatarCropScript = templ.NewOnceHandle()
 // and at the sizes of people and the chat, web/assets/public/avatar-crop.js shows it
 templ avatarCrop() {
 	@avatarCropScript.Once() {
-		<script src="/assets/avatar-crop.js"></script>
+		<script src={ assets.URL("avatar-crop.js") }></script>
 	}
 	<div data-avatar-crop class="flex w-full flex-col gap-3" hidden>
 		// sized to the picture by the script

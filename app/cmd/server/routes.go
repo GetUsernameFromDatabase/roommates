@@ -183,19 +183,39 @@ func registerAssets(r *gin.Engine) {
 		log.Fatal().Err(err).Msg("could not get public assets")
 	}
 
-	// the bundle's name changes with its content, a missing one stays uncached for the next deploy
 	assetRoutes := r.Group("/assets", func(c *gin.Context) {
-		name, isBundle := strings.CutPrefix(c.Request.URL.Path, "/assets/js/")
-		if _, err := fs.Stat(publicFS, "js/"+name); isBundle && err == nil {
-			c.Header("Cache-Control", "public, max-age=31536000, immutable")
-		}
+		cacheHeaders(c, "public/"+strings.TrimPrefix(c.Request.URL.Path, "/assets/"))
 	})
 	assetRoutes.StaticFS("/", http.FS(publicFS))
-	r.StaticFileFS("/favicon.ico", "favicon/favicon.ico", http.FS(assetFS))
-	for _, icon := range []string{"web-app-manifest-192x192.png", "web-app-manifest-512x512.png", "apple-touch-icon.png", "favicon.svg"} {
-		r.StaticFileFS("/icons/"+icon, "favicon/"+icon, http.FS(assetFS))
+	file := func(route, name string) {
+		h := func(c *gin.Context) {
+			cacheHeaders(c, name)
+			c.FileFromFS(name, http.FS(assetFS))
+		}
+		r.GET(route, h)
+		r.HEAD(route, h)
 	}
-	r.StaticFileFS("/sw.js", "pwa/sw.js", http.FS(assetFS))
+	file("/favicon.ico", "favicon/favicon.ico")
+	for _, icon := range []string{"web-app-manifest-192x192.png", "web-app-manifest-512x512.png", "apple-touch-icon.png", "favicon.svg"} {
+		file("/icons/"+icon, "favicon/"+icon)
+	}
+	file("/sw.js", "pwa/sw.js")
+}
+
+// cacheHeaders gives an embedded file its content hash as ETag, so a repeat visit gets a 304,
+// and lets the browser keep it for a year when the URL carries that hash ([assets.URL]) or the
+// shadcn bundle's name does; a missing file gets nothing and stays uncached for the next deploy
+func cacheHeaders(c *gin.Context, name string) {
+	hash := assets.Hash(name)
+	if hash == "" {
+		return
+	}
+	c.Header("ETag", `"`+hash+`"`)
+	if c.Query("v") == hash || strings.HasPrefix(name, "public/js/") {
+		c.Header("Cache-Control", "public, max-age=31536000, immutable")
+	} else {
+		c.Header("Cache-Control", "no-cache")
+	}
 }
 
 // -----------------------------------------------------------------------------

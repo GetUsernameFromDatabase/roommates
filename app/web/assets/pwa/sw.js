@@ -34,7 +34,8 @@ self.addEventListener("fetch", (event) => {
     return;
   }
   event.respondWith(
-    fetch(req).catch(() => caches.match(navigate ? OFFLINE : req)),
+    // pages ask for the CSS with ?v=, the cache holds it without
+    fetch(req).catch(() => caches.match(navigate ? OFFLINE : req, { ignoreSearch: true })),
   );
 });
 

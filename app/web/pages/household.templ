@@ -1,5 +1,6 @@
 package pages
 
+import "roommates/web/assets"
 import "roommates/web/components"
 import "roommates/web/components/avatar"
 import "roommates/web/components/button"
@@ -288,7 +289,7 @@ var copyScript = templ.NewOnceHandle()
 // copyButton copies value to the clipboard, web/assets/public/copy.js
 templ copyButton(value string, label locales.LK) {
 	@copyScript.Once() {
-		<script src="/assets/copy.js"></script>
+		<script src={ assets.URL("copy.js") }></script>
 	}
 	@button.Button(button.Props{
 		Type:    button.TypeButton,

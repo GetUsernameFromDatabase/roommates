@@ -1,5 +1,6 @@
 package pages
 
+import "roommates/web/assets"
 import "roommates/web/components"
 import "roommates/web/components/button"
 import "roommates/web/components/field"
@@ -24,7 +25,7 @@ var appearancePreviewScript = templ.NewOnceHandle()
 // without JS Save does it and next is where to go after
 templ AppearanceForm(next string) {
 	@appearancePreviewScript.Once() {
-		<script src="/assets/appearance-preview.js"></script>
+		<script src={ assets.URL("appearance-preview.js") }></script>
 	}
 	{{ a := utils.GetAppearance(ctx) }}
 	// autocomplete off: after a reload the radios show what the server has, not what the browser remembers

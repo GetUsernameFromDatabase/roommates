@@ -1,5 +1,6 @@
 package pages
 
+import "roommates/web/assets"
 import "roommates/web/components"
 import "roommates/web/components/button"
 import "roommates/web/components/calendar"
@@ -382,7 +383,7 @@ templ ExpenseEditor(actor services.Membership, members []dbqueries.ListActiveMem
 		</div>
 		// after the form, it fills in the shares as soon as it runs
 		@expenseSplitScript.Once() {
-			<script src="/assets/expense-split.js"></script>
+			<script src={ assets.URL("expense-split.js") }></script>
 		}
 	}
 }
@@ -486,7 +487,7 @@ var datePickerScript = templ.NewOnceHandle()
 // copies the calendar's pick to the hidden input, the calendar itself is portaled out of the form
 templ datePicker(id, name, value string) {
 	@datePickerScript.Once() {
-		<script src="/assets/date-picker.js"></script>
+		<script src={ assets.URL("date-picker.js") }></script>
 	}
 	{{ day, _ := time.Parse(services.DateLayout, value) }}
 	<input type="hidden" id={ id } name={ name } value={ value }/>
