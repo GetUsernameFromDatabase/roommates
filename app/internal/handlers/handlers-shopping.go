@@ -58,13 +58,14 @@ func (h *DefaultHandler) renderShoppingList(ctx *gin.Context, status int, listID
 	RenderTemplStatus(ctx, status, pages.ShoppingList(actor, list, errorMessage))
 }
 
-// swapMainOnError makes htmx swap in the <main> of an error page,
-// the list forms select #shopping-list, which error pages do not have
+// swapMainOnError makes htmx fill the page's <main> with the error page's message,
+// the list forms select #shopping-list, which error pages do not have,
+// live-resync.js does the same for a live region that gets a 404
 func swapMainOnError(ctx *gin.Context) {
 	if IsRequestHTMX(ctx) {
 		ctx.Header(g.HHK_HXRetarget.String(), "main")
-		ctx.Header(g.HHK_HXReselect.String(), "main")
-		ctx.Header(g.HHK_HXReswap.String(), "outerHTML")
+		ctx.Header(g.HHK_HXReselect.String(), "main > *")
+		ctx.Header(g.HHK_HXReswap.String(), "innerHTML")
 	}
 }
 
@@ -139,7 +140,7 @@ func (h *DefaultHandler) RenameShoppingList(ctx *gin.Context) {
 	err = h.service.RenameShoppingList(ctx, actor, listID, ctx.PostForm("name"))
 	switch {
 	case err == nil:
-		Redirect(ctx, shoppingListPath(actor.HouseholdID, listID))
+		stay(ctx, shoppingListPath(actor.HouseholdID, listID))
 	case errors.Is(err, g.ErrorInvalidInput):
 		h.renderShoppingList(ctx, http.StatusUnprocessableEntity, listID,
 			utils.T(ctx.Request.Context(), locales.LK_ShoppingNameLength, services.MaxShoppingListNameLength))

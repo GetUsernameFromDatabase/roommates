@@ -96,13 +96,18 @@ func (s *Session) Login(sessionInfo SessionInfo) {
 	s.SessionInfo = sessionInfo
 	s.isSessionInfoValid = true
 
-	// I don't like this forces a check that all
+	// I don't like this; forces a check that all
 	// fields from [SessionInfo] get used
 	var _ = SessionInfo{"", "", ""}
 	s.Session.Set(KeyUserID, sessionInfo.UserID)
 	s.Session.Set(KeyUsername, sessionInfo.Username)
 	s.Session.Set(KeyEmail, sessionInfo.Email)
 	s.Save()
+	// the row is found by user when a password reset signs the user out everywhere
+	gs := s.Session.(gorillaSessionGetter).Session()
+	if _, err := sessionDB.Exec("UPDATE http_sessions SET user_id = $1 WHERE key = $2", sessionInfo.UserID, gs.ID); err != nil {
+		panic(err)
+	}
 }
 
 // Save is wrapper of [sessions.Session.Save] | [sessions.Session].Save

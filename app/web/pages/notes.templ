@@ -257,8 +257,9 @@ templ NoteEditor(actor services.Membership, f NoteForm) {
 			<div class="note-board space-y-4">
 				// the words set what is typed next or the line the cursor is on, the bubble at a
 				// selection changes the selected text
-				<div id="note-tools" hidden class="sticky top-0 z-10 -mx-1 -mt-2 flex items-center gap-2 rounded-lg bg-secondary px-1 py-1 max-lg:top-[3.25rem]">
-					<div role="toolbar" aria-controls="note-editor" class="flex min-w-0 flex-1 items-center gap-0.5 overflow-x-auto [scrollbar-width:none]">
+				// the switch wraps to its own row when the buttons would not all fit beside it
+				<div id="note-tools" hidden class="sticky top-0 z-10 -mx-1 -mt-2 flex flex-wrap items-center gap-2 rounded-lg bg-secondary px-1 py-1 max-lg:top-[3.25rem]">
+					<div role="toolbar" aria-controls="note-editor" class="flex min-w-0 grow items-center gap-0.5 overflow-x-auto [scrollbar-width:none]">
 						@noteToolButton("bold", "", "bold", locales.LK_NotesBold)
 						@noteToolButton("italic", "", "italic", locales.LK_NotesItalic)
 						@noteToolButton("link", "", "link", locales.LK_NotesLink)
@@ -405,11 +406,14 @@ templ noteToolButton(command, value, icon string, label locales.LK) {
 	}
 	@button.Button(button.Props{
 		Variant:    button.VariantGhost,
-		Class:      "h-11 shrink-0 gap-1.5 px-3 aria-pressed:bg-card aria-pressed:text-foreground aria-pressed:shadow-[0_2px_0_var(--door-frame)]",
+		Class:      "h-11 shrink-0 gap-1.5 px-3 max-lg:w-11 max-lg:px-0 aria-pressed:bg-card aria-pressed:text-foreground aria-pressed:shadow-[0_2px_0_var(--door-frame)]",
 		Attributes: attrs,
 	}) {
 		@navIcon(icon, "size-4")
-		@components.T(label)
+		// a phone or tablet shows only the icons, the label still names the button
+		<span class="max-lg:sr-only">
+			@components.T(label)
+		</span>
 	}
 }
 

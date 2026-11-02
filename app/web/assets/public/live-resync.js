@@ -18,4 +18,13 @@
   document.addEventListener("visibilitychange", function () {
     if (document.visibilityState === "visible") resync();
   });
+  // a region whose page is gone (deleted, or the user was removed) gets the 404 page, which has no
+  // copy of it and would swap in nothing, so its message fills the page's <main> instead
+  document.addEventListener("htmx:beforeSwap", function (e) {
+    var main = document.querySelector("main");
+    if (e.detail.xhr.status !== 404 || !main || !e.detail.requestConfig.elt.hasAttribute("data-live")) return;
+    e.detail.target = main;
+    e.detail.selectOverride = "main > *";
+    e.detail.swapOverride = "innerHTML";
+  });
 })();

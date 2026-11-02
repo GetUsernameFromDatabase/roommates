@@ -16,11 +16,12 @@ if (!window.shoppingReuseLoaded) {
     qty.focus();
   });
 
-  // only the add, a flatmate's change arriving while typing must not move the focus
+  // only the own add (a post), a flatmate's change arriving while typing must not move the focus,
+  // after the Add button too, the swap takes the button's focus away and a phone would close its keyboard
   document.addEventListener("htmx:afterSettle", function (e) {
     var request = e.detail.requestConfig;
     if (!request || request.verb !== "post" || !request.path.endsWith("/items")) return;
     var text = document.getElementById("item-text");
-    if (text && document.activeElement && document.activeElement.id === "item-qty") text.focus();
+    if (text) text.focus();
   });
 }

@@ -231,7 +231,7 @@ func HouseholdExpenses(actor services.Membership, o services.ExpensesOverview, f
 									templ_7745c5c3_Err = input.Input(input.Props{
 										Name:  "amount",
 										Type:  "text",
-										Value: services.FormatCentsInput(d.Cents),
+										Value: iPaidAmount(d, o.Pending),
 										Class: "h-11 min-w-0 flex-1",
 										Attributes: templ.Attributes{
 											"inputmode":  "decimal",

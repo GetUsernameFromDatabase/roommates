@@ -2,6 +2,7 @@
 package handlers
 
 import (
+	"encoding/json"
 	"net/http"
 	g "roommates/internal/config"
 	"roommates/internal/events"
@@ -72,6 +73,19 @@ func Redirect(ctx *gin.Context, location string) {
 	} else {
 		ctx.Redirect(http.StatusSeeOther, location)
 	}
+}
+
+// stay sends an action back to its own page, htmx swaps the page in like a boosted link
+// where it was scrolled, as HX-Redirect would reload it
+func stay(ctx *gin.Context, location string) {
+	if !IsRequestHTMX(ctx) {
+		Redirect(ctx, location)
+		return
+	}
+	header, _ := json.Marshal(map[string]string{
+		"path": location, "target": "body", "swap": "innerHTML show:none", "push": "false",
+	})
+	ctx.Header(g.HHK_HXLocation.String(), string(header))
 }
 
 // stayInPlace keeps the scroll position of a boosted page swap, which would go to the top,

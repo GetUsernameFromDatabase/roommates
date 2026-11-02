@@ -36,13 +36,14 @@ func (h *DefaultHandler) Events(ctx *gin.Context) {
 			_, err := io.WriteString(w, ": ping\n\n")
 			return err == nil
 		case t := <-topics:
+			member := true
 			if t == events.TopicPeople {
-				if _, err := h.service.GetMembership(ctx, actor.HouseholdID, actor.UserID); err != nil {
-					return false
-				}
+				_, err := h.service.GetMembership(ctx, actor.HouseholdID, actor.UserID)
+				member = err == nil
 			}
+			// a removed user gets this last event too, so the page refetches and shows it is gone
 			_, err := io.WriteString(w, "event: "+t+"\ndata: 1\n\n")
-			return err == nil
+			return err == nil && member
 		}
 	})
 }

@@ -228,7 +228,7 @@ func (h *DefaultHandler) SetExpenseSharePaid(ctx *gin.Context) {
 		pageError(ctx, err)
 		return
 	}
-	Redirect(ctx, safeNextPath(cmp.Or(ctx.PostForm(g.QueryNext), expensePath(actor.HouseholdID, expenseID))))
+	stay(ctx, safeNextPath(cmp.Or(ctx.PostForm(g.QueryNext), expensePath(actor.HouseholdID, expenseID))))
 }
 
 // -----------------------------------------------------------------------------
@@ -244,7 +244,7 @@ func (h *DefaultHandler) CreateSettlement(ctx *gin.Context) {
 	}
 	switch {
 	case err == nil:
-		Redirect(ctx, expensesPath(actor.HouseholdID))
+		stay(ctx, expensesPath(actor.HouseholdID))
 	case errors.Is(err, g.ErrorInvalidInput):
 		h.renderExpenses(ctx, http.StatusUnprocessableEntity, utils.T(ctx.Request.Context(), locales.LK_ExpensesSettleInvalid))
 	default:
@@ -264,7 +264,7 @@ func (h *DefaultHandler) settlementAction(ctx *gin.Context, action func(actor se
 		pageError(ctx, err)
 		return
 	}
-	Redirect(ctx, expensesPath(actor.HouseholdID))
+	stay(ctx, expensesPath(actor.HouseholdID))
 }
 
 func (h *DefaultHandler) ConfirmSettlement(ctx *gin.Context) {

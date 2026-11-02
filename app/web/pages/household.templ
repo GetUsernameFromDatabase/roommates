@@ -131,7 +131,13 @@ templ HouseholdPeople(actor services.Membership, o services.HouseholdOverview, i
 									</summary>
 								</details>
 								<div class="hidden w-full flex-wrap justify-end gap-2 [li:has(>details[open])>&]:flex">
-									<form action={ householdURL(actor.HouseholdID, "members", m.UserID.String(), "promote") } method="post" hx-boost="true">
+									<form
+										action={ householdURL(actor.HouseholdID, "members", m.UserID.String(), "promote") }
+										method="post"
+										hx-boost="true"
+										hx-confirm={ utils.T(ctx, locales.LK_HouseholdPromoteConfirm, m.Username) }
+										data-confirm-label={ utils.T(ctx, locales.LK_HouseholdPromote) }
+									>
 										@button.Button(button.Props{
 											Type:    button.TypeSubmit,
 											Variant: button.VariantOutline,
@@ -144,7 +150,7 @@ templ HouseholdPeople(actor services.Membership, o services.HouseholdOverview, i
 										action={ householdURL(actor.HouseholdID, "members", m.UserID.String(), "remove") }
 										method="post"
 										hx-boost="true"
-										hx-confirm={ utils.T(ctx, locales.LK_HouseholdRemove) + " " + m.Username + "?" }
+										hx-confirm={ utils.T(ctx, locales.LK_HouseholdRemoveConfirm, m.Username) }
 										data-confirm-label={ utils.T(ctx, locales.LK_HouseholdRemove) }
 									>
 										@button.Button(button.Props{

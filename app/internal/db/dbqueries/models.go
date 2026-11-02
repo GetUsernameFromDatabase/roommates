@@ -75,6 +75,16 @@ type Household struct {
 	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
 }
 
+type HttpSession struct {
+	ID         int64              `json:"id"`
+	Key        []byte             `json:"key"`
+	Data       []byte             `json:"data"`
+	CreatedOn  pgtype.Timestamptz `json:"created_on"`
+	ModifiedOn pgtype.Timestamptz `json:"modified_on"`
+	ExpiresOn  pgtype.Timestamptz `json:"expires_on"`
+	UserID     pgtype.UUID        `json:"user_id"`
+}
+
 type Invite struct {
 	ID          pgtype.UUID        `json:"id"`
 	HouseholdID pgtype.UUID        `json:"household_id"`

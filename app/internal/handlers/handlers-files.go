@@ -291,7 +291,7 @@ func (h *DefaultHandler) RenameFile(ctx *gin.Context) {
 	err = h.service.RenameFile(ctx, actor, fileID, ctx.PostForm("name"))
 	switch {
 	case err == nil:
-		Redirect(ctx, filesPath(actor.HouseholdID)+"/"+fileID.String())
+		stay(ctx, filesPath(actor.HouseholdID)+"/"+fileID.String())
 	case errors.Is(err, g.ErrorInvalidInput):
 		h.renderFile(ctx, http.StatusUnprocessableEntity, fileID,
 			utils.T(ctx.Request.Context(), locales.LK_FilesNameInvalid, services.MaxFileNameLength))

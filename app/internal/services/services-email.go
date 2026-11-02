@@ -140,10 +140,8 @@ func (s *DefaultService) CheckPasswordResetToken(ctx context.Context, token stri
 	return noRowsAs(err, g.ErrorTokenInvalid)
 }
 
-// ResetPassword sets the password and confirms the email (the link proved access to it)
-//
-// shortcut: other signed in sessions stay valid, the session store cannot be
-// queried by user, add a per user session version once sessions are checked against the db
+// ResetPassword sets the password and confirms the email (the link proved access to it),
+// and signs the user out everywhere, a reset is what follows a stolen password
 func (s *DefaultService) ResetPassword(ctx context.Context, token, password string) error {
 	hashed, err := bcrypt.GenerateFromPassword([]byte(password), bcryptCost)
 	if err != nil {
@@ -164,6 +162,9 @@ func (s *DefaultService) ResetPassword(ctx context.Context, token, password stri
 			return err
 		}
 		if err := q.SetEmailValidated(ctx, userID); err != nil {
+			return err
+		}
+		if err := q.DeleteUserSessions(ctx, userID); err != nil {
 			return err
 		}
 		return q.DeleteEmailTokensOfUser(ctx, dbqueries.DeleteEmailTokensOfUserParams{

@@ -4,7 +4,14 @@
   if (!("serviceWorker" in navigator)) {
     return;
   }
-  const ready = navigator.serviceWorker.register("/sw.js").then(() => navigator.serviceWorker.ready);
+  // null when the worker cannot be registered (e.g. an untrusted certificate), then there is no push
+  const ready = navigator.serviceWorker
+    .register("/sw.js")
+    .then(() => navigator.serviceWorker.ready)
+    .catch((err) => {
+      console.warn("service worker not registered", err);
+      return null;
+    });
   const supported = "PushManager" in window && "Notification" in window;
 
   const post = (path, body) =>
@@ -22,6 +29,9 @@
 
   const unsubscribe = async () => {
     const reg = await ready;
+    if (!reg) {
+      return;
+    }
     const sub = await reg.pushManager.getSubscription();
     if (sub) {
       await post("/push/unsubscribe", { endpoint: sub.endpoint });
@@ -48,6 +58,9 @@
       return;
     }
     const reg = await ready;
+    if (!reg) {
+      return;
+    }
     const render = async () => {
       toggle.checked = (await reg.pushManager.getSubscription()) !== null;
       // switch.js paints from this event

@@ -44,7 +44,9 @@ en:
     role-member: Member
     you: you
     remove: Remove
+    remove-confirm: "Remove %s?\n\nAll active invites are revoked too, so they cannot rejoin with one."
     promote: Make owner
+    promote-confirm: "Make %s an owner?\n\nOwners cannot be removed or made members again."
     leave: Leave household
     leave-confirm: Leave
     invites: Invites

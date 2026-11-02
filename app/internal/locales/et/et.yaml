@@ -44,7 +44,9 @@ et:
     role-member: Liige
     you: sina
     remove: Eemalda
+    remove-confirm: "Eemaldada %s?\n\nKõik aktiivsed kutsed tühistatakse ka, et ta ei saaks nendega tagasi liituda."
     promote: Tee omanikuks
+    promote-confirm: "Teha %s omanikuks?\n\nOmanikku ei saa eemaldada ega uuesti liikmeks teha."
     leave: Lahku leibkonnast
     leave-confirm: Lahku
     invites: Kutsed

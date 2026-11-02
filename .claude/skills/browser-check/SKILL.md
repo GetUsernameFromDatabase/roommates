@@ -48,6 +48,11 @@ Selector notes:
 - The bought toggle has `role="checkbox"`, so select it by `aria-label`.
 - Sending an email invite also creates an invite, so the Revoke count goes up by one.
 - A browser `type=email` check stops a bad address before it reaches the server, so use a valid address to see server errors.
+- Member actions sit behind `summary[aria-label="Manage <name>"]`. Always scope to that person's row, never `.last()`, or you can hit the wrong member.
+- Chat renders newest first in the DOM. Find a message by its text before deleting it, never by position.
+- Theme and mode radios are hidden, so click their `label`.
+- Removing a member revokes all invites, so create a new one before rejoining.
+- `task seed` does nothing once the users exist, so it can't restore changed seed data.
 
 Save evidence in `.playwright-mcp/`.
 

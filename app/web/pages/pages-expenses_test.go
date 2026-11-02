@@ -122,3 +122,29 @@ func TestItemClass(t *testing.T) {
 		}
 	}
 }
+
+// a payment waiting to be confirmed is left out of the prefill, so accepting it cannot overpay
+func TestIPaidAmountLeavesOutPending(t *testing.T) {
+	a, b, c := pgtype.UUID{Bytes: [16]byte{1}, Valid: true}, pgtype.UUID{Bytes: [16]byte{2}, Valid: true}, pgtype.UUID{Bytes: [16]byte{3}, Valid: true}
+	//exhaustruct:ignore
+	debt := services.Debt{From: a, To: b, Cents: 575}
+	pending := func(from, to pgtype.UUID, cents int64) dbqueries.ListPendingSettlementsRow {
+		//exhaustruct:ignore
+		return dbqueries.ListPendingSettlementsRow{FromUser: from, ToUser: to, AmountCents: cents}
+	}
+	for _, tc := range []struct {
+		name    string
+		pending []dbqueries.ListPendingSettlementsRow
+		want    string
+	}{
+		{"none", nil, "5.75"},
+		{"pending to the same member", []dbqueries.ListPendingSettlementsRow{pending(a, b, 300)}, "2.75"},
+		{"other pairs do not count", []dbqueries.ListPendingSettlementsRow{pending(a, c, 300), pending(b, a, 100)}, "5.75"},
+		{"all of it pending", []dbqueries.ListPendingSettlementsRow{pending(a, b, 575)}, ""},
+		{"more than it pending", []dbqueries.ListPendingSettlementsRow{pending(a, b, 500), pending(a, b, 200)}, ""},
+	} {
+		if got := iPaidAmount(debt, tc.pending); got != tc.want {
+			t.Errorf("%s: got %q, want %q", tc.name, got, tc.want)
+		}
+	}
+}

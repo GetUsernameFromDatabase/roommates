@@ -30,6 +30,10 @@ WHERE id = $1;
 UPDATE users
 SET password = $2
 WHERE id = $1;
+-- signs the user out everywhere, http_sessions.user_id is set by sessions.Login
+-- name: DeleteUserSessions :exec
+DELETE FROM http_sessions
+WHERE user_id = $1;
 -- name: SetUserAvatar :exec
 UPDATE users
 SET avatar_key = $2

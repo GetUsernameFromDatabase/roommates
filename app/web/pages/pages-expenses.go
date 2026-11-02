@@ -3,6 +3,7 @@ package pages
 import (
 	"context"
 	"net/url"
+	"roommates/internal/db/dbqueries"
 	"roommates/internal/locales"
 	"roommates/internal/services"
 	"roommates/internal/utils"
@@ -99,4 +100,19 @@ func itemClass(actor services.Membership, d services.Debt, cents int64) string {
 	default:
 		return "text-favour"
 	}
+}
+
+// iPaidAmount fills the "I paid" form with what is left of the debt after the payments
+// waiting to be confirmed, so accepting it cannot pay twice, empty when nothing is left
+func iPaidAmount(d services.Debt, pending []dbqueries.ListPendingSettlementsRow) string {
+	left := d.Cents
+	for _, p := range pending {
+		if p.FromUser == d.From && p.ToUser == d.To {
+			left -= p.AmountCents
+		}
+	}
+	if left <= 0 {
+		return ""
+	}
+	return services.FormatCentsInput(left)
 }

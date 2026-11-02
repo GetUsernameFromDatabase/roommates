@@ -11,6 +11,17 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const deleteUserSessions = `-- name: DeleteUserSessions :exec
+DELETE FROM http_sessions
+WHERE user_id = $1
+`
+
+// signs the user out everywhere, http_sessions.user_id is set by sessions.Login
+func (q *Queries) DeleteUserSessions(ctx context.Context, userID pgtype.UUID) error {
+	_, err := q.db.Exec(ctx, deleteUserSessions, userID)
+	return err
+}
+
 const getUser = `-- name: GetUser :one
 SELECT id,
   email,

@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/invopop/ctxi18n"
+	"github.com/jackc/pgx/v5/pgtype"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -101,6 +102,13 @@ func TestResetPassword(t *testing.T) {
 	verifyToken := tokenOf(t, nextEmail(t, s).Body)
 	wantErr(t, "verify token used for reset", s.ResetPassword(ctx, verifyToken, "New-pass1!"), g.ErrorTokenInvalid)
 
+	// a session of the user on another device, and of someone else
+	otherID := newTestUser(t, s)
+	for _, id := range []pgtype.UUID{userID, otherID} {
+		if _, err := s.pool.Exec(ctx, "INSERT INTO http_sessions (key, data, user_id) VALUES ($1, '', $2)", "key-"+id.String(), id); err != nil {
+			t.Fatal(err)
+		}
+	}
 	if err := s.ResetPassword(ctx, token, "New-pass1!"); err != nil {
 		t.Fatal(err)
 	}
@@ -110,6 +118,12 @@ func TestResetPassword(t *testing.T) {
 	}
 	if bcrypt.CompareHashAndPassword([]byte(creds.Password), []byte("New-pass1!")) != nil {
 		t.Fatal("password was not changed")
+	}
+	if n := sessionsOf(t, s, userID); n != 0 {
+		t.Fatalf("a reset should sign the user out everywhere, %d sessions left", n)
+	}
+	if n := sessionsOf(t, s, otherID); n != 1 {
+		t.Fatalf("a reset should leave other users signed in, %d sessions left", n)
 	}
 	if user, _ := s.GetUser(ctx, userID); !user.EmailValidated {
 		t.Fatal("a reset proves the email, it should be confirmed")
@@ -162,4 +176,14 @@ func TestInviteNeedsConfirmedEmail(t *testing.T) {
 	if !strings.Contains(msg.Subject, "Flat") {
 		t.Fatalf("subject should name the household: %q", msg.Subject)
 	}
+}
+
+// sessionsOf counts the stored sessions of userID
+func sessionsOf(t *testing.T, s *DefaultService, userID pgtype.UUID) int {
+	t.Helper()
+	var n int
+	if err := s.pool.QueryRow(t.Context(), "SELECT count(*) FROM http_sessions WHERE user_id = $1", userID).Scan(&n); err != nil {
+		t.Fatal(err)
+	}
+	return n
 }

@@ -164,8 +164,8 @@ func (h *DefaultHandler) UpdateNote(ctx *gin.Context) {
 	}
 }
 
-// noteAction runs an action on the :noteID note and goes to next
-func (h *DefaultHandler) noteAction(ctx *gin.Context, next func(householdID, noteID pgtype.UUID) string,
+// noteAction runs an action on the :noteID note and goes to next with done ([stay] or [Redirect])
+func (h *DefaultHandler) noteAction(ctx *gin.Context, done func(*gin.Context, string), next func(householdID, noteID pgtype.UUID) string,
 	action func(actor services.Membership, noteID pgtype.UUID) error) {
 	noteID, err := utils.ParseUUID(ctx.Param(g.ParamNoteID))
 	if err != nil {
@@ -177,18 +177,18 @@ func (h *DefaultHandler) noteAction(ctx *gin.Context, next func(householdID, not
 		pageError(ctx, err)
 		return
 	}
-	Redirect(ctx, next(actor.HouseholdID, noteID))
+	done(ctx, next(actor.HouseholdID, noteID))
 }
 
 // SetNotePinned takes the wanted state, not a toggle, so a stale page cannot undo others
 func (h *DefaultHandler) SetNotePinned(ctx *gin.Context) {
-	h.noteAction(ctx, notePath, func(actor services.Membership, noteID pgtype.UUID) error {
+	h.noteAction(ctx, stay, notePath, func(actor services.Membership, noteID pgtype.UUID) error {
 		return h.service.SetNotePinned(ctx, actor, noteID, ctx.PostForm("pinned") == "1")
 	})
 }
 
 func (h *DefaultHandler) DeleteNote(ctx *gin.Context) {
-	h.noteAction(ctx, func(householdID, _ pgtype.UUID) string { return notesPath(householdID) },
+	h.noteAction(ctx, Redirect, func(householdID, _ pgtype.UUID) string { return notesPath(householdID) },
 		func(actor services.Membership, noteID pgtype.UUID) error {
 			return h.service.DeleteNote(ctx, actor, noteID)
 		})
