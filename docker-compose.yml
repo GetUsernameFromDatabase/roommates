@@ -4,8 +4,6 @@
 # env is automatically loaded, you can just use interpolation
 #  if you don't want to bind the entire file to service
 #  https://docs.docker.com/compose/how-tos/environment-variables/variable-interpolation/#env-file
-version: "3"
-
 volumes:
   db_data:
   rustfs_data:
@@ -45,6 +43,7 @@ services:
       - 127.0.0.1:9000:9000 # S3 API
       - 127.0.0.1:9001:9001 # console
     environment:
+      # https://docs.rustfs.com/en/reference/environment-variables
       RUSTFS_VOLUMES: /data
       RUSTFS_ADDRESS: :9000
       RUSTFS_CONSOLE_ADDRESS: :9001
@@ -61,6 +60,7 @@ services:
   # --- EMAIL (development) ---
   # catches every email, inbox at http://127.0.0.1:8025
   # for `task dev` set SMTP_HOST=localhost SMTP_PORT=1025 in .env
+  # https://mailpit.axllent.org/docs/configuration/runtime-options/
   mailpit:
     build:
       context: ./deploy/mailpit
