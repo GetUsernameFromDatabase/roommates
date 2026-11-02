@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"net/http"
+	g "roommates/internal/config"
 	"strings"
 
 	"github.com/gin-gonic/gin"
@@ -28,17 +29,17 @@ var contentSecurityPolicy = strings.Join([]string{
 
 // NewSecurityHeader https://gin-gonic.com/en/docs/middleware/security-headers/#example
 func NewSecurityHeader() gin.HandlerFunc {
+	// on localhost HSTS would pin HTTPS for every local port
+	hsts := !g.IsDevelopment()
 	return func(c *gin.Context) {
-		// if c.Request.Host != expectedHost {
-		// 	c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "Invalid host header"})
-		// 	return
-		// }
 		c.Header("X-Frame-Options", "DENY")
 		c.Header("Content-Security-Policy", contentSecurityPolicy)
 		// the XSS auditor is removed from browsers and could be abused, CSP replaces it
 		// https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/X-XSS-Protection
 		c.Header("X-XSS-Protection", "0")
-		c.Header("Strict-Transport-Security", "max-age=31536000; includeSubDomains")
+		if hsts {
+			c.Header("Strict-Transport-Security", "max-age=31536000")
+		}
 		c.Header("Referrer-Policy", "strict-origin")
 		c.Header("X-Content-Type-Options", "nosniff")
 		c.Header("Permissions-Policy", "geolocation=(),midi=(),sync-xhr=(),microphone=(),camera=(),magnetometer=(),gyroscope=(),fullscreen=(self),payment=()")

@@ -3,10 +3,12 @@ package main
 import (
 	"context"
 	_ "embed"
+	"net/http"
 	g "roommates/internal/config"
 	"roommates/internal/db"
 	"roommates/internal/locales"
 	"roommates/internal/logger"
+	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -28,8 +30,20 @@ func main() {
 
 	locales.LoadLocales()
 	r := InitGinEngine(dbpool)
-	// TODO: https://gin-gonic.com/en/docs/middleware/security-guide/#https-and-tls
-	err := r.RunTLS(serverAddr, "./certificates/server.pem", "./certificates/server.key")
+	// no WriteTimeout, it would cut the SSE streams
+	//exhaustruct:ignore
+	server := &http.Server{
+		Addr:              serverAddr,
+		Handler:           r,
+		ReadHeaderTimeout: 10 * time.Second,
+		IdleTimeout:       120 * time.Second,
+	}
+	var err error
+	if r.TrustedPlatform != "" {
+		err = server.ListenAndServe()
+	} else {
+		err = server.ListenAndServeTLS("./certificates/server.pem", "./certificates/server.key")
+	}
 	log.Fatal().Err(err).Msg("running http server has stopped")
 }
 

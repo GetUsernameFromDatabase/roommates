@@ -46,6 +46,11 @@ const (
 	EVK_SessionHashKeyPrevious EnvironmentVariableKey = "SESSION_HASH_KEY_PREVIOUS"
 	// to rotate out with [EVK_SessionBlockKey]
 	EVK_SessionBlockKeyPrevious EnvironmentVariableKey = "SESSION_BLOCK_KEY_PREVIOUS"
+	// cloudflare or flyio: TLS ends at that platform, the server speaks plain
+	// HTTP and takes the client IP from its header; unset serves HTTPS with
+	// ./certificates. Only safe while the server port is not reachable
+	// publicly, since anyone could forge the header
+	EVK_TrustedPlatform EnvironmentVariableKey = "TRUSTED_PLATFORM"
 )
 
 // env keys for email, required in release mode, see [GetAppBaseURL]

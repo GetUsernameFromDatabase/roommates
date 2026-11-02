@@ -216,6 +216,15 @@ func InitGinEngine(dbpool *pgxpool.Pool) *gin.Engine {
 	if err != nil {
 		log.Fatal().Err(err).Msg("error with SetTrustedProxies")
 	}
+	switch platform := g.EVK_TrustedPlatform.Get(""); platform {
+	case "":
+	case "cloudflare":
+		r.TrustedPlatform = gin.PlatformCloudflare
+	case "flyio":
+		r.TrustedPlatform = gin.PlatformFlyIO
+	default:
+		log.Fatal().Str("value", platform).Msg(g.EVK_TrustedPlatform.String() + " must be cloudflare, flyio or unset")
+	}
 	renderer.ReplaceGinRenderer(r)
 
 	// TODOS:
