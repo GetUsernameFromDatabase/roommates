@@ -2,6 +2,10 @@
 
 Go web app: Gin + templ + htmx + Tailwind v4 / shadcn-templ + sqlc + PostgreSQL. Layout is described in README.md.
 
+## UI changes
+
+Use existing shadcn-templ components before building custom markup. Keep users in place after successful HTMX actions: use partial updates instead of `HX-Redirect` or a full page reload, and show feedback next to the action. Check both phone and desktop layouts. Never describe UI work as verified unless it was exercised in a browser; otherwise, state exactly what still needs manual checking. Use the `browser-check` skill for that.
+
 ## Commands
 
 Run from `app/` (the Go module root). Anything that touches the database (`go test`, `task dev`, the server) needs the compose `db` service on 127.0.0.1:5433, and the server also needs `rustfs` (S3 API on 127.0.0.1:9000): run `docker compose up -d --wait db rustfs` first (`task dev` does it itself). DB tests use an in-memory store, not RustFS.

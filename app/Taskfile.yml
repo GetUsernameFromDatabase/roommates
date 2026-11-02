@@ -7,12 +7,7 @@ version: '3'
 use_gitignore: true
 
 vars:
-  # The app port: an explicit 'task dev PORT=8091' wins, otherwise the next
-  # free port from 8090 up. The templ proxy and the app share the result,
-  # so hot reload never points at a foreign app.
-  FREE_PORT:
-    sh: port=8090; while nc -z localhost $port >/dev/null 2>&1; do port=$((port+1)); done; echo $port
-  PORT: '{{.PORT | default .FREE_PORT}}'
+  PORT: '8090'
   TAILWIND_INPUT: './web/assets/globals.css'
   TAILWIND_OUTPUT: './web/assets/public/output.css'
   # the only pin: deploy/app/Dockerfile downloads this version via 'task tailwind-version'
@@ -100,6 +95,13 @@ tasks:
       - go tool shadcn-templ bundle
       - go tool templ generate
       - go build -o bin/app ./cmd/server
+
+  seed:
+    desc: Add example users and a household to the development database
+    cmds:
+      - go run ./tools/dev-seed
+    dotenv:
+      - ../.env
 
   dev:
     env:

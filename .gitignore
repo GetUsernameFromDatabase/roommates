@@ -3,6 +3,8 @@ server.pem
 
 .env
 logs/
+# screenshots and traces from Playwright MCP
+.playwright-mcp/
 # Task's sources checksums, e.g. restart-signal
 .task/
 
