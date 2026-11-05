@@ -67,12 +67,12 @@ func checkDevelopment() error {
 //
 // shortcut: a failed run is not resumed since the first user already exists, delete that user to retry
 func seed(ctx context.Context, s *services.DefaultService, q *dbqueries.Queries) bool {
-	mari, err := s.RegisterUser(&gin.Context{}, dbqueries.InsertUserParams{Email: emailMari, Username: "Mari", Password: password})
+	mari, err := s.RegisterUser(&gin.Context{}, dbqueries.InsertUserParams{Email: emailMari, Username: "Mari", Password: password, Language: nil})
 	if errors.Is(err, g.ErrorAccountAlreadyExists) {
 		return false
 	}
 	check(err)
-	jaan := must(s.RegisterUser(&gin.Context{}, dbqueries.InsertUserParams{Email: emailJaan, Username: "Jaan", Password: password}))
+	jaan := must(s.RegisterUser(&gin.Context{}, dbqueries.InsertUserParams{Email: emailJaan, Username: "Jaan", Password: password, Language: nil}))
 	check(q.SetEmailValidated(ctx, *mari))
 	check(q.SetEmailValidated(ctx, *jaan))
 

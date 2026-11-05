@@ -2,7 +2,8 @@
 SELECT id,
   email,
   username,
-  password
+  password,
+  language
 FROM users
 WHERE email = $1;
 -- name: InsertUser :one
@@ -10,10 +11,15 @@ INSERT INTO users (
     email,
     username,
     -- better not store password raaw
-    password
+    password,
+    language
   )
-VALUES ($1, $2, $3)
+VALUES ($1, $2, $3, $4)
 RETURNING id;
+-- name: SetUserLanguage :exec
+UPDATE users
+SET language = $2
+WHERE id = $1;
 -- name: GetUser :one
 SELECT id,
   email,

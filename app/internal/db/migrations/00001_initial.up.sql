@@ -12,6 +12,8 @@ CREATE TABLE users (
   created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
   avatar_key TEXT UNIQUE,
+  -- NULL until the user picks one, then the browser's language is used
+  language TEXT,
   CONSTRAINT chk_users_email_lowercase CHECK (email = lower(email))
 );
 -- if in the future switch is made from like ex% to %ex% then this index won't do

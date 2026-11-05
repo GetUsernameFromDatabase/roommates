@@ -64,6 +64,7 @@ func initRoutes(r *gin.Engine, h *handlers.DefaultHandler, service *services.Def
 		open.GET(g.RouteResetPassword, h.PageResetPassword)
 		open.POST(g.RouteResetPassword, mwAuthLimit, h.PageResetPassword)
 		open.POST(g.RouteAppearance, h.SetAppearance)
+		open.POST(g.RouteLanguage, h.SetLanguage)
 		open.GET(g.RouteManifest, h.Manifest)
 		open.GET(g.RouteOffline, h.PageOffline)
 	}

@@ -1,6 +1,7 @@
 package services
 
 import (
+	"context"
 	"errors"
 	g "roommates/internal/config"
 	"roommates/internal/db/dbqueries"
@@ -33,6 +34,7 @@ func (s *DefaultService) RegisterUser(ctx *gin.Context, user dbqueries.InsertUse
 		Email:    NormalizeEmail(user.Email),
 		Username: user.Username,
 		Password: string(hashedPassword),
+		Language: user.Language,
 	})
 	if err != nil {
 		var pgErr *pgconn.PgError
@@ -44,6 +46,11 @@ func (s *DefaultService) RegisterUser(ctx *gin.Context, user dbqueries.InsertUse
 	}
 
 	return &returnValue, nil
+}
+
+// SetUserLanguage saves the language the user picked, it is put in the cookie on sign in
+func (s *DefaultService) SetUserLanguage(ctx context.Context, userID pgtype.UUID, lang string) error {
+	return s.db.SetUserLanguage(ctx, dbqueries.SetUserLanguageParams{ID: userID, Language: &lang})
 }
 
 func (s *DefaultService) ShouldUserBeSignedIn(ctx *gin.Context, req models.LoginRequest) (*dbqueries.GetUserCredentialsRow, error) {

@@ -89,7 +89,8 @@ const getUserCredentials = `-- name: GetUserCredentials :one
 SELECT id,
   email,
   username,
-  password
+  password,
+  language
 FROM users
 WHERE email = $1
 `
@@ -99,6 +100,7 @@ type GetUserCredentialsRow struct {
 	Email    string      `json:"email"`
 	Username string      `json:"username"`
 	Password string      `json:"password"`
+	Language *string     `json:"language"`
 }
 
 func (q *Queries) GetUserCredentials(ctx context.Context, email string) (GetUserCredentialsRow, error) {
@@ -109,6 +111,7 @@ func (q *Queries) GetUserCredentials(ctx context.Context, email string) (GetUser
 		&i.Email,
 		&i.Username,
 		&i.Password,
+		&i.Language,
 	)
 	return i, err
 }
@@ -118,20 +121,27 @@ INSERT INTO users (
     email,
     username,
     -- better not store password raaw
-    password
+    password,
+    language
   )
-VALUES ($1, $2, $3)
+VALUES ($1, $2, $3, $4)
 RETURNING id
 `
 
 type InsertUserParams struct {
-	Email    string `json:"email"`
-	Username string `json:"username"`
-	Password string `json:"password"`
+	Email    string  `json:"email"`
+	Username string  `json:"username"`
+	Password string  `json:"password"`
+	Language *string `json:"language"`
 }
 
 func (q *Queries) InsertUser(ctx context.Context, arg InsertUserParams) (pgtype.UUID, error) {
-	row := q.db.QueryRow(ctx, insertUser, arg.Email, arg.Username, arg.Password)
+	row := q.db.QueryRow(ctx, insertUser,
+		arg.Email,
+		arg.Username,
+		arg.Password,
+		arg.Language,
+	)
 	var id pgtype.UUID
 	err := row.Scan(&id)
 	return id, err
@@ -161,6 +171,22 @@ type SetUserAvatarParams struct {
 
 func (q *Queries) SetUserAvatar(ctx context.Context, arg SetUserAvatarParams) error {
 	_, err := q.db.Exec(ctx, setUserAvatar, arg.ID, arg.AvatarKey)
+	return err
+}
+
+const setUserLanguage = `-- name: SetUserLanguage :exec
+UPDATE users
+SET language = $2
+WHERE id = $1
+`
+
+type SetUserLanguageParams struct {
+	ID       pgtype.UUID `json:"id"`
+	Language *string     `json:"language"`
+}
+
+func (q *Queries) SetUserLanguage(ctx context.Context, arg SetUserLanguageParams) error {
+	_, err := q.db.Exec(ctx, setUserLanguage, arg.ID, arg.Language)
 	return err
 }
 

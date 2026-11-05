@@ -203,6 +203,7 @@ const (
 	LK_InvitePageInvalid                    LK = "invite-page.invalid"
 	LK_InvitePageJoin                       LK = "invite-page.join"
 	LK_InvitePageTitle                      LK = "invite-page.title"
+	LK_LanguageTitle                        LK = "language.title"
 	LK_LoginPageCreateAccount               LK = "login-page.create-account"
 	LK_LoginPageEnterCredentialsDescription LK = "login-page.enter-credentials-description"
 	LK_LoginPageForgotPassword              LK = "login-page.forgot-password"

@@ -38,6 +38,10 @@ templ Settings(pushKey string, nav *HouseholdNav, path string, user dbqueries.Ge
 			@pushSwitch(pushKey)
 			@AppearanceForm(path)
 		</section>
+		// not in "this device": it is saved on the account and follows the user on sign in
+		<section class={ sheetClass }>
+			@LanguageForm("language", path, false)
+		</section>
 	}
 }
 

@@ -188,4 +188,5 @@ type User struct {
 	CreatedAt      pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt      pgtype.Timestamptz `json:"updated_at"`
 	AvatarKey      *string            `json:"avatar_key"`
+	Language       *string            `json:"language"`
 }

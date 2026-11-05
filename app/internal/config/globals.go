@@ -21,6 +21,8 @@ const (
 	RouteResetPassword = "/reset-password"
 	// POST theme, mode and next
 	RouteAppearance = "/appearance"
+	// POST language and next
+	RouteLanguage = "/language"
 	// the per-device settings, appearance and notifications
 	RouteSettings = "/settings"
 	// POST the "avatar" file under [RouteSettings] (at /settings or a household's), or delete it

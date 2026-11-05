@@ -59,6 +59,12 @@ func (h *DefaultHandler) PageLogin(ctx *gin.Context) {
 			Email:    credsInDB.Email,
 			Username: credsInDB.Username,
 		})
+		// the language picked on another device follows the account
+		if credsInDB.Language != nil {
+			if lang := locales.Language(*credsInDB.Language); lang.IsValid() {
+				setLanguageCookie(ctx, lang)
+			}
+		}
 		Redirect(ctx, safeNextPath(model.Next))
 	default:
 		ctx.String(http.StatusMethodNotAllowed, "method %s not allowed", method)
@@ -93,6 +99,8 @@ func (h *DefaultHandler) PageRegister(ctx *gin.Context) {
 			Email:    model.Email,
 			Username: model.Username,
 			Password: model.Password,
+			// the language the form was shown in
+			Language: new(utils.GetLocaleString(ctx.Request.Context())),
 		})
 		if err != nil {
 			if errors.Is(err, g.ErrorAccountAlreadyExists) {

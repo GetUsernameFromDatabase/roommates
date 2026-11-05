@@ -17,6 +17,7 @@ const (
 	HHK_HXReselect   HTTPHeaderKey = "HX-Reselect"
 	HHK_HXReswap     HTTPHeaderKey = "HX-Reswap"
 	HHK_HXReplaceURL HTTPHeaderKey = "HX-Replace-Url"
+	HHK_HXRefresh    HTTPHeaderKey = "HX-Refresh"
 )
 
 const (

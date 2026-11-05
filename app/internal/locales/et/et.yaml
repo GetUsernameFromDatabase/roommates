@@ -288,6 +288,8 @@ et:
   settings:
     device-title: See seade
     device-description: Muudab ainult seda telefoni või arvutit
+  language:
+    title: Keel
   nav:
     label: Leibkond
     shopping: Ostud

@@ -1,0 +1,99 @@
+package pages
+
+import "roommates/web/components"
+import "roommates/web/components/button"
+import "roommates/web/components/field"
+import "roommates/web/components/select"
+import g "roommates/internal/config"
+import "roommates/internal/locales"
+import "roommates/internal/utils"
+
+// each in its own language, so it can be found whichever one the page is in
+var languageItems = []selectcomp.ItemData{
+	{Value: locales.ET.String(), Label: languageLabel(locales.ET.String(), "Eesti")},
+	{Value: locales.EN.String(), Label: languageLabel(locales.EN.String(), "English")},
+}
+
+// LanguageForm picks the language, a pick is saved right away and the page reloads in it,
+// id keeps the select unique on the page, without JS Save does it and next is where to go after,
+// compact is only the flag, for beside a title
+templ LanguageForm(id, next string, compact bool) {
+	<form
+		action={ g.RouteLanguage }
+		method="post"
+		hx-post={ g.RouteLanguage }
+		hx-trigger="change"
+		hx-swap="none"
+		autocomplete="off"
+		class={ utils.IfElse(compact, "flex shrink-0 items-center gap-2", "flex flex-col gap-2") }
+	>
+		<input type="hidden" name={ g.QueryNext } value={ next }/>
+		if !compact {
+			@field.Label(field.LabelProps{For: id + "-trigger"}) {
+				@components.T(locales.LK_LanguageTitle)
+			}
+		}
+		<div class="flex items-center gap-3">
+			@selectcomp.Select(selectcomp.Props{ID: id, Name: "language", Items: languageItems, DefaultValue: utils.GetLocaleString(ctx)}) {
+				if compact {
+					// the name stays for screen readers
+					@selectcomp.Trigger(selectcomp.TriggerProps{
+						Class:      "rounded-full px-3 data-[size=default]:h-11 [&_[data-language-name]]:sr-only",
+						Attributes: templ.Attributes{"aria-label": utils.T(ctx, locales.LK_LanguageTitle)},
+					}) {
+						@selectcomp.Value()
+					}
+					@selectcomp.Content(selectcomp.ContentProps{Align: selectcomp.AlignEnd, AlignItemWithTrigger: new(false)}) {
+						@languageOptions()
+					}
+				} else {
+					@selectcomp.Trigger(selectcomp.TriggerProps{Class: "w-full data-[size=default]:h-11 sm:w-56"}) {
+						@selectcomp.Value()
+					}
+					@selectcomp.Content() {
+						@languageOptions()
+					}
+				}
+			}
+			<noscript>
+				@button.Button(button.Props{Type: button.TypeSubmit, Variant: button.VariantSecondary, Class: "h-11"}) {
+					@components.T(locales.LK_CommonSave)
+				}
+			</noscript>
+		</div>
+	</form>
+}
+
+templ languageOptions() {
+	for _, it := range languageItems {
+		@selectcomp.Item(selectcomp.ItemProps{Value: it.Value}) {
+			@it.Label.(templ.Component)
+		}
+	}
+}
+
+templ languageLabel(lang, name string) {
+	<span class="flex items-center gap-2">
+		@flag(lang)
+		<span lang={ lang } data-language-name>{ name }</span>
+	</span>
+}
+
+// flag of the country the language is named after, inline SVG since Windows shows emoji flags as letters
+// shortcut: the Union Jack's red diagonals are centred, not counterchanged, invisible at this size
+templ flag(lang string) {
+	<svg viewBox="0 0 60 40" preserveAspectRatio="none" class="h-3.5 w-5 shrink-0 rounded-[2px] ring-1 ring-foreground/15" aria-hidden="true">
+		switch lang {
+			case locales.ET.String():
+				<rect width="60" height="40" fill="#fff"></rect>
+				<rect width="60" height="26.67" fill="#000"></rect>
+				<rect width="60" height="13.33" fill="#0072ce"></rect>
+			case locales.EN.String():
+				<rect width="60" height="40" fill="#012169"></rect>
+				<path d="M0,0 L60,40 M60,0 L0,40" stroke="#fff" stroke-width="8"></path>
+				<path d="M0,0 L60,40 M60,0 L0,40" stroke="#c8102e" stroke-width="3"></path>
+				<path d="M30,0 V40 M0,20 H60" stroke="#fff" stroke-width="12"></path>
+				<path d="M30,0 V40 M0,20 H60" stroke="#c8102e" stroke-width="7"></path>
+		}
+	</svg>
+}

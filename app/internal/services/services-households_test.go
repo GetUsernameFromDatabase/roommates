@@ -84,6 +84,7 @@ func newTestUser(t *testing.T, s *DefaultService) pgtype.UUID {
 		Email:    strings.ToLower(rand.Text()) + "@example.com",
 		Username: "test",
 		Password: "not a hash",
+		Language: nil,
 	})
 	if err != nil {
 		t.Fatal(err)

@@ -288,6 +288,8 @@ en:
   settings:
     device-title: This device
     device-description: Only changes this phone or computer
+  language:
+    title: Language
   nav:
     label: Household
     shopping: Shopping
