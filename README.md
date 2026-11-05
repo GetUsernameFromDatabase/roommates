@@ -41,8 +41,8 @@ After [Setup](#setup). Run from `app/` unless noted.
 1. From the repo root: `cp .env.example .env`, then replace the `REPLACE_WITH_*` and `` `openssl …` `` values
 2. Create the TLS certificate: [app/certificates/README.md](./app/certificates/README.md)
 3. `task vendor` downloads htmx and the fonts (not committed, `task dev` does not fetch them), see [app/web/assets/README.md](./app/web/assets/README.md)
-4. `docker compose up -d mailpit` gives an inbox at <http://127.0.0.1:8025>. Without it, comment out `SMTP_HOST` in `.env` so emails go to the log instead of failing
-5. `task dev` starts db + rustfs and serves the app with hot reload on <https://localhost:8090>. The database is migrated on start
+4. Mailpit gives an inbox at <http://127.0.0.1:8025> (`task dev` starts it). To send emails to the log instead, comment out `SMTP_HOST` in `.env`
+5. `task dev` starts db + rustfs + mailpit and serves the app with hot reload on <https://localhost:8090>. The database is migrated on start
 6. `task seed` adds example users and a household
 
 Whole stack in Docker instead: `docker compose up --build` from the repo root, app on <https://127.0.0.1:8000>.
