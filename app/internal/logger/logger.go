@@ -17,15 +17,6 @@ import (
 
 var Main = zerolog.New(os.Stdout).With().Timestamp().Caller().Logger()
 
-// TODO: filelogger
-// fileLogger := &lumberjack.Logger{
-// Filename: "app.log", // Log file path
-// MaxSize: 5, // Max size in MB before rotation
-// MaxBackups: 3, // Max number of old log files to keep
-// MaxAge: 28, // Max age in days to keep a log file
-// Compress: true, // Compress rotated files
-// }
-
 // InitLogger initializes zerolog logger
 //
 // replaces standard log with zerolog

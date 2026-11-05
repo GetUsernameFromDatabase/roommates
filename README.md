@@ -10,8 +10,8 @@
 
 ```txt
 roommates/
-├─ docker-compose.yml   db, rustfs, mailpit and app services
-├─ deploy/              PostgreSQL, RustFS, Mailpit and app images
+├─ docker-compose.yml   db, rustfs, backup, mailpit and app services
+├─ deploy/              PostgreSQL, RustFS, backup, Mailpit and app images
 └─ app/                 Go module (run go/task commands from here)
    ├─ cmd/server/       entry point (main.go) and routes
    ├─ internal/         application code
@@ -45,7 +45,7 @@ After [Setup](#setup). Run from `app/` unless noted.
 5. `task dev` starts db + rustfs + mailpit and serves the app with hot reload on <https://localhost:8090>. The database is migrated on start
 6. `task seed` adds example users and a household
 
-Whole stack in Docker instead: `docker compose up --build` from the repo root, app on <https://127.0.0.1:8000>.
+Whole stack in Docker instead: `docker compose up --build` from the repo root, app on <https://127.0.0.1:8000>. That also runs the `backup` service (db dump + files into `./backups`), see [deploy/backup/README.md](./deploy/backup/README.md) for config and restore.
 
 ## Setup
 

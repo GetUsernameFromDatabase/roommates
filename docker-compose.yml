@@ -57,6 +57,34 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+  # dumps the db and copies the files into BACKUP_DIR, see deploy/backup/README.md
+  backup:
+    build:
+      context: ./deploy/backup
+      dockerfile: Dockerfile
+    restart: always
+    depends_on:
+      db:
+        condition: service_healthy
+      rustfs:
+        condition: service_healthy
+    environment:
+      BACKUP_KEEP_DAYS: ${BACKUP_KEEP_DAYS:-14}
+      S3_BUCKET: ${S3_BUCKET}
+      # pg_dump, https://www.postgresql.org/docs/current/libpq-envars.html
+      PGHOST: db # service name
+      PGUSER: ${POSTGRES_USER}
+      PGPASSWORD: ${POSTGRES_PASSWORD}
+      PGDATABASE: ${POSTGRES_DB}
+      # rclone remote "rustfs" from env, https://rclone.org/docs/#config-file
+      RCLONE_CONFIG_RUSTFS_TYPE: s3
+      RCLONE_CONFIG_RUSTFS_PROVIDER: Other
+      RCLONE_CONFIG_RUSTFS_ENDPOINT: http://rustfs:9000 # service name and container port
+      RCLONE_CONFIG_RUSTFS_ACCESS_KEY_ID: ${S3_ACCESS_KEY}
+      RCLONE_CONFIG_RUSTFS_SECRET_ACCESS_KEY: ${S3_SECRET_KEY}
+      RCLONE_CONFIG_RUSTFS_FORCE_PATH_STYLE: "true"
+    volumes:
+      - ${BACKUP_DIR:-./backups}:/backups
   # --- EMAIL (development) ---
   # catches every email, inbox at http://127.0.0.1:8025
   # for `task dev` set SMTP_HOST=localhost SMTP_PORT=1025 in .env
@@ -88,6 +116,8 @@ services:
     volumes:
       # the TLS key stays out of the image, see deploy/app/Dockerfile.dockerignore
       - ./app/certificates:/app/certificates:ro
+    # shutdown waits up to 10 s for requests, then for push sends (30 s client timeout)
+    stop_grace_period: 45s
     env_file: .env
     environment:
       SERVER_PORT: 8080
@@ -102,3 +132,9 @@ services:
       SMTP_PORT: 1025
       SMTP_FROM: Roommates <noreply@localhost>
       APP_BASE_URL: https://127.0.0.1:8000
+    healthcheck:
+      # busybox wget, the image has no curl; plain http when TRUSTED_PLATFORM is set
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8080/healthz || wget --no-check-certificate -qO- https://localhost:8080/healthz"]
+      interval: 10s
+      timeout: 5s
+      retries: 5

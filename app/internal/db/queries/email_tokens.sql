@@ -1,4 +1,3 @@
--- shortcut: expired rows are only removed by DeleteEmailTokensOfUser, add a periodic cleanup if the table grows
 -- name: InsertEmailToken :exec
 INSERT INTO email_tokens (token_hash, user_id, kind, expires_at)
 VALUES ($1, $2, $3, $4);
@@ -19,3 +18,6 @@ RETURNING user_id;
 DELETE FROM email_tokens
 WHERE user_id = $1
   AND kind = $2;
+-- name: DeleteExpiredEmailTokens :exec
+DELETE FROM email_tokens
+WHERE expires_at <= CURRENT_TIMESTAMP;

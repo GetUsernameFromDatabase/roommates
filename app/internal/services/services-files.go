@@ -427,13 +427,16 @@ func (s *DefaultService) PurgeFiles(ctx context.Context) error {
 	}
 }
 
-// RunFilePurger calls [DefaultService.PurgeFiles] every interval until ctx is done
-func (s *DefaultService) RunFilePurger(ctx context.Context, interval time.Duration) {
+// RunCleanup purges deleted files and expired email tokens every interval until ctx is done
+func (s *DefaultService) RunCleanup(ctx context.Context, interval time.Duration) {
 	t := time.NewTicker(interval)
 	defer t.Stop()
 	for {
 		if err := s.PurgeFiles(ctx); err != nil {
 			log.Error().Err(err).Msg("could not purge deleted files")
+		}
+		if err := s.db.DeleteExpiredEmailTokens(ctx); err != nil {
+			log.Error().Err(err).Msg("could not delete expired email tokens")
 		}
 		select {
 		case <-ctx.Done():

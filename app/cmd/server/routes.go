@@ -176,8 +176,6 @@ func initRoutes(r *gin.Engine, h *handlers.DefaultHandler, service *services.Def
 //	"/favicon/*.png" and "/favicon/favicon.svg" are served at "/icons"
 //	"/pwa/sw.js" is served at "/sw.js", a service worker only controls pages under its path
 func registerAssets(r *gin.Engine) {
-	// TODO: maybe change this at some point
-	// https://templ.guide/hosting-and-deployment/hosting-using-docker#adding-static-content-to-the-docker-container
 	assetFS := assets.PublicAssetsFS
 	publicFS, err := fs.Sub(assetFS, "public")
 	if err != nil {
@@ -221,7 +219,9 @@ func cacheHeaders(c *gin.Context, name string) {
 
 // -----------------------------------------------------------------------------
 
-func InitGinEngine(dbpool *pgxpool.Pool) *gin.Engine {
+// InitGinEngine runs the background loops until ctx is done,
+// main waits on the returned service's pending pushes before closing dbpool
+func InitGinEngine(ctx context.Context, dbpool *pgxpool.Pool) (*gin.Engine, *services.DefaultService) {
 	var r *gin.Engine
 	if g.IsDevelopment() {
 		r = gin.Default()
@@ -248,19 +248,28 @@ func InitGinEngine(dbpool *pgxpool.Pool) *gin.Engine {
 	}
 	renderer.ReplaceGinRenderer(r)
 
-	// TODOS:
-	// - https://gin-gonic.com/en/docs/logging/write-log/#log-rotation-in-production
-	// - https://templ.guide/integrations/web-frameworks/#csrf-protection
+	// before the session middleware, so probes neither need a login nor create sessions
+	healthz := func(c *gin.Context) {
+		pingCtx, cancel := context.WithTimeout(c.Request.Context(), 2*time.Second)
+		defer cancel()
+		if err := dbpool.Ping(pingCtx); err != nil {
+			c.String(http.StatusServiceUnavailable, "database unreachable")
+			return
+		}
+		c.String(http.StatusOK, "ok")
+	}
+	r.GET("/healthz", healthz)
+	r.HEAD("/healthz", healthz)
 
 	r.Use(sessions.NewPostgreSessionStoreHandler(dbpool))
 	// panics now if APP_BASE_URL is missing in release, not on the first email
 	_ = g.GetAppBaseURL()
 	// panics now if the object storage is missing, not on the first upload
-	service := services.NewDefaultService(dbpool, mailer.New(), storage.New(context.Background()), push.New())
-	go service.RunFilePurger(context.Background(), time.Minute)
+	service := services.NewDefaultService(dbpool, mailer.New(), storage.New(ctx), push.New())
+	go service.RunCleanup(ctx, time.Minute)
 	hub := events.NewHub()
-	go hub.Run(context.Background(), dbpool)
+	go hub.Run(ctx, dbpool)
 	handler := handlers.NewDefaultHandler(service, hub)
 	initRoutes(r, handler, service)
-	return r
+	return r, service
 }

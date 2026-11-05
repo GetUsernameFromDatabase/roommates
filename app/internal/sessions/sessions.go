@@ -190,6 +190,8 @@ func startExpiredSessionCleanup(store postgres.Store) {
 func NewPostgreSessionStoreHandler(dbpool *pgxpool.Pool) gin.HandlerFunc {
 	// https://github.com/jackc/pgx/issues/1065#issuecomment-2991745812
 	sessionDB = sql.OpenDB(pgxstdlib.GetPoolConnector(dbpool))
+	// idle sql connections stay borrowed from dbpool, and dbpool.Close waits for them forever
+	sessionDB.SetMaxIdleConns(0)
 	// FIX FOR securecookie: error - caused by:
 	//  gob: type not registered for interface: config.GinSessionKey
 	// gob.Register(g.GinSessionKey("")) NO LONGER USED will keep here tho

@@ -42,12 +42,19 @@ var Topics = []string{TopicShopping, TopicNotes, TopicFiles, TopicExpenses, Topi
 const subscriberBuffer = 16
 
 type Hub struct {
-	mu   sync.Mutex
-	subs map[pgtype.UUID]map[chan string]struct{}
+	mu      sync.Mutex
+	subs    map[pgtype.UUID]map[chan string]struct{}
+	stopped chan struct{}
 }
 
 func NewHub() *Hub {
-	return &Hub{mu: sync.Mutex{}, subs: map[pgtype.UUID]map[chan string]struct{}{}}
+	return &Hub{mu: sync.Mutex{}, subs: map[pgtype.UUID]map[chan string]struct{}{}, stopped: make(chan struct{})}
+}
+
+// Stopped is closed once [Hub.Run] returns, so streams end on shutdown
+// while other requests still finish
+func (h *Hub) Stopped() <-chan struct{} {
+	return h.stopped
 }
 
 // Subscribe returns the topics of the household's events, cancel must be called
@@ -100,6 +107,7 @@ func (h *Hub) publishAll() {
 // Run listens on [Channel] with one connection of pool until ctx is done,
 // reconnecting with a backoff, after a reconnect every page refetches everything
 func (h *Hub) Run(ctx context.Context, pool *pgxpool.Pool) {
+	defer close(h.stopped)
 	backoff := time.Second
 	for first := true; ctx.Err() == nil; first = false {
 		err := h.listen(ctx, pool, func() {

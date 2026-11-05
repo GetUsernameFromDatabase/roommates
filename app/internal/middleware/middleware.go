@@ -17,6 +17,10 @@ func NewZerolog() gin.HandlerFunc {
 
 		c.Next()
 
+		// the compose healthcheck probes it every 10 s
+		if c.Request.URL.Path == "/healthz" {
+			return
+		}
 		log.Info().
 			Str("method", c.Request.Method).
 			Str("path", c.Request.URL.Path).

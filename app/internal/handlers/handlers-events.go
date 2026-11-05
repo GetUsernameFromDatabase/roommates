@@ -32,6 +32,8 @@ func (h *DefaultHandler) Events(ctx *gin.Context) {
 		select {
 		case <-ctx.Request.Context().Done():
 			return false
+		case <-h.hub.Stopped():
+			return false
 		case <-ping.C:
 			_, err := io.WriteString(w, ": ping\n\n")
 			return err == nil

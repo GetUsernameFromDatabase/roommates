@@ -59,6 +59,11 @@ func (s *DefaultService) UnsubscribePush(ctx context.Context, userID pgtype.UUID
 	return s.db.DeletePushSubscription(ctx, dbqueries.DeletePushSubscriptionParams{Endpoint: endpoint, UserID: userID})
 }
 
+// WaitPushes waits for the push notifications still being sent, call it after the server stopped
+func (s *DefaultService) WaitPushes() {
+	s.pushing.Wait()
+}
+
 // notifyAsync sends build's message to every device of userIDs, in the language
 // each device subscribed with, build gets the names of actor and their household
 //

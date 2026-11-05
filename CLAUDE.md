@@ -30,7 +30,6 @@ From the repo root: `docker compose up --build` runs db + app (app on https://12
 ## Conventions
 
 - Commits follow [Conventional Commits 1.0.0](https://www.conventionalcommits.org/en/v1.0.0/) (`feat:`, `fix:`, `refactor:`, `chore:`, `docs:` …).
-- Work stays on the `fresh-start` branch for now.
 
 ## graphify
 

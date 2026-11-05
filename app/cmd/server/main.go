@@ -4,10 +4,13 @@ import (
 	"context"
 	_ "embed"
 	"net/http"
+	"os"
+	"os/signal"
 	g "roommates/internal/config"
 	"roommates/internal/db"
 	"roommates/internal/locales"
 	"roommates/internal/logger"
+	"syscall"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -29,7 +32,9 @@ func main() {
 	db.MigrateToLatest(dbpool)
 
 	locales.LoadLocales()
-	r := InitGinEngine(dbpool)
+	ctx, stop := signal.NotifyContext(ctx, os.Interrupt, syscall.SIGTERM)
+	defer stop()
+	r, service := InitGinEngine(ctx, dbpool)
 	// no WriteTimeout, it would cut the SSE streams
 	//exhaustruct:ignore
 	server := &http.Server{
@@ -38,13 +43,28 @@ func main() {
 		ReadHeaderTimeout: 10 * time.Second,
 		IdleTimeout:       120 * time.Second,
 	}
-	var err error
-	if r.TrustedPlatform != "" {
-		err = server.ListenAndServe()
-	} else {
-		err = server.ListenAndServeTLS("./certificates/server.pem", "./certificates/server.key")
+	serveErr := make(chan error, 1)
+	go func() {
+		if r.TrustedPlatform != "" {
+			serveErr <- server.ListenAndServe()
+		} else {
+			serveErr <- server.ListenAndServeTLS("./certificates/server.pem", "./certificates/server.key")
+		}
+	}()
+	select {
+	case err := <-serveErr:
+		log.Fatal().Err(err).Msg("running http server has stopped")
+	case <-ctx.Done():
 	}
-	log.Fatal().Err(err).Msg("running http server has stopped")
+
+	log.Info().Msg("shutting down")
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	if err := server.Shutdown(shutdownCtx); err != nil {
+		log.Error().Err(err).Msg("http server did not shut down cleanly")
+	}
+	service.WaitPushes()
+	log.Info().Msg("server stopped")
 }
 
 // -----------------------------------------------------------------------------

@@ -48,6 +48,16 @@ func (q *Queries) DeleteEmailTokensOfUser(ctx context.Context, arg DeleteEmailTo
 	return err
 }
 
+const deleteExpiredEmailTokens = `-- name: DeleteExpiredEmailTokens :exec
+DELETE FROM email_tokens
+WHERE expires_at <= CURRENT_TIMESTAMP
+`
+
+func (q *Queries) DeleteExpiredEmailTokens(ctx context.Context) error {
+	_, err := q.db.Exec(ctx, deleteExpiredEmailTokens)
+	return err
+}
+
 const getEmailToken = `-- name: GetEmailToken :one
 SELECT user_id
 FROM email_tokens
@@ -80,7 +90,6 @@ type InsertEmailTokenParams struct {
 	ExpiresAt pgtype.Timestamptz `json:"expires_at"`
 }
 
-// shortcut: expired rows are only removed by DeleteEmailTokensOfUser, add a periodic cleanup if the table grows
 func (q *Queries) InsertEmailToken(ctx context.Context, arg InsertEmailTokenParams) error {
 	_, err := q.db.Exec(ctx, insertEmailToken,
 		arg.TokenHash,

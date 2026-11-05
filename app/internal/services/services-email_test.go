@@ -149,6 +149,38 @@ func TestExpiredTokenIsInvalid(t *testing.T) {
 	wantErr(t, "expired token", s.VerifyEmail(ctx, token), g.ErrorTokenInvalid)
 }
 
+func TestDeleteExpiredEmailTokens(t *testing.T) {
+	s := newTestService(t)
+	ctx := englishContext(t)
+	expiredID := newTestUser(t, s)
+	validID := newTestUser(t, s)
+
+	for _, id := range []pgtype.UUID{expiredID, validID} {
+		if err := s.SendVerificationEmail(ctx, id); err != nil {
+			t.Fatal(err)
+		}
+		nextEmail(t, s)
+	}
+	if _, err := s.pool.Exec(ctx,
+		`UPDATE email_tokens SET expires_at = now() - interval '1 second' WHERE user_id = $1`,
+		expiredID); err != nil {
+		t.Fatal(err)
+	}
+	// what each tick of RunCleanup runs
+	if err := s.db.DeleteExpiredEmailTokens(ctx); err != nil {
+		t.Fatal(err)
+	}
+	for id, want := range map[pgtype.UUID]int{expiredID: 0, validID: 1} {
+		var n int
+		if err := s.pool.QueryRow(ctx, "SELECT count(*) FROM email_tokens WHERE user_id = $1", id).Scan(&n); err != nil {
+			t.Fatal(err)
+		}
+		if n != want {
+			t.Fatalf("user %s has %d email tokens, want %d", id, n, want)
+		}
+	}
+}
+
 func TestInviteNeedsConfirmedEmail(t *testing.T) {
 	s := newTestService(t)
 	ctx := englishContext(t)
