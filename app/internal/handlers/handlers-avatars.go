@@ -39,7 +39,7 @@ func (h *DefaultHandler) SetAvatar(ctx *gin.Context) {
 	switch {
 	case err == nil:
 		path, _ := settingsPath(ctx)
-		Redirect(ctx, path)
+		stay(ctx, path)
 	case errors.Is(err, g.ErrorFileTooLarge):
 		h.renderSettings(ctx, http.StatusRequestEntityTooLarge, utils.T(c, locales.LK_FilesTooLarge, services.MaxFileSize>>20))
 	case errors.Is(err, g.ErrorInvalidInput):
@@ -60,7 +60,7 @@ func (h *DefaultHandler) RemoveAvatar(ctx *gin.Context) {
 		return
 	}
 	path, _ := settingsPath(ctx)
-	Redirect(ctx, path)
+	stay(ctx, path)
 }
 
 // DownloadAvatar sends the :userID user's picture to them and the people they live with,

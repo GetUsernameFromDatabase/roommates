@@ -234,17 +234,18 @@ func RegisterForm(m models.Register) templ.Component {
 					Name:        "email",
 					Type:        "email",
 					Value:       m.Email,
-					Placeholder: "you@example.com",
+					Placeholder: utils.T(ctx, locales.LK_EmailPlaceholder),
 					Required:    true,
 					Attributes: templ.Attributes{
-						"autocomplete": "email",
-						"aria-invalid": len(emailValidations) > 0,
+						"autocomplete":     "email",
+						"aria-invalid":     len(emailValidations) > 0,
+						"aria-describedby": "email-errors",
 					},
 				}).Render(ctx, templ_7745c5c3_Buffer)
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = components.ValidationErrors(emailValidations).Render(ctx, templ_7745c5c3_Buffer)
+				templ_7745c5c3_Err = components.ValidationErrors(emailValidations, "email-errors").Render(ctx, templ_7745c5c3_Buffer)
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -299,14 +300,15 @@ func RegisterForm(m models.Register) templ.Component {
 					Value:    m.Username,
 					Required: true,
 					Attributes: templ.Attributes{
-						"autocomplete": "username",
-						"aria-invalid": len(usernameValidations) > 0,
+						"autocomplete":     "username",
+						"aria-invalid":     len(usernameValidations) > 0,
+						"aria-describedby": "username-errors",
 					},
 				}).Render(ctx, templ_7745c5c3_Buffer)
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = components.ValidationErrors(usernameValidations).Render(ctx, templ_7745c5c3_Buffer)
+				templ_7745c5c3_Err = components.ValidationErrors(usernameValidations, "username-errors").Render(ctx, templ_7745c5c3_Buffer)
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -360,14 +362,15 @@ func RegisterForm(m models.Register) templ.Component {
 					Placeholder: utils.T(ctx, locales.LK_PasswordEnter),
 					Required:    true,
 					Attributes: templ.Attributes{
-						"autocomplete": "new-password",
-						"aria-invalid": len(passwordValidations) > 0,
+						"autocomplete":     "new-password",
+						"aria-invalid":     len(passwordValidations) > 0,
+						"aria-describedby": "password-errors",
 					},
 				}).Render(ctx, templ_7745c5c3_Buffer)
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = components.ValidationErrors(passwordValidations).Render(ctx, templ_7745c5c3_Buffer)
+				templ_7745c5c3_Err = components.ValidationErrors(passwordValidations, "password-errors").Render(ctx, templ_7745c5c3_Buffer)
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -420,14 +423,15 @@ func RegisterForm(m models.Register) templ.Component {
 					Name:     "password_2",
 					Required: true,
 					Attributes: templ.Attributes{
-						"autocomplete": "new-password",
-						"aria-invalid": len(passwordMatchValidations) > 0,
+						"autocomplete":     "new-password",
+						"aria-invalid":     len(passwordMatchValidations) > 0,
+						"aria-describedby": "password-2-errors",
 					},
 				}).Render(ctx, templ_7745c5c3_Buffer)
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = components.ValidationErrors(passwordMatchValidations).Render(ctx, templ_7745c5c3_Buffer)
+				templ_7745c5c3_Err = components.ValidationErrors(passwordMatchValidations, "password-2-errors").Render(ctx, templ_7745c5c3_Buffer)
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}

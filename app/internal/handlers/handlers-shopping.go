@@ -39,10 +39,10 @@ func (h *DefaultHandler) PageShoppingList(ctx *gin.Context) {
 		RenderTemplStatus(ctx, http.StatusNotFound, pages.NotFound())
 		return
 	}
-	h.renderShoppingList(ctx, http.StatusOK, listID, "")
+	h.renderShoppingList(ctx, http.StatusOK, listID, listForm{})
 }
 
-func (h *DefaultHandler) renderShoppingList(ctx *gin.Context, status int, listID pgtype.UUID, errorMessage string) {
+func (h *DefaultHandler) renderShoppingList(ctx *gin.Context, status int, listID pgtype.UUID, form listForm) {
 	actor := membershipFromContext(ctx)
 	list, err := h.service.GetShoppingList(ctx, actor, listID)
 	if errors.Is(err, g.ErrorNotFound) {
@@ -51,27 +51,22 @@ func (h *DefaultHandler) renderShoppingList(ctx *gin.Context, status int, listID
 		return
 	}
 	if err != nil {
-		swapMainOnError(ctx)
 		InternalError(ctx, err)
 		return
 	}
-	RenderTemplStatus(ctx, status, pages.ShoppingList(actor, list, errorMessage))
+	RenderTemplStatus(ctx, status, pages.ShoppingList(actor, list, form.errorMessage, form.itemText, form.itemQty, form.categorySaved))
 }
 
-// swapMainOnError makes htmx fill the page's <main> with the error page's message,
-// the list forms select #shopping-list, which error pages do not have,
-// live-resync.js does the same for a live region that gets a 404
-func swapMainOnError(ctx *gin.Context) {
-	if IsRequestHTMX(ctx) {
-		ctx.Header(g.HHK_HXRetarget.String(), "main")
-		ctx.Header(g.HHK_HXReselect.String(), "main > *")
-		ctx.Header(g.HHK_HXReswap.String(), "innerHTML")
-	}
+// listForm is what [DefaultHandler.renderShoppingList] shows besides the list itself
+type listForm struct {
+	errorMessage, itemText, itemQty string
+	categorySaved                   bool
 }
 
-// shoppingAction runs an action on the :listID list and shows the list again,
+// shoppingAction runs an action on the :listID list and shows the list again with done,
 // htmx requests get the page itself so they can swap in the list without a reload
-func (h *DefaultHandler) shoppingAction(ctx *gin.Context, action func(actor services.Membership, listID pgtype.UUID) error) {
+func (h *DefaultHandler) shoppingAction(ctx *gin.Context, done listForm,
+	action func(actor services.Membership, listID pgtype.UUID) error) {
 	listID, err := utils.ParseUUID(ctx.Param(g.ParamListID))
 	if err != nil {
 		RenderTemplStatus(ctx, http.StatusNotFound, pages.NotFound())
@@ -81,18 +76,22 @@ func (h *DefaultHandler) shoppingAction(ctx *gin.Context, action func(actor serv
 	err = action(actor, listID)
 	switch {
 	case err == nil && IsRequestHTMX(ctx):
-		h.renderShoppingList(ctx, http.StatusOK, listID, "")
+		h.renderShoppingList(ctx, http.StatusOK, listID, done)
 	case err == nil:
 		Redirect(ctx, shoppingListPath(actor.HouseholdID, listID))
 	case errors.Is(err, g.ErrorInvalidInput):
-		h.renderShoppingList(ctx, http.StatusUnprocessableEntity, listID,
-			utils.T(ctx.Request.Context(), locales.LK_ShoppingItemLength,
-				services.MaxShoppingItemTextLength, services.MaxShoppingItemQtyLength))
+		// only adding an item takes free text, the other actions post no text or qty
+		h.renderShoppingList(ctx, http.StatusUnprocessableEntity, listID, listForm{
+			errorMessage: utils.T(ctx.Request.Context(), locales.LK_ShoppingItemLength,
+				services.MaxShoppingItemTextLength, services.MaxShoppingItemQtyLength),
+			itemText:      ctx.PostForm("text"),
+			itemQty:       ctx.PostForm("qty"),
+			categorySaved: false,
+		})
 	case errors.Is(err, g.ErrorNotFound):
 		swapMainOnError(ctx)
 		RenderTemplStatus(ctx, http.StatusNotFound, pages.NotFound())
 	default:
-		swapMainOnError(ctx)
 		InternalError(ctx, err)
 	}
 }
@@ -105,7 +104,7 @@ func (h *DefaultHandler) shoppingItemAction(ctx *gin.Context,
 		RenderTemplStatus(ctx, http.StatusNotFound, pages.NotFound())
 		return
 	}
-	h.shoppingAction(ctx, func(actor services.Membership, listID pgtype.UUID) error {
+	h.shoppingAction(ctx, listForm{}, func(actor services.Membership, listID pgtype.UUID) error {
 		return action(actor, listID, itemID)
 	})
 }
@@ -142,8 +141,12 @@ func (h *DefaultHandler) RenameShoppingList(ctx *gin.Context) {
 	case err == nil:
 		stay(ctx, shoppingListPath(actor.HouseholdID, listID))
 	case errors.Is(err, g.ErrorInvalidInput):
-		h.renderShoppingList(ctx, http.StatusUnprocessableEntity, listID,
-			utils.T(ctx.Request.Context(), locales.LK_ShoppingNameLength, services.MaxShoppingListNameLength))
+		h.renderShoppingList(ctx, http.StatusUnprocessableEntity, listID, listForm{
+			errorMessage:  utils.T(ctx.Request.Context(), locales.LK_ShoppingNameLength, services.MaxShoppingListNameLength),
+			itemText:      "",
+			itemQty:       "",
+			categorySaved: false,
+		})
 	case errors.Is(err, g.ErrorNotFound):
 		RenderTemplStatus(ctx, http.StatusNotFound, pages.NotFound())
 	default:
@@ -151,20 +154,22 @@ func (h *DefaultHandler) RenameShoppingList(ctx *gin.Context) {
 	}
 }
 
+// SetShoppingListCategory shows the list with a "saved" status next to the category
 func (h *DefaultHandler) SetShoppingListCategory(ctx *gin.Context) {
-	h.shoppingAction(ctx, func(actor services.Membership, listID pgtype.UUID) error {
+	saved := listForm{errorMessage: "", itemText: "", itemQty: "", categorySaved: true}
+	h.shoppingAction(ctx, saved, func(actor services.Membership, listID pgtype.UUID) error {
 		return h.service.SetShoppingListCategory(ctx, actor, listID, ctx.PostForm("category"))
 	})
 }
 
 func (h *DefaultHandler) AddShoppingItem(ctx *gin.Context) {
-	h.shoppingAction(ctx, func(actor services.Membership, listID pgtype.UUID) error {
+	h.shoppingAction(ctx, listForm{}, func(actor services.Membership, listID pgtype.UUID) error {
 		return h.service.AddShoppingItem(ctx, actor, listID, ctx.PostForm("text"), ctx.PostForm("qty"))
 	})
 }
 
 func (h *DefaultHandler) ClearCheckedShoppingItems(ctx *gin.Context) {
-	h.shoppingAction(ctx, func(actor services.Membership, listID pgtype.UUID) error {
+	h.shoppingAction(ctx, listForm{}, func(actor services.Membership, listID pgtype.UUID) error {
 		return h.service.ClearCheckedShoppingItems(ctx, actor, listID)
 	})
 }

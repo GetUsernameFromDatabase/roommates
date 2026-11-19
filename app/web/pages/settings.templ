@@ -4,6 +4,7 @@ import "roommates/web/assets"
 import "roommates/web/components"
 import "roommates/web/components/avatar"
 import "roommates/web/components/button"
+import "roommates/web/components/input"
 import "roommates/web/components/switch"
 import "roommates/internal/locales"
 import g "roommates/internal/config"
@@ -60,15 +61,19 @@ templ avatarForm(path string, user dbqueries.GetUserRow, errorMessage string) {
 				</p>
 			</div>
 		</div>
-		<form action={ templ.SafeURL(path + g.RouteAvatar) } method="post" enctype="multipart/form-data" class="flex flex-col items-start gap-4">
-			<input
-				type="file"
-				name="avatar"
-				accept="image/png,image/jpeg,image/gif,image/webp"
-				required
-				aria-label={ utils.T(ctx, locales.LK_AvatarTitle) }
-				class="peer min-h-11 w-full min-w-0 text-sm file:mr-3 file:h-11 file:cursor-pointer file:rounded-full file:border-0 file:bg-secondary file:px-4 file:font-medium file:text-secondary-foreground"
-			/>
+		<form action={ templ.SafeURL(path + g.RouteAvatar) } method="post" enctype="multipart/form-data" hx-boost="true" class="flex flex-col items-start gap-4">
+			@input.Input(input.Props{
+				ID:       "avatar",
+				Name:     "avatar",
+				Type:     "file",
+				Accept:   "image/png,image/jpeg,image/gif,image/webp",
+				Required: true,
+				// hidden for its label below: the browser's own button and "no file" text are in the browser's language
+				Class: "peer sr-only",
+			})
+			<label for="avatar" class={ button.Variants(button.Props{Variant: button.VariantSecondary, Size: button.SizeLg, Class: "h-11 cursor-pointer peer-focus-visible:ring-3 peer-focus-visible:ring-ring/50"}) }>
+				@components.T(locales.LK_AvatarChoose)
+			</label>
 			@avatarCrop()
 			// the required input is :invalid until a file is chosen
 			@button.Button(button.Props{Type: button.TypeSubmit, Class: "h-11 peer-invalid:hidden"}) {
@@ -80,7 +85,7 @@ templ avatarForm(path string, user dbqueries.GetUserRow, errorMessage string) {
 			@formError(errorMessage)
 		</form>
 		if user.AvatarKey != nil {
-			<form action={ templ.SafeURL(path + g.RouteAvatarDelete) } method="post" class="-mt-1 group-has-[input[type=file]:valid]/avatar:hidden">
+			<form action={ templ.SafeURL(path + g.RouteAvatarDelete) } method="post" hx-boost="true" hx-confirm={ utils.T(ctx, locales.LK_AvatarRemoveConfirm) } class="-mt-1 group-has-[input[type=file]:valid]/avatar:hidden">
 				@button.Button(button.Props{Type: button.TypeSubmit, Variant: button.VariantLink, Class: "h-11 px-0 text-destructive"}) {
 					@components.T(locales.LK_AvatarRemove)
 				}

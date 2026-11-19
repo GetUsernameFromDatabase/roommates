@@ -55,11 +55,13 @@ func (s *DefaultService) CreateNote(ctx context.Context, actor Membership, in No
 	})
 }
 
-// ListNotes returns the household's notes and the actor's private ones
-func (s *DefaultService) ListNotes(ctx context.Context, actor Membership) ([]dbqueries.ListNotesRow, error) {
+// ListNotes returns the household's notes and the actor's private ones, only those with q
+// in the title or body (in any case) when q is not blank
+func (s *DefaultService) ListNotes(ctx context.Context, actor Membership, q string) ([]dbqueries.ListNotesRow, error) {
 	return s.db.ListNotes(ctx, dbqueries.ListNotesParams{
 		HouseholdID: actor.HouseholdID,
 		UserID:      actor.UserID,
+		Q:           strings.TrimSpace(q),
 	})
 }
 

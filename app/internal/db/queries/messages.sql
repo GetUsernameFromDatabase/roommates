@@ -28,6 +28,10 @@ WHERE m.household_id = sqlc.arg(household_id)
         AND b.household_id = sqlc.arg(household_id)
     )
   )
+  AND (
+    sqlc.arg(q)::text = ''
+    OR strpos(lower(m.body), lower(sqlc.arg(q))) > 0
+  )
 ORDER BY m.created_at DESC,
   m.id DESC
 LIMIT sqlc.arg(max_count);

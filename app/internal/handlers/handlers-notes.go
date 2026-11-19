@@ -33,6 +33,7 @@ func noteFromForm(ctx *gin.Context) services.NoteInput {
 // pageError shows the not found page for [g.ErrorNotFound], otherwise the internal error page
 func pageError(ctx *gin.Context, err error) {
 	if errors.Is(err, g.ErrorNotFound) {
+		swapMainOnError(ctx)
 		RenderTemplStatus(ctx, http.StatusNotFound, pages.NotFound())
 		return
 	}
@@ -45,12 +46,13 @@ func noteLengthMessage(ctx *gin.Context) string {
 
 func (h *DefaultHandler) PageNotes(ctx *gin.Context) {
 	actor := membershipFromContext(ctx)
-	notes, err := h.service.ListNotes(ctx, actor)
+	q := ctx.Query("q")
+	notes, err := h.service.ListNotes(ctx, actor, q)
 	if err != nil {
 		InternalError(ctx, err)
 		return
 	}
-	RenderTempl(ctx, pages.HouseholdNotes(actor, notes))
+	RenderTempl(ctx, pages.HouseholdNotes(actor, notes, q))
 }
 
 func (h *DefaultHandler) PageNewNote(ctx *gin.Context) {

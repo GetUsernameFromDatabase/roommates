@@ -21,5 +21,5 @@ func (h *DefaultHandler) SetAppearance(ctx *gin.Context) {
 		ctx.Status(http.StatusNoContent)
 		return
 	}
-	Redirect(ctx, safeNextPath(ctx.PostForm(g.QueryNext)))
+	reload(ctx, safeNextPath(ctx.PostForm(g.QueryNext)))
 }

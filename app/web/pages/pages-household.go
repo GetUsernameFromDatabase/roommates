@@ -2,7 +2,6 @@ package pages
 
 import (
 	"context"
-	"fmt"
 	"net/url"
 	g "roommates/internal/config"
 	"roommates/internal/db/dbqueries"
@@ -12,7 +11,6 @@ import (
 	"slices"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/a-h/templ"
 	"github.com/jackc/pgx/v5/pgtype"
@@ -54,20 +52,13 @@ const (
 )
 
 // formatDate shows only the date, the server time zone (UTC in Docker) is not the user's
-func formatDate(t pgtype.Timestamptz) string {
-	return t.Time.Format(time.DateOnly)
+func formatDate(ctx context.Context, t pgtype.Timestamptz) string {
+	return utils.FormatDate(ctx, t.Time)
 }
 
 // formatSize is a byte count in B, KB or MB
-func formatSize(n int64) string {
-	switch {
-	case n < 1<<10:
-		return fmt.Sprintf("%d B", n)
-	case n < 1<<20:
-		return fmt.Sprintf("%.0f KB", float64(n)/(1<<10))
-	default:
-		return fmt.Sprintf("%.1f MB", float64(n)/(1<<20))
-	}
+func formatSize(ctx context.Context, n int64) string {
+	return utils.FormatSize(ctx, n)
 }
 
 // RoleName is the translated memberships.role

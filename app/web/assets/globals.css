@@ -103,6 +103,23 @@
   h2 {
     @apply font-heading tracking-tight;
   }
+  /* a form that is sending cannot be sent again, live-resync.js also stops Enter */
+  form.htmx-request :is(button[type="submit"], button:not([type]), input[type="submit"]) {
+    pointer-events: none;
+    opacity: 0.6;
+  }
+  /* tap targets are at least 44px on touch screens, the kit's small sizes included */
+  @media (pointer: coarse) {
+    [data-slot="button"],
+    [data-slot="select-trigger"],
+    input:not([type="checkbox"], [type="radio"], [type="hidden"], [type="file"]),
+    select {
+      min-height: 44px;
+    }
+    [data-slot="button"] {
+      min-width: 44px;
+    }
+  }
 }
 
 /* the household or list name, set like a nameplate on the door */

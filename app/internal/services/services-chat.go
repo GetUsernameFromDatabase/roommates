@@ -146,9 +146,17 @@ func (s *DefaultService) notifyChat(ctx context.Context, actor Membership, body 
 // ListChat returns [ChatPageSize] messages older than before, or the newest when before
 // is not valid, and then also marks the chat read
 func (s *DefaultService) ListChat(ctx context.Context, actor Membership, before pgtype.UUID) (Chat, error) {
+	return s.SearchChat(ctx, actor, before, "")
+}
+
+// SearchChat is [DefaultService.ListChat] of the messages with q in their text (in any case),
+// a search does not mark the chat read
+func (s *DefaultService) SearchChat(ctx context.Context, actor Membership, before pgtype.UUID, q string) (Chat, error) {
+	q = strings.TrimSpace(q)
 	rows, err := s.db.ListMessages(ctx, dbqueries.ListMessagesParams{
 		HouseholdID: actor.HouseholdID,
 		Before:      before,
+		Q:           q,
 		MaxCount:    ChatPageSize + 1,
 	})
 	if err != nil {
@@ -180,7 +188,7 @@ func (s *DefaultService) ListChat(ctx context.Context, actor Membership, before 
 			}
 		}
 	}
-	if !before.Valid {
+	if !before.Valid && q == "" {
 		if err := s.db.MarkChatRead(ctx, dbqueries.MarkChatReadParams{HouseholdID: actor.HouseholdID, UserID: actor.UserID}); err != nil {
 			return Chat{}, err
 		}

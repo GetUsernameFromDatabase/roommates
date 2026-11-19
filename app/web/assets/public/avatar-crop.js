@@ -166,29 +166,38 @@ if (!window.avatarCropLoaded) {
         }
       });
 
-      form.addEventListener("submit", (e) => {
-        if (box.hidden) {
-          return;
-        }
-        e.preventDefault();
-        const out = document.createElement("canvas");
-        paint(out, OUT);
-        out.toBlob(
-          (blob) => {
-            // without a blob (out of memory) or DataTransfer the whole picture goes as it was chosen
-            if (blob) {
-              try {
-                const files = new DataTransfer();
-                files.items.add(new File([blob], "avatar.jpg", { type: "image/jpeg" }));
-                input.files = files.files;
-              } catch {}
-            }
-            form.submit();
-          },
-          "image/jpeg",
-          0.9,
-        );
-      });
+      // capture: the crop goes in before htmx (hx-boost) sends the form, then the form is sent again
+      let cropped = false;
+      form.addEventListener(
+        "submit",
+        (e) => {
+          if (box.hidden || cropped) {
+            cropped = false;
+            return;
+          }
+          e.preventDefault();
+          e.stopImmediatePropagation();
+          const out = document.createElement("canvas");
+          paint(out, OUT);
+          out.toBlob(
+            (blob) => {
+              // without a blob (out of memory) or DataTransfer the whole picture goes as it was chosen
+              if (blob) {
+                try {
+                  const files = new DataTransfer();
+                  files.items.add(new File([blob], "avatar.jpg", { type: "image/jpeg" }));
+                  input.files = files.files;
+                } catch {}
+              }
+              cropped = true;
+              form.requestSubmit();
+            },
+            "image/jpeg",
+            0.9,
+          );
+        },
+        true,
+      );
     };
 
     htmx.onLoad((root) => {

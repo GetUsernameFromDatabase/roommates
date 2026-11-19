@@ -234,17 +234,18 @@ func LoginForm(m models.Login) templ.Component {
 					Name:        "email",
 					Type:        "email",
 					Value:       m.Email,
-					Placeholder: "you@example.com",
+					Placeholder: utils.T(ctx, locales.LK_EmailPlaceholder),
 					Required:    true,
 					Attributes: templ.Attributes{
-						"autocomplete": "email",
-						"aria-invalid": len(emailValidations) > 0,
+						"autocomplete":     "email",
+						"aria-invalid":     len(emailValidations) > 0,
+						"aria-describedby": "email-errors",
 					},
 				}).Render(ctx, templ_7745c5c3_Buffer)
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = components.ValidationErrors(emailValidations).Render(ctx, templ_7745c5c3_Buffer)
+				templ_7745c5c3_Err = components.ValidationErrors(emailValidations, "email-errors").Render(ctx, templ_7745c5c3_Buffer)
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -305,13 +306,13 @@ func LoginForm(m models.Login) templ.Component {
 				var templ_7745c5c3_Var14 string
 				templ_7745c5c3_Var14, templ_7745c5c3_Err = templruntime.NewAttributeExpression(g.RouteForgotPassword).ResolveURL(ctx)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/login.templ`, Line: 72, Col: 34}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/login.templ`, Line: 73, Col: 34}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var14)
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 13, "\" class=\"text-sm text-muted-foreground underline-offset-4 hover:text-foreground hover:underline\" tabindex=\"-1\">")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 13, "\" class=\"text-sm text-muted-foreground underline-offset-4 hover:text-foreground hover:underline\">")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -329,14 +330,15 @@ func LoginForm(m models.Login) templ.Component {
 					Placeholder: utils.T(ctx, locales.LK_PasswordEnter),
 					Required:    true,
 					Attributes: templ.Attributes{
-						"autocomplete": "current-password",
-						"aria-invalid": len(passwordValidations) > 0,
+						"autocomplete":     "current-password",
+						"aria-invalid":     len(passwordValidations) > 0,
+						"aria-describedby": "password-errors",
 					},
 				}).Render(ctx, templ_7745c5c3_Buffer)
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = components.ValidationErrors(passwordValidations).Render(ctx, templ_7745c5c3_Buffer)
+				templ_7745c5c3_Err = components.ValidationErrors(passwordValidations, "password-errors").Render(ctx, templ_7745c5c3_Buffer)
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}

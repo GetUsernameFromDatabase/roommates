@@ -41,7 +41,9 @@ func optionalUUID(s string) (pgtype.UUID, error) {
 // renderChat shows the composer answering replyTo, a message that is gone is no longer answered
 func (h *DefaultHandler) renderChat(ctx *gin.Context, status int, before, replyTo pgtype.UUID, draft, errorMessage string) {
 	actor := membershipFromContext(ctx)
-	c, err := h.service.ListChat(ctx, actor, before)
+	// ?search= narrows the messages (not q, the file picker has it), only pages have it
+	search := ctx.Query("search")
+	c, err := h.service.SearchChat(ctx, actor, before, search)
 	if err != nil {
 		swapMainOnError(ctx)
 		InternalError(ctx, err)
@@ -59,7 +61,7 @@ func (h *DefaultHandler) renderChat(ctx *gin.Context, status int, before, replyT
 			return
 		}
 	}
-	RenderTemplStatus(ctx, status, pages.ChatPage(actor, c, before.Valid, reply, draft, errorMessage))
+	RenderTemplStatus(ctx, status, pages.ChatPage(actor, c, before.Valid, search, reply, draft, errorMessage))
 }
 
 // PostMessage sends the "body" field with the optional "file",

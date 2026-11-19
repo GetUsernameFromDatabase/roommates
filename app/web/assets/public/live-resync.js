@@ -27,4 +27,65 @@
     e.detail.selectOverride = "main > *";
     e.detail.swapOverride = "innerHTML";
   });
+
+  // a form that is sending cannot be sent again: htmx queues a second submit (Enter included)
+  // and sends it after the first, so stop it before htmx sees it
+  document.addEventListener(
+    "submit",
+    function (e) {
+      if (e.target.classList && e.target.classList.contains("htmx-request")) {
+        e.preventDefault();
+        e.stopImmediatePropagation();
+      }
+    },
+    true
+  );
+
+  // a request that never got an answer (offline, timeout) or an error page not from the app says so
+  // in a toast, 4xx answers are pages htmx swaps in on purpose (form errors, the 404 above), the
+  // toast is `templ toast` in layout.templ without its icon, its classes come on <body>
+  function requestFailed() {
+    var text = document.body && document.body.dataset.requestFailed;
+    if (!text) return;
+    var old = document.getElementById("request-failed-toast");
+    if (old) old.remove();
+    var toast = document.createElement("div");
+    toast.id = "request-failed-toast";
+    toast.setAttribute("role", "alert");
+    toast.className = document.body.dataset.toastClass;
+    var span = document.createElement("span");
+    span.className = "min-w-0 break-words";
+    span.textContent = text;
+    toast.appendChild(span);
+    document.body.appendChild(toast);
+    setTimeout(function () {
+      toast.remove();
+    }, 5500);
+  }
+  document.addEventListener("htmx:sendError", requestFailed);
+  document.addEventListener("htmx:timeout", requestFailed);
+  // htmx swaps every error (responseHandling): the app's own error page retargets <main>
+  // (swapMainOnError), anything else (a proxy's 502 page) would replace the whole app
+  document.addEventListener("htmx:beforeSwap", function (e) {
+    var xhr = e.detail.xhr;
+    if (xhr.status < 500 || xhr.getResponseHeader("HX-Retarget")) return;
+    e.detail.shouldSwap = false;
+    requestFailed();
+  });
+
+  // after htmx moved to another page (a boosted form, HX-Location) focus is lost with the old one:
+  // put it on <main> so a keyboard or screen reader user starts at the new content, unless htmx
+  // gave focus back to an element by id; stay() does not push a URL, so it keeps its place
+  // (htmx pushes the URL before it swaps)
+  var moved = false;
+  document.addEventListener("htmx:pushedIntoHistory", function () {
+    moved = true;
+  });
+  document.addEventListener("htmx:afterSettle", function () {
+    if (!moved) return;
+    moved = false;
+    var main = document.querySelector("main");
+    var a = document.activeElement;
+    if (main && (!a || a === document.body)) main.focus({ preventScroll: true });
+  });
 })();

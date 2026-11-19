@@ -142,6 +142,11 @@ WHERE n.household_id = $1
     n.visibility = 'household'
     OR n.author_id = $2
   )
+  AND (
+    $3::text = ''
+    OR strpos(lower(n.title), lower($3)) > 0
+    OR strpos(lower(n.body_md), lower($3)) > 0
+  )
 ORDER BY n.pinned DESC,
   n.edited_at DESC
 `
@@ -149,6 +154,7 @@ ORDER BY n.pinned DESC,
 type ListNotesParams struct {
 	HouseholdID pgtype.UUID `json:"household_id"`
 	UserID      pgtype.UUID `json:"user_id"`
+	Q           string      `json:"q"`
 }
 
 type ListNotesRow struct {
@@ -163,7 +169,7 @@ type ListNotesRow struct {
 
 // pinned first, then the most recently edited
 func (q *Queries) ListNotes(ctx context.Context, arg ListNotesParams) ([]ListNotesRow, error) {
-	rows, err := q.db.Query(ctx, listNotes, arg.HouseholdID, arg.UserID)
+	rows, err := q.db.Query(ctx, listNotes, arg.HouseholdID, arg.UserID, arg.Q)
 	if err != nil {
 		return nil, err
 	}

@@ -4,10 +4,13 @@ en:
     save: Save
     cancel: Cancel
     link-invalid: Link is invalid
+    saved: Saved
+    request-failed: Something went wrong. Check your connection and try again.
   app:
     title: Roommates
   welcome-back: Welcome home
   email: Email
+  email-placeholder: you@example.com
   username:
     title: Username
   password: 
@@ -48,13 +51,15 @@ en:
     promote: Make owner
     promote-confirm: "Make %s an owner?\n\nOwners cannot be removed or made members again."
     leave: Leave household
-    leave-confirm: Leave
+    leave-confirm: Leave this household?
+    leave-submit: Leave
     invites: Invites
     invites-description: Anyone with the link or code can join until it expires.
     no-invites: No active invites
     create-invite: Create invite
     expires: Expires %s
     revoke: Revoke
+    revoke-confirm: Revoke this invite?
     copy-code: Copy code
     copy-link: Copy link
     copied: Copied
@@ -62,6 +67,7 @@ en:
     last-owner: Make someone else an owner before leaving.
     invite-email-title: Invite by email
     invite-email-submit: Send invite
+    invite-email-placeholder: flatmate@example.com
     invite-email-sent: Invite sent to %s
     invite-too-many: Too many invites sent. Try again in an hour.
     since: "%s, since %s"
@@ -94,7 +100,10 @@ en:
     check: Mark as bought
     uncheck: Mark as not bought
     delete-list: Delete list
+    delete-list-confirm: Delete this list?
+    delete-item-confirm: Delete %s?
     clear: Remove bought items
+    clear-confirm: Remove the bought items from the list?
     item-back: Back to the list
     description: Description
     description-placeholder: Brand, size, anything that helps
@@ -123,6 +132,11 @@ en:
     you: You
     you-owe: You owe %s
     owes-you: "%s owes you"
+    you-get: You get
+    you-pay: You pay
+    delete-confirm: Delete this expense?
+    reject-confirm: Reject this payment?
+    cancel-confirm: Cancel this payment?
     you-paid-to: You paid %s
     paid-you: "%s paid you"
     paid-by-you: Paid by you on %s
@@ -144,6 +158,10 @@ en:
     split-custom: By the amounts typed
     add: Add expense
     invalid: "Check the form: the text is 1 to %d characters, the amount is above zero, someone shares it, and typed shares add up to the amount."
+    invalid-title: The title must be 1 to %d characters long
+    invalid-amount: Enter an amount above zero, like 12.50
+    invalid-date: Choose a date
+    invalid-shares: Tick who shares it, and typed shares must add up to the amount
     paid-by: Paid by %s on %s
     shares: Shares
     share-paid: Paid
@@ -185,6 +203,9 @@ en:
     cancel: Cancel
     edit: Edit
     delete: Delete note
+    delete-confirm: Delete this note?
+    search: Search notes
+    no-match: No notes match
     pin: Pin
     unpin: Unpin
     edited-by: Edited by %s
@@ -196,7 +217,10 @@ en:
     none: No files yet
     upload: Upload a file
     attachments: Attachments
-    count: "%d attachments"
+    count:
+      one: 1 attachment
+      other: "%{count} attachments"
+    delete-confirm: Delete %s?
     too-large: The file can be at most %d MB
     invalid: Choose a file that is not empty and whose name is at most %d characters
     rename: File name
@@ -250,6 +274,9 @@ en:
     unread: "%d unread"
     length: Write a message or add up to %d files, the message can be at most %d characters
     delete: Delete message
+    delete-confirm: Delete this message?
+    search: Search messages
+    no-match: No messages match
     reply: Reply
     copy: Copy
     replying-to: "Replying to %s"
@@ -281,7 +308,9 @@ en:
     title: Your picture
     description: Housemates see it in the chat and under people
     upload: Upload picture
+    choose: Choose picture
     remove: Remove picture
+    remove-confirm: Remove your picture?
     cancel: Cancel
     invalid: Choose an image (PNG, JPEG, GIF or WebP)
     zoom: Zoom
@@ -301,6 +330,7 @@ en:
     expenses: Expenses
     chat: Chat
     more: More
+    more-waiting: More, a payment waits for your confirmation
     settings: Settings
     households-add: Create or join
   invite-page:

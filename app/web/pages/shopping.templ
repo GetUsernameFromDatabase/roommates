@@ -10,6 +10,7 @@ import "roommates/internal/services"
 import "roommates/internal/events"
 import "roommates/internal/locales"
 import "roommates/internal/utils"
+import "github.com/invopop/ctxi18n/i18n"
 import "github.com/jackc/pgx/v5/pgtype"
 
 var shoppingReuseScript = templ.NewOnceHandle()
@@ -21,34 +22,33 @@ const shoppingBuyAgainShown = 8
 //
 // the forms post with hx-select so only #shopping-list is swapped,
 // a check-off keeps the scroll position
-templ ShoppingList(actor services.Membership, l services.ShoppingList, errorMessage string) {
+templ ShoppingList(actor services.Membership, l services.ShoppingList, errorMessage string, itemText string, itemQty string, categorySaved bool) {
 	@appShell(l.List.Name, &HouseholdNav{HouseholdID: actor.HouseholdID, Section: SectionShopping}) {
 		@shoppingReuseScript.Once() {
 			<script src={ assets.URL("shopping-reuse.js") }></script>
 		}
 		@shoppingListHeader(actor, l)
 		// saved on pick, what the list's expenses start from
-		<form hx-post={ string(shoppingListURL(actor, l, "category")) } hx-trigger="change" hx-swap="none" class="-mt-5 flex items-center gap-2">
+		<form hx-post={ string(shoppingListURL(actor, l, "category")) } hx-trigger="change" hx-select="#list-category-saved" hx-target="#list-category-saved" hx-swap="outerHTML" class="-mt-5 flex items-center gap-2">
 			<label for="list-category-trigger" class="text-sm text-muted-foreground">
 				@components.T(locales.LK_ExpensesCategory)
 			</label>
 			@categorySelect("list-category", l.List.Category, "bg-card data-[size=default]:h-9 dark:bg-card", nil)
+			<span id="list-category-saved" role="status" class="text-sm text-muted-foreground">
+				if categorySaved {
+					@components.T(locales.LK_CommonSaved)
+				}
+			</span>
 		</form>
-		@shoppingListContent(actor, l, errorMessage)
+		@shoppingListContent(actor, l, errorMessage, itemText, itemQty)
 		if l.List.CreatedBy == actor.UserID {
 			<form
 				action={ shoppingListURL(actor, l, "delete") }
 				method="post"
 				hx-boost="true"
-				hx-confirm={ deleteConfirm(ctx, utils.T(ctx, locales.LK_ShoppingDeleteList)+"?", int(l.LastFiles)) }
+				hx-confirm={ deleteConfirm(ctx, utils.T(ctx, locales.LK_ShoppingDeleteListConfirm), int(l.LastFiles)) }
 			>
-				@button.Button(button.Props{
-					Type:    button.TypeSubmit,
-					Variant: button.VariantGhost,
-					Class:   "-ml-3 text-destructive hover:text-destructive",
-				}) {
-					@components.T(locales.LK_ShoppingDeleteList)
-				}
+				@deleteButton(locales.LK_ShoppingDeleteList)
 			</form>
 		}
 	}
@@ -61,7 +61,7 @@ templ shoppingListHeader(actor services.Membership, l services.ShoppingList) {
 
 // shoppingListContent is the pad of what is still to buy, a new item goes on its next
 // blank line, and under it what is in the bag already
-templ shoppingListContent(actor services.Membership, l services.ShoppingList, errorMessage string) {
+templ shoppingListContent(actor services.Membership, l services.ShoppingList, errorMessage string, itemText string, itemQty string) {
 	{{ open, bought := splitBought(l.Items) }}
 	<div id="shopping-list" class="space-y-8">
 		<div class="shopping-pad">
@@ -94,6 +94,7 @@ templ shoppingListContent(actor services.Membership, l services.ShoppingList, er
 					ID:          "item-text",
 					Name:        "text",
 					Type:        "text",
+					Value:       itemText,
 					Placeholder: utils.T(ctx, locales.LK_ShoppingItem),
 					Required:    true,
 					Class:       padInputClass + " col-start-2",
@@ -113,6 +114,7 @@ templ shoppingListContent(actor services.Membership, l services.ShoppingList, er
 						ID:          "item-qty",
 						Name:        "qty",
 						Type:        "text",
+						Value:       itemQty,
 						Placeholder: utils.T(ctx, locales.LK_ShoppingQty),
 						Class:       padInputClass + " w-24",
 						Attributes: templ.Attributes{
@@ -149,7 +151,7 @@ templ shoppingListContent(actor services.Membership, l services.ShoppingList, er
 								@components.T(locales.LK_ShoppingAddBagExpense)
 							}
 						}
-						<form action={ shoppingListURL(actor, l, "clear") } method="post" { shoppingSwap(actor, l, "clear")... }>
+						<form action={ shoppingListURL(actor, l, "clear") } method="post" hx-confirm={ utils.T(ctx, locales.LK_ShoppingClearConfirm) } { shoppingSwap(actor, l, "clear")... }>
 							@button.Button(button.Props{Type: button.TypeSubmit, Variant: button.VariantGhost, Size: button.SizeSm}) {
 								@components.T(locales.LK_ShoppingClear)
 							}
@@ -203,6 +205,7 @@ templ shoppingOpenItem(actor services.Membership, l services.ShoppingList, it db
 			<input type="hidden" name="claim" value={ utils.IfElse(it.ClaimedBy == actor.UserID, "0", "1") }/>
 			<button
 				type="submit"
+				id={ "claim-" + itemID }
 				aria-label={ utils.IfElse(it.ClaimedBy == actor.UserID, utils.T(ctx, locales.LK_ShoppingStopBuying), utils.T(ctx, locales.LK_ShoppingBuying)) + ": " + it.Text }
 				class="group/claim flex size-11 items-center justify-center rounded-full outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
 			>
@@ -250,6 +253,7 @@ templ shoppingTick(actor services.Membership, l services.ShoppingList, it dbquer
 		<input type="hidden" name="checked" value={ utils.IfElse(checked, "0", "1") }/>
 		<button
 			type="submit"
+			id={ "check-" + itemID }
 			role="checkbox"
 			aria-checked={ utils.IfElse(checked, "true", "false") }
 			aria-label={ utils.IfElse(checked, utils.T(ctx, locales.LK_ShoppingUncheck), utils.T(ctx, locales.LK_ShoppingCheck)) + ": " + it.Text }
@@ -274,7 +278,7 @@ templ shoppingItemName(actor services.Membership, l services.ShoppingList, it db
 	<a
 		id={ "item-name-" + itemID }
 		href={ shoppingListURL(actor, l, "items", itemID) }
-		class={ utils.CN("item-strike text-lg break-words underline-offset-4 hover:underline", utils.IfElse(it.CheckedAt.Valid, "is-struck", "")) }
+		class={ utils.CN("item-strike text-lg break-words underline-offset-4 hover:underline pointer-coarse:inline-block pointer-coarse:py-2",utils.IfElse(it.CheckedAt.Valid, "is-struck", "")) }
 	>
 		{ it.Text }
 	</a>
@@ -284,7 +288,7 @@ templ shoppingItemName(actor services.Membership, l services.ShoppingList, it db
 	if it.FileCount > 0 {
 		<span class="text-sm text-muted-foreground">
 			<span aria-hidden="true">📎 { it.FileCount }</span>
-			<span class="sr-only">{ utils.T(ctx, locales.LK_FilesCount, it.FileCount) }</span>
+			<span class="sr-only">{ utils.N(ctx, locales.LK_FilesCount, int(it.FileCount),i18n.M{"count": it.FileCount}) }</span>
 		</span>
 	}
 	if it.Description != "" {

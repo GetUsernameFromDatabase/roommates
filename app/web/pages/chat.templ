@@ -15,6 +15,8 @@ import "roommates/internal/services"
 import "roommates/internal/locales"
 import "roommates/internal/utils"
 import "github.com/jackc/pgx/v5/pgtype"
+import "net/url"
+import "strings"
 import "time"
 
 var chatScript = templ.NewOnceHandle()
@@ -24,7 +26,7 @@ var chatScript = templ.NewOnceHandle()
 //
 // the composer posts with hx-select="#chat" so it is cleared after sending,
 // the messages refetch on their own when someone writes
-templ ChatPage(actor services.Membership, c services.Chat, older bool, reply *services.ReplyPreview, draft, errorMessage string) {
+templ ChatPage(actor services.Membership, c services.Chat, older bool, search string, reply *services.ReplyPreview, draft, errorMessage string) {
 	@appShell(utils.T(ctx, locales.LK_ChatTitle), &HouseholdNav{HouseholdID: actor.HouseholdID, Section: SectionChat}) {
 		@chatScript.Once() {
 			<script src={ assets.URL("chat-hold.js") }></script>
@@ -45,8 +47,31 @@ templ ChatPage(actor services.Membership, c services.Chat, older bool, reply *se
 		// edge to edge on phones; with the keyboard open it is what the keyboard leaves less main's padding,
 		// the live region's wrapper is display: contents so the log itself is the flex child that shrinks
 		<section id="chat" class={ utils.CN(sheetClass, "flex min-h-0 flex-1 flex-col gap-4 max-sm:-mx-4 max-sm:rounded-none max-sm:px-3 max-sm:py-3 max-sm:ring-0 in-data-keyboard:h-[calc(var(--visible-height)-1rem)] in-data-keyboard:flex-none [&>#chat-messages]:contents") }>
+			{{ chatURL := householdURL(actor.HouseholdID, "chat") }}
+			// "search", not "q" (the file picker's); the live region refetches the page's own URL, so it keeps the search
+			<form
+				role="search"
+				action={ chatURL }
+				method="get"
+				hx-get={ string(chatURL) }
+				hx-trigger="input delay:300ms"
+				hx-target="#chat-messages"
+				hx-select="#chat-messages"
+				hx-swap="outerHTML"
+				hx-replace-url="true"
+				class="shrink-0"
+			>
+				@input.Input(input.Props{
+					Name:        "search",
+					Type:        "search",
+					Value:       search,
+					Placeholder: utils.T(ctx, locales.LK_ChatSearch),
+					Class:       "h-11",
+					Attributes:  templ.Attributes{"aria-label": utils.T(ctx, locales.LK_ChatSearch)},
+				})
+			</form>
 			@liveRegion("chat-messages", events.TopicChat, events.TopicFiles) {
-				@chatMessages(actor, c, older)
+				@chatMessages(actor, c, older, search)
 			}
 			<form
 				id="chat-composer"
@@ -125,12 +150,12 @@ templ ChatPage(actor services.Membership, c services.Chat, older bool, reply *se
 // it opens; a native disclosure, the composer's swap would leave a portaled popover behind
 templ chatFilePicker(actor services.Membership) {
 	{{
-	picks := templ.Attributes{
-		"hx-get":    string(householdURL(actor.HouseholdID, "chat", "files")),
-		"hx-target": "#chat-file-picks",
-		"hx-select": "#chat-file-picks",
-		"hx-swap":   "outerHTML",
-	}
+		picks := templ.Attributes{
+			"hx-get":    string(householdURL(actor.HouseholdID, "chat", "files")),
+			"hx-target": "#chat-file-picks",
+			"hx-select": "#chat-file-picks",
+			"hx-swap":   "outerHTML",
+		}
 	}}
 	<details data-menu class="relative shrink-0">
 		<summary
@@ -185,16 +210,20 @@ templ ChatFilePicks(actor services.Membership, files []dbqueries.ListFilesRow) {
 
 // chatMessages scrolls by itself, column-reverse keeps it at the newest message
 // at the bottom without a script, so the newest message comes first in the markup
-templ chatMessages(actor services.Membership, c services.Chat, older bool) {
+templ chatMessages(actor services.Membership, c services.Chat, older bool, search string) {
 	<div role="log" class="flex min-h-0 flex-1 flex-col-reverse gap-3 overflow-y-auto" tabindex="0" aria-label={ utils.T(ctx, locales.LK_ChatTitle) }>
 		if older {
-			<a href={ householdURL(actor.HouseholdID, "chat") } class="inline-flex min-h-11 items-center self-center text-sm text-muted-foreground underline underline-offset-4 hover:text-foreground">
+			<a href={ templ.SafeURL(string(householdURL(actor.HouseholdID, "chat")) + "?search=" + url.QueryEscape(search)) } class="inline-flex min-h-11 items-center self-center text-sm text-muted-foreground underline underline-offset-4 hover:text-foreground">
 				@components.T(locales.LK_ChatNewest)
 			</a>
 		}
 		if len(c.Messages) == 0 {
 			<p class="text-muted-foreground">
-				@components.T(locales.LK_ChatEmpty)
+				if strings.TrimSpace(search) != "" {
+					@components.T(locales.LK_ChatNoMatch)
+				} else {
+					@components.T(locales.LK_ChatEmpty)
+				}
 			</p>
 		}
 		for i, m := range c.Messages {
@@ -273,7 +302,7 @@ templ chatMessages(actor services.Membership, c services.Chat, older bool) {
 								@bubble.Content(bubble.ContentProps{Class: "flex flex-col gap-1"}) {
 									for _, f := range others {
 										<a href={ householdURL(actor.HouseholdID, "files", f.ID.String()) } class="underline underline-offset-4">
-											<span aria-hidden="true">📎</span> { f.Name } <span class="text-xs text-muted-foreground">{ formatSize(f.SizeBytes) }</span>
+											<span aria-hidden="true">📎</span> { f.Name } <span class="text-xs text-muted-foreground">{ formatSize(ctx, f.SizeBytes) }</span>
 										</a>
 									}
 								}
@@ -311,7 +340,7 @@ templ chatMessages(actor services.Membership, c services.Chat, older bool) {
 									hx-target="#chat-messages"
 									hx-select="#chat-messages"
 									hx-swap="outerHTML"
-									hx-confirm={ deleteConfirm(ctx, utils.T(ctx, locales.LK_ChatDelete)+"?", m.LastFiles) }
+									hx-confirm={ deleteConfirm(ctx, utils.T(ctx, locales.LK_ChatDeleteConfirm), m.LastFiles) }
 								>
 									@tooltip.Tooltip() {
 										@button.Button(button.Props{Type: button.TypeSubmit, Variant: button.VariantGhost, Size: button.SizeSm, Class: chatControlClass + " hover:text-destructive", Attributes: tooltip.Trigger(ctx)}) {
@@ -328,7 +357,7 @@ templ chatMessages(actor services.Membership, c services.Chat, older bool) {
 		}
 		if c.HasOlder {
 			<a
-				href={ templ.SafeURL(string(householdURL(actor.HouseholdID, "chat")) + "?before=" + c.Messages[len(c.Messages)-1].ID.String()) }
+				href={ templ.SafeURL(string(householdURL(actor.HouseholdID, "chat")) + "?before=" + c.Messages[len(c.Messages)-1].ID.String() + "&search=" + url.QueryEscape(search)) }
 				class="inline-flex min-h-11 items-center self-center text-sm text-muted-foreground underline underline-offset-4 hover:text-foreground"
 			>
 				@components.T(locales.LK_ChatOlder)

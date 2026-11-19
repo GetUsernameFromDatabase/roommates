@@ -395,14 +395,15 @@ func CreateHouseholdForm(m models.Household) templ.Component {
 				Value:    m.Name,
 				Required: true,
 				Attributes: templ.Attributes{
-					"maxlength":    "64",
-					"aria-invalid": len(nameValidations) > 0,
+					"maxlength":        "64",
+					"aria-invalid":     len(nameValidations) > 0,
+					"aria-describedby": "name-errors",
 				},
 			}).Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = components.ValidationErrors(nameValidations).Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = components.ValidationErrors(nameValidations, "name-errors").Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -467,7 +468,7 @@ func JoinForm(code string) templ.Component {
 		var templ_7745c5c3_Var19 string
 		templ_7745c5c3_Var19, templ_7745c5c3_Err = templruntime.NewAttributeExpression(g.RouteInvite).ResolveURL(ctx)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/home.templ`, Line: 110, Col: 29}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/home.templ`, Line: 111, Col: 29}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var19)
 		if templ_7745c5c3_Err != nil {

@@ -12,8 +12,19 @@ if (!window.copyButtonLoaded) {
     if (!btn.dataset.label) btn.dataset.label = btn.textContent;
     navigator.clipboard.writeText(btn.dataset.copy).then(function () {
       btn.textContent = btn.dataset.copied;
+      // the label change is not announced: say it in a status region, made once
+      var live = document.getElementById("copy-status");
+      if (!live) {
+        live = document.createElement("div");
+        live.id = "copy-status";
+        live.setAttribute("role", "status");
+        live.className = "sr-only";
+        document.body.appendChild(live);
+      }
+      live.textContent = btn.dataset.copied;
       setTimeout(function () {
         btn.textContent = btn.dataset.label;
+        live.textContent = "";
       }, 2000);
     });
   });

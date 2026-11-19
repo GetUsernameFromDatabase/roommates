@@ -22,8 +22,9 @@ import "slices"
 import "time"
 
 // HouseholdExpenses shows who owes whom, settlements waiting for confirmation and the expenses
-// that match filter, errorMessage is the outcome of an "I paid"
-templ HouseholdExpenses(actor services.Membership, o services.ExpensesOverview, filter services.ExpenseFilter, errorMessage string) {
+// that match filter, errorMessage is the outcome of an "I paid", settleTo the payee of the slip
+// it failed on and settleAmount what was typed there
+templ HouseholdExpenses(actor services.Membership, o services.ExpensesOverview, filter services.ExpenseFilter, errorMessage string, settleTo string, settleAmount string) {
 	{{ expensesURL := householdURL(actor.HouseholdID, "expenses") }}
 	@appShell(utils.T(ctx, locales.LK_NavExpenses), &HouseholdNav{HouseholdID: actor.HouseholdID, Section: SectionExpenses}) {
 		<header class="flex items-end justify-between gap-3">
@@ -35,7 +36,9 @@ templ HouseholdExpenses(actor services.Membership, o services.ExpensesOverview, 
 			}
 		</header>
 		// outside the region, a refetch would clear it before it is read
-		@formError(errorMessage)
+		if settleTo == "" {
+			@formError(errorMessage)
+		}
 		<div class="flex flex-col gap-8 lg:grid lg:grid-cols-[minmax(0,1fr)_20rem] lg:items-start">
 			// the "I paid" amount is the debt, when that changes the amount should too
 			@liveRegionWith("expenses", "#expense-list", events.TopicExpenses) {
@@ -76,21 +79,30 @@ templ HouseholdExpenses(actor services.Membership, o services.ExpensesOverview, 
 												<div class="till-paper">
 													@debtBreakdown(actor, d)
 													if d.From == actor.UserID {
-														<form action={ householdURL(actor.HouseholdID, "settlements") } method="post" hx-boost="true" class="till-perforation flex gap-2">
+														<form action={ householdURL(actor.HouseholdID, "settlements") } method="post" hx-boost="true" class="till-perforation flex flex-wrap gap-2">
 															<input type="hidden" name="to" value={ d.To.String() }/>
+															{{
+																failed := settleTo == d.To.String() && errorMessage != ""
+																amountAttrs := templ.Attributes{"inputmode": "decimal", "required": true, "aria-label": utils.T(ctx, locales.LK_ExpensesAmount)}
+																if failed {
+																	amountAttrs["aria-invalid"] = "true"
+																	amountAttrs["aria-describedby"] = "settle-error-" + d.To.String()
+																}
+															}}
 															@input.Input(input.Props{
-																Name:  "amount",
-																Type:  "text",
-																Value: iPaidAmount(d, o.Pending),
-																Class: "h-11 min-w-0 flex-1",
-																Attributes: templ.Attributes{
-																	"inputmode":  "decimal",
-																	"required":   true,
-																	"aria-label": utils.T(ctx, locales.LK_ExpensesAmount),
-																},
+																Name:       "amount",
+																Type:       "text",
+																Value:      utils.IfElse(failed, settleAmount, iPaidAmount(d, o.Pending)),
+																Class:      "h-11 min-w-0 flex-1",
+																Attributes: amountAttrs,
 															})
 															@button.Button(button.Props{Type: button.TypeSubmit, Size: button.SizeLg, Class: "h-11"}) {
 																@components.T(locales.LK_ExpensesIPaid)
+															}
+															if failed {
+																<div id={ "settle-error-" + d.To.String() } class="basis-full">
+																	@formError(errorMessage)
+																</div>
 															}
 														</form>
 													}
@@ -152,10 +164,10 @@ templ HouseholdExpenses(actor services.Membership, o services.ExpensesOverview, 
 templ expenseFilters(actor services.Membership, filter services.ExpenseFilter) {
 	{{ expensesURL := householdURL(actor.HouseholdID, "expenses") }}
 	{{
-	items := []selectcomp.ItemData{
-		{Value: "unpaid", Label: utils.T(ctx, locales.LK_ExpensesShowUnpaid)},
-		{Value: services.ExpenseShowAll, Label: utils.T(ctx, locales.LK_ExpensesShowAll)},
-	}
+		items := []selectcomp.ItemData{
+			{Value: "unpaid", Label: utils.T(ctx, locales.LK_ExpensesShowUnpaid)},
+			{Value: services.ExpenseShowAll, Label: utils.T(ctx, locales.LK_ExpensesShowAll)},
+		}
 	}}
 	<form
 		role="search"
@@ -204,7 +216,12 @@ templ pendingSlip(actor services.Membership, p dbqueries.ListPendingSettlementsR
 					}
 				</form>
 			}
-			<form action={ settlementURL + "/delete" } method="post" hx-boost="true">
+			<form
+				action={ settlementURL + "/delete" }
+				method="post"
+				hx-boost="true"
+				hx-confirm={ utils.T(ctx, utils.IfElse(p.ToUser == actor.UserID, locales.LK_ExpensesRejectConfirm, locales.LK_ExpensesCancelConfirm)) }
+			>
 				@button.Button(button.Props{Type: button.TypeSubmit, Variant: button.VariantGhost, Class: "h-11 px-3 text-destructive"}) {
 					if p.ToUser == actor.UserID {
 						@components.T(locales.LK_ExpensesReject)
@@ -236,7 +253,7 @@ templ debtBreakdown(actor services.Membership, d services.Debt) {
 				<li class="py-1.5">
 					<div class="till-line">
 						if it.Row.ExpenseID.Valid {
-							<a href={ householdURL(actor.HouseholdID, "expenses", it.Row.ExpenseID.String()) } class="min-w-0 break-words underline-offset-4 hover:underline">{ it.Row.Title }</a>
+							<a href={ householdURL(actor.HouseholdID, "expenses", it.Row.ExpenseID.String()) } class="min-w-0 break-words underline-offset-4 hover:underline pointer-coarse:inline-flex pointer-coarse:min-h-11 pointer-coarse:items-center">{ it.Row.Title }</a>
 						} else {
 							// a settlement row runs the other way, ToUser is who paid
 							<span class="min-w-0 break-words">
@@ -245,13 +262,19 @@ templ debtBreakdown(actor services.Membership, d services.Debt) {
 							</span>
 						}
 						<span aria-hidden="true" class="till-leader"></span>
-						<span class={ utils.CN("shrink-0 tabular-nums", itemClass(actor, d, it.Cents)) }>{ formatSignedMoney(ctx, it.Cents, actor.Currency) }</span>
+						<span class={ utils.CN("shrink-0 tabular-nums", itemClass(actor, d, it.Cents)) }>
+							// the sign is not the only cue
+							if yours {
+								<span class="sr-only">{ utils.T(ctx, utils.IfElse(itemClass(actor, d, it.Cents) == "text-favour", locales.LK_ExpensesYouGet, locales.LK_ExpensesYouPay)) }</span>
+							}
+							{ formatSignedMoney(ctx, it.Cents, actor.Currency) }
+						</span>
 					</div>
 					<span class="block text-xs text-muted-foreground">
 						if it.Row.ExpenseID.Valid {
 							{ paidByLine(ctx, actor, it.Row.ToUser, it.Row.ToName, it.Row.OnDate) }
 						} else {
-							{ formatDay(it.Row.OnDate) }
+							{ formatDay(ctx, it.Row.OnDate) }
 						}
 					</span>
 					if yours && d.Covered(it) {
@@ -276,8 +299,18 @@ templ debtBreakdown(actor services.Membership, d services.Debt) {
 var expenseSplitScript = templ.NewOnceHandle()
 
 // ExpenseEditor is the new expense form, the actor pays it
-templ ExpenseEditor(actor services.Membership, members []dbqueries.ListActiveMembersRow, in services.ExpenseInput, errorMessage string) {
+templ ExpenseEditor(actor services.Membership, members []dbqueries.ListActiveMembersRow, in services.ExpenseInput, errorMessage string, errorField string) {
 	{{ expensesURL := householdURL(actor.HouseholdID, "expenses") }}
+	{{
+		// the error sits at its field, aria-invalid and aria-describedby point the field at it
+		fieldAttrs := func(name string, attrs templ.Attributes) templ.Attributes {
+			if errorField == name && errorMessage != "" {
+				attrs["aria-invalid"] = "true"
+				attrs["aria-describedby"] = "expense-" + name + "-error"
+			}
+			return attrs
+		}
+	}}
 	@appShell(utils.T(ctx, locales.LK_ExpensesNew), &HouseholdNav{HouseholdID: actor.HouseholdID, Section: SectionExpenses}) {
 		@doorplateHeader(expensesURL, utils.T(ctx, locales.LK_ExpensesBack), utils.T(ctx, locales.LK_ExpensesNew))
 		<div class="till-slip w-full max-w-md">
@@ -289,7 +322,9 @@ templ ExpenseEditor(actor services.Membership, members []dbqueries.ListActiveMem
 				if in.ItemID.Valid {
 					<input type="hidden" name="item" value={ in.ItemID.String() }/>
 				}
-				@formError(errorMessage)
+				if errorField == "" {
+					@formError(errorMessage)
+				}
 				@field.Field() {
 					@field.Label(field.LabelProps{For: "expense-title"}) {
 						@components.T(locales.LK_ExpensesWhat)
@@ -301,10 +336,11 @@ templ ExpenseEditor(actor services.Membership, members []dbqueries.ListActiveMem
 						Value:    in.Title,
 						Required: true,
 						Class:    tillFieldClass,
-						Attributes: templ.Attributes{
+						Attributes: fieldAttrs("title", templ.Attributes{
 							"maxlength": services.MaxExpenseTitleLength,
-						},
+						}),
 					})
+					@expenseFieldError("title", errorField, errorMessage)
 				}
 				@field.Field() {
 					@field.Label(field.LabelProps{For: "expense-amount"}) {
@@ -317,11 +353,12 @@ templ ExpenseEditor(actor services.Membership, members []dbqueries.ListActiveMem
 						Value:    in.Amount,
 						Required: true,
 						Class:    utils.CN(tillFieldClass, "h-14 font-heading text-3xl font-semibold tabular-nums md:text-3xl"),
-						Attributes: templ.Attributes{
+						Attributes: fieldAttrs("amount", templ.Attributes{
 							"inputmode":   "decimal",
 							"placeholder": "0,00",
-						},
+						}),
 					})
+					@expenseFieldError("amount", errorField, errorMessage)
 				}
 				<div class="grid grid-cols-2 gap-3">
 					@field.Field() {
@@ -337,7 +374,9 @@ templ ExpenseEditor(actor services.Membership, members []dbqueries.ListActiveMem
 						@categorySelect("expense-category", in.Category, utils.CN(tillFieldClass, "w-full data-[size=default]:h-11"), nil)
 					}
 				</div>
-				<fieldset class="space-y-2">
+				// the date is a hidden input behind a picker, there is no field to mark invalid
+				@expenseFieldError("date", errorField, errorMessage)
+				<fieldset class="space-y-2" { fieldAttrs("shares", templ.Attributes{})... }>
 					<legend class="text-sm font-medium">
 						@components.T(locales.LK_ExpensesSplit)
 					</legend>
@@ -373,6 +412,7 @@ templ ExpenseEditor(actor services.Membership, members []dbqueries.ListActiveMem
 							</li>
 						}
 					</ul>
+					@expenseFieldError("shares", errorField, errorMessage)
 				</fieldset>
 				<div class="till-perforation">
 					@button.Button(button.Props{Type: button.TypeSubmit, Size: button.SizeLg, Class: "w-full"}) {
@@ -385,6 +425,15 @@ templ ExpenseEditor(actor services.Membership, members []dbqueries.ListActiveMem
 		@expenseSplitScript.Once() {
 			<script src={ assets.URL("expense-split.js") }></script>
 		}
+	}
+}
+
+// expenseFieldError is the error of a failed submit under the form field it belongs to, nothing for the others
+templ expenseFieldError(name, errorField, message string) {
+	if errorField == name && message != "" {
+		<div id={ "expense-" + name + "-error" }>
+			@formError(message)
+		</div>
 	}
 }
 
@@ -457,20 +506,13 @@ templ ExpensePage(actor services.Membership, e services.Expense, uploadError str
 					action={ expenseURL + "/delete" }
 					method="post"
 					hx-boost="true"
-					hx-confirm={ deleteKeepConfirm(ctx, utils.T(ctx, locales.LK_CommonDelete)+"?", lastRefs(e.Files)) }
+					hx-confirm={ deleteKeepConfirm(ctx, utils.T(ctx, locales.LK_ExpensesDeleteConfirm), lastRefs(e.Files)) }
 					if lastRefs(e.Files) > 0 {
 						data-confirm-keep={ utils.T(ctx, locales.LK_FilesDeleteKeep) }
 					}
 					class="ml-auto"
 				>
-					@button.Button(button.Props{
-						Type:    button.TypeSubmit,
-						Variant: button.VariantOutline,
-						Size:    button.SizeLg,
-						Class:   "text-destructive",
-					}) {
-						@components.T(locales.LK_CommonDelete)
-					}
+					@deleteButton(locales.LK_CommonDelete)
 				</form>
 			}
 		</div>
@@ -522,9 +564,9 @@ templ datePicker(id, name, value string) {
 // categorySelect submits the category, see [optionSelect]
 templ categorySelect(id, selected, class string, attrs templ.Attributes) {
 	{{
-	items := utils.Map(g.ExpenseCategories, func(c string) selectcomp.ItemData {
-		return selectcomp.ItemData{Value: c, Label: CategoryName(ctx, c)}
-	})
+		items := utils.Map(g.ExpenseCategories, func(c string) selectcomp.ItemData {
+			return selectcomp.ItemData{Value: c, Label: CategoryName(ctx, c)}
+		})
 	}}
 	@optionSelect(id, "category", selected, class, attrs, items)
 }

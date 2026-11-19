@@ -40,5 +40,5 @@ func (h *DefaultHandler) SetLanguage(ctx *gin.Context) {
 		ctx.Status(http.StatusNoContent)
 		return
 	}
-	Redirect(ctx, safeNextPath(ctx.PostForm(g.QueryNext)))
+	reload(ctx, safeNextPath(ctx.PostForm(g.QueryNext)))
 }

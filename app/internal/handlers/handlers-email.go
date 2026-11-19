@@ -55,6 +55,10 @@ func (h *DefaultHandler) ResendVerificationEmail(ctx *gin.Context) {
 		InternalError(ctx, err)
 		return
 	}
+	if IsRequestHTMX(ctx) {
+		RenderTempl(ctx, pages.VerifyEmailResent(user.Email))
+		return
+	}
 	notice(ctx, http.StatusOK, locales.LK_VerifyEmailResentTitle,
 		locales.LK_VerifyEmailResentDescription, "/", locales.LK_VerifyEmailContinue, user.Email)
 }

@@ -4,10 +4,13 @@ et:
     save: Salvesta
     cancel: Tühista
     link-invalid: Link on vigane
+    saved: Salvestatud
+    request-failed: Midagi läks valesti. Kontrolli ühendust ja proovi uuesti.
   app:
     title: Toakaaslased
   welcome-back: Tere tulemast koju
-  email: Email
+  email: E-post
+  email-placeholder: nimi@example.com
   username:
     title: Kasutajanimi
   password: 
@@ -48,13 +51,15 @@ et:
     promote: Tee omanikuks
     promote-confirm: "Teha %s omanikuks?\n\nOmanikku ei saa eemaldada ega uuesti liikmeks teha."
     leave: Lahku leibkonnast
-    leave-confirm: Lahku
+    leave-confirm: Lahkuda leibkonnast?
+    leave-submit: Lahku
     invites: Kutsed
     invites-description: Igaüks, kellel on link või kood, saab liituda kuni selle aegumiseni.
     no-invites: Aktiivseid kutseid pole
     create-invite: Loo kutse
     expires: Aegub %s
     revoke: Tühista
+    revoke-confirm: Tühistada see kutse?
     copy-code: Kopeeri kood
     copy-link: Kopeeri link
     copied: Kopeeritud
@@ -62,6 +67,7 @@ et:
     last-owner: Enne lahkumist tee keegi teine omanikuks.
     invite-email-title: Kutsu e-postiga
     invite-email-submit: Saada kutse
+    invite-email-placeholder: kaaslane@example.com
     invite-email-sent: Kutse saadetud aadressile %s
     invite-too-many: Liiga palju kutseid saadetud. Proovi tunni aja pärast uuesti.
     since: "%s, alates %s"
@@ -94,7 +100,10 @@ et:
     check: Märgi ostetuks
     uncheck: Märgi ostmata
     delete-list: Kustuta nimekiri
+    delete-list-confirm: Kustutada see nimekiri?
+    delete-item-confirm: Kustutada %s?
     clear: Eemalda ostetud
+    clear-confirm: Eemaldada ostetud tooted nimekirjast?
     item-back: Tagasi nimekirja
     description: Kirjeldus
     description-placeholder: Mark, suurus või muu, mis aitab
@@ -123,6 +132,11 @@ et:
     you: Sina
     you-owe: Sa võlgned kasutajale %s
     owes-you: "%s võlgneb sulle"
+    you-get: Saad
+    you-pay: Maksad
+    delete-confirm: Kustutada see kulu?
+    reject-confirm: Lükata see makse tagasi?
+    cancel-confirm: Tühistada see makse?
     you-paid-to: Sa maksid kasutajale %s
     paid-you: "%s maksis sulle"
     paid-by-you: Maksid sina, %s
@@ -144,6 +158,10 @@ et:
     split-custom: Sisestatud summade järgi
     add: Lisa kulu
     invalid: "Kontrolli vormi: tekst on 1 kuni %d märki, summa on nullist suurem, keegi jagab seda ja sisestatud osad annavad kokku summa."
+    invalid-title: Pealkiri peab olema 1 kuni %d märki pikk
+    invalid-amount: Sisesta nullist suurem summa, näiteks 12,50
+    invalid-date: Vali kuupäev
+    invalid-shares: Märgi, kes kulu jagavad, ja sisestatud osad peavad kokku andma summa
     paid-by: Maksis %s, %s
     shares: Osad
     share-paid: Makstud
@@ -185,6 +203,9 @@ et:
     cancel: Loobu
     edit: Muuda
     delete: Kustuta märge
+    delete-confirm: Kustutada see märge?
+    search: Otsi märkmetest
+    no-match: Ühtegi sobivat märget pole
     pin: Kinnita
     unpin: Eemalda kinnitus
     edited-by: Muutis %s
@@ -196,7 +217,10 @@ et:
     none: Faile veel pole
     upload: Lae fail üles
     attachments: Manused
-    count: "%d manust"
+    count:
+      one: 1 manus
+      other: "%{count} manust"
+    delete-confirm: Kustutada %s?
     too-large: Fail võib olla kõige rohkem %d MB
     invalid: Vali fail, mis pole tühi ja mille nimi on kuni %d märki
     rename: Faili nimi
@@ -250,6 +274,9 @@ et:
     unread: "%d lugemata"
     length: Kirjuta sõnum või lisa kuni %d faili, sõnum võib olla kuni %d märki
     delete: Kustuta sõnum
+    delete-confirm: Kustutada see sõnum?
+    search: Otsi sõnumitest
+    no-match: Ühtegi sobivat sõnumit pole
     reply: Vasta
     copy: Kopeeri
     replying-to: "Vastad kasutajale %s"
@@ -281,7 +308,9 @@ et:
     title: Sinu pilt
     description: Kaaslased näevad seda vestluses ja inimeste all
     upload: Lae pilt üles
+    choose: Vali pilt
     remove: Eemalda pilt
+    remove-confirm: Eemaldada sinu pilt?
     cancel: Loobu
     invalid: Vali pilt (PNG, JPEG, GIF või WebP)
     zoom: Suurendus
@@ -301,6 +330,7 @@ et:
     expenses: Kulud
     chat: Vestlus
     more: Rohkem
+    more-waiting: Rohkem, makse ootab sinu kinnitust
     settings: Seaded
     households-add: Loo või liitu
   invite-page:

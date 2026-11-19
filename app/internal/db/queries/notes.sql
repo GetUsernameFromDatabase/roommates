@@ -33,6 +33,11 @@ WHERE n.household_id = sqlc.arg(household_id)
     n.visibility = 'household'
     OR n.author_id = sqlc.arg(user_id)
   )
+  AND (
+    sqlc.arg(q)::text = ''
+    OR strpos(lower(n.title), lower(sqlc.arg(q))) > 0
+    OR strpos(lower(n.body_md), lower(sqlc.arg(q))) > 0
+  )
 ORDER BY n.pinned DESC,
   n.edited_at DESC;
 -- name: GetNote :one

@@ -49,6 +49,7 @@ func NewHouseholdMember(service *services.DefaultService) gin.HandlerFunc {
 
 		ctx.Set(g.GinKeyMembership, m)
 		rctx := utils.WithUnreadChat(ctx.Request.Context(), m.UnreadMessages)
+		rctx = utils.WithPendingSettlements(rctx, m.PendingSettlements)
 		ctx.Request = ctx.Request.WithContext(utils.WithHouseholds(rctx, households))
 		ctx.Next()
 	}

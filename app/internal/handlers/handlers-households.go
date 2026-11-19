@@ -84,7 +84,8 @@ func (h *DefaultHandler) renderShopping(ctx *gin.Context, status int, errorMessa
 	if errorMessage != "" {
 		stayInPlace(ctx)
 	}
-	RenderTemplStatus(ctx, status, pages.HouseholdShopping(actor, overview, errorMessage))
+	// a failed create keeps the typed list name
+	RenderTemplStatus(ctx, status, pages.HouseholdShopping(actor, overview, errorMessage, ctx.PostForm("name")))
 }
 
 // PagePeople shows members and, for owners, invites
@@ -110,7 +111,12 @@ func (h *DefaultHandler) renderPeople(ctx *gin.Context, status int, infoMessage,
 		stayInPlace(ctx)
 	}
 	inviteURL := g.GetAppBaseURL() + g.RouteInvite + "?code="
-	RenderTemplStatus(ctx, status, pages.HouseholdPeople(actor, overview, inviteURL, infoMessage, at, errorMessage))
+	// a failed invite email keeps the typed address, a sent one clears the field
+	inviteEmail := ""
+	if at == pages.PeopleAtInviteEmail {
+		inviteEmail = ctx.PostForm("email")
+	}
+	RenderTemplStatus(ctx, status, pages.HouseholdPeople(actor, overview, inviteURL, infoMessage, at, errorMessage, inviteEmail))
 }
 
 // householdAction runs an action of the people page and goes back to it,

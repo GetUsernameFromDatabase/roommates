@@ -242,6 +242,28 @@ func TestChatReply(t *testing.T) {
 	}
 }
 
+func TestSearchChat(t *testing.T) {
+	s := newTestService(t)
+	ctx := context.Background()
+	ownerM, memberM, strangerM := newTestHousehold(t, s)
+	none := pgtype.UUID{}
+
+	for _, body := range []string{"Who took my MILK?", "100% sure", "bread"} {
+		if err := s.PostMessage(ctx, ownerM, body, none, nil, nil); err != nil {
+			t.Fatal(err)
+		}
+	}
+	for q, want := range map[string]int{"milk": 1, "%": 1, "e": 2, "nope": 0, "": 3} {
+		c, err := s.SearchChat(ctx, memberM, none, q)
+		if err != nil || len(c.Messages) != want {
+			t.Fatalf("search %q: %d messages, %v, want %d", q, len(c.Messages), err, want)
+		}
+	}
+	if c, err := s.SearchChat(ctx, strangerM, none, "milk"); err != nil || len(c.Messages) != 0 {
+		t.Fatalf("stranger searches: %+v, %v", c.Messages, err)
+	}
+}
+
 // the triggers tell the household what changed once the transaction commits
 func TestHouseholdEvents(t *testing.T) {
 	s := newTestService(t)

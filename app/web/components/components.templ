@@ -72,12 +72,15 @@ templ HeaderComponent(title string) {
 	</head>
 }
 
-templ ValidationErrors(messages []locales.LKMessage) {
+// ValidationErrors lists the messages, the field points at id with aria-describedby
+templ ValidationErrors(messages []locales.LKMessage, id string) {
 	if len(messages) > 0 {
-		<div class="text-sm font-medium text-destructive " aria-live="polite">
-			for _, msg := range messages {
-				<li class="error">@T(msg.Key, msg.Args...)</li>
-			}
+		<div class="text-sm font-medium text-destructive" aria-live="polite">
+			<ul id={ id } class="list-none">
+				for _, msg := range messages {
+					<li class="error">@T(msg.Key, msg.Args...)</li>
+				}
+			</ul>
 		</div>
 	}
 }

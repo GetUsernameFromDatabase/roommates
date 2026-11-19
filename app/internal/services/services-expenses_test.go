@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"errors"
 	"slices"
 	"strconv"
 	"strings"
@@ -71,6 +72,46 @@ func TestSplitEqual(t *testing.T) {
 		got := splitEqual(tc.total, tc.people, tc.payer)
 		if !slices.Equal(got, tc.want) {
 			t.Errorf("splitEqual(%d) = %v, want %v", tc.total, got, tc.want)
+		}
+	}
+}
+
+// the form shows the error at the field clean names
+func TestExpenseCleanField(t *testing.T) {
+	a, b := testUUID(1), testUUID(2)
+	member := func(id pgtype.UUID) dbqueries.ListActiveMembersRow {
+		return dbqueries.ListActiveMembersRow{UserID: id, Username: "", AvatarKey: nil, Role: "", JoinedAt: pgtype.Timestamptz{}}
+	}
+	members := []dbqueries.ListActiveMembersRow{member(a), member(b)}
+	valid := func() ExpenseInput {
+		return ExpenseInput{Title: "Milk", Amount: "10", Category: g.ExpenseCategories[0], IncurredOn: "2026-11-19",
+			Custom: false, Members: []pgtype.UUID{a, b}, Shares: map[pgtype.UUID]string{}, ListID: pgtype.UUID{}, ItemID: pgtype.UUID{}}
+	}
+	for _, tc := range []struct {
+		name  string
+		edit  func(*ExpenseInput)
+		field string
+	}{
+		{"ok", func(*ExpenseInput) {}, ""},
+		{"title", func(in *ExpenseInput) { in.Title = " " }, FieldTitle},
+		{"amount", func(in *ExpenseInput) { in.Amount = "abc" }, FieldAmount},
+		{"date", func(in *ExpenseInput) { in.IncurredOn = "" }, FieldDate},
+		{"nobody ticked", func(in *ExpenseInput) { in.Members = nil }, FieldShares},
+		{"custom sum", func(in *ExpenseInput) { in.Custom, in.Shares[a] = true, "3" }, FieldShares},
+		{"custom amount", func(in *ExpenseInput) { in.Custom, in.Shares[a] = true, "x" }, FieldShares},
+		{"category", func(in *ExpenseInput) { in.Category = "nope" }, "none"},
+	} {
+		in := valid()
+		tc.edit(&in)
+		_, _, err := in.clean(a, members)
+		var fe FieldError
+		switch {
+		case tc.field == "" && err != nil:
+			t.Errorf("%s: error %v", tc.name, err)
+		case tc.field == "none" && (!errors.Is(err, g.ErrorInvalidInput) || errors.As(err, &fe)):
+			t.Errorf("%s: error %v, want plain invalid input", tc.name, err)
+		case tc.field != "" && tc.field != "none" && (!errors.As(err, &fe) || fe.Field != tc.field || !errors.Is(err, g.ErrorInvalidInput)):
+			t.Errorf("%s: error %v, want field %s", tc.name, err, tc.field)
 		}
 	}
 }

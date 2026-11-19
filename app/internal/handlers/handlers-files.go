@@ -55,7 +55,7 @@ func (h *DefaultHandler) handleUpload(ctx *gin.Context, t services.FileTarget, d
 	c := ctx.Request.Context()
 	switch {
 	case err == nil:
-		Redirect(ctx, done)
+		backTo(ctx, done)
 	case errors.Is(err, g.ErrorFileTooLarge):
 		rerender(http.StatusRequestEntityTooLarge, utils.T(c, locales.LK_FilesTooLarge, services.MaxFileSize>>20))
 	case errors.Is(err, g.ErrorInvalidInput):
@@ -157,7 +157,7 @@ func (h *DefaultHandler) SetShoppingItemDescription(ctx *gin.Context) {
 	err := h.service.SetShoppingItemDescription(ctx, actor, listID, it.ID, ctx.PostForm("description"))
 	switch {
 	case err == nil:
-		Redirect(ctx, shoppingListPath(actor.HouseholdID, listID)+"/items/"+it.ID.String())
+		stay(ctx, shoppingItemPath(actor.HouseholdID, listID, it.ID))
 	case errors.Is(err, g.ErrorInvalidInput):
 		h.renderShoppingItem(ctx, http.StatusUnprocessableEntity, listID, it,
 			utils.T(ctx.Request.Context(), locales.LK_ShoppingDescriptionLength, services.MaxShoppingItemDescriptionLength))
@@ -254,7 +254,7 @@ func (h *DefaultHandler) changeFileRef(load FileTargetLoader,
 		if next := ctx.PostForm(g.QueryNext); next != "" {
 			back = safeNextPath(next)
 		}
-		Redirect(ctx, back)
+		backTo(ctx, back)
 	}
 }
 
@@ -350,7 +350,7 @@ func (h *DefaultHandler) KeepFile(ctx *gin.Context) {
 		pageError(ctx, err)
 		return
 	}
-	Redirect(ctx, safeNextPath(ctx.PostForm(g.QueryNext)))
+	backTo(ctx, safeNextPath(ctx.PostForm(g.QueryNext)))
 }
 
 // DeleteFile goes back to the page in the form, the Referer holds only the origin (Referrer-Policy strict-origin)
@@ -365,5 +365,6 @@ func (h *DefaultHandler) DeleteFile(ctx *gin.Context) {
 		pageError(ctx, err)
 		return
 	}
-	Redirect(ctx, safeNextPath(ctx.PostForm(g.QueryNext)))
+	// from a list it stays there with the filter, from the file's own page it goes back
+	backTo(ctx, safeNextPath(ctx.PostForm(g.QueryNext)))
 }

@@ -65,7 +65,7 @@ func (h *DefaultHandler) PageLogin(ctx *gin.Context) {
 				setLanguageCookie(ctx, lang)
 			}
 		}
-		Redirect(ctx, safeNextPath(model.Next))
+		reload(ctx, safeNextPath(model.Next))
 	}
 }
 
@@ -124,7 +124,7 @@ func (h *DefaultHandler) PageRegister(ctx *gin.Context) {
 			Email:    services.NormalizeEmail(model.Email),
 			Username: model.Username,
 		})
-		Redirect(ctx, safeNextPath(model.Next))
+		reload(ctx, safeNextPath(model.Next))
 	}
 }
 
@@ -132,5 +132,5 @@ func (h *DefaultHandler) PageRegister(ctx *gin.Context) {
 func (h *DefaultHandler) Logout(ctx *gin.Context) {
 	s := sessions.FromGinContext(ctx)
 	s.Logout()
-	Redirect(ctx, g.RouteLogin)
+	reload(ctx, g.RouteLogin)
 }

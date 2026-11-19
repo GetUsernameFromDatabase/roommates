@@ -93,11 +93,12 @@ templ CreateHouseholdForm(m models.Household) {
 				Value:    m.Name,
 				Required: true,
 				Attributes: templ.Attributes{
-					"maxlength":    "64",
-					"aria-invalid": len(nameValidations) > 0,
+					"maxlength":        "64",
+					"aria-invalid":     len(nameValidations) > 0,
+					"aria-describedby": "name-errors",
 				},
 			})
-			@components.ValidationErrors(nameValidations)
+			@components.ValidationErrors(nameValidations, "name-errors")
 		}
 		@button.Button(button.Props{Type: button.TypeSubmit}) {
 			@components.T(locales.LK_HomePageCreateSubmit)

@@ -1,6 +1,7 @@
 // hx-confirm opens the app's dialog, see confirmDialog: the first line is its title, the
 // second its stamp, the rest its text, and data-confirm-label on the form names its button
-// when that is not the default Delete; data-confirm-keep names a second button that sends
+// when that is not the default Delete, data-confirm-neutral makes it a plain button for a question
+// that destroys nothing; data-confirm-keep names a second button that sends
 // keep=1 with the form; without the dialog htmx asks with the browser's own box
 var confirmDialogRequest = null;
 var confirmDialogForm = null;
@@ -14,6 +15,7 @@ document.addEventListener("htmx:confirm", function (e) {
   document.querySelector("[data-confirm-text]").textContent = lines.slice(2).join("\n");
   var ok = document.querySelector("[data-confirm-ok]");
   ok.textContent = e.detail.elt.getAttribute("data-confirm-label") || ok.getAttribute("data-confirm-ok");
+  ok.toggleAttribute("data-neutral", e.detail.elt.hasAttribute("data-confirm-neutral"));
   var keep = document.querySelector("button[data-confirm-keep]");
   keep.textContent = e.detail.elt.getAttribute("data-confirm-keep");
   keep.parentElement.hidden = !keep.textContent;

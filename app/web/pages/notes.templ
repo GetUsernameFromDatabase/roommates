@@ -15,6 +15,7 @@ import g "roommates/internal/config"
 import "roommates/internal/locales"
 import "roommates/internal/utils"
 import "github.com/jackc/pgx/v5/pgtype"
+import "strings"
 
 // NoteForm is the note editor, a zero NoteID is a new note
 //
@@ -28,7 +29,7 @@ type NoteForm struct {
 
 // HouseholdNotes lists the household's notes and the actor's private ones, the pinned
 // ones as slips on a board above the rest
-templ HouseholdNotes(actor services.Membership, notes []dbqueries.ListNotesRow) {
+templ HouseholdNotes(actor services.Membership, notes []dbqueries.ListNotesRow, query string) {
 	@appShell(utils.T(ctx, locales.LK_NavNotes), &HouseholdNav{HouseholdID: actor.HouseholdID, Section: SectionNotes}) {
 		@localTimeScript.Once() {
 			<script src={ assets.URL("local-time.js") }></script>
@@ -41,6 +42,28 @@ templ HouseholdNotes(actor services.Membership, notes []dbqueries.ListNotesRow) 
 				@components.T(locales.LK_NotesNew)
 			}
 		</header>
+		{{ notesURL := householdURL(actor.HouseholdID, "notes") }}
+		// the live region refetches the page's own URL, so it keeps the search of hx-replace-url
+		<form
+			role="search"
+			action={ notesURL }
+			method="get"
+			hx-get={ string(notesURL) }
+			hx-trigger="input delay:300ms"
+			hx-target="#notes"
+			hx-select="#notes"
+			hx-swap="outerHTML"
+			hx-replace-url="true"
+		>
+			@input.Input(input.Props{
+				Name:        "q",
+				Type:        "search",
+				Value:       query,
+				Placeholder: utils.T(ctx, locales.LK_NotesSearch),
+				Class:       "h-11",
+				Attributes:  templ.Attributes{"aria-label": utils.T(ctx, locales.LK_NotesSearch)},
+			})
+		</form>
 		@liveRegion("notes", events.TopicNotes) {
 			// the query has the pinned ones first
 			{{ split := 0 }}
@@ -50,7 +73,13 @@ templ HouseholdNotes(actor services.Membership, notes []dbqueries.ListNotesRow) 
 				}
 			}}
 			<div class="flex flex-col gap-6">
-				if len(notes) == 0 {
+				if len(notes) == 0 && strings.TrimSpace(query) != "" {
+					<section class={ sheetClass }>
+						<p class="text-muted-foreground">
+							@components.T(locales.LK_NotesNoMatch)
+						</p>
+					</section>
+				} else if len(notes) == 0 {
 					<section class={ sheetClass }>
 						<p class="font-heading text-lg font-semibold">
 							@components.T(locales.LK_NotesNone)
@@ -142,9 +171,7 @@ templ NotePage(actor services.Membership, n services.Note, files []services.Atta
 		@localTimeScript.Once() {
 			<script src={ assets.URL("local-time.js") }></script>
 		}
-		<a href={ householdURL(actor.HouseholdID, "notes") } class="inline-flex min-h-11 items-center self-start text-sm text-muted-foreground underline-offset-4 hover:text-foreground hover:underline">
-			@components.T(locales.LK_NotesBack)
-		</a>
+		@backLink(householdURL(actor.HouseholdID, "notes"), utils.T(ctx, locales.LK_NotesBack))
 		// a flatmate's edit, pin or unpin shows up here with the buttons that go with it
 		@liveRegion("note", events.TopicNotes) {
 			<div class="note-board -mt-4 space-y-4">
@@ -190,17 +217,10 @@ templ NotePage(actor services.Membership, n services.Note, files []services.Atta
 							action={ noteURL + "/delete" }
 							method="post"
 							hx-boost="true"
-							hx-confirm={ deleteConfirm(ctx, utils.T(ctx, locales.LK_NotesDelete)+"?", lastRefs(files)) }
+							hx-confirm={ deleteConfirm(ctx, utils.T(ctx, locales.LK_NotesDeleteConfirm), lastRefs(files)) }
 							class="ml-auto"
 						>
-							@button.Button(button.Props{
-								Type:    button.TypeSubmit,
-								Variant: button.VariantGhost,
-								Size:    button.SizeLg,
-								Class:   "text-destructive",
-							}) {
-								@components.T(locales.LK_NotesDelete)
-							}
+							@deleteButton(locales.LK_NotesDelete)
 						</form>
 					}
 				</div>
@@ -226,9 +246,7 @@ templ NoteEditor(actor services.Membership, f NoteForm) {
 			<script src={ assets.URL("lib/turndown-plugin-gfm.js") }></script>
 			<script src={ assets.URL("note-editor.js") }></script>
 		}
-		<a href={ cancel } class="inline-flex min-h-11 items-center self-start text-sm text-muted-foreground underline-offset-4 hover:text-foreground hover:underline">
-			@components.T(locales.LK_NotesCancel)
-		</a>
+		@backLink(cancel, utils.T(ctx, locales.LK_NotesCancel))
 		// the title input is the heading people see
 		<h1 class="sr-only">{ utils.IfElse(f.NoteID.Valid, f.Input.Title, utils.T(ctx, locales.LK_NotesNew)) }</h1>
 		<form id="note-form" action={ action } method="post" hx-boost="true" class="-mt-4 space-y-4">

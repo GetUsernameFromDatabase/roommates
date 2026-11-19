@@ -31,7 +31,8 @@ func (h *DefaultHandler) PageExpenses(ctx *gin.Context) {
 	h.renderExpenses(ctx, http.StatusOK, "")
 }
 
-// renderExpenses shows balances, pending settlements and expenses, errorMessage is the outcome of a settlement
+// renderExpenses shows balances, pending settlements and expenses, errorMessage is the outcome of a settlement,
+// shown in the slip of the posted "to" member with the typed amount kept
 func (h *DefaultHandler) renderExpenses(ctx *gin.Context, status int, errorMessage string) {
 	actor := membershipFromContext(ctx)
 	filter := services.ExpenseFilter{Query: ctx.Query("q"), Show: ctx.Query("show")}
@@ -40,18 +41,24 @@ func (h *DefaultHandler) renderExpenses(ctx *gin.Context, status int, errorMessa
 		InternalError(ctx, err)
 		return
 	}
-	RenderTemplStatus(ctx, status, pages.HouseholdExpenses(actor, o, filter, errorMessage))
+	settleTo, settleAmount := "", ""
+	if errorMessage != "" {
+		settleTo, settleAmount = ctx.PostForm("to"), ctx.PostForm("amount")
+		stayInPlace(ctx)
+	}
+	RenderTemplStatus(ctx, status, pages.HouseholdExpenses(actor, o, filter, errorMessage, settleTo, settleAmount))
 }
 
 // PageNewExpense starts empty, as a copy of ?from=<expenseID>, or for the bought items of ?list=<listID>,
 // only ?item=<itemID> when given, their title and category come from the list
 func (h *DefaultHandler) PageNewExpense(ctx *gin.Context) {
 	actor := membershipFromContext(ctx)
+	// no day: date-picker.js fills in the browser's today, the server's can be another day
 	in := services.ExpenseInput{
 		Title:      "",
 		Amount:     "",
 		Category:   g.ExpenseCategories[0],
-		IncurredOn: time.Now().Format(services.DateLayout),
+		IncurredOn: "",
 		Custom:     false,
 		Members:    nil,
 		Shares:     nil,
@@ -92,11 +99,12 @@ func (h *DefaultHandler) PageNewExpense(ctx *gin.Context) {
 		}
 		in = e.CopyInput(utils.Map(members, func(m dbqueries.ListActiveMembersRow) pgtype.UUID { return m.UserID }))
 	}
-	h.renderExpenseEditor(ctx, http.StatusOK, in, "")
+	h.renderExpenseEditor(ctx, http.StatusOK, in, "", "")
 }
 
-// renderExpenseEditor shows the expense form, an equal split with no one ticked ticks everyone
-func (h *DefaultHandler) renderExpenseEditor(ctx *gin.Context, status int, in services.ExpenseInput, errorMessage string) {
+// renderExpenseEditor shows the expense form, an equal split with no one ticked ticks everyone,
+// errorField is the [services.FieldError] field the errorMessage shows at
+func (h *DefaultHandler) renderExpenseEditor(ctx *gin.Context, status int, in services.ExpenseInput, errorMessage, errorField string) {
 	actor := membershipFromContext(ctx)
 	members, err := h.service.ListMembers(ctx, actor)
 	if err != nil {
@@ -115,16 +123,17 @@ func (h *DefaultHandler) renderExpenseEditor(ctx *gin.Context, status int, in se
 			in.Members = append(in.Members, m.UserID)
 		}
 	}
-	RenderTemplStatus(ctx, status, pages.ExpenseEditor(actor, members, in, errorMessage))
+	RenderTemplStatus(ctx, status, pages.ExpenseEditor(actor, members, in, errorMessage, errorField))
 }
 
 // expenseFromForm reads the ticked "member" values and the typed shares named "share-<userID>"
 func expenseFromForm(ctx *gin.Context) services.ExpenseInput {
+	// without JS the picker sends no day, the server's today stands in
 	in := services.ExpenseInput{
 		Title:      ctx.PostForm("title"),
 		Amount:     ctx.PostForm("amount"),
 		Category:   ctx.PostForm("category"),
-		IncurredOn: ctx.PostForm("incurred_on"),
+		IncurredOn: cmp.Or(strings.TrimSpace(ctx.PostForm("incurred_on")), time.Now().Format(services.DateLayout)),
 		Custom:     ctx.PostForm("split") == "custom",
 		Members:    nil,
 		Shares:     map[pgtype.UUID]string{},
@@ -162,8 +171,17 @@ func (h *DefaultHandler) CreateExpense(ctx *gin.Context) {
 	case err == nil:
 		Redirect(ctx, expensePath(actor.HouseholdID, expenseID))
 	case errors.Is(err, g.ErrorInvalidInput):
+		var fe services.FieldError
+		errors.As(err, &fe)
+		c := ctx.Request.Context()
+		message := map[string]string{
+			services.FieldTitle:  utils.T(c, locales.LK_ExpensesInvalidTitle, services.MaxExpenseTitleLength),
+			services.FieldAmount: utils.T(c, locales.LK_ExpensesInvalidAmount),
+			services.FieldDate:   utils.T(c, locales.LK_ExpensesInvalidDate),
+			services.FieldShares: utils.T(c, locales.LK_ExpensesInvalidShares),
+		}[fe.Field]
 		h.renderExpenseEditor(ctx, http.StatusUnprocessableEntity, in,
-			utils.T(ctx.Request.Context(), locales.LK_ExpensesInvalid, services.MaxExpenseTitleLength))
+			cmp.Or(message, utils.T(c, locales.LK_ExpensesInvalid, services.MaxExpenseTitleLength)), fe.Field)
 	default:
 		InternalError(ctx, err)
 	}

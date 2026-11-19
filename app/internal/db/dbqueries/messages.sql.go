@@ -227,14 +227,19 @@ WHERE m.household_id = $1
         AND b.household_id = $1
     )
   )
+  AND (
+    $3::text = ''
+    OR strpos(lower(m.body), lower($3)) > 0
+  )
 ORDER BY m.created_at DESC,
   m.id DESC
-LIMIT $3
+LIMIT $4
 `
 
 type ListMessagesParams struct {
 	HouseholdID pgtype.UUID `json:"household_id"`
 	Before      pgtype.UUID `json:"before"`
+	Q           string      `json:"q"`
 	MaxCount    int32       `json:"max_count"`
 }
 
@@ -252,7 +257,12 @@ type ListMessagesRow struct {
 
 // the newest messages, older than the before message when it is given
 func (q *Queries) ListMessages(ctx context.Context, arg ListMessagesParams) ([]ListMessagesRow, error) {
-	rows, err := q.db.Query(ctx, listMessages, arg.HouseholdID, arg.Before, arg.MaxCount)
+	rows, err := q.db.Query(ctx, listMessages,
+		arg.HouseholdID,
+		arg.Before,
+		arg.Q,
+		arg.MaxCount,
+	)
 	if err != nil {
 		return nil, err
 	}

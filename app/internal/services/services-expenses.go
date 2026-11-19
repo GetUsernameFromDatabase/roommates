@@ -88,7 +88,23 @@ type expenseShare struct {
 	cents  int64
 }
 
-// clean checks in against the active members, [g.ErrorInvalidInput] if anything is off
+// Expense form fields a [FieldError] names
+const (
+	FieldTitle  = "title"
+	FieldAmount = "amount"
+	FieldDate   = "date"
+	// the split: custom amounts, or nobody ticked
+	FieldShares = "shares"
+)
+
+// FieldError is [g.ErrorInvalidInput] for one form field, errors.Is still matches it
+type FieldError struct{ Field string }
+
+func (e FieldError) Error() string { return g.ErrorInvalidInput.Error() + ": " + e.Field }
+func (e FieldError) Unwrap() error { return g.ErrorInvalidInput }
+
+// clean checks in against the active members, a [FieldError] for the first bad field,
+// plain [g.ErrorInvalidInput] for what the form cannot get wrong (category, a payer who left)
 func (in ExpenseInput) clean(payer pgtype.UUID, members []dbqueries.ListActiveMembersRow) (dbqueries.InsertExpenseParams, []expenseShare, error) {
 	var p dbqueries.InsertExpenseParams
 	title, okTitle := trimToLength(in.Title, 1, MaxExpenseTitleLength)
@@ -97,10 +113,18 @@ func (in ExpenseInput) clean(payer pgtype.UUID, members []dbqueries.ListActiveMe
 	active := func(id pgtype.UUID) bool {
 		return slices.ContainsFunc(members, func(m dbqueries.ListActiveMembersRow) bool { return m.UserID == id })
 	}
+	switch {
+	case !okTitle:
+		return p, nil, FieldError{Field: FieldTitle}
+	case errAmount != nil:
+		return p, nil, FieldError{Field: FieldAmount}
+	case errDate != nil:
+		return p, nil, FieldError{Field: FieldDate}
 	// the payer can have left since the request was let in
-	if !okTitle || errAmount != nil || errDate != nil || !slices.Contains(g.ExpenseCategories, in.Category) || !active(payer) {
+	case !slices.Contains(g.ExpenseCategories, in.Category) || !active(payer):
 		return p, nil, g.ErrorInvalidInput
 	}
+	sharesError := FieldError{Field: FieldShares}
 
 	var shares []expenseShare
 	if in.Custom {
@@ -112,28 +136,32 @@ func (in ExpenseInput) clean(payer pgtype.UUID, members []dbqueries.ListActiveMe
 			}
 			cents, err := ParseCents(text)
 			if err != nil {
-				return p, nil, err
+				return p, nil, sharesError
 			}
 			sum += cents
 			shares = append(shares, expenseShare{userID: m.UserID, cents: cents})
 		}
 		if sum != total {
-			return p, nil, g.ErrorInvalidInput
+			return p, nil, sharesError
 		}
 	} else {
 		var ids []pgtype.UUID
 		for _, id := range in.Members {
 			if !active(id) || slices.Contains(ids, id) {
-				return p, nil, g.ErrorInvalidInput
+				return p, nil, sharesError
 			}
 			ids = append(ids, id)
+		}
+		// splitEqual divides by the number of people
+		if len(ids) == 0 {
+			return p, nil, sharesError
 		}
 		for i, cents := range splitEqual(total, ids, payer) {
 			shares = append(shares, expenseShare{userID: ids[i], cents: cents})
 		}
 	}
 	if len(shares) == 0 {
-		return p, nil, g.ErrorInvalidInput
+		return p, nil, sharesError
 	}
 	p = dbqueries.InsertExpenseParams{
 		HouseholdID: pgtype.UUID{},
@@ -284,15 +312,15 @@ func (s *DefaultService) GetExpense(ctx context.Context, actor Membership, expen
 	return e, err
 }
 
-// CopyInput fills the expense form from e for today, as an equal split
-// when e was split equally, so a new amount can be typed in; order is the
+// CopyInput fills the expense form from e for today (left empty, the browser fills in its own day),
+// as an equal split when e was split equally, so a new amount can be typed in; order is the
 // form's member order (see [DefaultService.ListMembers])
 func (e Expense) CopyInput(order []pgtype.UUID) ExpenseInput {
 	in := ExpenseInput{
 		Title:      e.Expense.Title,
 		Amount:     FormatCentsInput(e.Expense.AmountCents),
 		Category:   e.Expense.Category,
-		IncurredOn: time.Now().Format(DateLayout),
+		IncurredOn: "",
 		Custom:     false,
 		Members:    nil,
 		Shares:     map[pgtype.UUID]string{},

@@ -51,14 +51,15 @@ templ LoginForm(m models.Login) {
 					Name:        "email",
 					Type:        "email",
 					Value:       m.Email,
-					Placeholder: "you@example.com",
+					Placeholder: utils.T(ctx, locales.LK_EmailPlaceholder),
 					Required:    true,
 					Attributes: templ.Attributes{
-						"autocomplete": "email",
-						"aria-invalid": len(emailValidations) > 0,
+						"autocomplete":     "email",
+						"aria-invalid":     len(emailValidations) > 0,
+						"aria-describedby": "email-errors",
 					},
 				})
-				@components.ValidationErrors(emailValidations)
+				@components.ValidationErrors(emailValidations, "email-errors")
 			}
 			<!-- Password -->
 			@field.Field() {
@@ -71,7 +72,6 @@ templ LoginForm(m models.Login) {
 					<a
 						href={ g.RouteForgotPassword }
 						class="text-sm text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
-						tabindex="-1"
 					>
 						@components.T(locales.LK_LoginPageForgotPassword)
 					</a>
@@ -82,11 +82,12 @@ templ LoginForm(m models.Login) {
 					Placeholder: utils.T(ctx, locales.LK_PasswordEnter),
 					Required:    true,
 					Attributes: templ.Attributes{
-						"autocomplete": "current-password",
-						"aria-invalid": len(passwordValidations) > 0,
+						"autocomplete":     "current-password",
+						"aria-invalid":     len(passwordValidations) > 0,
+						"aria-describedby": "password-errors",
 					},
 				})
-				@components.ValidationErrors(passwordValidations)
+				@components.ValidationErrors(passwordValidations, "password-errors")
 			}
 			<!-- Submit -->
 			@button.Button(button.Props{

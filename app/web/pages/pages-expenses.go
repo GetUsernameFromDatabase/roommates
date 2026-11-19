@@ -8,7 +8,6 @@ import (
 	"roommates/internal/services"
 	"roommates/internal/utils"
 	"slices"
-	"time"
 
 	"github.com/a-h/templ"
 	"github.com/jackc/pgx/v5/pgtype"
@@ -24,8 +23,8 @@ func newExpenseURL(householdID, listID, itemID pgtype.UUID) templ.SafeURL {
 }
 
 // formatDay is a date column, it has no time zone
-func formatDay(d pgtype.Date) string {
-	return d.Time.Format(time.DateOnly)
+func formatDay(ctx context.Context, d pgtype.Date) string {
+	return utils.FormatDate(ctx, d.Time)
 }
 
 var categoryKeys = map[string]locales.LK{
@@ -58,9 +57,9 @@ func pairPhrase(ctx context.Context, actor services.Membership, fromID pgtype.UU
 // paidByLine is "Paid by <payer> on <day>", or by you
 func paidByLine(ctx context.Context, actor services.Membership, payerID pgtype.UUID, payerName string, day pgtype.Date) string {
 	if payerID == actor.UserID {
-		return utils.T(ctx, locales.LK_ExpensesPaidByYou, formatDay(day))
+		return utils.T(ctx, locales.LK_ExpensesPaidByYou, formatDay(ctx, day))
 	}
-	return utils.T(ctx, locales.LK_ExpensesPaidBy, payerName, formatDay(day))
+	return utils.T(ctx, locales.LK_ExpensesPaidBy, payerName, formatDay(ctx, day))
 }
 
 // personName is name, or "You" for the actor

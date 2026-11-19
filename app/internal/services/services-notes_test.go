@@ -28,12 +28,22 @@ func TestNotes(t *testing.T) {
 	}
 
 	// the member sees only the shared note, the stranger nothing
-	notes, err := s.ListNotes(ctx, memberM)
+	notes, err := s.ListNotes(ctx, memberM, "")
 	if err != nil {
 		t.Fatal(err)
 	}
 	if len(notes) != 1 || notes[0].ID != shared {
 		t.Fatalf("member lists %+v", notes)
+	}
+	// search finds the title or the body in any case, a private note only for its author
+	if notes, err = s.ListNotes(ctx, ownerM, "PASS"); err != nil || len(notes) != 1 || notes[0].ID != shared {
+		t.Fatalf("search body: %+v, %v", notes, err)
+	}
+	if notes, err = s.ListNotes(ctx, ownerM, "diary"); err != nil || len(notes) != 1 || notes[0].ID != private {
+		t.Fatalf("search title: %+v, %v", notes, err)
+	}
+	if notes, err = s.ListNotes(ctx, memberM, "diary"); err != nil || len(notes) != 0 {
+		t.Fatalf("member searches private note: %+v, %v", notes, err)
 	}
 	_, err = s.GetNote(ctx, memberM, private)
 	wantErr(t, "member reads private note", err, g.ErrorNotFound)
@@ -61,7 +71,7 @@ func TestNotes(t *testing.T) {
 	if err := s.SetNotePinned(ctx, ownerM, private, true); err != nil {
 		t.Fatal(err)
 	}
-	notes, err = s.ListNotes(ctx, ownerM)
+	notes, err = s.ListNotes(ctx, ownerM, "")
 	if err != nil {
 		t.Fatal(err)
 	}

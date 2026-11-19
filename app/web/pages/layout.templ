@@ -11,6 +11,7 @@ import "roommates/internal/locales"
 import "roommates/internal/utils"
 import "github.com/jackc/pgx/v5/pgtype"
 import "strconv"
+import "context"
 
 // sections of a household, the bottom bar on phones and the tab row on wide screens
 const (
@@ -34,7 +35,7 @@ type HouseholdNav struct {
 templ guestShell(title string) {
 	@components.HtmlWrap() {
 		@components.HeaderComponent(title)
-		<body>
+		<body data-request-failed={ utils.T(ctx, locales.LK_CommonRequestFailed) } data-toast-class={ toastClass }>
 			{ children... }
 		</body>
 	}
@@ -47,11 +48,13 @@ templ guestShell(title string) {
 // inside a household the page listens to its events, see [liveRegion]
 templ appShell(title string, nav *HouseholdNav) {
 	@components.HtmlWrap() {
-		@components.HeaderComponent(title)
+		@components.HeaderComponent(pageTitle(ctx, title, nav))
 		// main fills what the nav leaves, the nav is in the flow on desktop,
 		// the chat page is exactly the viewport so the chat can fill it
 		<body
 			class="flex min-h-svh flex-col has-[#chat]:h-dvh lg:flex-row"
+			data-request-failed={ utils.T(ctx, locales.LK_CommonRequestFailed) }
+			data-toast-class={ toastClass }
 			if nav != nil {
 				hx-ext="sse"
 				sse-connect={ string(householdURL(nav.HouseholdID, "events")) }
@@ -61,10 +64,13 @@ templ appShell(title string, nav *HouseholdNav) {
 				@householdTopBar(*nav)
 				@householdNav(*nav)
 			}
-			<main class={ utils.CN(pageMainClass, utils.IfElse(nav != nil, "pb-28 lg:pb-10", "")) }>
+			// tabindex: live-resync.js focuses main after a boosted navigation
+			<main tabindex="-1" class={ utils.CN(pageMainClass, "focus:outline-none", utils.IfElse(nav != nil, "pb-28 lg:pb-10", "")) }>
 				{ children... }
 			</main>
 			@confirmDialog()
+			// copy.js announces "Copied" here, a region present before it is filled is read out reliably
+			<div id="copy-status" role="status" class="sr-only"></div>
 		</body>
 	}
 }
@@ -92,9 +98,10 @@ templ confirmDialog() {
 					@alertdialog.Cancel(alertdialog.CancelProps{ID: "", Class: "h-11", Attributes: nil, Variant: "", Size: ""}) {
 						@components.T(locales.LK_CommonCancel)
 					}
+					// data-neutral (a form with data-confirm-neutral) is a question that destroys nothing
 					@alertdialog.Action(alertdialog.ActionProps{
 						ID:      "",
-						Class:   "h-11",
+						Class:   "h-11 data-neutral:bg-primary data-neutral:text-primary-foreground data-neutral:hover:bg-primary/80 dark:data-neutral:bg-primary dark:data-neutral:hover:bg-primary/80",
 						Variant: button.VariantDestructive,
 						Size:    "",
 						Attributes: utils.MergeAttributes(alertdialog.CloseFor("confirm-dialog"), templ.Attributes{
@@ -212,10 +219,16 @@ const menuPanelClass = "absolute z-30 mt-2 rounded-3xl bg-card p-2 ring-1 ring-f
 templ householdMenu(nav HouseholdNav) {
 	<details data-menu class="group relative">
 		<summary
-			class="flex size-11 cursor-pointer list-none items-center justify-center rounded-full text-muted-foreground outline-none hover:bg-secondary hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50 group-open:bg-secondary group-open:text-foreground [&::-webkit-details-marker]:hidden"
-			aria-label={ utils.T(ctx, locales.LK_NavMore) }
+			class="relative flex size-11 cursor-pointer list-none items-center justify-center rounded-full text-muted-foreground outline-none hover:bg-secondary hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50 group-open:bg-secondary group-open:text-foreground [&::-webkit-details-marker]:hidden"
+			aria-label={ utils.T(ctx, utils.IfElse(utils.GetPendingSettlements(ctx) > 0, locales.LK_NavMoreWaiting, locales.LK_NavMore)) }
 		>
 			@navIcon("menu", "size-6")
+			// payments wait for the viewer to confirm them under Expenses, the label says so
+			if n := utils.GetPendingSettlements(ctx); n > 0 {
+				@badge.Badge(badge.Props{Class: "absolute -top-0.5 -right-0.5 min-w-5 px-1.5", Attributes: templ.Attributes{"aria-hidden": "true"}}) {
+					{ unreadLabel(n) }
+				}
+			}
 		</summary>
 		<ul class={ menuPanelClass + " right-0 w-60 origin-top-right" }>
 			@householdMenuItem(householdURL(nav.HouseholdID, "expenses"), locales.LK_NavExpenses, "expenses", nav.Section == SectionExpenses)
@@ -375,16 +388,32 @@ templ liveRegionWith(id, oob string, topics ...string) {
 	</div>
 }
 
+// householdName is the name of one of the viewer's households, "" when it is not one of them
+func householdName(ctx context.Context, id pgtype.UUID) string {
+	for _, h := range utils.GetHouseholds(ctx) {
+		if h.ID == id {
+			return h.Name
+		}
+	}
+	return ""
+}
+
+// pageTitle is "Section · Household" inside a household, the page's own title elsewhere
+func pageTitle(ctx context.Context, title string, nav *HouseholdNav) string {
+	if nav == nil {
+		return title
+	}
+	name := householdName(ctx, nav.HouseholdID)
+	if name == "" || name == title {
+		return title
+	}
+	return title + " · " + name
+}
+
 // householdSwitcher is the name of the current household in the nav, it opens the others
 // and the page to create or join one
 templ householdSwitcher(current pgtype.UUID, class string) {
-	{{ households := utils.GetHouseholds(ctx) }}
-	{{ name := "" }}
-	for _, h := range households {
-		if h.ID == current {
-			{{ name = h.Name }}
-		}
-	}
+	{{ name := householdName(ctx, current) }}
 	<details data-menu class={ utils.CN("group relative min-w-0", class) }>
 		<summary
 			class="flex min-h-12 cursor-pointer list-none items-center gap-3 rounded-full py-1 pr-3 pl-1.5 outline-none hover:bg-secondary focus-visible:ring-3 focus-visible:ring-ring/50 group-open:bg-secondary [&::-webkit-details-marker]:hidden"
@@ -395,7 +424,7 @@ templ householdSwitcher(current pgtype.UUID, class string) {
 			@navIcon("chevron-down", "size-5 shrink-0 text-muted-foreground transition-transform group-open:rotate-180 motion-reduce:transition-none")
 		</summary>
 		<ul class={ menuPanelClass + " left-0 w-72 max-w-[calc(100vw-1rem)] origin-top-left" }>
-			for _, h := range households {
+			for _, h := range utils.GetHouseholds(ctx) {
 				<li>
 					<a
 						href={ householdURL(h.ID) }
@@ -458,12 +487,15 @@ templ formError(message string) {
 templ toast(message string) {
 	if message != "" {
 		// alert, not status: it arrives with the page, and only an alert is read out when inserted already filled
-		<div role="alert" class="toast fixed inset-x-4 bottom-24 z-30 mx-auto flex w-fit max-w-sm items-center gap-2.5 rounded-3xl bg-foreground py-3 pr-5 pl-4 text-sm font-medium text-background shadow-lg lg:right-6 lg:bottom-6 lg:left-auto lg:mx-0">
+		<div role="alert" class={ toastClass }>
 			@navIcon("check", "size-4 shrink-0")
 			<span class="min-w-0 break-words">{ message }</span>
 		</div>
 	}
 }
+
+// toastClass is [toast], live-resync.js reads it from <body> for its request-failed toast
+const toastClass = "toast fixed right-[max(1rem,env(safe-area-inset-right))] bottom-[calc(6rem+env(safe-area-inset-bottom))] left-[max(1rem,env(safe-area-inset-left))] z-30 mx-auto flex w-fit max-w-sm items-center gap-2.5 rounded-3xl bg-foreground py-3 pr-5 pl-4 text-sm font-medium text-background shadow-lg lg:right-6 lg:bottom-6 lg:left-auto lg:mx-0"
 
 // doorplateHeader is a back link and the name of what the page is about, children sit beside the name
 templ doorplateHeader(back templ.SafeURL, backText, name string) {
@@ -515,6 +547,18 @@ templ nameHeader(back templ.SafeURL, backText string, action templ.SafeURL, name
 			}
 		</form>
 	</header>
+}
+
+// deleteButton is the submit of every page's delete form, the form carries the action and hx-confirm
+templ deleteButton(label locales.LK) {
+	@button.Button(button.Props{
+		Type:    button.TypeSubmit,
+		Variant: button.VariantOutline,
+		Size:    button.SizeLg,
+		Class:   "text-destructive hover:text-destructive",
+	}) {
+		@components.T(label)
+	}
 }
 
 templ backLink(back templ.SafeURL, backText string) {

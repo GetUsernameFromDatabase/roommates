@@ -16,7 +16,7 @@ import "github.com/invopop/ctxi18n/i18n"
 
 // HouseholdShopping is the first section of a household, its shopping lists,
 // errorMessage is the outcome of the last action
-templ HouseholdShopping(actor services.Membership, o services.HouseholdOverview, errorMessage string) {
+templ HouseholdShopping(actor services.Membership, o services.HouseholdOverview, errorMessage string, listName string) {
 	@appShell(o.Household.Name, &HouseholdNav{HouseholdID: actor.HouseholdID, Section: SectionShopping}) {
 		<header>
 			<h1 class="doorplate">
@@ -55,6 +55,7 @@ templ HouseholdShopping(actor services.Membership, o services.HouseholdOverview,
 					ID:          "new-list",
 					Name:        "name",
 					Type:        "text",
+					Value:       listName,
 					Placeholder: utils.T(ctx, locales.LK_ShoppingNewList),
 					Required:    true,
 					Class:       "col-span-2 h-10 bg-card sm:col-span-1 dark:bg-card",
@@ -82,10 +83,10 @@ templ HouseholdShopping(actor services.Membership, o services.HouseholdOverview,
 // inviteBaseURL is the absolute invite link without the code,
 // infoMessage and errorMessage are the outcome of the last action, the info is a toast
 // and the error shows by the action errorAt (a PeopleAt*)
-templ HouseholdPeople(actor services.Membership, o services.HouseholdOverview, inviteBaseURL, infoMessage, errorAt, errorMessage string) {
+templ HouseholdPeople(actor services.Membership, o services.HouseholdOverview, inviteBaseURL, infoMessage, errorAt, errorMessage string, inviteEmail string) {
 	{{ isOwner := actor.Role == g.RoleOwner }}
 	{{ errorFor := func(at string) string { return utils.IfElse(errorAt == at, errorMessage, "") } }}
-	@appShell(o.Household.Name, &HouseholdNav{HouseholdID: actor.HouseholdID, Section: SectionPeople}) {
+	@appShell(utils.T(ctx, locales.LK_NavPeople), &HouseholdNav{HouseholdID: actor.HouseholdID, Section: SectionPeople}) {
 		<header>
 			<h1 class="doorplate">
 				@components.T(locales.LK_NavPeople)
@@ -117,7 +118,7 @@ templ HouseholdPeople(actor services.Membership, o services.HouseholdOverview, i
 									}
 								</div>
 								<div class="text-sm text-muted-foreground">
-									{ utils.T(ctx, locales.LK_HouseholdSince, RoleName(ctx, m.Role), formatDate(m.JoinedAt)) }
+									{ utils.T(ctx, locales.LK_HouseholdSince, RoleName(ctx, m.Role), formatDate(ctx, m.JoinedAt)) }
 								</div>
 							</div>
 							if isOwner && m.Role != g.RoleOwner {
@@ -138,6 +139,7 @@ templ HouseholdPeople(actor services.Membership, o services.HouseholdOverview, i
 										hx-boost="true"
 										hx-confirm={ utils.T(ctx, locales.LK_HouseholdPromoteConfirm, m.Username) }
 										data-confirm-label={ utils.T(ctx, locales.LK_HouseholdPromote) }
+										data-confirm-neutral
 									>
 										@button.Button(button.Props{
 											Type:    button.TypeSubmit,
@@ -194,7 +196,13 @@ templ HouseholdPeople(actor services.Membership, o services.HouseholdOverview, i
 										<div class="flex flex-wrap items-center gap-2">
 											<span class="key-tag mr-auto">{ inv.Code }</span>
 											@copyButton(inv.Code, locales.LK_HouseholdCopyCode)
-											<form action={ householdURL(actor.HouseholdID, "invites", inv.ID.String(), "delete") } method="post" hx-boost="true">
+											<form
+												action={ householdURL(actor.HouseholdID, "invites", inv.ID.String(), "delete") }
+												method="post"
+												hx-boost="true"
+												hx-confirm={ utils.T(ctx, locales.LK_HouseholdRevokeConfirm) }
+												data-confirm-label={ utils.T(ctx, locales.LK_HouseholdRevoke) }
+											>
 												@button.Button(button.Props{
 													Type:    button.TypeSubmit,
 													Variant: button.VariantGhost,
@@ -205,17 +213,17 @@ templ HouseholdPeople(actor services.Membership, o services.HouseholdOverview, i
 											</form>
 										</div>
 										<div class="flex items-center gap-2">
-											<input
-												type="text"
-												readonly
-												value={ inviteBaseURL + inv.Code }
-												aria-label={ utils.T(ctx, locales.LK_HouseholdInvites) }
-												class="min-w-0 flex-1 rounded-lg border bg-background px-2 py-1.5 text-xs text-muted-foreground"
-											/>
+											@input.Input(input.Props{
+												Type:       "text",
+												ReadOnly:   true,
+												Value:      inviteBaseURL + inv.Code,
+												Class:      "min-w-0 flex-1 bg-background text-xs text-muted-foreground",
+												Attributes: templ.Attributes{"aria-label": utils.T(ctx, locales.LK_HouseholdInvites)},
+											})
 											@copyButton(inviteBaseURL+inv.Code, locales.LK_HouseholdCopyLink)
 										</div>
 										<div class="text-xs text-muted-foreground">
-											{ utils.T(ctx, locales.LK_HouseholdExpires, formatDate(inv.ExpiresAt)) }
+											{ utils.T(ctx, locales.LK_HouseholdExpires, formatDate(ctx, inv.ExpiresAt)) }
 										</div>
 									</li>
 								}
@@ -246,7 +254,8 @@ templ HouseholdPeople(actor services.Membership, o services.HouseholdOverview, i
 										ID:          "invite-email",
 										Name:        "email",
 										Type:        "email",
-										Placeholder: "flatmate@example.com",
+										Value:       inviteEmail,
+										Placeholder: utils.T(ctx, locales.LK_HouseholdInviteEmailPlaceholder),
 										Required:    true,
 									})
 									@button.Button(button.Props{Type: button.TypeSubmit, Variant: button.VariantSecondary}) {
@@ -268,8 +277,8 @@ templ HouseholdPeople(actor services.Membership, o services.HouseholdOverview, i
 			action={ householdURL(actor.HouseholdID, "leave") }
 			method="post"
 			hx-boost="true"
-			hx-confirm={ utils.T(ctx, locales.LK_HouseholdLeave) + "?" }
-			data-confirm-label={ utils.T(ctx, locales.LK_HouseholdLeaveConfirm) }
+			hx-confirm={ utils.T(ctx, locales.LK_HouseholdLeaveConfirm) }
+			data-confirm-label={ utils.T(ctx, locales.LK_HouseholdLeaveSubmit) }
 			class="space-y-2"
 		>
 			@formError(errorFor(PeopleAtLeave))
