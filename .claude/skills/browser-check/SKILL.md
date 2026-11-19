@@ -61,11 +61,11 @@ For two-user flows, sign Jaan in on a second context in the same way. Start with
 
 Use `browser_snapshot` for structure and text. Take screenshots only as evidence or for visual checks.
 
-One call covers both viewports and both themes. It reports horizontal scroll and saves screenshots (set `name` to the page):
+One call covers both viewports and both themes. It reports horizontal scroll and saves screenshots (set `name` to the page, `dir` to this session's folder, `YYYY-MM-DD-<phase>-<topic>`, e.g. `2026-11-19-p4-expense-editing-settings`):
 
 ```js
 async (page) => {
-  const name = 'home', out = [];
+  const dir = '2026-11-19-p4-expense-editing-settings', name = 'home', out = [];
   // without this, theme switches are captured mid-transition and dark mode looks broken
   await page.addStyleTag({ content: '*, *::before, *::after { transition: none !important; }' });
   for (const [w, h] of [[390, 844], [1440, 900]])
@@ -73,7 +73,7 @@ async (page) => {
       await page.setViewportSize({ width: w, height: h });
       await page.emulateMedia({ colorScheme });
       const scroll = await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth);
-      await page.screenshot({ path: `.playwright-mcp/${name}-${w}-${colorScheme}.png`, fullPage: true });
+      await page.screenshot({ path: `.playwright-mcp/${dir}/${name}-${w}-${colorScheme}.png`, fullPage: true });
       out.push({ w, colorScheme, scroll });
     }
   await page.setViewportSize({ width: 1440, height: 900 });
@@ -125,6 +125,7 @@ Only list something as verified if it was exercised in this run.
 - Run `browser_close`.
 - Stop `task dev` only if this run started it. Leave the docker services running.
 - Delete screenshots in `.playwright-mcp/` that the report doesn't cite.
+- Add a section for this session's folder to the top of `.playwright-mcp/README.md`: a few lines on what changed, then links to the screenshots (a page × 390/1440 × light/dark table, plus single checks).
 
 ## Limits
 
