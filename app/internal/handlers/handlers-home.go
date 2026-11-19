@@ -74,5 +74,25 @@ func (h *DefaultHandler) renderSettings(ctx *gin.Context, status int, errorMessa
 		InternalError(ctx, err)
 		return
 	}
-	RenderTemplStatus(ctx, status, pages.Settings(h.service.PushPublicKey(), nav, path, user, errorMessage))
+	payment, err := h.service.GetPaymentDetails(ctx, userID)
+	if err != nil {
+		InternalError(ctx, err)
+		return
+	}
+	var member *pages.SettingsMember
+	if nav != nil {
+		actor := membershipFromContext(ctx)
+		household, err := h.service.GetHouseholdSettings(ctx, actor)
+		if err != nil {
+			InternalError(ctx, err)
+			return
+		}
+		show, err := h.service.GetShowPaymentDetails(ctx, actor)
+		if err != nil {
+			InternalError(ctx, err)
+			return
+		}
+		member = &pages.SettingsMember{Actor: actor, Household: household, ShowPayment: show}
+	}
+	RenderTemplStatus(ctx, status, pages.Settings(h.service.PushPublicKey(), nav, path, user, errorMessage, payment, member))
 }

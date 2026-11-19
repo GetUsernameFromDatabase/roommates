@@ -11,6 +11,7 @@ import (
 	"roommates/internal/sessions"
 	"roommates/internal/utils"
 	"roommates/web/pages"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5/pgtype"
@@ -223,4 +224,40 @@ func (h *DefaultHandler) LeaveHousehold(ctx *gin.Context) {
 	}
 	// the errors are mapped as in any other people action
 	h.householdAction(ctx, pages.PeopleAtLeave, func(services.Membership) error { return err })
+}
+
+// UpdateHousehold shows the settings section again, a changed name also refreshes the page
+// as the name is in the household switcher, there the new name in the field is the outcome
+func (h *DefaultHandler) UpdateHousehold(ctx *gin.Context) {
+	actor := membershipFromContext(ctx)
+	path := householdPath(actor.HouseholdID) + "/settings"
+	before, err := h.service.GetHouseholdSettings(ctx, actor)
+	if err != nil {
+		InternalError(ctx, err)
+		return
+	}
+	name := ctx.PostForm("name")
+	err = h.service.UpdateHousehold(ctx, actor, name, ctx.PostForm("currency"))
+	show := func(status int, msg, info string) {
+		// keep what was typed
+		before.Name = name
+		RenderTemplStatus(ctx, status, pages.HouseholdSettingsSection(path, actor, before, msg, info))
+	}
+	var field services.FieldError
+	switch {
+	case err == nil && strings.TrimSpace(name) != before.Name:
+		stay(ctx, path)
+	case err == nil:
+		before.Name = strings.TrimSpace(name)
+		before.Currency = ctx.PostForm("currency")
+		show(http.StatusOK, "", utils.T(ctx.Request.Context(), locales.LK_CommonSaved))
+	case errors.Is(err, g.ErrorForbidden):
+		RenderTemplStatus(ctx, http.StatusForbidden, pages.Error())
+	case errors.As(err, &field) && field.Field == services.FieldName:
+		show(http.StatusUnprocessableEntity, utils.T(ctx.Request.Context(), locales.LK_ValidationErrorsHouseholdNameLength, 1, services.MaxHouseholdNameLength), "")
+	case errors.As(err, &field):
+		show(http.StatusUnprocessableEntity, utils.T(ctx.Request.Context(), locales.LK_HouseholdSettingsCurrencyLocked), "")
+	default:
+		InternalError(ctx, err)
+	}
 }

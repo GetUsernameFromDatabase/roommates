@@ -8,6 +8,7 @@ import "roommates/web/components/input"
 import "roommates/internal/db/dbqueries"
 import "roommates/internal/services"
 import "roommates/internal/events"
+import g "roommates/internal/config"
 import "roommates/internal/locales"
 import "roommates/internal/utils"
 import "github.com/invopop/ctxi18n/i18n"
@@ -41,7 +42,7 @@ templ ShoppingList(actor services.Membership, l services.ShoppingList, errorMess
 			</span>
 		</form>
 		@shoppingListContent(actor, l, errorMessage, itemText, itemQty)
-		if l.List.CreatedBy == actor.UserID {
+		if l.List.CreatedBy == actor.UserID || actor.Role == g.RoleOwner {
 			<form
 				action={ shoppingListURL(actor, l, "delete") }
 				method="post"

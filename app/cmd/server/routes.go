@@ -79,6 +79,7 @@ func initRoutes(r *gin.Engine, h *handlers.DefaultHandler, service *services.Def
 		open.GET(g.RouteVerifyEmail, h.VerifyEmail)
 		open.GET(g.RouteResetPassword, h.PageResetPassword)
 		open.POST(g.RouteResetPassword, mwAuthLimit, h.PageResetPassword)
+		open.GET(g.RouteConfirmEmail, h.ConfirmEmailChange)
 		open.POST(g.RouteAppearance, h.SetAppearance)
 		open.POST(g.RouteLanguage, h.SetLanguage)
 		open.GET(g.RouteManifest, h.Manifest)
@@ -100,6 +101,7 @@ func initRoutes(r *gin.Engine, h *handlers.DefaultHandler, service *services.Def
 		priv.GET(g.RouteSettings, h.PageSettings)
 		priv.POST(g.RouteSettings+g.RouteAvatar, h.SetAvatar)
 		priv.POST(g.RouteSettings+g.RouteAvatarDelete, h.RemoveAvatar)
+		accountRoutes(priv.Group(g.RouteSettings), h, mwAuthLimit, mwEmailLimit)
 		priv.GET(g.RouteUsers+"/:"+g.ParamUserID+"/avatar", h.DownloadAvatar)
 		priv.POST(g.RouteVerifyEmailResend, mwEmailLimit, h.ResendVerificationEmail)
 		priv.POST(g.RoutePushSubscribe, h.SubscribePush)
@@ -117,6 +119,9 @@ func initRoutes(r *gin.Engine, h *handlers.DefaultHandler, service *services.Def
 			household.GET("/settings", h.PageSettings)
 			household.POST("/settings"+g.RouteAvatar, h.SetAvatar)
 			household.POST("/settings"+g.RouteAvatarDelete, h.RemoveAvatar)
+			accountRoutes(household.Group("/settings"), h, mwAuthLimit, mwEmailLimit)
+			household.POST("/settings/payment/show", h.SetShowPaymentDetails)
+			household.POST("/settings/household", h.UpdateHousehold)
 			household.POST("/invites", h.CreateInvite)
 			household.POST("/invites/email", mwEmailLimit, h.SendInviteEmail)
 			household.POST("/invites/:"+g.ParamInviteID+"/delete", h.DeleteInvite)
@@ -137,14 +142,19 @@ func initRoutes(r *gin.Engine, h *handlers.DefaultHandler, service *services.Def
 			list.POST("/items/:"+g.ParamItemID+"/delete", h.DeleteShoppingItem)
 			list.GET("/items/:"+g.ParamItemID, h.PageShoppingItem)
 			list.POST("/items/:"+g.ParamItemID+"/description", h.SetShoppingItemDescription)
+			list.POST("/items/:"+g.ParamItemID+"/text", h.SetShoppingItemText)
 			list.POST("/items/:"+g.ParamItemID+"/files", h.UploadShoppingItemFile)
 			h.FileRefRoutes(list.Group("/items/:"+g.ParamItemID), h.ShoppingItemFileTarget)
 
 			household.GET("/expenses", h.PageExpenses)
 			household.GET("/expenses/new", h.PageNewExpense)
 			household.POST("/expenses", h.CreateExpense)
+			household.GET("/expenses/export.csv", h.ExportExpenses)
+			household.GET("/expenses/balances.csv", h.ExportBalances)
 			expense := household.Group("/expenses/:" + g.ParamExpenseID)
 			expense.GET("", h.PageExpense)
+			expense.GET("/edit", h.PageEditExpense)
+			expense.POST("", h.UpdateExpense)
 			expense.POST("/delete", h.DeleteExpense)
 			expense.POST("/shares/:"+g.ParamUserID+"/paid", h.SetExpenseSharePaid)
 			expense.POST("/files", h.UploadExpenseFile)
@@ -191,6 +201,18 @@ func initRoutes(r *gin.Engine, h *handlers.DefaultHandler, service *services.Def
 //	"/favicon/favicon.ico" is served at "/favicon.ico"
 //	"/favicon/*.png" and "/favicon/favicon.svg" are served at "/icons"
 //	"/pwa/sw.js" is served at "/sw.js", a service worker only controls pages under its path
+//
+// accountRoutes are the account forms of the settings page, at /settings and a household's
+func accountRoutes(settings *gin.RouterGroup, h *handlers.DefaultHandler, mwAuthLimit, mwEmailLimit gin.HandlerFunc) {
+	settings.POST("/username", h.ChangeUsername)
+	// bcrypt
+	settings.POST("/password", mwAuthLimit, h.ChangePassword)
+	// bcrypt and a mail
+	settings.POST("/email", mwAuthLimit, mwEmailLimit, h.ChangeEmail)
+	settings.POST("/sign-out-everywhere", h.SignOutEverywhere)
+	settings.POST("/payment", h.SetPaymentDetails)
+}
+
 func registerAssets(r *gin.Engine) {
 	assetFS := assets.PublicAssetsFS
 	publicFS, err := fs.Sub(assetFS, "public")

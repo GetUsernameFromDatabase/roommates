@@ -11,6 +11,27 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const consumeEmailChangeToken = `-- name: ConsumeEmailChangeToken :one
+DELETE FROM email_tokens
+WHERE token_hash = $1
+  AND kind = 'email_change'
+  AND expires_at > CURRENT_TIMESTAMP
+RETURNING user_id,
+  new_email::text
+`
+
+type ConsumeEmailChangeTokenRow struct {
+	UserID   pgtype.UUID `json:"user_id"`
+	NewEmail string      `json:"new_email"`
+}
+
+func (q *Queries) ConsumeEmailChangeToken(ctx context.Context, tokenHash []byte) (ConsumeEmailChangeTokenRow, error) {
+	row := q.db.QueryRow(ctx, consumeEmailChangeToken, tokenHash)
+	var i ConsumeEmailChangeTokenRow
+	err := row.Scan(&i.UserID, &i.NewEmail)
+	return i, err
+}
+
 const consumeEmailToken = `-- name: ConsumeEmailToken :one
 DELETE FROM email_tokens
 WHERE token_hash = $1
@@ -79,8 +100,8 @@ func (q *Queries) GetEmailToken(ctx context.Context, arg GetEmailTokenParams) (p
 }
 
 const insertEmailToken = `-- name: InsertEmailToken :exec
-INSERT INTO email_tokens (token_hash, user_id, kind, expires_at)
-VALUES ($1, $2, $3, $4)
+INSERT INTO email_tokens (token_hash, user_id, kind, expires_at, new_email)
+VALUES ($1, $2, $3, $4, $5)
 `
 
 type InsertEmailTokenParams struct {
@@ -88,6 +109,7 @@ type InsertEmailTokenParams struct {
 	UserID    pgtype.UUID        `json:"user_id"`
 	Kind      string             `json:"kind"`
 	ExpiresAt pgtype.Timestamptz `json:"expires_at"`
+	NewEmail  *string            `json:"new_email"`
 }
 
 func (q *Queries) InsertEmailToken(ctx context.Context, arg InsertEmailTokenParams) error {
@@ -96,6 +118,7 @@ func (q *Queries) InsertEmailToken(ctx context.Context, arg InsertEmailTokenPara
 		arg.UserID,
 		arg.Kind,
 		arg.ExpiresAt,
+		arg.NewEmail,
 	)
 	return err
 }

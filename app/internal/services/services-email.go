@@ -20,13 +20,15 @@ import (
 
 // email_tokens.kind values, the table CHECKs these
 const (
-	tokenKindVerify = "verify"
-	tokenKindReset  = "reset"
+	tokenKindVerify      = "verify"
+	tokenKindReset       = "reset"
+	tokenKindEmailChange = "email_change"
 )
 
 const (
-	verifyTokenValidFor = 48 * time.Hour
-	resetTokenValidFor  = time.Hour
+	verifyTokenValidFor      = 48 * time.Hour
+	resetTokenValidFor       = time.Hour
+	emailChangeTokenValidFor = 24 * time.Hour
 )
 
 func hashToken(token string) []byte {
@@ -38,14 +40,16 @@ func timestamptz(t time.Time) pgtype.Timestamptz {
 	return pgtype.Timestamptz{Time: t, InfinityModifier: pgtype.Finite, Valid: true}
 }
 
-// newEmailToken stores the hash of a new token and returns the token
-func newEmailToken(ctx context.Context, q *dbqueries.Queries, userID pgtype.UUID, kind string, validFor time.Duration) (string, error) {
+// newEmailToken stores the hash of a new token and returns the token,
+// newEmail is only for [tokenKindEmailChange] (the table CHECKs it)
+func newEmailToken(ctx context.Context, q *dbqueries.Queries, userID pgtype.UUID, kind string, validFor time.Duration, newEmail *string) (string, error) {
 	token := rand.Text()
 	return token, q.InsertEmailToken(ctx, dbqueries.InsertEmailTokenParams{
 		TokenHash: hashToken(token),
 		UserID:    userID,
 		Kind:      kind,
 		ExpiresAt: timestamptz(time.Now().Add(validFor)),
+		NewEmail:  newEmail,
 	})
 }
 
@@ -123,7 +127,7 @@ func (s *DefaultService) SendVerificationEmail(ctx context.Context, userID pgtyp
 	if user.EmailValidated {
 		return nil
 	}
-	token, err := newEmailToken(ctx, s.db, userID, tokenKindVerify, verifyTokenValidFor)
+	token, err := newEmailToken(ctx, s.db, userID, tokenKindVerify, verifyTokenValidFor, nil)
 	if err != nil {
 		return err
 	}
@@ -166,7 +170,7 @@ func (s *DefaultService) RequestPasswordReset(ctx context.Context, email string)
 	if err != nil {
 		return err
 	}
-	token, err := newEmailToken(ctx, s.db, user.ID, tokenKindReset, resetTokenValidFor)
+	token, err := newEmailToken(ctx, s.db, user.ID, tokenKindReset, resetTokenValidFor, nil)
 	if err != nil {
 		return err
 	}

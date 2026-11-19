@@ -62,3 +62,17 @@ WHERE u.id = sqlc.arg(user_id)
         AND theirs.left_at IS NULL
     )
   );
+-- name: GetUserPassword :one
+SELECT password
+FROM users
+WHERE id = $1;
+-- the new email was proven by its link
+-- name: UpdateUserEmail :exec
+UPDATE users
+SET email = $2,
+  email_validated = TRUE
+WHERE id = $1;
+-- name: UpdateUsername :exec
+UPDATE users
+SET username = $2
+WHERE id = $1;

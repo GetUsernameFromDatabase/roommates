@@ -8,6 +8,7 @@ import (
 	"roommates/internal/services"
 	"roommates/internal/utils"
 	"slices"
+	"strings"
 
 	"github.com/a-h/templ"
 	"github.com/jackc/pgx/v5/pgtype"
@@ -38,6 +39,30 @@ var categoryKeys = map[string]locales.LK{
 // CategoryName is the translated expenses.category
 func CategoryName(ctx context.Context, category string) string {
 	return utils.T(ctx, categoryKeys[category])
+}
+
+var methodKeys = map[string]locales.LK{
+	"transfer": locales.LK_ExpensesMethodTransfer,
+	"cash":     locales.LK_ExpensesMethodCash,
+	"card":     locales.LK_ExpensesMethodCard,
+	"other":    locales.LK_ExpensesMethodOther,
+}
+
+// settlementLine is how a settlement was paid and its note, "" for one an edit made
+func settlementLine(ctx context.Context, method *string, note string) string {
+	var parts []string
+	if method != nil {
+		parts = append(parts, utils.T(ctx, methodKeys[*method]))
+	}
+	if note != "" {
+		parts = append(parts, note)
+	}
+	return strings.Join(parts, " · ")
+}
+
+// SettleSlip is a failed "I paid" shown again in the slip of To, with what was typed
+type SettleSlip struct {
+	To, Amount, Method, Note, Error string
 }
 
 // pairPhrase says something "from" did to "to", with "you" for the actor: youFrom takes

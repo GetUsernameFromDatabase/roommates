@@ -364,3 +364,36 @@ func TestShoppingBuyAgain(t *testing.T) {
 		t.Fatalf("the old list still has it %+v", l.Items)
 	}
 }
+
+func TestShoppingItemText(t *testing.T) {
+	s := newTestService(t)
+	ctx := t.Context()
+	ownerM, memberM, strangerM := newTestHousehold(t, s)
+	listID, ids := newBoughtItems(t, s, ownerM, "groceries", "milk")
+
+	wantErr(t, "empty text", s.SetShoppingItemText(ctx, memberM, listID, ids[0], " ", "1"), g.ErrorInvalidInput)
+	wantErr(t, "long qty", s.SetShoppingItemText(ctx, memberM, listID, ids[0], "x", strings.Repeat("x", MaxShoppingItemQtyLength+1)), g.ErrorInvalidInput)
+	wantErr(t, "stranger edits", s.SetShoppingItemText(ctx, strangerM, listID, ids[0], "x", ""), g.ErrorNotFound)
+	if err := s.SetShoppingItemText(ctx, memberM, listID, ids[0], " oat milk ", " 2 l "); err != nil {
+		t.Fatal(err)
+	}
+	it, err := s.GetShoppingItem(ctx, ownerM, listID, ids[0])
+	if err != nil || it.Text != "oat milk" || it.Qty != "2 l" {
+		t.Fatalf("after edit %+v %v", it, err)
+	}
+}
+
+func TestOwnerDeletesLists(t *testing.T) {
+	s := newTestService(t)
+	ctx := t.Context()
+	ownerM, memberM, _ := newTestHousehold(t, s)
+	byMember, _ := newBoughtItems(t, s, memberM, "groceries")
+	byOwner, _ := newBoughtItems(t, s, ownerM, "groceries")
+
+	wantErr(t, "member deletes owner's list", s.DeleteShoppingList(ctx, memberM, byOwner), g.ErrorNotFound)
+	if err := s.DeleteShoppingList(ctx, ownerM, byMember); err != nil {
+		t.Fatal(err)
+	}
+	_, err := s.GetShoppingList(ctx, ownerM, byMember)
+	wantErr(t, "deleted list", err, g.ErrorNotFound)
+}

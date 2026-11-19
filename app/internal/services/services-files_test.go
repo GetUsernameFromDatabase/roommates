@@ -485,7 +485,7 @@ func TestFiles(t *testing.T) {
 	wantErr(t, "thumbnail of a broken image", err, g.ErrorNotFound)
 	_, _, err = s.OpenFile(ctx, strangerM, loose, false)
 	wantErr(t, "stranger opens file", err, g.ErrorNotFound)
-	wantErr(t, "owner deletes member's file", s.DeleteFile(ctx, ownerM, loose), g.ErrorNotFound)
+	wantErr(t, "stranger deletes file", s.DeleteFile(ctx, strangerM, loose), g.ErrorNotFound)
 
 	// a file on a private note is seen only by the note's author
 	private, err := s.CreateNote(ctx, ownerM, NoteInput{Title: "Lease", BodyMD: "", Private: true})
@@ -632,4 +632,33 @@ func TestFiles(t *testing.T) {
 	if err := s.DeleteFile(ctx, memberM, loose); err != nil {
 		t.Fatal(err)
 	}
+}
+
+func TestOwnerDeletesFiles(t *testing.T) {
+	s := newTestService(t)
+	ctx := context.Background()
+	ownerM, memberM, _ := newTestHousehold(t, s)
+	none := FileTarget{NoteID: pgtype.UUID{}, ListID: pgtype.UUID{}, ShoppingItemID: pgtype.UUID{}, ExpenseID: pgtype.UUID{}, MessageID: pgtype.UUID{}}
+	body := []byte("a file")
+	upload := func(actor Membership, target FileTarget) pgtype.UUID {
+		t.Helper()
+		id, err := s.UploadFile(ctx, actor, target, "a.txt", bytes.NewReader(body), int64(len(body)))
+		if err != nil {
+			t.Fatal(err)
+		}
+		return id
+	}
+	byOwner, byMember := upload(ownerM, none), upload(memberM, none)
+	wantErr(t, "member deletes owner's file", s.DeleteFile(ctx, memberM, byOwner), g.ErrorNotFound)
+	if err := s.DeleteFile(ctx, ownerM, byMember); err != nil {
+		t.Fatal(err)
+	}
+
+	// a file only on a member's private note is not the owner's to see or delete
+	private, err := s.CreateNote(ctx, memberM, NoteInput{Title: "Diary", BodyMD: "", Private: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	hidden := upload(memberM, FileTarget{NoteID: private, ListID: pgtype.UUID{}, ShoppingItemID: pgtype.UUID{}, ExpenseID: pgtype.UUID{}, MessageID: pgtype.UUID{}})
+	wantErr(t, "owner deletes file of a private note", s.DeleteFile(ctx, ownerM, hidden), g.ErrorNotFound)
 }

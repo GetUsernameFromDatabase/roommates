@@ -1,0 +1,28 @@
+package pages
+
+import "roommates/web/components"
+import "roommates/web/components/button"
+import "roommates/internal/locales"
+import "roommates/internal/services"
+
+// expenseExports are the CSV downloads of the expenses page, base is its path,
+// the server decides what the actor's file holds
+templ expenseExports(actor services.Membership, base string) {
+	<section aria-labelledby="export-title" class="flex flex-col gap-2">
+		<h2 id="export-title" class="text-sm font-medium text-muted-foreground">
+			@components.T(locales.LK_ExportHeading)
+		</h2>
+		<div class="flex flex-wrap gap-2">
+			// hx-boost off: a boosted link would swap the file into the page
+			@button.Button(button.Props{Href: base + "/export.csv?format=wide", Variant: button.VariantOutline, Class: "h-11", Attributes: templ.Attributes{"hx-boost": "false", "download": ""}}) {
+				@components.T(locales.LK_ExportExpensesWide)
+			}
+			@button.Button(button.Props{Href: base + "/export.csv?format=long", Variant: button.VariantOutline, Class: "h-11", Attributes: templ.Attributes{"hx-boost": "false", "download": ""}}) {
+				@components.T(locales.LK_ExportExpensesLong)
+			}
+			@button.Button(button.Props{Href: base + "/balances.csv", Variant: button.VariantOutline, Class: "h-11", Attributes: templ.Attributes{"hx-boost": "false", "download": ""}}) {
+				@components.T(locales.LK_ExportBalances)
+			}
+		</div>
+	</section>
+}

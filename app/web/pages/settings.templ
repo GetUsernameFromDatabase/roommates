@@ -10,11 +10,20 @@ import "roommates/internal/locales"
 import g "roommates/internal/config"
 import "roommates/internal/db/dbqueries"
 import "roommates/internal/utils"
+import "roommates/internal/services"
+
+// SettingsMember is what the settings show only inside a household
+type SettingsMember struct {
+	Actor       services.Membership
+	Household   services.HouseholdSettings
+	ShowPayment bool
+}
 
 // Settings is the user's picture and what is set per device, its appearance and notifications,
 // inside a household nav is set, path is where saving returns to and where the picture is posted under
 // pushKey is the VAPID public key, without it the notification switch stays hidden
-templ Settings(pushKey string, nav *HouseholdNav, path string, user dbqueries.GetUserRow, errorMessage string) {
+// member is nil outside a household
+templ Settings(pushKey string, nav *HouseholdNav, path string, user dbqueries.GetUserRow, errorMessage string, payment services.PaymentDetails, member *SettingsMember) {
 	@appShell(utils.T(ctx, locales.LK_NavSettings), nav) {
 		if nav != nil {
 			<header>
@@ -26,6 +35,13 @@ templ Settings(pushKey string, nav *HouseholdNav, path string, user dbqueries.Ge
 			@doorplateHeader("/", utils.T(ctx, locales.LK_HouseholdBack), utils.T(ctx, locales.LK_NavSettings))
 		}
 		@avatarForm(path, user, errorMessage)
+		@AccountSection(path, user, "", "", "", "")
+		if member != nil {
+			@PaymentSection(path, payment, &member.ShowPayment, "", "")
+			@HouseholdSettingsSection(path, member.Actor, member.Household, "", "")
+		} else {
+			@PaymentSection(path, payment, nil, "", "")
+		}
 		// one sheet per scope: the picture is seen by housemates, the rest only changes this device
 		<section aria-labelledby="device-title" class={ sheetClass + " flex flex-col gap-5" }>
 			<div>
@@ -61,7 +77,7 @@ templ avatarForm(path string, user dbqueries.GetUserRow, errorMessage string) {
 				</p>
 			</div>
 		</div>
-		<form action={ templ.SafeURL(path + g.RouteAvatar) } method="post" enctype="multipart/form-data" hx-boost="true" class="flex flex-col items-start gap-4">
+		<form action={ templ.SafeURL(path + g.RouteAvatar) } method="post" enctype="multipart/form-data" hx-boost="true" class="relative flex flex-col items-start gap-4">
 			@input.Input(input.Props{
 				ID:       "avatar",
 				Name:     "avatar",

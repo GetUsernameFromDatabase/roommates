@@ -19,6 +19,8 @@ const (
 	RouteForgotPassword    = "/forgot-password"
 	// takes ?token=
 	RouteResetPassword = "/reset-password"
+	// takes ?token=, the link sent to a new address
+	RouteConfirmEmail = "/confirm-email"
 	// POST theme, mode and next
 	RouteAppearance = "/appearance"
 	// POST language and next

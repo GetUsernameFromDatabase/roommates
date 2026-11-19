@@ -23,3 +23,9 @@ SELECT id
 FROM households
 WHERE id = $1 FOR
 UPDATE;
+-- the owners' settings, the caller checks that the currency may change
+-- name: UpdateHousehold :exec
+UPDATE households
+SET name = sqlc.arg(name),
+  currency = sqlc.arg(currency)
+WHERE id = sqlc.arg(id);

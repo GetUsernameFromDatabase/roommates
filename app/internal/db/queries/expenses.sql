@@ -1,3 +1,4 @@
+-- in the household currency, read here so the caller's household lock covers it
 -- name: InsertExpense :one
 INSERT INTO expenses (
     household_id,
@@ -5,10 +6,80 @@ INSERT INTO expenses (
     category,
     title,
     amount_cents,
-    incurred_on
+    incurred_on,
+    currency
   )
-VALUES ($1, $2, $3, $4, $5, $6)
+VALUES (
+    $1,
+    $2,
+    $3,
+    $4,
+    $5,
+    $6,
+    (
+      SELECT currency
+      FROM households
+      WHERE id = $1
+    )
+  )
 RETURNING id;
+-- locks the expense while its payer edits it, with the household currency to compare
+-- name: GetExpenseToEdit :one
+SELECT e.payer_id,
+  e.amount_cents,
+  e.currency,
+  h.currency AS household_currency
+FROM expenses e
+  JOIN households h ON h.id = e.household_id
+WHERE e.id = $1
+  AND e.household_id = $2 FOR
+UPDATE OF e;
+-- locks the shares of an expense being edited, spent_cents is what payments paid of each
+-- name: LockExpenseShares :many
+SELECT s.user_id,
+  s.amount_cents,
+  s.paid_at,
+  (
+    SELECT COALESCE(SUM(ss.cents), 0)
+    FROM settlement_shares ss
+    WHERE ss.expense_id = s.expense_id
+      AND ss.user_id = s.user_id
+  )::bigint AS spent_cents,
+  EXISTS (
+    SELECT 1
+    FROM memberships m
+    WHERE m.household_id = e.household_id
+      AND m.user_id = s.user_id
+      AND m.left_at IS NULL
+  ) AS active
+FROM expense_shares s
+  JOIN expenses e ON e.id = s.expense_id
+WHERE s.expense_id = $1
+  AND e.household_id = $2
+ORDER BY s.user_id FOR
+UPDATE OF s;
+-- name: UpdateExpense :exec
+UPDATE expenses
+SET category = $3,
+  title = $4,
+  amount_cents = $5,
+  incurred_on = $6
+WHERE id = $1
+  AND household_id = $2;
+-- name: UpdateExpenseShare :exec
+UPDATE expense_shares s
+SET amount_cents = sqlc.arg(amount_cents)
+FROM expenses e
+WHERE e.id = s.expense_id
+  AND s.expense_id = sqlc.arg(expense_id)
+  AND s.user_id = sqlc.arg(user_id)
+  AND e.household_id = sqlc.arg(household_id);
+-- name: DeleteExpenseShare :exec
+DELETE FROM expense_shares s USING expenses e
+WHERE e.id = s.expense_id
+  AND s.expense_id = sqlc.arg(expense_id)
+  AND s.user_id = sqlc.arg(user_id)
+  AND e.household_id = sqlc.arg(household_id);
 -- name: InsertExpenseShare :exec
 INSERT INTO expense_shares (expense_id, user_id, amount_cents)
 VALUES ($1, $2, $3);
@@ -27,6 +98,7 @@ SELECT e.id,
   e.category,
   e.title,
   e.amount_cents,
+  e.currency,
   e.incurred_on,
   e.payer_id,
   payer.username AS payer_name,
@@ -77,6 +149,7 @@ SELECT e.id,
   e.category,
   e.title,
   e.amount_cents,
+  e.currency,
   e.incurred_on,
   e.payer_id,
   payer.username AS payer_name
@@ -89,7 +162,15 @@ WHERE e.id = $1
 SELECT s.user_id,
   u.username,
   s.amount_cents,
-  s.paid_at
+  s.paid_at,
+  EXISTS (
+    SELECT 1
+    FROM memberships m
+      JOIN expenses e ON e.household_id = m.household_id
+    WHERE e.id = s.expense_id
+      AND m.user_id = s.user_id
+      AND m.left_at IS NULL
+  ) AS active
 FROM expense_shares s
   JOIN users u ON u.id = s.user_id
 WHERE s.expense_id = $1
@@ -155,7 +236,8 @@ WHERE e.id = s.expense_id
   );
 -- what from_user owes to_user, one row per unpaid share of others' expenses and per
 -- confirmed settlement with money left (a settlement is a debt the other way, so to_user
--- paid it), only rows involving user_id when it is given, oldest first
+-- paid it), only rows involving user_id when it is given, oldest first;
+-- method, note, from_edit and edit_expense_id are the settlement's
 -- name: ListDebtItems :many
 SELECT f.from_user,
   fu.username AS from_name,
@@ -164,14 +246,22 @@ SELECT f.from_user,
   f.expense_id,
   f.title,
   f.on_date,
-  f.amount_cents
+  f.amount_cents,
+  f.method,
+  f.note,
+  f.from_edit,
+  f.edit_expense_id
 FROM (
     SELECT s.user_id AS from_user,
       e.payer_id AS to_user,
       e.id AS expense_id,
       e.title,
       e.incurred_on AS on_date,
-      s.amount_cents
+      s.amount_cents,
+      NULL::text AS method,
+      ''::text AS note,
+      FALSE AS from_edit,
+      NULL::uuid AS edit_expense_id
     FROM expense_shares s
       JOIN expenses e ON e.id = s.expense_id
     WHERE e.household_id = sqlc.arg(household_id)
@@ -184,11 +274,19 @@ FROM (
       NULL::uuid,
       ''::text,
       st.confirmed_at::date,
-      st.left_cents
+      st.left_cents,
+      st.method,
+      st.note,
+      st.from_edit,
+      st.expense_id
     FROM (
         SELECT c.to_user,
           c.from_user,
           c.confirmed_at,
+          c.method,
+          c.note,
+          c.from_edit,
+          c.expense_id,
           c.amount_cents - (
             SELECT COALESCE(SUM(ss.cents), 0)::bigint
             FROM settlement_shares ss
@@ -206,9 +304,51 @@ WHERE sqlc.narg(user_id)::uuid IS NULL
   OR sqlc.narg(user_id)::uuid IN (f.from_user, f.to_user)
 ORDER BY f.on_date;
 -- settlements
+-- in the household currency, read here so the caller's household lock covers it
 -- name: InsertSettlement :exec
-INSERT INTO settlements (household_id, from_user, to_user, amount_cents)
-VALUES ($1, $2, $3, $4);
+INSERT INTO settlements (
+    household_id,
+    from_user,
+    to_user,
+    amount_cents,
+    method,
+    note,
+    currency
+  )
+VALUES (
+    $1,
+    $2,
+    $3,
+    $4,
+    $5,
+    $6,
+    (
+      SELECT currency
+      FROM households
+      WHERE id = $1
+    )
+  );
+-- a confirmed payment for what an expense edit takes off a share the payer had marked
+-- paid outside the app, it is money from_user gave and the edit cannot take back
+-- name: InsertEditSettlement :exec
+INSERT INTO settlements (
+    household_id,
+    from_user,
+    to_user,
+    amount_cents,
+    currency,
+    from_edit,
+    expense_id,
+    confirmed_at
+  )
+VALUES ($1, $2, $3, $4, $5, TRUE, $6, CURRENT_TIMESTAMP);
+-- name: HouseholdHasPendingSettlements :one
+SELECT EXISTS (
+    SELECT 1
+    FROM settlements
+    WHERE household_id = $1
+      AND confirmed_at IS NULL
+  );
 -- unconfirmed settlements the user sent or has to confirm
 -- name: ListPendingSettlements :many
 SELECT s.id,
@@ -217,6 +357,9 @@ SELECT s.id,
   s.to_user,
   tu.username AS to_name,
   s.amount_cents,
+  s.currency,
+  s.method,
+  s.note,
   s.created_at
 FROM settlements s
   JOIN users fu ON fu.id = s.from_user

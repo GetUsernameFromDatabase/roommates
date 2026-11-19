@@ -7,6 +7,7 @@ import (
 	"net/url"
 	g "roommates/internal/config"
 	"roommates/internal/db/dbqueries"
+	"slices"
 	"strings"
 	"time"
 
@@ -304,6 +305,77 @@ func (s *DefaultService) PromoteMember(ctx context.Context, actor Membership, ta
 			HouseholdID: actor.HouseholdID,
 			UserID:      targetID,
 			Role:        g.RoleOwner,
+		})
+	})
+}
+
+// -----------------------------------------------------------------------------
+
+const MaxHouseholdNameLength = 64
+
+// FieldName and FieldCurrency are what a [FieldError] of [DefaultService.UpdateHousehold] names
+const (
+	FieldName     = "name"
+	FieldCurrency = "currency"
+)
+
+// HouseholdCurrencies are the currencies a household can use
+var HouseholdCurrencies = []string{"EUR", "USD", "GBP", "SEK", "NOK", "DKK", "PLN", "CHF"}
+
+type HouseholdSettings struct {
+	Name     string
+	Currency string
+	// Settled is true while the currency can change, nobody owes anybody
+	Settled bool
+}
+
+func (s *DefaultService) GetHouseholdSettings(ctx context.Context, actor Membership) (HouseholdSettings, error) {
+	h, err := s.db.GetHousehold(ctx, actor.HouseholdID)
+	if err != nil {
+		return HouseholdSettings{}, noRowsAs(err, g.ErrorNotFound)
+	}
+	settled, err := householdSettled(ctx, s.db, actor.HouseholdID)
+	return HouseholdSettings{Name: h.Name, Currency: h.Currency, Settled: settled}, err
+}
+
+// UpdateHousehold lets an owner rename the household and change its currency,
+// returns [g.ErrorForbidden] for others, a [FieldError] for a bad name or currency
+// and for a currency change while a debt is open, amounts would change their meaning
+func (s *DefaultService) UpdateHousehold(ctx context.Context, actor Membership, name, currency string) error {
+	if actor.Role != g.RoleOwner {
+		return g.ErrorForbidden
+	}
+	name, ok := trimToLength(name, 1, MaxHouseholdNameLength)
+	if !ok {
+		return FieldError{Field: FieldName}
+	}
+	if !slices.Contains(HouseholdCurrencies, currency) {
+		return FieldError{Field: FieldCurrency}
+	}
+	return s.inTx(ctx, func(q *dbqueries.Queries) error {
+		if err := q.LockHousehold(ctx, actor.HouseholdID); err != nil {
+			return err
+		}
+		h, err := q.GetHousehold(ctx, actor.HouseholdID)
+		if err != nil {
+			return noRowsAs(err, g.ErrorNotFound)
+		}
+		if h.Currency != currency {
+			settled, err := householdSettled(ctx, q, actor.HouseholdID)
+			if err != nil {
+				return err
+			}
+			if !settled {
+				return FieldError{Field: FieldCurrency}
+			}
+			if err := closeEvenDebts(ctx, q, actor.HouseholdID); err != nil {
+				return err
+			}
+		}
+		return q.UpdateHousehold(ctx, dbqueries.UpdateHouseholdParams{
+			Name:     name,
+			Currency: currency,
+			ID:       actor.HouseholdID,
 		})
 	})
 }

@@ -212,7 +212,8 @@ templ NotePage(actor services.Membership, n services.Note, files []services.Atta
 							}
 						}
 					</form>
-					if n.AuthorID == actor.UserID {
+					// an owner deletes a shared note too, never a private one
+					if n.AuthorID == actor.UserID || (actor.Role == g.RoleOwner && n.Visibility == g.NoteVisibilityHousehold) {
 						<form
 							action={ noteURL + "/delete" }
 							method="post"

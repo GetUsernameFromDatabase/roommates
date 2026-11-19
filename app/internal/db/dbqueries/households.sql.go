@@ -99,3 +99,22 @@ func (q *Queries) LockHousehold(ctx context.Context, id pgtype.UUID) error {
 	_, err := q.db.Exec(ctx, lockHousehold, id)
 	return err
 }
+
+const updateHousehold = `-- name: UpdateHousehold :exec
+UPDATE households
+SET name = $1,
+  currency = $2
+WHERE id = $3
+`
+
+type UpdateHouseholdParams struct {
+	Name     string      `json:"name"`
+	Currency string      `json:"currency"`
+	ID       pgtype.UUID `json:"id"`
+}
+
+// the owners' settings, the caller checks that the currency may change
+func (q *Queries) UpdateHousehold(ctx context.Context, arg UpdateHouseholdParams) error {
+	_, err := q.db.Exec(ctx, updateHousehold, arg.Name, arg.Currency, arg.ID)
+	return err
+}

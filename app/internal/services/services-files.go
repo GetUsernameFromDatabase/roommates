@@ -398,13 +398,14 @@ func (s *DefaultService) RenameFile(ctx context.Context, actor Membership, fileI
 	}))
 }
 
-// DeleteFile returns [g.ErrorNotFound] unless the actor uploaded the file,
+// DeleteFile returns [g.ErrorNotFound] unless the actor uploaded the file or is an owner who can see it,
 // the object is removed later by [DefaultService.PurgeFiles]
 func (s *DefaultService) DeleteFile(ctx context.Context, actor Membership, fileID pgtype.UUID) error {
 	return rowsAffected(s.db.DeleteFile(ctx, dbqueries.DeleteFileParams{
 		ID:          fileID,
 		HouseholdID: actor.HouseholdID,
 		UploaderID:  actor.UserID,
+		IsOwner:     actor.Role == g.RoleOwner,
 	}))
 }
 

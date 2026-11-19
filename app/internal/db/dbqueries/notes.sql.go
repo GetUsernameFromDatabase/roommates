@@ -15,18 +15,30 @@ const deleteNote = `-- name: DeleteNote :execrows
 DELETE FROM notes
 WHERE id = $1
   AND household_id = $2
-  AND author_id = $3
+  AND (
+    author_id = $3
+    OR (
+      $4::bool
+      AND visibility = 'household'
+    )
+  )
 `
 
 type DeleteNoteParams struct {
 	ID          pgtype.UUID `json:"id"`
 	HouseholdID pgtype.UUID `json:"household_id"`
 	AuthorID    pgtype.UUID `json:"author_id"`
+	IsOwner     bool        `json:"is_owner"`
 }
 
-// only the author deletes a note
+// the author deletes a note, an owner also a household one, never a private one
 func (q *Queries) DeleteNote(ctx context.Context, arg DeleteNoteParams) (int64, error) {
-	result, err := q.db.Exec(ctx, deleteNote, arg.ID, arg.HouseholdID, arg.AuthorID)
+	result, err := q.db.Exec(ctx, deleteNote,
+		arg.ID,
+		arg.HouseholdID,
+		arg.AuthorID,
+		arg.IsOwner,
+	)
 	if err != nil {
 		return 0, err
 	}

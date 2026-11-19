@@ -77,6 +77,9 @@ et:
       other: Siin elab %{count} inimest
     verify-to-invite: Kutsete loomiseks kinnita oma e-posti aadress.
     balance-not-zero: Selle inimese võlad tuleb enne arveldada.
+    settings-title: Leibkond
+    settings-currency: Valuuta
+    settings-currency-locked: Kõik võlad peavad enne olema arveldatud
   shopping:
     back: Kõik nimekirjad
     lists: Ostunimekirjad
@@ -175,6 +178,20 @@ et:
     category-rent: Üür
     category-household: Majapidamine
     category-other: Muu
+    edit: Muuda
+    edit-title: Muuda kulu
+    save: Salvesta
+    amount-locked-currency: "Summat ja jaotust ei saa muuta: kulu on teises valuutas kui leibkond praegu"
+    amount-locked-left: "Summat ja jaotust ei saa muuta: keegi, kellega see jagati, on lahkunud"
+    from-edit: muutmisest
+    method: Kuidas maksid?
+    method-transfer: Pangaülekanne
+    method-cash: Sularaha
+    method-card: Kaart või äpp
+    method-other: Muu
+    note: Märkus (valikuline)
+    invalid-method: Vali, kuidas maksid
+    invalid-note: Märkus võib olla kuni %d tähemärki
   notes:
     none: Märkmeid veel pole
     none-hint: Jäta siia kõigile wifi parool, prügiveo päevad või maja reeglid.
@@ -368,6 +385,69 @@ et:
       %s
 
       Või sisesta kood %s. Kutse kehtib 7 päeva.
+    email-change-subject: Kinnita oma uus e-post
+    email-change-body: |-
+      Tere, %s!
+
+      Et see aadress oleks sinu Toakaaslaste e-post, ava see link:
+      %s
+
+      Link kehtib 24 tundi. Kui see polnud sina, jäta kiri tähelepanuta.
+    email-changed-subject: Sinu e-post muudeti
+    email-changed-body: |-
+      Tere, %s!
+
+      Sinu Toakaaslaste konto e-post on nüüd %s. Kui see polnud sina, võta meiega kohe ühendust.
+  account:
+    title: Konto
+    email-description: Praegu %s. Saadame uuele aadressile kinnituslingi.
+    new-email: Uus e-post
+    email-submit: Saada kinnituslink
+    email-sent: Saatsime kinnituslingi aadressile %s. E-post muutub, kui avad lingi.
+    email-same: See on juba sinu e-post
+    current-password: Praegune parool
+    new-password: Uus parool
+    password-submit: Muuda parooli
+    password-changed: Parool muudetud. Teised seadmed logiti välja.
+    wrong-password: Vale parool
+    sign-out-everywhere: Logi kõikjal välja
+    sign-out-everywhere-description: Logib sind välja kõigis seadmetes, ka selles.
+    sign-out-everywhere-confirm: Kas logida välja kõigis seadmetes, ka selles?
+  confirm-email:
+    done-title: E-post muudetud
+    done-description: Sinu uus e-posti aadress on kinnitatud.
+    invalid-description: Link on vigane, aegunud või juba kasutatud. Muuda e-posti seadetes uuesti.
+    taken-title: E-post jäi muutmata
+    taken-description: Seda aadressi kasutab nüüd teine konto.
+  payment:
+    title: Kuhu mulle maksta
+    description: Kaaslased näevad neid ainult leibkondades, kus sa need sisse lülitad.
+    name: Konto omanik
+    iban: IBAN
+    name-invalid: Sisesta konto omaniku nimi
+    iban-invalid: See IBAN ei ole korrektne
+    show: Näita minu makseandmeid selles leibkonnas
+    show-hint: Täida esmalt oma makseandmed konto seadetes.
+    copy-iban: Kopeeri IBAN
+  export:
+    heading: Laadi alla
+    expenses-wide: Kulud (CSV, rida kulu kohta)
+    expenses-long: Kulud (CSV, rida osa kohta)
+    balances: Saldod (CSV)
+    date: Kuupäev
+    title: Pealkiri
+    category: Kategooria
+    payer: Maksis
+    total: Kokku
+    currency: Valuuta
+    member: Liige
+    share: Osa
+    paid: Makstud
+    "yes": jah
+    "no": ei
+    balance: Saldo (+ saab tagasi)
+    counterpart: Isik
+    owed-to-you: Summa (+ võlgneb sulle)
   verify-email:
     banner: Kutsete loomiseks kinnita oma e-posti aadress. Saatsime sulle lingi.
     resend: Saada link uuesti

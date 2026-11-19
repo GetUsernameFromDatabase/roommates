@@ -235,12 +235,18 @@ SET name = $1
 WHERE id = $2
   AND household_id = $3
   AND uploader_id = $4;
--- only the uploader deletes a file
+-- the uploader deletes a file, an owner any the owner can see
 -- name: DeleteFile :execrows
 DELETE FROM files
-WHERE id = $1
-  AND household_id = $2
-  AND uploader_id = $3;
+WHERE id = sqlc.arg(id)
+  AND household_id = sqlc.arg(household_id)
+  AND (
+    uploader_id = sqlc.arg(uploader_id)
+    OR (
+      sqlc.arg(is_owner)::bool
+      AND file_visible(id, sqlc.arg(uploader_id))
+    )
+  );
 -- name: ListFilePurges :many
 SELECT object_key
 FROM file_purges

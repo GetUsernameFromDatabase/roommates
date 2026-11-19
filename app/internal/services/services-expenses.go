@@ -103,25 +103,39 @@ type FieldError struct{ Field string }
 func (e FieldError) Error() string { return g.ErrorInvalidInput.Error() + ": " + e.Field }
 func (e FieldError) Unwrap() error { return g.ErrorInvalidInput }
 
+// cleanDetails checks what an edit can always change: title, date and category,
+// errors as [ExpenseInput.clean]
+func (in ExpenseInput) cleanDetails() (string, pgtype.Date, error) {
+	title, okTitle := trimToLength(in.Title, 1, MaxExpenseTitleLength)
+	date, errDate := time.Parse(DateLayout, strings.TrimSpace(in.IncurredOn))
+	switch {
+	case !okTitle:
+		return "", pgtype.Date{}, FieldError{Field: FieldTitle}
+	case errDate != nil:
+		return "", pgtype.Date{}, FieldError{Field: FieldDate}
+	case !slices.Contains(g.ExpenseCategories, in.Category):
+		return "", pgtype.Date{}, g.ErrorInvalidInput
+	}
+	return title, pgtype.Date{Time: date, InfinityModifier: pgtype.Finite, Valid: true}, nil
+}
+
 // clean checks in against the active members, a [FieldError] for the first bad field,
 // plain [g.ErrorInvalidInput] for what the form cannot get wrong (category, a payer who left)
 func (in ExpenseInput) clean(payer pgtype.UUID, members []dbqueries.ListActiveMembersRow) (dbqueries.InsertExpenseParams, []expenseShare, error) {
 	var p dbqueries.InsertExpenseParams
-	title, okTitle := trimToLength(in.Title, 1, MaxExpenseTitleLength)
+	title, date, err := in.cleanDetails()
+	if err != nil {
+		return p, nil, err
+	}
 	total, errAmount := ParseCents(in.Amount)
-	date, errDate := time.Parse(DateLayout, strings.TrimSpace(in.IncurredOn))
 	active := func(id pgtype.UUID) bool {
 		return slices.ContainsFunc(members, func(m dbqueries.ListActiveMembersRow) bool { return m.UserID == id })
 	}
 	switch {
-	case !okTitle:
-		return p, nil, FieldError{Field: FieldTitle}
 	case errAmount != nil:
 		return p, nil, FieldError{Field: FieldAmount}
-	case errDate != nil:
-		return p, nil, FieldError{Field: FieldDate}
 	// the payer can have left since the request was let in
-	case !slices.Contains(g.ExpenseCategories, in.Category) || !active(payer):
+	case !active(payer):
 		return p, nil, g.ErrorInvalidInput
 	}
 	sharesError := FieldError{Field: FieldShares}
@@ -169,7 +183,7 @@ func (in ExpenseInput) clean(payer pgtype.UUID, members []dbqueries.ListActiveMe
 		Category:    in.Category,
 		Title:       title,
 		AmountCents: total,
-		IncurredOn:  pgtype.Date{Time: date, InfinityModifier: pgtype.Finite, Valid: true},
+		IncurredOn:  date,
 	}
 	return p, shares, nil
 }
@@ -524,6 +538,38 @@ func closePaidDebt(ctx context.Context, q *dbqueries.Queries, householdID, from,
 	return nil
 }
 
+// closeEvenDebts marks paid the shares left open between active members of a settled household,
+// a pair can net to zero with open shares or credit, and those would count in the next currency;
+// call it under the household lock after [householdSettled]
+//
+// shortcut: credit both ways with no share to spend it on stays open, it nets to zero until one
+// side marks a share paid in the new currency; close it with a settlement when that is reported
+func closeEvenDebts(ctx context.Context, q *dbqueries.Queries, householdID pgtype.UUID) error {
+	rows, err := q.ListDebtItems(ctx, dbqueries.ListDebtItemsParams{HouseholdID: householdID, UserID: pgtype.UUID{}})
+	if err != nil {
+		return err
+	}
+	members, err := q.ListActiveMembers(ctx, householdID)
+	if err != nil {
+		return err
+	}
+	active := func(id pgtype.UUID) bool {
+		return slices.ContainsFunc(members, func(m dbqueries.ListActiveMembersRow) bool { return m.UserID == id })
+	}
+	done := map[[2]pgtype.UUID]bool{}
+	for _, r := range rows {
+		// a former member's shares cannot be marked, they net to zero for good
+		if !active(r.FromUser) || !active(r.ToUser) || done[[2]pgtype.UUID{r.ToUser, r.FromUser}] {
+			continue
+		}
+		done[[2]pgtype.UUID{r.FromUser, r.ToUser}] = true
+		if err := closePaidDebt(ctx, q, householdID, r.FromUser, r.ToUser); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 // -----------------------------------------------------------------------------
 
 // Debt is From owing To, after the debts both ways are netted, Items add up to Cents
@@ -630,27 +676,71 @@ func checkSettled(ctx context.Context, q *dbqueries.Queries, householdID, userID
 	return nil
 }
 
+// householdSettled says whether nobody in the household owes anybody anything and no
+// settlement waits to be confirmed, the household currency can change only then;
+// call it under the household lock, which expenses and settlements are made under
+func householdSettled(ctx context.Context, q *dbqueries.Queries, householdID pgtype.UUID) (bool, error) {
+	pending, err := q.HouseholdHasPendingSettlements(ctx, householdID)
+	if err != nil || pending {
+		return false, err
+	}
+	rows, err := q.ListDebtItems(ctx, dbqueries.ListDebtItemsParams{HouseholdID: householdID, UserID: pgtype.UUID{}})
+	if err != nil {
+		return false, err
+	}
+	return len(netDebts(rows)) == 0, nil
+}
+
 // -----------------------------------------------------------------------------
 
-// CreateSettlement records that the actor paid amount to toUserID, it counts once they confirm,
-// [g.ErrorInvalidInput] for a bad amount or a receiver who is not another active member
-func (s *DefaultService) CreateSettlement(ctx context.Context, actor Membership, toUserID pgtype.UUID, amount string) error {
+// MaxSettlementNoteLength is how long the note on an "I paid" can be
+const MaxSettlementNoteLength = 140
+
+// SettlementMethods are how a settlement can be paid, settlements.method allows the same
+var SettlementMethods = []string{"transfer", "cash", "card", "other"}
+
+// "I paid" fields a [FieldError] names
+const (
+	FieldMethod = "method"
+	FieldNote   = "note"
+)
+
+// CreateSettlement records that the actor paid amount to toUserID by method, it counts once
+// they confirm, [g.ErrorInvalidInput] for a bad amount or a receiver who is not another active
+// member, a [FieldError] for a method not in [SettlementMethods] or a note that is too long
+func (s *DefaultService) CreateSettlement(ctx context.Context, actor Membership, toUserID pgtype.UUID, amount, method, note string) error {
 	cents, err := ParseCents(amount)
 	if err != nil || toUserID == actor.UserID {
 		return g.ErrorInvalidInput
 	}
-	if _, err := s.db.GetActiveMembership(ctx, dbqueries.GetActiveMembershipParams{
-		HouseholdID: actor.HouseholdID,
-		UserID:      toUserID,
-	}); err != nil {
-		return noRowsAs(err, g.ErrorInvalidInput)
+	if !slices.Contains(SettlementMethods, method) {
+		return FieldError{Field: FieldMethod}
 	}
-	if err := s.db.InsertSettlement(ctx, dbqueries.InsertSettlementParams{
-		HouseholdID: actor.HouseholdID,
-		FromUser:    actor.UserID,
-		ToUser:      toUserID,
-		AmountCents: cents,
-	}); err != nil {
+	note, ok := trimToLength(note, 0, MaxSettlementNoteLength)
+	if !ok {
+		return FieldError{Field: FieldNote}
+	}
+	err = s.inTx(ctx, func(q *dbqueries.Queries) error {
+		// a currency change waits for the settlement or the settlement sees the new currency
+		if err := q.LockHousehold(ctx, actor.HouseholdID); err != nil {
+			return err
+		}
+		if _, err := q.GetActiveMembership(ctx, dbqueries.GetActiveMembershipParams{
+			HouseholdID: actor.HouseholdID,
+			UserID:      toUserID,
+		}); err != nil {
+			return noRowsAs(err, g.ErrorInvalidInput)
+		}
+		return q.InsertSettlement(ctx, dbqueries.InsertSettlementParams{
+			HouseholdID: actor.HouseholdID,
+			FromUser:    actor.UserID,
+			ToUser:      toUserID,
+			AmountCents: cents,
+			Method:      &method,
+			Note:        note,
+		})
+	})
+	if err != nil {
 		return err
 	}
 	s.notifyAsync(ctx, actor, []pgtype.UUID{toUserID}, func(ctx context.Context, _ pgtype.UUID, from, household string) push.Message {

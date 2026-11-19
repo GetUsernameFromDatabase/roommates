@@ -1,0 +1,178 @@
+package pages
+
+import "roommates/web/components"
+import "roommates/web/components/button"
+import "roommates/web/components/field"
+import "roommates/web/components/input"
+import "roommates/internal/locales"
+import "roommates/internal/db/dbqueries"
+import "roommates/internal/utils"
+
+// the forms of [AccountSection], also the last part of their action under the settings path
+const (
+	AccountAtUsername          = "username"
+	AccountAtEmail             = "email"
+	AccountAtPassword          = "password"
+	AccountAtSignOutEverywhere = "sign-out-everywhere"
+)
+
+// AccountSection is how the user signs in, each form swaps the whole section with its outcome,
+// errorAt and infoAt (an AccountAt*) name the form errorMessage and infoMessage belong to
+templ AccountSection(path string, user dbqueries.GetUserRow, errorAt, errorMessage, infoAt, infoMessage string) {
+	{{
+		outcome := func(at string) templ.Component {
+			return accountOutcome(at == errorAt, errorMessage, at == infoAt, infoMessage)
+		}
+	}}
+	<section id="account" aria-labelledby="account-title" class={ sheetClass + " flex flex-col gap-5" }>
+		<h2 id="account-title" class="text-xl font-semibold">
+			@components.T(locales.LK_AccountTitle)
+		</h2>
+		<div class="flex flex-col divide-y *:py-5 *:first:pt-0 *:last:pb-0">
+			@accountForm(path, AccountAtUsername) {
+				@field.Field() {
+					@field.Label(field.LabelProps{For: "account-username"}) {
+						@components.T(locales.LK_UsernameTitle)
+					}
+					@input.Input(input.Props{
+						ID:         "account-username",
+						Name:       "username",
+						Type:       "text",
+						Value:      user.Username,
+						Required:   true,
+						Class:      "h-11",
+						Attributes: templ.Attributes{"autocomplete": "nickname"},
+					})
+				}
+				@accountSubmit(locales.LK_CommonSave)
+				@outcome(AccountAtUsername)
+			}
+			@accountForm(path, AccountAtEmail) {
+				<div>
+					<h3 class="font-semibold">
+						@components.T(locales.LK_Email)
+					</h3>
+					<p class="text-sm text-muted-foreground break-words">{ utils.T(ctx, locales.LK_AccountEmailDescription, user.Email) }</p>
+				</div>
+				@field.Field() {
+					@field.Label(field.LabelProps{For: "account-email"}) {
+						@components.T(locales.LK_AccountNewEmail)
+					}
+					@input.Input(input.Props{
+						ID:          "account-email",
+						Name:        "email",
+						Type:        "email",
+						Placeholder: utils.T(ctx, locales.LK_EmailPlaceholder),
+						Required:    true,
+						Class:       "h-11",
+						Attributes:  templ.Attributes{"autocomplete": "email"},
+					})
+				}
+				@currentPasswordField("account-email-password")
+				@accountSubmit(locales.LK_AccountEmailSubmit)
+				@outcome(AccountAtEmail)
+			}
+			@accountForm(path, AccountAtPassword) {
+				<h3 class="font-semibold">
+					@components.T(locales.LK_PasswordTitle)
+				</h3>
+				@currentPasswordField("account-current-password")
+				@field.Field() {
+					@field.Label(field.LabelProps{For: "account-new-password"}) {
+						@components.T(locales.LK_AccountNewPassword)
+					}
+					@passwordInput(input.Props{
+						ID:         "account-new-password",
+						Name:       "password",
+						Required:   true,
+						Class:      "h-11",
+						Attributes: templ.Attributes{"autocomplete": "new-password"},
+					})
+				}
+				@field.Field() {
+					@field.Label(field.LabelProps{For: "account-new-password-2"}) {
+						@components.T(locales.LK_PasswordConfirm)
+					}
+					@passwordInput(input.Props{
+						ID:         "account-new-password-2",
+						Name:       "password_2",
+						Required:   true,
+						Class:      "h-11",
+						Attributes: templ.Attributes{"autocomplete": "new-password"},
+					})
+				}
+				@accountSubmit(locales.LK_AccountPasswordSubmit)
+				@outcome(AccountAtPassword)
+			}
+			// signs this device out too, so a full reload to the login page, not a swap
+			<form
+				action={ templ.SafeURL(path + "/" + AccountAtSignOutEverywhere) }
+				method="post"
+				hx-boost="true"
+				hx-confirm={ utils.T(ctx, locales.LK_AccountSignOutEverywhereConfirm) }
+				data-confirm-label={ utils.T(ctx, locales.LK_AccountSignOutEverywhere) }
+				data-confirm-neutral
+				class="flex flex-col items-start gap-3"
+			>
+				<p class="text-sm text-muted-foreground">
+					@components.T(locales.LK_AccountSignOutEverywhereDescription)
+				</p>
+				@button.Button(button.Props{Type: button.TypeSubmit, Variant: button.VariantOutline, Class: "h-11"}) {
+					@components.T(locales.LK_AccountSignOutEverywhere)
+				}
+			</form>
+		</div>
+	</section>
+}
+
+// accountForm posts to path/at and swaps [AccountSection] with the answer
+templ accountForm(path, at string) {
+	<form
+		action={ templ.SafeURL(path + "/" + at) }
+		method="post"
+		hx-post={ path + "/" + at }
+		hx-target="#account"
+		hx-swap="outerHTML"
+		class="flex flex-col gap-4"
+	>
+		{ children... }
+	</form>
+}
+
+templ accountSubmit(label locales.LK) {
+	@button.Button(button.Props{Type: button.TypeSubmit, Class: "h-11 self-start"}) {
+		@components.T(label)
+	}
+}
+
+templ currentPasswordField(id string) {
+	@field.Field() {
+		@field.Label(field.LabelProps{For: id}) {
+			@components.T(locales.LK_AccountCurrentPassword)
+		}
+		@passwordInput(input.Props{
+			ID:         id,
+			Name:       "current_password",
+			Required:   true,
+			Class:      "h-11",
+			Attributes: templ.Attributes{"autocomplete": "current-password"},
+		})
+	}
+}
+
+// accountOutcome is the error or the saved message under the form it belongs to,
+// an error can be several validation messages, one per line
+templ accountOutcome(isError bool, errorMessage string, isInfo bool, infoMessage string) {
+	if isError {
+		<div class="whitespace-pre-line">
+			@formError(errorMessage)
+		</div>
+	}
+	if isInfo && infoMessage != "" {
+		// alert, not status: only an alert is read out when inserted already filled
+		<p role="alert" class="flex items-start gap-2 text-sm font-medium">
+			@navIcon("check", "mt-px size-4 shrink-0")
+			<span class="min-w-0 break-words">{ infoMessage }</span>
+		</p>
+	}
+}

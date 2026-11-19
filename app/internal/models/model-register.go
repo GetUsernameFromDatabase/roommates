@@ -16,12 +16,15 @@ func (m *Register) ValidateUsername() (msgs []l.LKMessage) {
 	if m.Initial {
 		return
 	}
+	return validateUsername(m.Username)
+}
 
-	if m.Username != strings.TrimSpace(m.Username) {
+func validateUsername(username string) (msgs []l.LKMessage) {
+	if username != strings.TrimSpace(username) {
 		msgs = append(msgs, l.LKMessage{Key: l.LK_ValidationErrorsUsernameSpaces})
 	}
 
-	usernameLength := utf8.RuneCountInString(m.Username)
+	usernameLength := utf8.RuneCountInString(username)
 	if usernameLength < minUsernameLength {
 		msgs = append(msgs, l.LKMessage{
 			Key:  l.LK_ValidationErrorsUsernameLength,

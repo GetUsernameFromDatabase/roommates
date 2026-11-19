@@ -365,3 +365,60 @@ func TestNormalizeInviteCode(t *testing.T) {
 		}
 	}
 }
+
+func TestUpdateHousehold(t *testing.T) {
+	s := newTestService(t)
+	ctx := context.Background()
+	ownerM, memberM, _ := newTestHousehold(t, s)
+
+	wantErr(t, "member updates", s.UpdateHousehold(ctx, memberM, "Mine", "EUR"), g.ErrorForbidden)
+	wantErr(t, "empty name", s.UpdateHousehold(ctx, ownerM, "  ", "EUR"), g.ErrorInvalidInput)
+	wantErr(t, "long name", s.UpdateHousehold(ctx, ownerM, strings.Repeat("x", MaxHouseholdNameLength+1), "EUR"), g.ErrorInvalidInput)
+	wantErr(t, "unknown currency", s.UpdateHousehold(ctx, ownerM, "Flat", "XYZ"), g.ErrorInvalidInput)
+
+	// no expenses yet, so the currency can change
+	if err := s.UpdateHousehold(ctx, ownerM, " Home ", "USD"); err != nil {
+		t.Fatal(err)
+	}
+	got, err := s.GetHouseholdSettings(ctx, memberM)
+	if err != nil || got.Name != "Home" || got.Currency != "USD" || !got.Settled {
+		t.Fatalf("settings %+v %v", got, err)
+	}
+
+	if _, err := s.CreateExpense(ctx, ownerM, ExpenseInput{
+		Title: "Rent", Amount: "10", Category: "rent", IncurredOn: "2026-10-01",
+		Custom: false, Members: []pgtype.UUID{ownerM.UserID, memberM.UserID}, Shares: nil,
+		ListID: pgtype.UUID{}, ItemID: pgtype.UUID{},
+	}); err != nil {
+		t.Fatal(err)
+	}
+	err = s.UpdateHousehold(ctx, ownerM, "Home", "EUR")
+	wantErr(t, "currency with a debt", err, g.ErrorInvalidInput)
+	var fe FieldError
+	if !errors.As(err, &fe) || fe.Field != FieldCurrency {
+		t.Fatalf("error %v is not a currency FieldError", err)
+	}
+	if got, err = s.GetHouseholdSettings(ctx, ownerM); err != nil || got.Settled || got.Currency != "USD" {
+		t.Fatalf("settings with a debt %+v %v", got, err)
+	}
+	// the same currency is no change, a rename is fine
+	if err := s.UpdateHousehold(ctx, ownerM, "Flat", "USD"); err != nil {
+		t.Fatal(err)
+	}
+
+	// the member's same expense nets the pair to zero with both shares open, the change closes them
+	if _, err := s.CreateExpense(ctx, memberM, ExpenseInput{
+		Title: "Power", Amount: "10", Category: "utilities", IncurredOn: "2026-10-02",
+		Custom: false, Members: []pgtype.UUID{ownerM.UserID, memberM.UserID}, Shares: nil,
+		ListID: pgtype.UUID{}, ItemID: pgtype.UUID{},
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.UpdateHousehold(ctx, ownerM, "Flat", "EUR"); err != nil {
+		t.Fatalf("currency when even: %v", err)
+	}
+	rows, err := s.db.ListDebtItems(ctx, dbqueries.ListDebtItemsParams{HouseholdID: ownerM.HouseholdID, UserID: pgtype.UUID{}})
+	if err != nil || len(rows) != 0 {
+		t.Fatalf("open items after the change %v %v", rows, err)
+	}
+}

@@ -148,7 +148,7 @@ func TestPushNotifications(t *testing.T) {
 		t.Fatalf("expense: got %+v", got[0].msg)
 	}
 
-	if err := s.CreateSettlement(ctx, memberM, ownerM.UserID, "5"); err != nil {
+	if err := s.CreateSettlement(ctx, memberM, ownerM.UserID, "5", "cash", ""); err != nil {
 		t.Fatal(err)
 	}
 	wantPushes(t, "settlement", takePushes(s), ownerDevice)

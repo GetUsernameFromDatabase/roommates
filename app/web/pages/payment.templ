@@ -1,0 +1,121 @@
+package pages
+
+import "roommates/web/components"
+import "roommates/web/components/button"
+import "roommates/web/components/field"
+import "roommates/web/components/input"
+import "roommates/web/components/switch"
+import "roommates/internal/locales"
+import "roommates/internal/models"
+import "roommates/internal/services"
+
+// PaymentSection is where the user wants to be paid, saved on the account, path is the settings page
+// it is on, a save swaps only this section: errorMessage shows by the fields, infoMessage by Save,
+// show is the household switch, nil outside a household, it is in here so a first save enables it
+templ PaymentSection(path string, d services.PaymentDetails, show *bool, errorMessage, infoMessage string) {
+	<section id="payment-section" aria-labelledby="payment-title" class={ sheetClass + " flex flex-col gap-4" }>
+		<div>
+			<h2 id="payment-title" class="text-xl font-semibold">
+				@components.T(locales.LK_PaymentTitle)
+			</h2>
+			<p class="text-sm text-muted-foreground">
+				@components.T(locales.LK_PaymentDescription)
+			</p>
+		</div>
+		<form
+			action={ templ.SafeURL(path + "/payment") }
+			method="post"
+			hx-post={ path + "/payment" }
+			hx-target="#payment-section"
+			hx-swap="outerHTML"
+			autocomplete="off"
+			class="flex flex-col gap-4"
+		>
+			@field.Field() {
+				@field.Label(field.LabelProps{For: "payee-name"}) {
+					@components.T(locales.LK_PaymentName)
+				}
+				@input.Input(input.Props{
+					ID:    "payee-name",
+					Name:  "name",
+					Value: d.Name,
+					Class: "h-11",
+					Attributes: templ.Attributes{
+						"maxlength":    services.MaxPayeeNameLength,
+						"autocomplete": "name",
+					},
+				})
+			}
+			@field.Field() {
+				@field.Label(field.LabelProps{For: "payee-iban"}) {
+					@components.T(locales.LK_PaymentIban)
+				}
+				@input.Input(input.Props{
+					ID:    "payee-iban",
+					Name:  "iban",
+					Value: models.FormatIBAN(d.IBAN),
+					Class: "h-11 font-mono uppercase",
+					Attributes: templ.Attributes{
+						"maxlength":      42,
+						"autocapitalize": "characters",
+						"spellcheck":     "false",
+						"inputmode":      "text",
+					},
+				})
+			}
+			<div class="flex flex-wrap items-center gap-3">
+				@button.Button(button.Props{Type: button.TypeSubmit, Class: "h-11"}) {
+					@components.T(locales.LK_CommonSave)
+				}
+				if infoMessage != "" {
+					<p role="status" class="text-sm font-medium text-muted-foreground">{ infoMessage }</p>
+				}
+			</div>
+			@formError(errorMessage)
+		</form>
+		if show != nil {
+			@PaymentSwitch(path, *show, d.IBAN != "")
+		}
+	</section>
+}
+
+// PaymentSwitch shows the user's details to the housemates of this household, path is its settings page,
+// the switch stays off while there is nothing to show
+templ PaymentSwitch(path string, show bool, hasDetails bool) {
+	<form
+		id="payment-switch"
+		action={ templ.SafeURL(path + "/payment/show") }
+		method="post"
+		hx-post={ path + "/payment/show" }
+		hx-trigger="change"
+		hx-target="#payment-switch"
+		hx-swap="outerHTML"
+		class="flex flex-col gap-2"
+	>
+		<label class="flex min-h-11 cursor-pointer items-center justify-between gap-3 text-sm font-medium">
+			@components.T(locales.LK_PaymentShow)
+			@switchcomp.Switch(switchcomp.Props{Name: "show", Value: "1", DefaultChecked: show && hasDetails, Disabled: !hasDetails})
+		</label>
+		if !hasDetails {
+			<p class="text-sm text-muted-foreground">
+				@components.T(locales.LK_PaymentShowHint)
+			</p>
+		}
+		<noscript>
+			@button.Button(button.Props{Type: button.TypeSubmit, Variant: button.VariantSecondary, Class: "h-11"}) {
+				@components.T(locales.LK_CommonSave)
+			}
+		</noscript>
+	</form>
+}
+
+// payeeDetails is who to pay and where, in the slip of a payment
+templ payeeDetails(d services.PaymentDetails) {
+	<div class="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-secondary p-3 text-sm">
+		<div class="min-w-0">
+			<p class="font-medium break-words">{ d.Name }</p>
+			<p class="font-mono break-all text-muted-foreground">{ models.FormatIBAN(d.IBAN) }</p>
+		</div>
+		@copyButton(d.IBAN, locales.LK_PaymentCopyIban)
+	</div>
+}

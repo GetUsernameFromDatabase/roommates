@@ -329,7 +329,7 @@ templ fileRow(actor services.Membership, back, detach templ.SafeURL, lastRef, sh
 				</form>
 			}
 		</div>
-		if detach == "" && uploaderID == actor.UserID {
+		if detach == "" && (uploaderID == actor.UserID || actor.Role == g.RoleOwner) {
 			<form action={ href + "/delete" } method="post" hx-boost="true" hx-confirm={ deleteFileConfirm(ctx, name, refs) }>
 				<input type="hidden" name={ g.QueryNext } value={ string(back) }/>
 				@button.Button(button.Props{
@@ -400,7 +400,7 @@ templ FilePage(actor services.Membership, f services.FileMeta, errorMessage stri
 					}
 				</form>
 			}
-			if f.UploaderID == actor.UserID {
+			if f.UploaderID == actor.UserID || actor.Role == g.RoleOwner {
 				<form
 					action={ fileURL + "/delete" }
 					method="post"
@@ -421,9 +421,20 @@ templ FilePage(actor services.Membership, f services.FileMeta, errorMessage stri
 templ ShoppingItemPage(actor services.Membership, listID pgtype.UUID, it services.ShoppingItem, expense *services.Expense, files []services.AttachedFile, errorMessage string) {
 	{{ itemURL := householdURL(actor.HouseholdID, "lists", listID.String(), "items", it.ID.String()) }}
 	@appShell(it.Text, &HouseholdNav{HouseholdID: actor.HouseholdID, Section: SectionShopping}) {
-		@doorplateHeader(householdURL(actor.HouseholdID, "lists", listID.String()), utils.T(ctx, locales.LK_ShoppingItemBack), it.Text)
-		if it.Qty != "" {
-			<p class="-mt-6 text-muted-foreground">{ it.Qty }</p>
+		// the text and the quantity are edited in place like a list's name
+		@nameHeader(householdURL(actor.HouseholdID, "lists", listID.String()), utils.T(ctx, locales.LK_ShoppingItemBack), templ.SafeURL(itemURL+"/text"),
+			it.Text, services.MaxShoppingItemTextLength, utils.T(ctx, locales.LK_ShoppingItem)) {
+			@input.Input(input.Props{
+				Name:  "qty",
+				Type:  "text",
+				Value: it.Qty,
+				Class: "ml-3 h-9 w-24 self-center text-base text-muted-foreground",
+				Attributes: templ.Attributes{
+					"maxlength":   services.MaxShoppingItemQtyLength,
+					"aria-label":  utils.T(ctx, locales.LK_ShoppingQty),
+					"placeholder": utils.T(ctx, locales.LK_ShoppingQty),
+				},
+			})
 		}
 		<form action={ itemURL + "/description" } method="post" class={ utils.CN(sheetClass, "space-y-3") }>
 			<label for="item-description" class="block font-heading text-xl font-semibold tracking-tight">

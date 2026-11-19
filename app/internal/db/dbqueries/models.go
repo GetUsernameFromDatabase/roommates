@@ -14,6 +14,7 @@ type EmailToken struct {
 	Kind      string             `json:"kind"`
 	ExpiresAt pgtype.Timestamptz `json:"expires_at"`
 	CreatedAt pgtype.Timestamptz `json:"created_at"`
+	NewEmail  *string            `json:"new_email"`
 }
 
 type Expense struct {
@@ -23,6 +24,7 @@ type Expense struct {
 	Category    string             `json:"category"`
 	Title       string             `json:"title"`
 	AmountCents int64              `json:"amount_cents"`
+	Currency    string             `json:"currency"`
 	IncurredOn  pgtype.Date        `json:"incurred_on"`
 	CreatedAt   pgtype.Timestamptz `json:"created_at"`
 }
@@ -95,12 +97,13 @@ type Invite struct {
 }
 
 type Membership struct {
-	HouseholdID pgtype.UUID        `json:"household_id"`
-	UserID      pgtype.UUID        `json:"user_id"`
-	Role        string             `json:"role"`
-	JoinedAt    pgtype.Timestamptz `json:"joined_at"`
-	LeftAt      pgtype.Timestamptz `json:"left_at"`
-	ChatReadAt  pgtype.Timestamptz `json:"chat_read_at"`
+	HouseholdID        pgtype.UUID        `json:"household_id"`
+	UserID             pgtype.UUID        `json:"user_id"`
+	Role               string             `json:"role"`
+	JoinedAt           pgtype.Timestamptz `json:"joined_at"`
+	LeftAt             pgtype.Timestamptz `json:"left_at"`
+	ChatReadAt         pgtype.Timestamptz `json:"chat_read_at"`
+	ShowPaymentDetails bool               `json:"show_payment_details"`
 }
 
 type Message struct {
@@ -141,8 +144,13 @@ type Settlement struct {
 	FromUser    pgtype.UUID        `json:"from_user"`
 	ToUser      pgtype.UUID        `json:"to_user"`
 	AmountCents int64              `json:"amount_cents"`
+	Currency    string             `json:"currency"`
 	CreatedAt   pgtype.Timestamptz `json:"created_at"`
 	ConfirmedAt pgtype.Timestamptz `json:"confirmed_at"`
+	Method      *string            `json:"method"`
+	Note        string             `json:"note"`
+	FromEdit    bool               `json:"from_edit"`
+	ExpenseID   pgtype.UUID        `json:"expense_id"`
 }
 
 type SettlementShare struct {
@@ -189,4 +197,6 @@ type User struct {
 	UpdatedAt      pgtype.Timestamptz `json:"updated_at"`
 	AvatarKey      *string            `json:"avatar_key"`
 	Language       *string            `json:"language"`
+	PayeeName      *string            `json:"payee_name"`
+	PayeeIban      *string            `json:"payee_iban"`
 }

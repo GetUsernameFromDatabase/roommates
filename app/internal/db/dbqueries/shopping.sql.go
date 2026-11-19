@@ -78,18 +78,27 @@ const deleteShoppingList = `-- name: DeleteShoppingList :execrows
 DELETE FROM shopping_lists
 WHERE id = $1
   AND household_id = $2
-  AND created_by = $3
+  AND (
+    created_by = $3
+    OR $4::bool
+  )
 `
 
 type DeleteShoppingListParams struct {
 	ID          pgtype.UUID `json:"id"`
 	HouseholdID pgtype.UUID `json:"household_id"`
 	CreatedBy   pgtype.UUID `json:"created_by"`
+	IsOwner     bool        `json:"is_owner"`
 }
 
-// only the creator deletes a list
+// the creator deletes a list, an owner any
 func (q *Queries) DeleteShoppingList(ctx context.Context, arg DeleteShoppingListParams) (int64, error) {
-	result, err := q.db.Exec(ctx, deleteShoppingList, arg.ID, arg.HouseholdID, arg.CreatedBy)
+	result, err := q.db.Exec(ctx, deleteShoppingList,
+		arg.ID,
+		arg.HouseholdID,
+		arg.CreatedBy,
+		arg.IsOwner,
+	)
 	if err != nil {
 		return 0, err
 	}
@@ -595,6 +604,38 @@ type SetShoppingItemDescriptionParams struct {
 func (q *Queries) SetShoppingItemDescription(ctx context.Context, arg SetShoppingItemDescriptionParams) (int64, error) {
 	result, err := q.db.Exec(ctx, setShoppingItemDescription,
 		arg.Description,
+		arg.ID,
+		arg.ListID,
+		arg.HouseholdID,
+	)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
+const setShoppingItemText = `-- name: SetShoppingItemText :execrows
+UPDATE shopping_items
+SET text = $1,
+  qty = $2
+WHERE id = $3
+  AND list_id = $4
+  AND household_id = $5
+`
+
+type SetShoppingItemTextParams struct {
+	Text        string      `json:"text"`
+	Qty         string      `json:"qty"`
+	ID          pgtype.UUID `json:"id"`
+	ListID      pgtype.UUID `json:"list_id"`
+	HouseholdID pgtype.UUID `json:"household_id"`
+}
+
+// any member changes the words and quantity of an item
+func (q *Queries) SetShoppingItemText(ctx context.Context, arg SetShoppingItemTextParams) (int64, error) {
+	result, err := q.db.Exec(ctx, setShoppingItemText,
+		arg.Text,
+		arg.Qty,
 		arg.ID,
 		arg.ListID,
 		arg.HouseholdID,

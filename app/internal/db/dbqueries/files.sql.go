@@ -15,18 +15,30 @@ const deleteFile = `-- name: DeleteFile :execrows
 DELETE FROM files
 WHERE id = $1
   AND household_id = $2
-  AND uploader_id = $3
+  AND (
+    uploader_id = $3
+    OR (
+      $4::bool
+      AND file_visible(id, $3)
+    )
+  )
 `
 
 type DeleteFileParams struct {
 	ID          pgtype.UUID `json:"id"`
 	HouseholdID pgtype.UUID `json:"household_id"`
 	UploaderID  pgtype.UUID `json:"uploader_id"`
+	IsOwner     bool        `json:"is_owner"`
 }
 
-// only the uploader deletes a file
+// the uploader deletes a file, an owner any the owner can see
 func (q *Queries) DeleteFile(ctx context.Context, arg DeleteFileParams) (int64, error) {
-	result, err := q.db.Exec(ctx, deleteFile, arg.ID, arg.HouseholdID, arg.UploaderID)
+	result, err := q.db.Exec(ctx, deleteFile,
+		arg.ID,
+		arg.HouseholdID,
+		arg.UploaderID,
+		arg.IsOwner,
+	)
 	if err != nil {
 		return 0, err
 	}

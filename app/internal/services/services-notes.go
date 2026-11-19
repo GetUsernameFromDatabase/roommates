@@ -100,11 +100,12 @@ func (s *DefaultService) SetNotePinned(ctx context.Context, actor Membership, no
 	}))
 }
 
-// DeleteNote returns [g.ErrorNotFound] unless the actor wrote the note
+// DeleteNote returns [g.ErrorNotFound] unless the actor wrote the note or is an owner and the note is shared
 func (s *DefaultService) DeleteNote(ctx context.Context, actor Membership, noteID pgtype.UUID) error {
 	return rowsAffected(s.db.DeleteNote(ctx, dbqueries.DeleteNoteParams{
 		ID:          noteID,
 		HouseholdID: actor.HouseholdID,
 		AuthorID:    actor.UserID,
+		IsOwner:     actor.Role == g.RoleOwner,
 	}))
 }

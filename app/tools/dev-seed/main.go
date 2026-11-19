@@ -125,7 +125,7 @@ func seedExpenses(ctx context.Context, s *services.DefaultService, mariM, jaanM 
 	check(s.SetExpenseSharePaid(ctx, mariM, paid, jaanM.UserID, true))
 	must(s.CreateExpense(ctx, mariM, split("Toidupood", "38,50", "groceries")))
 	must(s.CreateExpense(ctx, jaanM, split("Internet", "25", "household")))
-	check(s.CreateSettlement(ctx, jaanM, mariM.UserID, "3"))
+	check(s.CreateSettlement(ctx, jaanM, mariM.UserID, "3", "transfer", ""))
 }
 
 func examplePNG() image.Image {

@@ -83,9 +83,15 @@ WHERE id = sqlc.arg(id)
     visibility = 'household'
     OR author_id = sqlc.arg(user_id)
   );
--- only the author deletes a note
+-- the author deletes a note, an owner also a household one, never a private one
 -- name: DeleteNote :execrows
 DELETE FROM notes
-WHERE id = $1
-  AND household_id = $2
-  AND author_id = $3;
+WHERE id = sqlc.arg(id)
+  AND household_id = sqlc.arg(household_id)
+  AND (
+    author_id = sqlc.arg(author_id)
+    OR (
+      sqlc.arg(is_owner)::bool
+      AND visibility = 'household'
+    )
+  );

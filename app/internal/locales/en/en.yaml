@@ -77,6 +77,9 @@ en:
       other: "%{count} people live here"
     verify-to-invite: Confirm your email address to create invites.
     balance-not-zero: Debts with this person must be settled first.
+    settings-title: Household
+    settings-currency: Currency
+    settings-currency-locked: All debts must be settled first
   shopping:
     back: All lists
     lists: Shopping lists
@@ -175,6 +178,20 @@ en:
     category-rent: Rent
     category-household: Household
     category-other: Other
+    edit: Edit
+    edit-title: Edit expense
+    save: Save
+    amount-locked-currency: "The amount and split cannot change: the expense is in another currency than the household now"
+    amount-locked-left: "The amount and split cannot change: someone who shared it has left"
+    from-edit: from edit
+    method: How did you pay?
+    method-transfer: Bank transfer
+    method-cash: Cash
+    method-card: Card or app
+    method-other: Other
+    note: Note (optional)
+    invalid-method: Choose how you paid
+    invalid-note: The note can be up to %d characters
   notes:
     none: No notes yet
     none-hint: Leave the wifi password, bin days or house rules here for everyone.
@@ -368,6 +385,69 @@ en:
       %s
 
       Or enter the code %s. The invite is valid for 7 days.
+    email-change-subject: Confirm your new email
+    email-change-body: |-
+      Hi %s,
+
+      to make this address your Roommates email, open this link:
+      %s
+
+      The link is valid for 24 hours. If it was not you, ignore this email.
+    email-changed-subject: Your email was changed
+    email-changed-body: |-
+      Hi %s,
+
+      your Roommates email is now %s. If it was not you, contact us right away.
+  account:
+    title: Account
+    email-description: Currently %s. We send a confirmation link to the new address.
+    new-email: New email
+    email-submit: Send confirmation link
+    email-sent: We sent a confirmation link to %s. Your email changes once you open it.
+    email-same: This is already your email
+    current-password: Current password
+    new-password: New password
+    password-submit: Change password
+    password-changed: Password changed. Your other devices were signed out.
+    wrong-password: Wrong password
+    sign-out-everywhere: Sign out everywhere
+    sign-out-everywhere-description: Signs you out on every device, this one too.
+    sign-out-everywhere-confirm: Sign out on all devices, including this one?
+  confirm-email:
+    done-title: Email changed
+    done-description: Your new email address is confirmed.
+    invalid-description: The link is invalid, expired or already used. Change your email again in settings.
+    taken-title: Email not changed
+    taken-description: Another account uses this address now.
+  payment:
+    title: Where to pay me
+    description: Housemates see these only in the households where you switch them on.
+    name: Account holder
+    iban: IBAN
+    name-invalid: Enter the account holder's name
+    iban-invalid: This IBAN is not valid
+    show: Show my payment details in this household
+    show-hint: Fill in your payment details in the account settings first.
+    copy-iban: Copy IBAN
+  export:
+    heading: Download
+    expenses-wide: Expenses (CSV, one row per expense)
+    expenses-long: Expenses (CSV, one row per share)
+    balances: Balances (CSV)
+    date: Date
+    title: Title
+    category: Category
+    payer: Paid by
+    total: Total
+    currency: Currency
+    member: Member
+    share: Share
+    paid: Paid
+    "yes": "yes"
+    "no": "no"
+    balance: Balance (+ is owed)
+    counterpart: Person
+    owed-to-you: Amount (+ owes you)
   verify-email:
     banner: Confirm your email address to create invites. We sent you a link.
     resend: Send the link again

@@ -32,7 +32,7 @@ func (h *DefaultHandler) PageExpenses(ctx *gin.Context) {
 }
 
 // renderExpenses shows balances, pending settlements and expenses, errorMessage is the outcome of a settlement,
-// shown in the slip of the posted "to" member with the typed amount kept
+// shown in the slip of the posted "to" member with what was typed kept
 func (h *DefaultHandler) renderExpenses(ctx *gin.Context, status int, errorMessage string) {
 	actor := membershipFromContext(ctx)
 	filter := services.ExpenseFilter{Query: ctx.Query("q"), Show: ctx.Query("show")}
@@ -41,12 +41,17 @@ func (h *DefaultHandler) renderExpenses(ctx *gin.Context, status int, errorMessa
 		InternalError(ctx, err)
 		return
 	}
-	settleTo, settleAmount := "", ""
+	payees, err := h.service.ListPayeeDetails(ctx, actor)
+	if err != nil {
+		InternalError(ctx, err)
+		return
+	}
+	slip := pages.SettleSlip{To: "", Amount: "", Method: "", Note: "", Error: errorMessage}
 	if errorMessage != "" {
-		settleTo, settleAmount = ctx.PostForm("to"), ctx.PostForm("amount")
+		slip.To, slip.Amount, slip.Method, slip.Note = ctx.PostForm("to"), ctx.PostForm("amount"), ctx.PostForm("method"), ctx.PostForm("note")
 		stayInPlace(ctx)
 	}
-	RenderTemplStatus(ctx, status, pages.HouseholdExpenses(actor, o, filter, errorMessage, settleTo, settleAmount))
+	RenderTemplStatus(ctx, status, pages.HouseholdExpenses(actor, o, filter, slip, payees))
 }
 
 // PageNewExpense starts empty, as a copy of ?from=<expenseID>, or for the bought items of ?list=<listID>,
@@ -99,17 +104,22 @@ func (h *DefaultHandler) PageNewExpense(ctx *gin.Context) {
 		}
 		in = e.CopyInput(utils.Map(members, func(m dbqueries.ListActiveMembersRow) pgtype.UUID { return m.UserID }))
 	}
-	h.renderExpenseEditor(ctx, http.StatusOK, in, "", "")
+	h.renderExpenseEditor(ctx, http.StatusOK, nil, in, "", "")
 }
 
-// renderExpenseEditor shows the expense form, an equal split with no one ticked ticks everyone,
-// errorField is the [services.FieldError] field the errorMessage shows at
-func (h *DefaultHandler) renderExpenseEditor(ctx *gin.Context, status int, in services.ExpenseInput, errorMessage, errorField string) {
+// renderExpenseEditor shows the expense form, editing edit when it is not nil, an equal split with no
+// one ticked ticks everyone, errorField is the [services.FieldError] field the errorMessage shows at
+func (h *DefaultHandler) renderExpenseEditor(ctx *gin.Context, status int, edit *services.Expense, in services.ExpenseInput, errorMessage, errorField string) {
 	actor := membershipFromContext(ctx)
 	members, err := h.service.ListMembers(ctx, actor)
 	if err != nil {
 		InternalError(ctx, err)
 		return
+	}
+	// a locked amount and split are disabled, so a failed save does not send them back
+	if edit != nil && edit.AmountLock(actor.Currency) != "" {
+		kept := edit.EditInput(utils.Map(members, func(m dbqueries.ListActiveMembersRow) pgtype.UUID { return m.UserID }))
+		in.Amount, in.Custom, in.Members, in.Shares = kept.Amount, kept.Custom, kept.Members, kept.Shares
 	}
 	// a copy can name people who have left since, the form has no box to untick them
 	active := map[pgtype.UUID]bool{}
@@ -123,7 +133,21 @@ func (h *DefaultHandler) renderExpenseEditor(ctx *gin.Context, status int, in se
 			in.Members = append(in.Members, m.UserID)
 		}
 	}
-	RenderTemplStatus(ctx, status, pages.ExpenseEditor(actor, members, in, errorMessage, errorField))
+	RenderTemplStatus(ctx, status, pages.ExpenseEditor(actor, members, edit, in, errorMessage, errorField))
+}
+
+// expenseInputError is the message for an invalid expense form and the field it shows at
+func expenseInputError(ctx *gin.Context, err error) (message, field string) {
+	var fe services.FieldError
+	errors.As(err, &fe)
+	c := ctx.Request.Context()
+	message = map[string]string{
+		services.FieldTitle:  utils.T(c, locales.LK_ExpensesInvalidTitle, services.MaxExpenseTitleLength),
+		services.FieldAmount: utils.T(c, locales.LK_ExpensesInvalidAmount),
+		services.FieldDate:   utils.T(c, locales.LK_ExpensesInvalidDate),
+		services.FieldShares: utils.T(c, locales.LK_ExpensesInvalidShares),
+	}[fe.Field]
+	return cmp.Or(message, utils.T(c, locales.LK_ExpensesInvalid, services.MaxExpenseTitleLength)), fe.Field
 }
 
 // expenseFromForm reads the ticked "member" values and the typed shares named "share-<userID>"
@@ -171,19 +195,50 @@ func (h *DefaultHandler) CreateExpense(ctx *gin.Context) {
 	case err == nil:
 		Redirect(ctx, expensePath(actor.HouseholdID, expenseID))
 	case errors.Is(err, g.ErrorInvalidInput):
-		var fe services.FieldError
-		errors.As(err, &fe)
-		c := ctx.Request.Context()
-		message := map[string]string{
-			services.FieldTitle:  utils.T(c, locales.LK_ExpensesInvalidTitle, services.MaxExpenseTitleLength),
-			services.FieldAmount: utils.T(c, locales.LK_ExpensesInvalidAmount),
-			services.FieldDate:   utils.T(c, locales.LK_ExpensesInvalidDate),
-			services.FieldShares: utils.T(c, locales.LK_ExpensesInvalidShares),
-		}[fe.Field]
-		h.renderExpenseEditor(ctx, http.StatusUnprocessableEntity, in,
-			cmp.Or(message, utils.T(c, locales.LK_ExpensesInvalid, services.MaxExpenseTitleLength)), fe.Field)
+		message, field := expenseInputError(ctx, err)
+		h.renderExpenseEditor(ctx, http.StatusUnprocessableEntity, nil, in, message, field)
 	default:
 		InternalError(ctx, err)
+	}
+}
+
+// PageEditExpense shows the expense form filled in, only to the payer
+func (h *DefaultHandler) PageEditExpense(ctx *gin.Context) {
+	e, ok := h.loadExpense(ctx)
+	if !ok {
+		return
+	}
+	actor := membershipFromContext(ctx)
+	if e.Expense.PayerID != actor.UserID {
+		pageError(ctx, g.ErrorNotFound)
+		return
+	}
+	members, err := h.service.ListMembers(ctx, actor)
+	if err != nil {
+		InternalError(ctx, err)
+		return
+	}
+	in := e.EditInput(utils.Map(members, func(m dbqueries.ListActiveMembersRow) pgtype.UUID { return m.UserID }))
+	h.renderExpenseEditor(ctx, http.StatusOK, &e, in, "", "")
+}
+
+// UpdateExpense saves the edit form and goes back to the expense
+func (h *DefaultHandler) UpdateExpense(ctx *gin.Context) {
+	e, ok := h.loadExpense(ctx)
+	if !ok {
+		return
+	}
+	actor := membershipFromContext(ctx)
+	in := expenseFromForm(ctx)
+	err := h.service.UpdateExpense(ctx, actor, e.Expense.ID, in)
+	switch {
+	case err == nil:
+		backTo(ctx, expensePath(actor.HouseholdID, e.Expense.ID))
+	case errors.Is(err, g.ErrorInvalidInput):
+		message, field := expenseInputError(ctx, err)
+		h.renderExpenseEditor(ctx, http.StatusUnprocessableEntity, &e, in, message, field)
+	default:
+		pageError(ctx, err)
 	}
 }
 
@@ -264,13 +319,20 @@ func (h *DefaultHandler) CreateSettlement(ctx *gin.Context) {
 	if err != nil {
 		err = g.ErrorInvalidInput
 	} else {
-		err = h.service.CreateSettlement(ctx, actor, toUserID, ctx.PostForm("amount"))
+		err = h.service.CreateSettlement(ctx, actor, toUserID, ctx.PostForm("amount"), ctx.PostForm("method"), ctx.PostForm("note"))
 	}
 	switch {
 	case err == nil:
 		stay(ctx, expensesPath(actor.HouseholdID))
 	case errors.Is(err, g.ErrorInvalidInput):
-		h.renderExpenses(ctx, http.StatusUnprocessableEntity, utils.T(ctx.Request.Context(), locales.LK_ExpensesSettleInvalid))
+		var fe services.FieldError
+		errors.As(err, &fe)
+		c := ctx.Request.Context()
+		message := map[string]string{
+			services.FieldMethod: utils.T(c, locales.LK_ExpensesInvalidMethod),
+			services.FieldNote:   utils.T(c, locales.LK_ExpensesInvalidNote, services.MaxSettlementNoteLength),
+		}[fe.Field]
+		h.renderExpenses(ctx, http.StatusUnprocessableEntity, cmp.Or(message, utils.T(c, locales.LK_ExpensesSettleInvalid)))
 	default:
 		InternalError(ctx, err)
 	}

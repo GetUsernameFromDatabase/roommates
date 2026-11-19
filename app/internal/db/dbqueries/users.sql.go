@@ -116,6 +116,19 @@ func (q *Queries) GetUserCredentials(ctx context.Context, email string) (GetUser
 	return i, err
 }
 
+const getUserPassword = `-- name: GetUserPassword :one
+SELECT password
+FROM users
+WHERE id = $1
+`
+
+func (q *Queries) GetUserPassword(ctx context.Context, id pgtype.UUID) (string, error) {
+	row := q.db.QueryRow(ctx, getUserPassword, id)
+	var password string
+	err := row.Scan(&password)
+	return password, err
+}
+
 const insertUser = `-- name: InsertUser :one
 INSERT INTO users (
     email,
@@ -190,6 +203,24 @@ func (q *Queries) SetUserLanguage(ctx context.Context, arg SetUserLanguageParams
 	return err
 }
 
+const updateUserEmail = `-- name: UpdateUserEmail :exec
+UPDATE users
+SET email = $2,
+  email_validated = TRUE
+WHERE id = $1
+`
+
+type UpdateUserEmailParams struct {
+	ID    pgtype.UUID `json:"id"`
+	Email string      `json:"email"`
+}
+
+// the new email was proven by its link
+func (q *Queries) UpdateUserEmail(ctx context.Context, arg UpdateUserEmailParams) error {
+	_, err := q.db.Exec(ctx, updateUserEmail, arg.ID, arg.Email)
+	return err
+}
+
 const updateUserPassword = `-- name: UpdateUserPassword :exec
 UPDATE users
 SET password = $2
@@ -203,5 +234,21 @@ type UpdateUserPasswordParams struct {
 
 func (q *Queries) UpdateUserPassword(ctx context.Context, arg UpdateUserPasswordParams) error {
 	_, err := q.db.Exec(ctx, updateUserPassword, arg.ID, arg.Password)
+	return err
+}
+
+const updateUsername = `-- name: UpdateUsername :exec
+UPDATE users
+SET username = $2
+WHERE id = $1
+`
+
+type UpdateUsernameParams struct {
+	ID       pgtype.UUID `json:"id"`
+	Username string      `json:"username"`
+}
+
+func (q *Queries) UpdateUsername(ctx context.Context, arg UpdateUsernameParams) error {
+	_, err := q.db.Exec(ctx, updateUsername, arg.ID, arg.Username)
 	return err
 }

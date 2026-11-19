@@ -120,7 +120,8 @@ func TestNetDebts(t *testing.T) {
 	a, b, c := testUUID(1), testUUID(2), testUUID(3)
 	row := func(from, to pgtype.UUID, cents int64) dbqueries.ListDebtItemsRow {
 		return dbqueries.ListDebtItemsRow{FromUser: from, FromName: from.String(), ToUser: to, ToName: to.String(),
-			ExpenseID: pgtype.UUID{}, Title: "", OnDate: pgtype.Date{}, AmountCents: cents}
+			ExpenseID: pgtype.UUID{}, Title: "", OnDate: pgtype.Date{}, AmountCents: cents,
+			Method: nil, Note: "", FromEdit: false, EditExpenseID: pgtype.UUID{}}
 	}
 	got := netDebts([]dbqueries.ListDebtItemsRow{
 		row(a, b, 500), row(b, a, 200), // a owes b 300
@@ -233,15 +234,25 @@ func TestExpenses(t *testing.T) {
 	wantDebt("share unpaid again", 500)
 
 	// a settlement counts once the receiver confirms it
-	wantErr(t, "settle with self", s.CreateSettlement(ctx, memberM, memberM.UserID, "1"), g.ErrorInvalidInput)
-	wantErr(t, "settle with stranger", s.CreateSettlement(ctx, memberM, strangerM.UserID, "1"), g.ErrorInvalidInput)
-	if err := s.CreateSettlement(ctx, memberM, ownerM.UserID, "3"); err != nil {
+	wantErr(t, "settle with self", s.CreateSettlement(ctx, memberM, memberM.UserID, "1", "cash", ""), g.ErrorInvalidInput)
+	wantErr(t, "settle with stranger", s.CreateSettlement(ctx, memberM, strangerM.UserID, "1", "cash", ""), g.ErrorInvalidInput)
+	var fe FieldError
+	if err := s.CreateSettlement(ctx, memberM, ownerM.UserID, "1", "cheque", ""); !errors.As(err, &fe) || fe.Field != FieldMethod {
+		t.Fatalf("unknown method: %v", err)
+	}
+	if err := s.CreateSettlement(ctx, memberM, ownerM.UserID, "1", "cash", strings.Repeat("x", MaxSettlementNoteLength+1)); !errors.As(err, &fe) || fe.Field != FieldNote {
+		t.Fatalf("long note: %v", err)
+	}
+	if err := s.CreateSettlement(ctx, memberM, ownerM.UserID, "3", "transfer", " rent "); err != nil {
 		t.Fatal(err)
 	}
 	wantDebt("pending settlement", 500)
 	pending, err := s.ListPendingSettlements(ctx, ownerM)
 	if err != nil || len(pending) != 1 {
 		t.Fatalf("pending = %+v, %v", pending, err)
+	}
+	if p := pending[0]; p.Method == nil || *p.Method != "transfer" || p.Note != "rent" || p.Currency != ownerM.Currency {
+		t.Fatalf("pending settlement = %+v", p)
 	}
 	wantErr(t, "sender confirms", s.ConfirmSettlement(ctx, memberM, pending[0].ID), g.ErrorNotFound)
 	wantErr(t, "stranger rejects", s.DeleteSettlement(ctx, strangerM, pending[0].ID), g.ErrorNotFound)
@@ -252,7 +263,7 @@ func TestExpenses(t *testing.T) {
 	wantErr(t, "confirmed cannot be deleted", s.DeleteSettlement(ctx, memberM, pending[0].ID), g.ErrorNotFound)
 
 	// overpaying flips the debt
-	if err := s.CreateSettlement(ctx, memberM, ownerM.UserID, "2,50"); err != nil {
+	if err := s.CreateSettlement(ctx, memberM, ownerM.UserID, "2,50", "cash", ""); err != nil {
 		t.Fatal(err)
 	}
 	pending, _ = s.ListPendingSettlements(ctx, ownerM)
@@ -333,7 +344,7 @@ func TestExpenses(t *testing.T) {
 	}
 
 	// back to the member being owed 0.50, paid back by the owner
-	if err := s.CreateSettlement(ctx, ownerM, memberM.UserID, "0.5"); err != nil {
+	if err := s.CreateSettlement(ctx, ownerM, memberM.UserID, "0.5", "cash", ""); err != nil {
 		t.Fatal(err)
 	}
 	pending, _ = s.ListPendingSettlements(ctx, memberM)
@@ -343,7 +354,7 @@ func TestExpenses(t *testing.T) {
 	wantDebt("all settled", 0)
 
 	// a pending settlement would turn into a debt with a former member once confirmed
-	if err := s.CreateSettlement(ctx, memberM, ownerM.UserID, "1"); err != nil {
+	if err := s.CreateSettlement(ctx, memberM, ownerM.UserID, "1", "cash", ""); err != nil {
 		t.Fatal(err)
 	}
 	wantErr(t, "member leaves with a pending settlement", s.Leave(ctx, memberM), g.ErrorBalanceNotZero)
@@ -392,7 +403,7 @@ func settlementHelpers(t *testing.T, s *DefaultService, ownerM, memberM Membersh
 	}
 	pay = func(from, to Membership, amount string) {
 		t.Helper()
-		if err := s.CreateSettlement(ctx, from, to.UserID, amount); err != nil {
+		if err := s.CreateSettlement(ctx, from, to.UserID, amount, "transfer", ""); err != nil {
 			t.Fatal(err)
 		}
 		pending, err := s.ListPendingSettlements(ctx, to)
@@ -446,7 +457,7 @@ func TestConfirmWaitsForMarkInFlight(t *testing.T) {
 
 	older, newer := expense(ownerM, memberM, "15"), expense(ownerM, memberM, "15")
 	pay(memberM, ownerM, "20")
-	if err := s.CreateSettlement(ctx, memberM, ownerM.UserID, "25"); err != nil {
+	if err := s.CreateSettlement(ctx, memberM, ownerM.UserID, "25", "transfer", ""); err != nil {
 		t.Fatal(err)
 	}
 	pending, err := s.ListPendingSettlements(ctx, ownerM)
@@ -549,7 +560,7 @@ func TestExpenseWaitsForLeave(t *testing.T) {
 func TestCopyInputFormOrder(t *testing.T) {
 	a, b, c := testUUID(1), testUUID(2), testUUID(3)
 	share := func(id pgtype.UUID, cents int64) dbqueries.ListExpenseSharesRow {
-		return dbqueries.ListExpenseSharesRow{UserID: id, Username: id.String(), AmountCents: cents, PaidAt: pgtype.Timestamptz{}}
+		return dbqueries.ListExpenseSharesRow{UserID: id, Username: id.String(), AmountCents: cents, PaidAt: pgtype.Timestamptz{}, Active: true}
 	}
 	for _, tc := range []struct {
 		order  []pgtype.UUID
@@ -563,7 +574,7 @@ func TestCopyInputFormOrder(t *testing.T) {
 		{[]pgtype.UUID{a, c}, []dbqueries.ListExpenseSharesRow{share(a, 300), share(c, 701)}, true},
 	} {
 		e := Expense{
-			Expense: dbqueries.GetExpenseRow{ID: testUUID(9), Category: "other", Title: "Bill", AmountCents: 1001,
+			Expense: dbqueries.GetExpenseRow{ID: testUUID(9), Category: "other", Title: "Bill", AmountCents: 1001, Currency: "EUR",
 				IncurredOn: pgtype.Date{}, PayerID: b, PayerName: "b"},
 			Shares: tc.shares,
 			Files:  nil,

@@ -26,7 +26,7 @@ func TestExpenseEditorCarriesTheItemLink(t *testing.T) {
 		Members: nil, Shares: nil, ListID: list, ItemID: item}
 	members := []dbqueries.ListActiveMembersRow{{UserID: item, Username: "Ben", AvatarKey: nil, Role: "", JoinedAt: pgtype.Timestamptz{}}}
 	var b strings.Builder
-	if err := ExpenseEditor(actor, members, in, "", "").Render(ctx, &b); err != nil {
+	if err := ExpenseEditor(actor, members, nil, in, "", "").Render(ctx, &b); err != nil {
 		t.Fatal(err)
 	}
 	for _, want := range []string{
@@ -55,11 +55,11 @@ func TestHouseholdExpensesSettledStamp(t *testing.T) {
 	}
 	you, ben := pgtype.UUID{Bytes: [16]byte{1}, Valid: true}, pgtype.UUID{Bytes: [16]byte{2}, Valid: true}
 	actor := services.Membership{HouseholdID: pgtype.UUID{}, UserID: you, Role: "", Currency: "EUR", UnreadMessages: 0, PendingSettlements: 0}
-	expenses := []dbqueries.ListExpensesRow{{ID: pgtype.UUID{}, Category: "other", Title: "Bread", AmountCents: 1,
+	expenses := []dbqueries.ListExpensesRow{{ID: pgtype.UUID{}, Category: "other", Title: "Bread", AmountCents: 1, Currency: "EUR",
 		IncurredOn: pgtype.Date{}, PayerID: ben, PayerName: "Ben", FullyPaid: false}}
 	debts := []services.Debt{{From: you, FromName: "", To: ben, ToName: "Ben", Cents: 1, Items: nil}}
 	pending := []dbqueries.ListPendingSettlementsRow{{ID: pgtype.UUID{}, FromUser: you, FromName: "", ToUser: ben, ToName: "Ben",
-		AmountCents: 1, CreatedAt: pgtype.Timestamptz{}}}
+		AmountCents: 1, Currency: "EUR", Method: nil, Note: "", CreatedAt: pgtype.Timestamptz{}}}
 	for _, tc := range []struct {
 		name string
 		o    services.ExpensesOverview
@@ -71,7 +71,7 @@ func TestHouseholdExpensesSettledStamp(t *testing.T) {
 		{"nothing yet", services.ExpensesOverview{Debts: nil, Pending: nil, Expenses: nil, HasExpenses: false}, false},
 	} {
 		var b strings.Builder
-		if err := HouseholdExpenses(actor, tc.o, services.ExpenseFilter{Query: "", Show: ""}, "", "", "").Render(ctx, &b); err != nil {
+		if err := HouseholdExpenses(actor, tc.o, services.ExpenseFilter{Query: "", Show: ""}, SettleSlip{To: "", Amount: "", Method: "", Note: "", Error: ""}, nil).Render(ctx, &b); err != nil {
 			t.Fatal(err)
 		}
 		if got := strings.Contains(b.String(), utils.T(ctx, locales.LK_ExpensesSettled)); got != tc.want {

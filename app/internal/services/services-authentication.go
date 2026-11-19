@@ -40,15 +40,19 @@ func (s *DefaultService) RegisterUser(ctx *gin.Context, user dbqueries.InsertUse
 		Language: user.Language,
 	})
 	if err != nil {
-		var pgErr *pgconn.PgError
-		// https://www.postgresql.org/docs/current/errcodes-appendix.html
-		if errors.As(err, &pgErr) && pgErr.Code == "23505" {
+		if isUniqueViolation(err) {
 			return nil, g.ErrorAccountAlreadyExists
 		}
 		return nil, err
 	}
 
 	return &returnValue, nil
+}
+
+// isUniqueViolation https://www.postgresql.org/docs/current/errcodes-appendix.html
+func isUniqueViolation(err error) bool {
+	var pgErr *pgconn.PgError
+	return errors.As(err, &pgErr) && pgErr.Code == "23505"
 }
 
 // SetUserLanguage saves the language the user picked, it is put in the cookie on sign in

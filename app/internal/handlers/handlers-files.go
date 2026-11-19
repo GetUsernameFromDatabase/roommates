@@ -166,6 +166,26 @@ func (h *DefaultHandler) SetShoppingItemDescription(ctx *gin.Context) {
 	}
 }
 
+// SetShoppingItemText shows the item again, an invalid text or qty shows on it,
+// the text comes as "name" from [pages.nameHeader]
+func (h *DefaultHandler) SetShoppingItemText(ctx *gin.Context) {
+	listID, it, ok := h.loadShoppingItem(ctx)
+	if !ok {
+		return
+	}
+	actor := membershipFromContext(ctx)
+	err := h.service.SetShoppingItemText(ctx, actor, listID, it.ID, ctx.PostForm("name"), ctx.PostForm("qty"))
+	switch {
+	case err == nil:
+		stay(ctx, shoppingItemPath(actor.HouseholdID, listID, it.ID))
+	case errors.Is(err, g.ErrorInvalidInput):
+		h.renderShoppingItem(ctx, http.StatusUnprocessableEntity, listID, it,
+			utils.T(ctx.Request.Context(), locales.LK_ShoppingItemLength, services.MaxShoppingItemTextLength, services.MaxShoppingItemQtyLength))
+	default:
+		pageError(ctx, err)
+	}
+}
+
 func (h *DefaultHandler) UploadShoppingItemFile(ctx *gin.Context) {
 	listID, it, ok := h.loadShoppingItem(ctx)
 	if !ok {

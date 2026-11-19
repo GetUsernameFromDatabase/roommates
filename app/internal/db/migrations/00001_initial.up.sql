@@ -14,6 +14,9 @@ CREATE TABLE users (
   avatar_key TEXT UNIQUE,
   -- NULL until the user picks one, then the browser's language is used
   language TEXT,
+  -- where to pay the user, shown only in households whose membership has show_payment_details on
+  payee_name TEXT,
+  payee_iban TEXT,
   CONSTRAINT chk_users_email_lowercase CHECK (email = lower(email))
 );
 -- if in the future switch is made from like ex% to %ex% then this index won't do
@@ -39,6 +42,7 @@ CREATE TABLE memberships (
   left_at TIMESTAMP WITH TIME ZONE,
   -- messages of others after it are unread, a new member starts with nothing unread
   chat_read_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  show_payment_details BOOLEAN NOT NULL DEFAULT FALSE,
   PRIMARY KEY (household_id, user_id)
 );
 CREATE INDEX idx_memberships_user_id ON memberships (user_id);
@@ -55,13 +59,16 @@ CREATE TABLE invites (
 CREATE INDEX idx_invites_household_id ON invites (household_id);
 -- -----------------------------------------------------------------------------
 -- single use tokens sent by email, only the sha256 of the token is stored
--- so a database leak does not leak working links
+-- so a database leak does not leak working links;
+-- an email_change token carries the address it confirms, the swap happens when it is used
 CREATE TABLE email_tokens (
   token_hash BYTEA PRIMARY KEY,
   user_id UUID NOT NULL REFERENCES users (id) ON DELETE CASCADE,
-  kind TEXT NOT NULL CHECK (kind IN ('verify', 'reset')),
+  kind TEXT NOT NULL CHECK (kind IN ('verify', 'reset', 'email_change')),
   expires_at TIMESTAMP WITH TIME ZONE NOT NULL,
-  created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
+  created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  new_email TEXT,
+  CHECK ((kind = 'email_change') = (new_email IS NOT NULL))
 );
 CREATE INDEX idx_email_tokens_user_id ON email_tokens (user_id);
 -- -----------------------------------------------------------------------------
@@ -95,8 +102,10 @@ CREATE TABLE expenses (
   payer_id UUID NOT NULL REFERENCES users (id),
   category TEXT NOT NULL REFERENCES expense_categories (id) ON UPDATE CASCADE,
   title TEXT NOT NULL,
-  -- in the household currency's minor units
+  -- in currency's minor units, the household's currency when it was made; the household
+  -- currency only changes while everyone is settled, so open balances never mix two
   amount_cents BIGINT NOT NULL CHECK (amount_cents > 0),
+  currency TEXT NOT NULL,
   incurred_on DATE NOT NULL,
   created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
   -- target of the composite keys in shopping_items and file_refs
@@ -164,18 +173,28 @@ CREATE TABLE expense_shares (
 );
 CREATE INDEX idx_expense_shares_user_id ON expense_shares (user_id);
 -- -----------------------------------------------------------------------------
--- "from_user paid to_user", counts towards balances once to_user confirms it
+-- "from_user paid to_user", counts towards balances once to_user confirms it;
+-- method is how from_user paid, NULL only on one an expense edit made (from_edit), that one
+-- records a share the payer had marked paid outside the app, expense_id is that expense
 CREATE TABLE settlements (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   household_id UUID NOT NULL REFERENCES households (id) ON DELETE CASCADE,
   from_user UUID NOT NULL REFERENCES users (id),
   to_user UUID NOT NULL REFERENCES users (id),
   amount_cents BIGINT NOT NULL CHECK (amount_cents > 0),
+  currency TEXT NOT NULL,
   created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
   confirmed_at TIMESTAMP WITH TIME ZONE,
-  CHECK (from_user <> to_user)
+  method TEXT CHECK (method IN ('transfer', 'cash', 'card', 'other')),
+  note TEXT NOT NULL DEFAULT '',
+  from_edit BOOLEAN NOT NULL DEFAULT FALSE,
+  expense_id UUID,
+  CHECK (from_user <> to_user),
+  FOREIGN KEY (expense_id, household_id) REFERENCES expenses (id, household_id) ON DELETE
+  SET NULL (expense_id)
 );
 CREATE INDEX idx_settlements_household_id ON settlements (household_id);
+CREATE INDEX idx_settlements_expense_id ON settlements (expense_id);
 -- -----------------------------------------------------------------------------
 -- how much of a confirmed settlement went to which share of an expense, marking a share
 -- paid spends the settlement, only what is left of it still lowers the debt

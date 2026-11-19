@@ -133,12 +133,13 @@ func (s *DefaultService) ShoppingExpenseDraft(ctx context.Context, actor Members
 	return string(text[:min(len(text), MaxExpenseTitleLength)]), l.Category, err
 }
 
-// DeleteShoppingList returns [g.ErrorNotFound] unless the actor created the list
+// DeleteShoppingList returns [g.ErrorNotFound] unless the actor created the list or is an owner
 func (s *DefaultService) DeleteShoppingList(ctx context.Context, actor Membership, listID pgtype.UUID) error {
 	return rowsAffected(s.db.DeleteShoppingList(ctx, dbqueries.DeleteShoppingListParams{
 		ID:          listID,
 		HouseholdID: actor.HouseholdID,
 		CreatedBy:   actor.UserID,
+		IsOwner:     actor.Role == g.RoleOwner,
 	}))
 }
 
@@ -186,6 +187,22 @@ func (s *DefaultService) GetShoppingItem(ctx context.Context, actor Membership, 
 		HouseholdID: actor.HouseholdID,
 	})
 	return it, noRowsAs(err, g.ErrorNotFound)
+}
+
+// SetShoppingItemText returns [g.ErrorInvalidInput] for an empty or too long text or qty, like [DefaultService.AddShoppingItem]
+func (s *DefaultService) SetShoppingItemText(ctx context.Context, actor Membership, listID, itemID pgtype.UUID, text, qty string) error {
+	text, okText := trimToLength(text, 1, MaxShoppingItemTextLength)
+	qty, okQty := trimToLength(qty, 0, MaxShoppingItemQtyLength)
+	if !okText || !okQty {
+		return g.ErrorInvalidInput
+	}
+	return rowsAffected(s.db.SetShoppingItemText(ctx, dbqueries.SetShoppingItemTextParams{
+		Text:        text,
+		Qty:         qty,
+		ID:          itemID,
+		ListID:      listID,
+		HouseholdID: actor.HouseholdID,
+	}))
 }
 
 // SetShoppingItemDescription returns [g.ErrorInvalidInput] over [MaxShoppingItemDescriptionLength] runes

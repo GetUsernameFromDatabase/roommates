@@ -85,3 +85,24 @@ func TestNotes(t *testing.T) {
 	_, err = s.GetNote(ctx, ownerM, shared)
 	wantErr(t, "deleted note", err, g.ErrorNotFound)
 }
+
+func TestOwnerDeletesNotes(t *testing.T) {
+	s := newTestService(t)
+	ctx := context.Background()
+	ownerM, memberM, _ := newTestHousehold(t, s)
+	shared, err := s.CreateNote(ctx, memberM, NoteInput{Title: "Rules", BodyMD: "", Private: false})
+	if err != nil {
+		t.Fatal(err)
+	}
+	private, err := s.CreateNote(ctx, memberM, NoteInput{Title: "Diary", BodyMD: "", Private: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	wantErr(t, "owner deletes private note", s.DeleteNote(ctx, ownerM, private), g.ErrorNotFound)
+	if err := s.DeleteNote(ctx, ownerM, shared); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.DeleteNote(ctx, memberM, private); err != nil {
+		t.Fatal(err)
+	}
+}

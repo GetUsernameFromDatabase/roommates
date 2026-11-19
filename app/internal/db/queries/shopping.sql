@@ -54,12 +54,15 @@ WHERE f.household_id = sqlc.arg(household_id)
     WHERE r.file_id = f.id
       AND i.list_id IS DISTINCT FROM sqlc.arg(list_id)
   );
--- only the creator deletes a list
+-- the creator deletes a list, an owner any
 -- name: DeleteShoppingList :execrows
 DELETE FROM shopping_lists
-WHERE id = $1
-  AND household_id = $2
-  AND created_by = $3;
+WHERE id = sqlc.arg(id)
+  AND household_id = sqlc.arg(household_id)
+  AND (
+    created_by = sqlc.arg(created_by)
+    OR sqlc.arg(is_owner)::bool
+  );
 -- shopping items
 -- name: InsertShoppingItem :exec
 INSERT INTO shopping_items (list_id, household_id, text, qty, created_by)
@@ -138,6 +141,14 @@ WHERE id = $1
   AND list_id = $2
   AND household_id = $3
   AND created_by = $4;
+-- any member changes the words and quantity of an item
+-- name: SetShoppingItemText :execrows
+UPDATE shopping_items
+SET text = sqlc.arg(text),
+  qty = sqlc.arg(qty)
+WHERE id = sqlc.arg(id)
+  AND list_id = sqlc.arg(list_id)
+  AND household_id = sqlc.arg(household_id);
 -- any member describes an item
 -- name: SetShoppingItemDescription :execrows
 UPDATE shopping_items

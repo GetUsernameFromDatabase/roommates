@@ -1,0 +1,108 @@
+package pages
+
+import "roommates/web/components"
+import "roommates/web/components/button"
+import "roommates/web/components/input"
+import "roommates/web/components/select"
+import "roommates/internal/locales"
+import "roommates/internal/services"
+import "roommates/internal/utils"
+import g "roommates/internal/config"
+
+// HouseholdSettingsSection is the household's name and currency, path is the settings page, owners post to
+// path + "/household" and only this section is swapped, members see them read-only
+// the currency is locked while a debt is open, errorMessage and infoMessage show by the save button
+templ HouseholdSettingsSection(path string, actor services.Membership, h services.HouseholdSettings, errorMessage, infoMessage string) {
+	{{ owner := actor.Role == g.RoleOwner }}
+	<section id="household-settings" aria-labelledby="household-settings-title" class={ sheetClass + " flex flex-col gap-4" }>
+		<h2 id="household-settings-title" class="text-xl font-semibold">
+			@components.T(locales.LK_HouseholdSettingsTitle)
+		</h2>
+		if owner {
+			<form
+				action={ templ.SafeURL(path + "/household") }
+				method="post"
+				hx-post={ path + "/household" }
+				hx-target="#household-settings"
+				hx-swap="outerHTML"
+				hx-disinherit="*"
+				class="flex flex-col items-start gap-4"
+			>
+				<div class="flex w-full flex-col gap-2">
+					<label for="household-name" class="text-sm font-medium">
+						@components.T(locales.LK_HouseholdName)
+					</label>
+					@input.Input(input.Props{
+						ID:       "household-name",
+						Name:     "name",
+						Type:     "text",
+						Value:    h.Name,
+						Required: true,
+						Class:    "h-11",
+						Attributes: templ.Attributes{
+							"maxlength": services.MaxHouseholdNameLength,
+						},
+					})
+				</div>
+				<div class="flex w-full flex-col gap-2">
+					<label for="household-currency-trigger" class="text-sm font-medium">
+						@components.T(locales.LK_HouseholdSettingsCurrency)
+					</label>
+					@currencySelect(h)
+					if !h.Settled {
+						<p id="household-currency-locked" class="text-sm text-muted-foreground">
+							@components.T(locales.LK_HouseholdSettingsCurrencyLocked)
+						</p>
+					}
+				</div>
+				<div class="flex flex-wrap items-center gap-3">
+					@button.Button(button.Props{Type: button.TypeSubmit, Class: "h-11"}) {
+						@components.T(locales.LK_CommonSave)
+					}
+					<span role="status" class="text-sm text-muted-foreground empty:hidden">{ infoMessage }</span>
+				</div>
+				@formError(errorMessage)
+			</form>
+		} else {
+			<dl class="flex flex-col gap-3">
+				<div>
+					<dt class="text-sm text-muted-foreground">
+						@components.T(locales.LK_HouseholdName)
+					</dt>
+					<dd class="font-medium break-words">{ h.Name }</dd>
+				</div>
+				<div>
+					<dt class="text-sm text-muted-foreground">
+						@components.T(locales.LK_HouseholdSettingsCurrency)
+					</dt>
+					<dd class="font-medium">{ h.Currency }</dd>
+				</div>
+			</dl>
+		}
+	</section>
+}
+
+// currencySelect is disabled while a debt is open, a disabled field posts nothing,
+// so the kept currency goes in a hidden input
+templ currencySelect(h services.HouseholdSettings) {
+	{{
+		items := utils.Map(services.HouseholdCurrencies, func(c string) selectcomp.ItemData {
+			return selectcomp.ItemData{Value: c, Label: c}
+		})
+	}}
+	if !h.Settled {
+		<input type="hidden" name="currency" value={ h.Currency }/>
+	}
+	@selectcomp.Select(selectcomp.Props{ID: "household-currency", Name: utils.IfElse(h.Settled, "currency", ""), Items: items, DefaultValue: h.Currency, Disabled: !h.Settled}) {
+		@selectcomp.Trigger(selectcomp.TriggerProps{Class: "bg-card data-[size=default]:h-11 dark:bg-card", Attributes: templ.Attributes{"aria-describedby": utils.IfElse(h.Settled, "", "household-currency-locked")}}) {
+			@selectcomp.Value()
+		}
+		@selectcomp.Content() {
+			for _, c := range services.HouseholdCurrencies {
+				@selectcomp.Item(selectcomp.ItemProps{Value: c}) {
+					{ c }
+				}
+			}
+		}
+	}
+}
