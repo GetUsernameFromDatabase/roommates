@@ -1,0 +1,73 @@
+package pages
+
+import "roommates/web/components"
+import "roommates/web/components/input"
+import "roommates/web/components/select"
+import g "roommates/internal/config"
+import "roommates/internal/locales"
+import "roommates/internal/utils"
+import "strconv"
+
+// schedulePicker is the schedule fieldset of the chore and the event form, id is the prefix of its ids
+//
+// only the fields of the picked schedule show, by CSS on the radio's state, the others are still
+// posted and the server ignores them; attrs go on the fieldset (aria-invalid for an error), extra
+// comes after the fields and may use the picked schedule through the fieldset's group/sched,
+// errMsg shows last in a block with the id errID
+templ schedulePicker(id string, p schedulePick, attrs templ.Attributes, errID, errMsg string, extra templ.Component) {
+	<fieldset class="group/sched flex min-w-0 flex-col gap-3" { attrs... }>
+		<legend class="mb-1 text-sm font-medium">
+			@components.T(locales.LK_ChoresSchedule)
+		</legend>
+		@segmented(id+"-schedule", "schedule", p.value(), p.options())
+		// Monday first, the values are time.Weekday; seven equal columns so the week fits on one row at 320px
+		<div class="hidden max-w-86 grid-cols-7 gap-1.5 group-has-[input[name=schedule][value=weekdays]:checked]/sched:grid">
+			for _, d := range choreWeek {
+				<label class="mx-auto flex aspect-square w-full max-w-11 cursor-pointer items-center justify-center rounded-full border text-sm font-medium transition-colors hover:bg-accent has-checked:border-primary has-checked:bg-primary has-checked:text-primary-foreground has-focus-visible:ring-[3px] has-focus-visible:ring-ring/50" title={ utils.T(ctx, choreWeekdayLong[d]) }>
+					<input
+						type="checkbox"
+						class="sr-only"
+						name="weekday"
+						value={ strconv.Itoa(int(d)) }
+						checked?={ p.picked(d) }
+						aria-label={ utils.T(ctx, choreWeekdayLong[d]) }
+					/>
+					<span aria-hidden="true">{ utils.T(ctx, choreWeekdayShort[d]) }</span>
+				</label>
+			}
+		</div>
+		// "Every [2] [days] ..." reads as one sentence, the unit select sits inside it
+		<div class="hidden flex-col gap-3 group-has-[input[name=schedule][value=every]:checked]/sched:flex">
+			<div class="flex flex-wrap items-center gap-2">
+				<span>
+					@components.T(locales.LK_ChoresEveryBefore)
+				</span>
+				@input.Input(input.Props{
+					ID:    id + "-every",
+					Name:  "every",
+					Type:  "number",
+					Value: scheduleEvery(p.Every),
+					Class: "h-11 w-14 text-center",
+					Attributes: templ.Attributes{
+						"min":        "1",
+						"inputmode":  "numeric",
+						"aria-label": utils.T(ctx, locales.LK_ChoresEveryCount),
+					},
+				})
+				{{
+					units := utils.Map(g.ChoreEveryUnits, func(u string) selectcomp.ItemData {
+						return selectcomp.ItemData{Value: u, Label: utils.T(ctx, choreUnitKeys[u])}
+					})
+				}}
+				@optionSelect(id+"-unit", "unit", utils.IfElse(p.Unit == g.ChoreUnitWeekdays || p.Unit == "", g.ChoreUnitDay, p.Unit),
+					"w-auto gap-1 px-2.5 data-[size=default]:h-11", templ.Attributes{"aria-label": utils.T(ctx, locales.LK_ChoresEveryUnit)}, units)
+			</div>
+		</div>
+		@extra
+		if errMsg != "" {
+			<div id={ errID }>
+				@formError(errMsg)
+			</div>
+		}
+	</fieldset>
+}

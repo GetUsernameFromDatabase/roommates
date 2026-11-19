@@ -167,6 +167,18 @@ func initRoutes(r *gin.Engine, h *handlers.DefaultHandler, service *services.Def
 			// form value dir=up|down
 			chore.POST("/members/:"+g.ParamUserID+"/move", h.MoveChoreMember)
 
+			household.GET("/calendar", h.PageCalendar)
+			// ?from=YYYY-MM-DD, the phone agenda's "load more" fragment
+			household.GET("/calendar/agenda", h.CalendarAgenda)
+			household.POST("/calendar/events", h.CreateEvent)
+			event := household.Group("/calendar/events/:" + g.ParamEventID)
+			// ?on=YYYY-MM-DD on all of these; form value scope=this|following|all on POST "" and /delete
+			event.GET("", h.PageEvent)
+			event.POST("", h.UpdateEvent)
+			event.POST("/delete", h.DeleteEvent)
+			event.POST("/files", h.UploadEventFile)
+			h.FileRefRoutes(event, h.EventFileTarget)
+
 			household.GET("/expenses", h.PageExpenses)
 			household.GET("/expenses/new", h.PageNewExpense)
 			household.POST("/expenses", h.CreateExpense)

@@ -536,7 +536,7 @@ func TestPurgeDeletedHouseholds(t *testing.T) {
 	ctx := context.Background()
 	oldM, _, _ := newTestHousehold(t, s)
 	recentM, _, _ := newTestHousehold(t, s)
-	none := FileTarget{NoteID: pgtype.UUID{}, ListID: pgtype.UUID{}, ShoppingItemID: pgtype.UUID{}, ExpenseID: pgtype.UUID{}, MessageID: pgtype.UUID{}}
+	none := FileTarget{NoteID: pgtype.UUID{}, ListID: pgtype.UUID{}, ShoppingItemID: pgtype.UUID{}, ExpenseID: pgtype.UUID{}, MessageID: pgtype.UUID{}, EventID: pgtype.UUID{}}
 	body := []byte("\x89PNG\r\n\x1a\n rest of the image")
 	fileID, err := s.UploadFile(ctx, oldM, none, "photo.png", bytes.NewReader(body), int64(len(body)))
 	if err != nil {

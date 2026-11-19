@@ -131,17 +131,17 @@ func TestFileRefs(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		return listID, FileTarget{NoteID: pgtype.UUID{}, ListID: listID, ShoppingItemID: list.Items[0].ID, ExpenseID: pgtype.UUID{}, MessageID: pgtype.UUID{}}
+		return listID, FileTarget{NoteID: pgtype.UUID{}, ListID: listID, ShoppingItemID: list.Items[0].ID, ExpenseID: pgtype.UUID{}, MessageID: pgtype.UUID{}, EventID: pgtype.UUID{}}
 	}
 	listID, item := newItem("Cheese")
 	own := upload(memberM, item, "own.txt")
-	loose := upload(ownerM, FileTarget{NoteID: pgtype.UUID{}, ListID: pgtype.UUID{}, ShoppingItemID: pgtype.UUID{}, ExpenseID: pgtype.UUID{}, MessageID: pgtype.UUID{}}, "loose.txt")
-	foreign := upload(strangerM, FileTarget{NoteID: pgtype.UUID{}, ListID: pgtype.UUID{}, ShoppingItemID: pgtype.UUID{}, ExpenseID: pgtype.UUID{}, MessageID: pgtype.UUID{}}, "foreign.txt")
+	loose := upload(ownerM, FileTarget{NoteID: pgtype.UUID{}, ListID: pgtype.UUID{}, ShoppingItemID: pgtype.UUID{}, ExpenseID: pgtype.UUID{}, MessageID: pgtype.UUID{}, EventID: pgtype.UUID{}}, "loose.txt")
+	foreign := upload(strangerM, FileTarget{NoteID: pgtype.UUID{}, ListID: pgtype.UUID{}, ShoppingItemID: pgtype.UUID{}, ExpenseID: pgtype.UUID{}, MessageID: pgtype.UUID{}, EventID: pgtype.UUID{}}, "foreign.txt")
 	private, err := s.CreateNote(ctx, ownerM, NoteInput{Title: "Secret", BodyMD: "", Private: true})
 	if err != nil {
 		t.Fatal(err)
 	}
-	secret := upload(ownerM, FileTarget{NoteID: private, ListID: pgtype.UUID{}, ShoppingItemID: pgtype.UUID{}, ExpenseID: pgtype.UUID{}, MessageID: pgtype.UUID{}}, "secret.txt")
+	secret := upload(ownerM, FileTarget{NoteID: private, ListID: pgtype.UUID{}, ShoppingItemID: pgtype.UUID{}, ExpenseID: pgtype.UUID{}, MessageID: pgtype.UUID{}, EventID: pgtype.UUID{}}, "secret.txt")
 
 	attachedIDs := func(actor Membership) []pgtype.UUID {
 		t.Helper()
@@ -206,7 +206,7 @@ func TestFileRefs(t *testing.T) {
 
 	wantErr(t, "stranger attaches", s.AttachFile(ctx, strangerM, item, foreign), g.ErrorNotFound)
 	wantErr(t, "stranger detaches", s.DetachFile(ctx, strangerM, item, loose), g.ErrorNotFound)
-	none := FileTarget{NoteID: pgtype.UUID{}, ListID: pgtype.UUID{}, ShoppingItemID: pgtype.UUID{}, ExpenseID: pgtype.UUID{}, MessageID: pgtype.UUID{}}
+	none := FileTarget{NoteID: pgtype.UUID{}, ListID: pgtype.UUID{}, ShoppingItemID: pgtype.UUID{}, ExpenseID: pgtype.UUID{}, MessageID: pgtype.UUID{}, EventID: pgtype.UUID{}}
 	wantErr(t, "attach to nothing", s.AttachFile(ctx, ownerM, none, loose), g.ErrorInvalidInput)
 
 	// a kept file stays when its last reference goes, back among the unattached files
@@ -240,7 +240,7 @@ func TestFileRefs(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	onNote := upload(memberM, FileTarget{NoteID: ours, ListID: pgtype.UUID{}, ShoppingItemID: pgtype.UUID{}, ExpenseID: pgtype.UUID{}, MessageID: pgtype.UUID{}}, "note.txt")
+	onNote := upload(memberM, FileTarget{NoteID: ours, ListID: pgtype.UUID{}, ShoppingItemID: pgtype.UUID{}, ExpenseID: pgtype.UUID{}, MessageID: pgtype.UUID{}, EventID: pgtype.UUID{}}, "note.txt")
 	if err := s.AttachFile(ctx, ownerM, item, onNote); err != nil {
 		t.Fatal(err)
 	}
@@ -363,7 +363,7 @@ func TestFileRefs(t *testing.T) {
 	}
 
 	// a message tells a file that goes with it from a kept one
-	sent := FileTarget{NoteID: pgtype.UUID{}, ListID: pgtype.UUID{}, ShoppingItemID: pgtype.UUID{}, ExpenseID: pgtype.UUID{}, MessageID: pgtype.UUID{}}
+	sent := FileTarget{NoteID: pgtype.UUID{}, ListID: pgtype.UUID{}, ShoppingItemID: pgtype.UUID{}, ExpenseID: pgtype.UUID{}, MessageID: pgtype.UUID{}, EventID: pgtype.UUID{}}
 	if err := s.PostMessage(ctx, ownerM, "", pgtype.UUID{}, nil, []pgtype.UUID{keptOnList}); err != nil {
 		t.Fatal(err)
 	}
@@ -381,7 +381,7 @@ func TestFileRefs(t *testing.T) {
 	}
 
 	// attaching to a private note does not take a file away from its uploader
-	onPrivate := FileTarget{NoteID: private, ListID: pgtype.UUID{}, ShoppingItemID: pgtype.UUID{}, ExpenseID: pgtype.UUID{}, MessageID: pgtype.UUID{}}
+	onPrivate := FileTarget{NoteID: private, ListID: pgtype.UUID{}, ShoppingItemID: pgtype.UUID{}, ExpenseID: pgtype.UUID{}, MessageID: pgtype.UUID{}, EventID: pgtype.UUID{}}
 	mine := upload(memberM, third, "mine.txt")
 	if err := s.AttachFile(ctx, ownerM, onPrivate, mine); err != nil {
 		t.Fatal(err)
@@ -419,7 +419,7 @@ func TestRenameFile(t *testing.T) {
 	s := newTestService(t)
 	ctx := context.Background()
 	ownerM, memberM, strangerM := newTestHousehold(t, s)
-	none := FileTarget{NoteID: pgtype.UUID{}, ListID: pgtype.UUID{}, ShoppingItemID: pgtype.UUID{}, ExpenseID: pgtype.UUID{}, MessageID: pgtype.UUID{}}
+	none := FileTarget{NoteID: pgtype.UUID{}, ListID: pgtype.UUID{}, ShoppingItemID: pgtype.UUID{}, ExpenseID: pgtype.UUID{}, MessageID: pgtype.UUID{}, EventID: pgtype.UUID{}}
 	body := []byte("\x89PNG\r\n\x1a\n rest of the image")
 	id, err := s.UploadFile(ctx, memberM, none, "photo.png", bytes.NewReader(body), int64(len(body)))
 	if err != nil {
@@ -457,7 +457,7 @@ func TestFiles(t *testing.T) {
 	store := s.store.(*fakeStore)
 	ctx := context.Background()
 	ownerM, memberM, strangerM := newTestHousehold(t, s)
-	none := FileTarget{NoteID: pgtype.UUID{}, ListID: pgtype.UUID{}, ShoppingItemID: pgtype.UUID{}, ExpenseID: pgtype.UUID{}, MessageID: pgtype.UUID{}}
+	none := FileTarget{NoteID: pgtype.UUID{}, ListID: pgtype.UUID{}, ShoppingItemID: pgtype.UUID{}, ExpenseID: pgtype.UUID{}, MessageID: pgtype.UUID{}, EventID: pgtype.UUID{}}
 	png := []byte("\x89PNG\r\n\x1a\n rest of the image")
 	upload := func(actor Membership, target FileTarget, name string, body []byte) (pgtype.UUID, error) {
 		return s.UploadFile(ctx, actor, target, name, bytes.NewReader(body), int64(len(body)))
@@ -492,7 +492,7 @@ func TestFiles(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	onPrivate := FileTarget{NoteID: private, ListID: pgtype.UUID{}, ShoppingItemID: pgtype.UUID{}, ExpenseID: pgtype.UUID{}, MessageID: pgtype.UUID{}}
+	onPrivate := FileTarget{NoteID: private, ListID: pgtype.UUID{}, ShoppingItemID: pgtype.UUID{}, ExpenseID: pgtype.UUID{}, MessageID: pgtype.UUID{}, EventID: pgtype.UUID{}}
 	_, err = upload(memberM, onPrivate, "x.txt", []byte("x"))
 	wantErr(t, "member uploads to private note", err, g.ErrorNotFound)
 	secret, err := upload(ownerM, onPrivate, "lease.png", realPNG(t))
@@ -569,7 +569,7 @@ func TestFiles(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	onItem := FileTarget{NoteID: pgtype.UUID{}, ListID: listID, ShoppingItemID: list.Items[0].ID, ExpenseID: pgtype.UUID{}, MessageID: pgtype.UUID{}}
+	onItem := FileTarget{NoteID: pgtype.UUID{}, ListID: listID, ShoppingItemID: list.Items[0].ID, ExpenseID: pgtype.UUID{}, MessageID: pgtype.UUID{}, EventID: pgtype.UUID{}}
 	_, err = upload(strangerM, onItem, "x.txt", []byte("x"))
 	wantErr(t, "stranger uploads to item", err, g.ErrorNotFound)
 	if _, err := upload(memberM, onItem, "cheese.png", png); err != nil {
@@ -638,7 +638,7 @@ func TestOwnerDeletesFiles(t *testing.T) {
 	s := newTestService(t)
 	ctx := context.Background()
 	ownerM, memberM, _ := newTestHousehold(t, s)
-	none := FileTarget{NoteID: pgtype.UUID{}, ListID: pgtype.UUID{}, ShoppingItemID: pgtype.UUID{}, ExpenseID: pgtype.UUID{}, MessageID: pgtype.UUID{}}
+	none := FileTarget{NoteID: pgtype.UUID{}, ListID: pgtype.UUID{}, ShoppingItemID: pgtype.UUID{}, ExpenseID: pgtype.UUID{}, MessageID: pgtype.UUID{}, EventID: pgtype.UUID{}}
 	body := []byte("a file")
 	upload := func(actor Membership, target FileTarget) pgtype.UUID {
 		t.Helper()
@@ -659,6 +659,6 @@ func TestOwnerDeletesFiles(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	hidden := upload(memberM, FileTarget{NoteID: private, ListID: pgtype.UUID{}, ShoppingItemID: pgtype.UUID{}, ExpenseID: pgtype.UUID{}, MessageID: pgtype.UUID{}})
+	hidden := upload(memberM, FileTarget{NoteID: private, ListID: pgtype.UUID{}, ShoppingItemID: pgtype.UUID{}, ExpenseID: pgtype.UUID{}, MessageID: pgtype.UUID{}, EventID: pgtype.UUID{}})
 	wantErr(t, "owner deletes file of a private note", s.DeleteFile(ctx, ownerM, hidden), g.ErrorNotFound)
 }

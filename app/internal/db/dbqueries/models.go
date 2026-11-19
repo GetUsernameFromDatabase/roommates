@@ -65,6 +65,45 @@ type EmailToken struct {
 	NewEmail  *string            `json:"new_email"`
 }
 
+type Event struct {
+	ID            pgtype.UUID        `json:"id"`
+	HouseholdID   pgtype.UUID        `json:"household_id"`
+	Title         string             `json:"title"`
+	Location      string             `json:"location"`
+	Notes         string             `json:"notes"`
+	StartDate     pgtype.Date        `json:"start_date"`
+	StartTime     pgtype.Time        `json:"start_time"`
+	EndDate       pgtype.Date        `json:"end_date"`
+	EndTime       pgtype.Time        `json:"end_time"`
+	Every         *int16             `json:"every"`
+	EveryUnit     *string            `json:"every_unit"`
+	Weekdays      *int16             `json:"weekdays"`
+	RepeatUntil   pgtype.Date        `json:"repeat_until"`
+	RemindMinutes *int16             `json:"remind_minutes"`
+	DetachedFrom  pgtype.UUID        `json:"detached_from"`
+	DetachedOn    pgtype.Date        `json:"detached_on"`
+	CreatedBy     pgtype.UUID        `json:"created_by"`
+	CreatedAt     pgtype.Timestamptz `json:"created_at"`
+}
+
+type EventException struct {
+	EventID     pgtype.UUID `json:"event_id"`
+	HouseholdID pgtype.UUID `json:"household_id"`
+	OccursOn    pgtype.Date `json:"occurs_on"`
+}
+
+type EventMember struct {
+	EventID     pgtype.UUID `json:"event_id"`
+	HouseholdID pgtype.UUID `json:"household_id"`
+	UserID      pgtype.UUID `json:"user_id"`
+}
+
+type EventReminder struct {
+	EventID     pgtype.UUID `json:"event_id"`
+	HouseholdID pgtype.UUID `json:"household_id"`
+	OccursOn    pgtype.Date `json:"occurs_on"`
+}
+
 type Expense struct {
 	ID          pgtype.UUID        `json:"id"`
 	HouseholdID pgtype.UUID        `json:"household_id"`
@@ -113,6 +152,7 @@ type FileRef struct {
 	ShoppingItemID pgtype.UUID        `json:"shopping_item_id"`
 	ExpenseID      pgtype.UUID        `json:"expense_id"`
 	MessageID      pgtype.UUID        `json:"message_id"`
+	EventID        pgtype.UUID        `json:"event_id"`
 	CreatedAt      pgtype.Timestamptz `json:"created_at"`
 }
 

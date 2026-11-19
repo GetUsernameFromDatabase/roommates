@@ -38,7 +38,7 @@ var ImageMimes = map[string]bool{
 // what [FileFilter] can narrow files down to, the place "none" is not attached to anything
 var (
 	FileKinds  = []string{"image", "pdf", "other"}
-	FilePlaces = []string{"note", "item", "expense", "message", "none"}
+	FilePlaces = []string{"note", "item", "expense", "message", "event", "none"}
 )
 
 // FileFilter narrows a file list, empty fields do not, Query is a part of the name in any case
@@ -54,13 +54,14 @@ func (f FileFilter) Active() bool {
 }
 
 // FileTarget is what an upload attaches to: a note, an item of a list, an expense,
-// a chat message, or nothing
+// a chat message, a calendar event, or nothing
 type FileTarget struct {
 	NoteID         pgtype.UUID
 	ListID         pgtype.UUID
 	ShoppingItemID pgtype.UUID
 	ExpenseID      pgtype.UUID
 	MessageID      pgtype.UUID
+	EventID        pgtype.UUID
 }
 
 type AttachedFile = dbqueries.ListAttachedFilesRow
@@ -95,9 +96,16 @@ func SplitFileName(name string) (stem, ext string) {
 	return strings.TrimSuffix(name, ext), ext
 }
 
-// checkFileTarget returns [g.ErrorNotFound] unless the actor sees the note, item or expense,
-// or wrote the message
+// checkFileTarget returns [g.ErrorNotFound] unless the actor sees the note, item, expense or
+// event, or wrote the message, and [g.ErrorForbidden] unless they may change the event
 func (s *DefaultService) checkFileTarget(ctx context.Context, actor Membership, t FileTarget) error {
+	if t.EventID.Valid {
+		e, err := s.db.GetEvent(ctx, dbqueries.GetEventParams{ID: t.EventID, HouseholdID: actor.HouseholdID})
+		if err != nil {
+			return noRowsAs(err, g.ErrorNotFound)
+		}
+		return canChangeEvent(actor, e)
+	}
 	if t.NoteID.Valid {
 		_, err := s.GetNote(ctx, actor, t.NoteID)
 		return err
@@ -184,7 +192,7 @@ func (s *DefaultService) UploadFile(ctx context.Context, actor Membership, t Fil
 		thumbKey = &k
 	}
 	// a file on nothing is kept, without a reference nothing else would hold it
-	kept := !t.NoteID.Valid && !t.ShoppingItemID.Valid && !t.ExpenseID.Valid && !t.MessageID.Valid
+	kept := !t.NoteID.Valid && !t.ShoppingItemID.Valid && !t.ExpenseID.Valid && !t.MessageID.Valid && !t.EventID.Valid
 	var fileID pgtype.UUID
 	err = s.inTx(ctx, func(q *dbqueries.Queries) error {
 		var err error
@@ -209,6 +217,7 @@ func (s *DefaultService) UploadFile(ctx context.Context, actor Membership, t Fil
 				ShoppingItemID: t.ShoppingItemID,
 				ExpenseID:      t.ExpenseID,
 				MessageID:      t.MessageID,
+				EventID:        t.EventID,
 			}); err != nil {
 				return err
 			}
@@ -288,9 +297,9 @@ func (s *DefaultService) ListAttachableFiles(ctx context.Context, actor Membersh
 }
 
 // checkFileRefTarget is [DefaultService.checkFileTarget] for attaching and removing, which needs
-// a note, item or expense, a message gets its files when it is posted
+// a note, item, expense or event, a message gets its files when it is posted
 func (s *DefaultService) checkFileRefTarget(ctx context.Context, actor Membership, t FileTarget) error {
-	if !t.NoteID.Valid && !t.ShoppingItemID.Valid && !t.ExpenseID.Valid {
+	if !t.NoteID.Valid && !t.ShoppingItemID.Valid && !t.ExpenseID.Valid && !t.EventID.Valid {
 		return g.ErrorInvalidInput
 	}
 	return s.checkFileTarget(ctx, actor, t)
@@ -309,6 +318,7 @@ func (s *DefaultService) AttachFile(ctx context.Context, actor Membership, t Fil
 		ShoppingItemID: t.ShoppingItemID,
 		ExpenseID:      t.ExpenseID,
 		MessageID:      t.MessageID,
+		EventID:        t.EventID,
 	})
 }
 
@@ -345,10 +355,11 @@ func (s *DefaultService) DetachFile(ctx context.Context, actor Membership, t Fil
 		NoteID:         t.NoteID,
 		ShoppingItemID: t.ShoppingItemID,
 		ExpenseID:      t.ExpenseID,
+		EventID:        t.EventID,
 	})
 }
 
-// AttachedFiles returns the files of a note, item or expense the actor has already loaded
+// AttachedFiles returns the files of a note, item, expense or event the actor has already loaded
 func (s *DefaultService) AttachedFiles(ctx context.Context, actor Membership, t FileTarget) ([]AttachedFile, error) {
 	return s.db.ListAttachedFiles(ctx, dbqueries.ListAttachedFilesParams{
 		HouseholdID:    actor.HouseholdID,
@@ -356,6 +367,7 @@ func (s *DefaultService) AttachedFiles(ctx context.Context, actor Membership, t 
 		ShoppingItemID: t.ShoppingItemID,
 		ExpenseID:      t.ExpenseID,
 		MessageID:      t.MessageID,
+		EventID:        t.EventID,
 		UserID:         actor.UserID,
 	})
 }
@@ -432,7 +444,7 @@ func (s *DefaultService) DeleteFile(ctx context.Context, actor Membership, fileI
 			return err
 		}
 		// only a file everyone sees, and not one that lives in the chat alone
-		if !f.Shared || (f.MessageID.Valid && !f.NoteID.Valid && !f.ShoppingItemID.Valid && !f.ExpenseID.Valid) {
+		if !f.Shared || (f.MessageID.Valid && !f.NoteID.Valid && !f.ShoppingItemID.Valid && !f.ExpenseID.Valid && !f.EventID.Valid) {
 			return nil
 		}
 		return logActivity(ctx, q, actor, ActivityEntry{Kind: g.ActFileRemoved, SubjectID: fileID, TargetUserID: pgtype.UUID{}, Title: f.Name, AmountCents: nil, Currency: ""})
@@ -485,6 +497,12 @@ func (s *DefaultService) RunCleanup(ctx context.Context, interval time.Duration)
 		}
 		if err := s.NotifyChoresDue(ctx); err != nil {
 			log.Error().Err(err).Msg("could not notify due chores")
+		}
+		if err := s.NotifyCalendarDue(ctx); err != nil {
+			log.Error().Err(err).Msg("could not notify due event reminders")
+		}
+		if err := s.db.PurgeEventReminders(ctx); err != nil {
+			log.Error().Err(err).Msg("could not purge event reminders")
 		}
 		select {
 		case <-ctx.Done():

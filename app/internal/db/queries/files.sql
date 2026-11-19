@@ -35,14 +35,17 @@ SELECT f.id,
   i.text AS item_text,
   r.expense_id,
   e.title AS expense_title,
-  r.message_id
+  r.message_id,
+  r.event_id,
+  ev.title AS event_title
 FROM files f
   JOIN users uploader ON uploader.id = f.uploader_id
   LEFT JOIN LATERAL (
     SELECT p.note_id,
       p.shopping_item_id,
       p.expense_id,
-      p.message_id
+      p.message_id,
+      p.event_id
     FROM file_refs p
       LEFT JOIN notes pn ON pn.id = p.note_id
     WHERE p.file_id = f.id
@@ -57,6 +60,7 @@ FROM files f
   LEFT JOIN notes n ON n.id = r.note_id
   LEFT JOIN shopping_items i ON i.id = r.shopping_item_id
   LEFT JOIN expenses e ON e.id = r.expense_id
+  LEFT JOIN events ev ON ev.id = r.event_id
 WHERE f.household_id = sqlc.arg(household_id)
   AND file_visible(f.id, sqlc.arg(user_id))
   AND (
@@ -102,6 +106,12 @@ WHERE f.household_id = sqlc.arg(household_id)
       WHERE x.file_id = f.id
         AND x.message_id IS NOT NULL
     )
+    WHEN 'event' THEN EXISTS (
+      SELECT 1
+      FROM file_refs x
+      WHERE x.file_id = f.id
+        AND x.event_id IS NOT NULL
+    )
     ELSE NOT EXISTS (
       SELECT 1
       FROM file_refs x
@@ -139,6 +149,7 @@ WHERE r.household_id = sqlc.arg(household_id)
     OR r.shopping_item_id = sqlc.narg(shopping_item_id)
     OR r.expense_id = sqlc.narg(expense_id)
     OR r.message_id = sqlc.narg(message_id)
+    OR r.event_id = sqlc.narg(event_id)
   )
   AND file_visible(f.id, sqlc.arg(user_id))
 ORDER BY r.created_at;
@@ -151,14 +162,16 @@ INSERT INTO file_refs (
     note_id,
     shopping_item_id,
     expense_id,
-    message_id
+    message_id,
+    event_id
   )
 SELECT f.id,
   f.household_id,
   sqlc.narg(note_id)::uuid,
   sqlc.narg(shopping_item_id)::uuid,
   sqlc.narg(expense_id)::uuid,
-  sqlc.narg(message_id)::uuid
+  sqlc.narg(message_id)::uuid,
+  sqlc.narg(event_id)::uuid
 FROM files f
 WHERE f.id = sqlc.arg(file_id)
   AND f.household_id = sqlc.arg(household_id)
@@ -172,6 +185,7 @@ WHERE file_id = sqlc.arg(file_id)
     note_id = sqlc.narg(note_id)
     OR shopping_item_id = sqlc.narg(shopping_item_id)
     OR expense_id = sqlc.narg(expense_id)
+    OR event_id = sqlc.narg(event_id)
   );
 -- a kept file stays after its last reference, there is no way back
 -- name: KeepFile :execrows
@@ -203,14 +217,17 @@ SELECT f.id,
   i.text AS item_text,
   r.expense_id,
   e.title AS expense_title,
-  r.message_id
+  r.message_id,
+  r.event_id,
+  ev.title AS event_title
 FROM files f
   JOIN users uploader ON uploader.id = f.uploader_id
   LEFT JOIN LATERAL (
     SELECT p.note_id,
       p.shopping_item_id,
       p.expense_id,
-      p.message_id
+      p.message_id,
+      p.event_id
     FROM file_refs p
       LEFT JOIN notes pn ON pn.id = p.note_id
     WHERE p.file_id = f.id
@@ -225,6 +242,7 @@ FROM files f
   LEFT JOIN notes n ON n.id = r.note_id
   LEFT JOIN shopping_items i ON i.id = r.shopping_item_id
   LEFT JOIN expenses e ON e.id = r.expense_id
+  LEFT JOIN events ev ON ev.id = r.event_id
 WHERE f.id = sqlc.arg(id)
   AND f.household_id = sqlc.arg(household_id)
   AND file_visible(f.id, sqlc.arg(user_id));

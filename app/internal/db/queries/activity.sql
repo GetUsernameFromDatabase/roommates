@@ -61,7 +61,13 @@ SELECT a.id,
     FROM chores c
     WHERE c.id = a.subject_id
       AND c.household_id = a.household_id
-  ) AS chore_exists
+  ) AS chore_exists,
+  EXISTS (
+    SELECT 1
+    FROM events ev
+    WHERE ev.id = a.subject_id
+      AND ev.household_id = a.household_id
+  ) AS event_exists
 FROM activity a
   LEFT JOIN users actor ON actor.id = a.actor_id
   LEFT JOIN users target ON target.id = a.target_user_id
@@ -99,6 +105,7 @@ WHERE created_at < now() - make_interval(
       WHEN 'shopping' THEN sqlc.arg(shopping_secs)::float8
       WHEN 'notes' THEN sqlc.arg(notes_secs)::float8
       WHEN 'chores' THEN sqlc.arg(chores_secs)::float8
+      WHEN 'calendar' THEN sqlc.arg(calendar_secs)::float8
       ELSE sqlc.arg(members_secs)::float8
     END
   );

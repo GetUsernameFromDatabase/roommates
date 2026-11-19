@@ -3,7 +3,6 @@ package pages
 import (
 	"context"
 	"slices"
-	"strconv"
 	"strings"
 	"time"
 
@@ -178,23 +177,6 @@ func choreMemberOrder(in services.ChoreInput, members []dbqueries.ListActiveMemb
 	out := slices.Clone(members)
 	slices.SortStableFunc(out, func(a, b dbqueries.ListActiveMembersRow) int { return pos(a) - pos(b) })
 	return out
-}
-
-func choreWeekdayPicked(in services.ChoreInput, d time.Weekday) bool {
-	for _, w := range in.Weekdays {
-		if w == d {
-			return true
-		}
-	}
-	return false
-}
-
-// choreEvery is the number input's value, 1 until one is typed
-func choreEvery(in services.ChoreInput) string {
-	if in.Every < 1 {
-		return "1"
-	}
-	return strconv.Itoa(in.Every)
 }
 
 // choreSwapList is what an action on a card swaps: the list, and the toast outside it

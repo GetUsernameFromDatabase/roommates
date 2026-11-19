@@ -30,11 +30,17 @@ func noteFromForm(ctx *gin.Context) services.NoteInput {
 	}
 }
 
-// pageError shows the not found page for [g.ErrorNotFound], otherwise the internal error page
+// pageError shows the not found page for [g.ErrorNotFound], the error page with 403 for
+// [g.ErrorForbidden], otherwise the internal error page
 func pageError(ctx *gin.Context, err error) {
 	if errors.Is(err, g.ErrorNotFound) {
 		swapMainOnError(ctx)
 		RenderTemplStatus(ctx, http.StatusNotFound, pages.NotFound())
+		return
+	}
+	if errors.Is(err, g.ErrorForbidden) {
+		swapMainOnError(ctx)
+		RenderTemplStatus(ctx, http.StatusForbidden, pages.Error())
 		return
 	}
 	InternalError(ctx, err)
@@ -110,7 +116,7 @@ func (h *DefaultHandler) PageNote(ctx *gin.Context) {
 func (h *DefaultHandler) renderNote(ctx *gin.Context, status int, n services.Note, errorMessage string) {
 	actor := membershipFromContext(ctx)
 	files, err := h.service.AttachedFiles(ctx, actor,
-		services.FileTarget{NoteID: n.ID, ListID: pgtype.UUID{}, ShoppingItemID: pgtype.UUID{}, ExpenseID: pgtype.UUID{}, MessageID: pgtype.UUID{}})
+		services.FileTarget{NoteID: n.ID, ListID: pgtype.UUID{}, ShoppingItemID: pgtype.UUID{}, ExpenseID: pgtype.UUID{}, MessageID: pgtype.UUID{}, EventID: pgtype.UUID{}})
 	if err != nil {
 		InternalError(ctx, err)
 		return

@@ -287,7 +287,7 @@ func TestExpenses(t *testing.T) {
 	wantDebt("settled up", 0)
 
 	// files attach to an expense and go with it
-	onExpense := FileTarget{NoteID: pgtype.UUID{}, ListID: pgtype.UUID{}, ShoppingItemID: pgtype.UUID{}, ExpenseID: pizzaID, MessageID: pgtype.UUID{}}
+	onExpense := FileTarget{NoteID: pgtype.UUID{}, ListID: pgtype.UUID{}, ShoppingItemID: pgtype.UUID{}, ExpenseID: pizzaID, MessageID: pgtype.UUID{}, EventID: pgtype.UUID{}}
 	_, err = s.UploadFile(ctx, strangerM, onExpense, "bill.txt", strings.NewReader("bill"), 4)
 	wantErr(t, "stranger attaches", err, g.ErrorNotFound)
 	if _, err := s.UploadFile(ctx, memberM, onExpense, "bill.txt", strings.NewReader("bill"), 4); err != nil {
@@ -312,7 +312,7 @@ func TestExpenses(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	onKeeping := FileTarget{NoteID: pgtype.UUID{}, ListID: pgtype.UUID{}, ShoppingItemID: pgtype.UUID{}, ExpenseID: keepingID, MessageID: pgtype.UUID{}}
+	onKeeping := FileTarget{NoteID: pgtype.UUID{}, ListID: pgtype.UUID{}, ShoppingItemID: pgtype.UUID{}, ExpenseID: keepingID, MessageID: pgtype.UUID{}, EventID: pgtype.UUID{}}
 	alone, err := s.UploadFile(ctx, memberM, onKeeping, "alone.txt", strings.NewReader("bill"), 4)
 	if err != nil {
 		t.Fatal(err)
@@ -321,7 +321,7 @@ func TestExpenses(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	onNote := FileTarget{NoteID: noteID, ListID: pgtype.UUID{}, ShoppingItemID: pgtype.UUID{}, ExpenseID: pgtype.UUID{}, MessageID: pgtype.UUID{}}
+	onNote := FileTarget{NoteID: noteID, ListID: pgtype.UUID{}, ShoppingItemID: pgtype.UUID{}, ExpenseID: pgtype.UUID{}, MessageID: pgtype.UUID{}, EventID: pgtype.UUID{}}
 	both, err := s.UploadFile(ctx, ownerM, onNote, "both.txt", strings.NewReader("bill"), 4)
 	if err != nil {
 		t.Fatal(err)

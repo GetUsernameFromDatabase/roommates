@@ -76,10 +76,29 @@ const (
 	NotifyRecurring = "recurring"
 	NotifyHousehold = "household"
 	NotifyChores    = "chores"
+	NotifyCalendar  = "calendar"
 )
 
 // NotifyKinds are the notification kinds in the order the settings show them
-var NotifyKinds = []string{NotifyChat, NotifyMoney, NotifyRecurring, NotifyChores, NotifyHousehold}
+var NotifyKinds = []string{NotifyChat, NotifyMoney, NotifyRecurring, NotifyChores, NotifyCalendar, NotifyHousehold}
+
+// events.remind_minutes values, the table CHECKs these; an all-day event takes only
+// RemindAtStart (its day) and RemindDayBefore, both at the household's reminder hour
+const (
+	RemindAtStart   = 0
+	Remind15Min     = 15
+	RemindHour      = 60
+	RemindDayBefore = 1440
+)
+
+// RemindTimed and RemindAllDay are the reminder choices in the order the form shows them
+var (
+	RemindTimed  = []int{RemindAtStart, Remind15Min, RemindHour, RemindDayBefore}
+	RemindAllDay = []int{RemindAtStart, RemindDayBefore}
+)
+
+// MaxUpcomingEvents caps a household's events whose last occurrence is today or later
+const MaxUpcomingEvents = 200
 
 // chores.rotation values, the table CHECKs these
 const (
@@ -119,6 +138,7 @@ const (
 	ActivityNotes    = "notes"
 	ActivityMembers  = "members"
 	ActivityChores   = "chores"
+	ActivityCalendar = "calendar"
 )
 
 // ActivityRetention is how long activity of each group is kept
@@ -127,6 +147,7 @@ var ActivityRetention = map[string]time.Duration{
 	ActivityMembers:  365 * 24 * time.Hour,
 	ActivityNotes:    90 * 24 * time.Hour,
 	ActivityChores:   90 * 24 * time.Hour,
+	ActivityCalendar: 90 * 24 * time.Hour,
 	ActivityShopping: 30 * 24 * time.Hour,
 }
 
@@ -169,6 +190,8 @@ const (
 	ActChoreDone            = "chore_done"
 	ActChoreSkipped         = "chore_skipped"
 	ActChorePassed          = "chore_passed"
+	ActEventAdded           = "event_added"
+	ActEventDeleted         = "event_deleted"
 )
 
 // ActivityGroup is the group (and so the retention) of each activity kind
@@ -187,6 +210,7 @@ var ActivityGroup = map[string]string{
 	ActHouseholdDeleted: ActivityMembers, ActHouseholdRestored: ActivityMembers,
 	ActChoreAdded: ActivityChores, ActChoreDeleted: ActivityChores,
 	ActChoreDone: ActivityChores, ActChoreSkipped: ActivityChores, ActChorePassed: ActivityChores,
+	ActEventAdded: ActivityCalendar, ActEventDeleted: ActivityCalendar,
 }
 
 // ExpenseCategories are the rows of the expense_categories table, which expenses and shopping lists reference
@@ -212,4 +236,5 @@ const (
 	ParamSettleID    = "settlementID"
 	ParamRecurringID = "recurringID"
 	ParamChoreID     = "choreID"
+	ParamEventID     = "eventID"
 )

@@ -258,7 +258,73 @@ CREATE TABLE file_purges (
   created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 -- -----------------------------------------------------------------------------
--- where a file is attached, exactly one of the four
+-- calendar events: wall-clock dates and times in the household's time_zone, start_time NULL
+-- is all-day; repeats like a chore (every N units, or on weekdays) from start_date until
+-- repeat_until; an occurrence edited alone is a one-off detached_from its series on detached_on
+CREATE TABLE events (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  household_id UUID NOT NULL REFERENCES households (id) ON DELETE CASCADE,
+  title TEXT NOT NULL,
+  location TEXT NOT NULL DEFAULT '',
+  notes TEXT NOT NULL DEFAULT '',
+  start_date DATE NOT NULL,
+  start_time TIME,
+  end_date DATE NOT NULL,
+  end_time TIME,
+  every SMALLINT CHECK (every BETWEEN 1 AND 365),
+  every_unit TEXT CHECK (every_unit IN ('day', 'week', 'month')),
+  weekdays SMALLINT CHECK (weekdays BETWEEN 1 AND 127),
+  repeat_until DATE,
+  -- minutes before the start; all-day: 0 the day itself, 1440 the day before, at reminder_hour
+  remind_minutes SMALLINT CHECK (remind_minutes IN (0, 15, 60, 1440)),
+  detached_from UUID,
+  detached_on DATE,
+  created_by UUID NOT NULL REFERENCES users (id),
+  created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE (id, household_id),
+  FOREIGN KEY (detached_from, household_id) REFERENCES events (id, household_id) ON DELETE CASCADE,
+  CHECK ((every IS NULL) = (every_unit IS NULL)),
+  CHECK (every IS NULL OR weekdays IS NULL),
+  CHECK (repeat_until IS NULL OR (every IS NOT NULL OR weekdays IS NOT NULL)),
+  CHECK (repeat_until IS NULL OR repeat_until >= start_date),
+  CHECK ((detached_from IS NULL) = (detached_on IS NULL)),
+  CHECK (detached_from IS NULL OR (every IS NULL AND weekdays IS NULL)),
+  CHECK (end_date >= start_date),
+  CHECK (start_time IS NOT NULL OR end_time IS NULL),
+  CHECK (start_time IS NULL OR end_time IS NOT NULL OR end_date = start_date),
+  CHECK (end_time IS NULL OR (end_date, end_time) > (start_date, start_time)),
+  CHECK (start_time IS NOT NULL OR remind_minutes IS NULL OR remind_minutes IN (0, 1440))
+);
+CREATE INDEX idx_events_household_id ON events (household_id, start_date);
+CREATE INDEX idx_events_detached_from ON events (detached_from);
+CREATE INDEX idx_events_remind ON events (start_date) WHERE remind_minutes IS NOT NULL;
+-- who an event is for, no rows means the whole household; a leaver is taken out by end_recurring_of_leaver
+CREATE TABLE event_members (
+  event_id UUID NOT NULL,
+  household_id UUID NOT NULL,
+  user_id UUID NOT NULL,
+  PRIMARY KEY (event_id, user_id),
+  FOREIGN KEY (event_id, household_id) REFERENCES events (id, household_id) ON DELETE CASCADE,
+  FOREIGN KEY (household_id, user_id) REFERENCES memberships (household_id, user_id)
+);
+-- a cancelled occurrence of a repeating event
+CREATE TABLE event_exceptions (
+  event_id UUID NOT NULL,
+  household_id UUID NOT NULL,
+  occurs_on DATE NOT NULL,
+  PRIMARY KEY (event_id, occurs_on),
+  FOREIGN KEY (event_id, household_id) REFERENCES events (id, household_id) ON DELETE CASCADE
+);
+-- the occurrences whose reminder was pushed, claimed before pushing; purged two days after
+CREATE TABLE event_reminders (
+  event_id UUID NOT NULL,
+  household_id UUID NOT NULL,
+  occurs_on DATE NOT NULL,
+  PRIMARY KEY (event_id, occurs_on),
+  FOREIGN KEY (event_id, household_id) REFERENCES events (id, household_id) ON DELETE CASCADE
+);
+-- -----------------------------------------------------------------------------
+-- where a file is attached, exactly one of the five
 CREATE TABLE file_refs (
   file_id UUID NOT NULL,
   household_id UUID NOT NULL,
@@ -266,24 +332,28 @@ CREATE TABLE file_refs (
   shopping_item_id UUID,
   expense_id UUID,
   message_id UUID,
+  event_id UUID,
   created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (file_id, household_id) REFERENCES files (id, household_id) ON DELETE CASCADE,
   FOREIGN KEY (note_id, household_id) REFERENCES notes (id, household_id) ON DELETE CASCADE,
   FOREIGN KEY (shopping_item_id, household_id) REFERENCES shopping_items (id, household_id) ON DELETE CASCADE,
   FOREIGN KEY (expense_id, household_id) REFERENCES expenses (id, household_id) ON DELETE CASCADE,
   FOREIGN KEY (message_id, household_id) REFERENCES messages (id, household_id) ON DELETE CASCADE,
+  FOREIGN KEY (event_id, household_id) REFERENCES events (id, household_id) ON DELETE CASCADE,
   CHECK (
-    num_nonnulls(note_id, shopping_item_id, expense_id, message_id) = 1
+    num_nonnulls(note_id, shopping_item_id, expense_id, message_id, event_id) = 1
   ),
   UNIQUE (file_id, note_id),
   UNIQUE (file_id, shopping_item_id),
   UNIQUE (file_id, expense_id),
-  UNIQUE (file_id, message_id)
+  UNIQUE (file_id, message_id),
+  UNIQUE (file_id, event_id)
 );
 CREATE INDEX idx_file_refs_note_id ON file_refs (note_id);
 CREATE INDEX idx_file_refs_shopping_item_id ON file_refs (shopping_item_id);
 CREATE INDEX idx_file_refs_expense_id ON file_refs (expense_id);
 CREATE INDEX idx_file_refs_message_id ON file_refs (message_id);
+CREATE INDEX idx_file_refs_event_id ON file_refs (event_id);
 -- -----------------------------------------------------------------------------
 -- web push: one row per browser that turned notifications on,
 -- a browser that signs in as another user and subscribes moves over to them
@@ -302,7 +372,7 @@ CREATE INDEX idx_push_subscriptions_user_id ON push_subscriptions (user_id);
 CREATE TABLE notification_mutes (
   household_id UUID NOT NULL,
   user_id UUID NOT NULL,
-  kind TEXT NOT NULL CHECK (kind IN ('chat', 'money', 'recurring', 'household', 'chores')),
+  kind TEXT NOT NULL CHECK (kind IN ('chat', 'money', 'recurring', 'household', 'chores', 'calendar')),
   PRIMARY KEY (household_id, user_id, kind),
   FOREIGN KEY (household_id, user_id) REFERENCES memberships (household_id, user_id) ON DELETE CASCADE
 );
@@ -397,7 +467,7 @@ CREATE TABLE activity (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   household_id UUID NOT NULL REFERENCES households (id) ON DELETE CASCADE,
   actor_id UUID REFERENCES users (id) ON DELETE SET NULL,
-  grp TEXT NOT NULL CHECK (grp IN ('money', 'shopping', 'notes', 'members', 'chores')),
+  grp TEXT NOT NULL CHECK (grp IN ('money', 'shopping', 'notes', 'members', 'chores', 'calendar')),
   kind TEXT NOT NULL,
   subject_id UUID,
   target_user_id UUID REFERENCES users (id) ON DELETE SET NULL,
@@ -496,8 +566,11 @@ FROM chores c
 WHERE c.id = chore;
 $$ LANGUAGE sql STABLE;
 -- a leaver's schedules, and their shares in the others' schedules, end with the membership;
--- their chore turns move on and they leave every rota
+-- their chore turns move on and they leave every rota and event
 CREATE FUNCTION end_recurring_of_leaver() RETURNS TRIGGER AS $$ BEGIN
+DELETE FROM event_members
+WHERE household_id = NEW.household_id
+  AND user_id = NEW.user_id;
 DELETE FROM recurring_expenses
 WHERE household_id = NEW.household_id
   AND payer_id = NEW.user_id;
@@ -644,6 +717,12 @@ CREATE TRIGGER notify_chores
 AFTER INSERT OR UPDATE OR DELETE ON chores FOR EACH ROW EXECUTE FUNCTION notify_household('chores');
 CREATE TRIGGER notify_chore_members
 AFTER INSERT OR UPDATE OR DELETE ON chore_members FOR EACH ROW EXECUTE FUNCTION notify_household('chores');
+CREATE TRIGGER notify_events
+AFTER INSERT OR UPDATE OR DELETE ON events FOR EACH ROW EXECUTE FUNCTION notify_household('calendar');
+CREATE TRIGGER notify_event_members
+AFTER INSERT OR UPDATE OR DELETE ON event_members FOR EACH ROW EXECUTE FUNCTION notify_household('calendar');
+CREATE TRIGGER notify_event_exceptions
+AFTER INSERT OR UPDATE OR DELETE ON event_exceptions FOR EACH ROW EXECUTE FUNCTION notify_household('calendar');
 CREATE TRIGGER end_recurring_of_leaver
 AFTER UPDATE OF left_at ON memberships FOR EACH ROW
   WHEN (NEW.left_at IS NOT NULL) EXECUTE FUNCTION end_recurring_of_leaver();

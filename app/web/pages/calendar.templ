@@ -1,0 +1,691 @@
+package pages
+
+import "roommates/web/components"
+import "roommates/web/components/alertdialog"
+import "roommates/web/components/badge"
+import "roommates/web/components/button"
+import "roommates/web/components/checkbox"
+import "roommates/web/components/field"
+import "roommates/web/components/input"
+import "roommates/web/components/radiogroup"
+import "roommates/web/components/select"
+import "roommates/web/components/switch"
+import "roommates/web/components/textarea"
+import "roommates/internal/db/dbqueries"
+import "roommates/internal/services"
+import "roommates/internal/events"
+import g "roommates/internal/config"
+import "roommates/internal/locales"
+import "roommates/internal/utils"
+import "cmp"
+import "slices"
+import "strconv"
+import "time"
+
+// CalendarPage is the household's events with its chores and recurring expenses, below a large
+// screen as an agenda from today and on one as a month on the wall with the picked day under it
+//
+// both follow the household's changes in one live region, the new event form is outside it so a
+// flatmate's change does not clear what is typed
+templ CalendarPage(actor services.Membership, v CalendarView, members []dbqueries.ListActiveMembersRow, f EventForm, notice string) {
+	{{ title := utils.T(ctx, locales.LK_CalendarTitle) }}
+	@appShell(title, &HouseholdNav{HouseholdID: actor.HouseholdID, Section: SectionCalendar}) {
+		<header>
+			<h1 class="doorplate">{ title }</h1>
+		</header>
+		@eventNew(actor, members, f)
+		// not on expenses: every expense would fold the agenda's extra days away
+		@liveRegion("calendar", events.TopicCalendar, events.TopicChores) {
+			<div class="flex flex-col gap-3 lg:hidden">
+				if len(v.Agenda) == 0 {
+					<p class="text-muted-foreground">
+						@components.T(locales.LK_CalendarEmpty)
+					</p>
+				}
+				@calendarAgenda(actor, v.Today, time.Time{}, v.Agenda)
+				@calendarAgendaMore(actor, v.AgendaNext, calendarLast(v.Agenda, time.Time{}))
+			</div>
+			@calendarMonth(actor, v)
+		}
+		<div id="calendar-notice">
+			@toast(notice)
+		</div>
+	}
+}
+
+// CalendarMore is the next block of the agenda and the button that loads the one after it, it
+// replaces the button that was pressed; last is the last day shown before it, if any
+templ CalendarMore(actor services.Membership, today, next, last time.Time, items []services.CalendarItem) {
+	if len(items) == 0 {
+		<p class="text-sm text-muted-foreground">
+			{ utils.T(ctx, locales.LK_CalendarNoneUntil, utils.FormatDate(ctx, next.AddDate(0, 0, -1))) }
+		</p>
+	}
+	@calendarAgenda(actor, today, last, items)
+	@calendarAgendaMore(actor, next, calendarLast(items, last))
+}
+
+// calendarAgenda is the days that have items by month, a month is named unless last is in it
+//
+// the days are siblings of the month headings, so a block that "load more" adds continues the list
+templ calendarAgenda(actor services.Membership, today, last time.Time, items []services.CalendarItem) {
+	for _, m := range calendarAgendaMonths(items, last) {
+		if m.Heading {
+			<h2 class="mt-4 font-heading text-xl font-semibold tracking-tight first:mt-0">{ calendarMonthName(ctx, m.Month) }</h2>
+		}
+		for _, d := range m.Days {
+			@calendarAgendaDay(actor, today, d)
+		}
+	}
+}
+
+// calendarAgendaDay is a day as a planner shows it: its number and weekday on the left, its items
+// in one card beside them
+templ calendarAgendaDay(actor services.Membership, today time.Time, d calendarDay) {
+	{{ isToday := d.Day.Equal(today) }}
+	<section class="flex items-start gap-3">
+		<h3 class="flex w-12 shrink-0 flex-col items-center gap-0.5 pt-1">
+			<span class="sr-only">{ calendarDayHeading(ctx, d.Day, today) }</span>
+			<span aria-hidden="true" class={ "grid size-10 place-items-center rounded-full font-heading text-xl font-semibold tabular-nums", templ.KV("bg-primary text-primary-foreground", isToday) }>{ strconv.Itoa(d.Day.Day()) }</span>
+			<span aria-hidden="true" class={ "text-xs text-muted-foreground", templ.KV("font-semibold text-primary", isToday) }>{ calendarRail(ctx, d.Day, today) }</span>
+		</h3>
+		@calendarDayList(actor, d.Items)
+	</section>
+}
+
+// calendarDayList is the items of a day in one card
+templ calendarDayList(actor services.Membership, items []services.CalendarItem) {
+	<ul class="min-w-0 flex-1 divide-y overflow-hidden rounded-xl border bg-card">
+		for _, it := range items {
+			<li>
+				@calendarItem(actor, it)
+			</li>
+		}
+	</ul>
+}
+
+// calendarAgendaMore loads the agenda from day on in place of the button
+templ calendarAgendaMore(actor services.Membership, from, last time.Time) {
+	@button.Button(button.Props{
+		Variant: button.VariantOutline,
+		Size:    button.SizeLg,
+		Class:   "mt-2 h-11 self-start",
+		Attributes: templ.Attributes{
+			"hx-get":          string(calendarMoreURL(actor.HouseholdID, from, last)),
+			"hx-swap":         "outerHTML",
+			"hx-disabled-elt": "this",
+		},
+	}) {
+		@components.T(locales.LK_CalendarMore)
+	}
+}
+
+// calendarItem is a line of a day, a link to the event, chore or recurring expense
+templ calendarItem(actor services.Membership, it services.CalendarItem) {
+	<a href={ calendarItemURL(actor.HouseholdID, it) } class="flex min-h-12 items-start gap-3 px-3 py-2.5 outline-none hover:bg-accent focus-visible:bg-accent focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset">
+		<span class="w-[5.5rem] shrink-0 pt-0.5 text-sm whitespace-nowrap text-muted-foreground tabular-nums">
+			switch it.Kind {
+				case services.CalendarKindChore:
+					@navIcon("chores", "size-4")
+				case services.CalendarKindRecurring:
+					@navIcon("expenses", "size-4")
+				default:
+					{ calendarItemTime(ctx, it) }
+			}
+		</span>
+		<span class="flex min-w-0 flex-1 flex-col gap-1">
+			<span class="font-medium break-words">{ it.Title }</span>
+			if it.Location != "" {
+				<span class="text-sm break-words text-muted-foreground">{ it.Location }</span>
+			}
+			switch it.Kind {
+				case services.CalendarKindChore:
+					<span class="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-muted-foreground">
+						@badge.Badge(badge.Props{Variant: badge.VariantOutline}) {
+							@components.T(locales.LK_CalendarKindChore)
+						}
+						if it.AssigneeName != "" {
+							{ utils.T(ctx, locales.LK_ChoresTurn, it.AssigneeName) }
+						}
+						if it.Overdue {
+							@badge.Badge(badge.Props{Variant: badge.VariantDestructive}) {
+								@components.T(locales.LK_CalendarOverdue)
+							}
+						}
+					</span>
+				case services.CalendarKindRecurring:
+					<span class="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-muted-foreground">
+						@badge.Badge(badge.Props{Variant: badge.VariantOutline}) {
+							@components.T(locales.LK_CalendarKindRecurring)
+						}
+						<span class="tabular-nums">{ utils.FormatMoney(ctx, it.AmountCents, actor.Currency) }</span>
+					</span>
+			}
+		</span>
+	</a>
+}
+
+// calendarMonth is the month on the wall, large screens only: whole weeks with what is on each day,
+// and the picked day's list under it
+//
+// a day and the month arrows are links that swap all of it in place and keep the address, so a
+// live refresh shows the same month; their ids keep the focus on them across the swap
+templ calendarMonth(actor services.Membership, v CalendarView) {
+	{{ byDay := calendarByDay(v.MonthItems) }}
+	<div id="cal-month" class="hidden flex-col gap-6 lg:flex">
+		<div class="flex items-center gap-1">
+			<h2 class="me-auto font-heading text-2xl font-semibold tracking-tight" aria-live="polite">{ calendarMonthName(ctx, v.Month) }</h2>
+			// always there, so the focus stays on it after it was used
+			@calendarMonthLink(actor, "cal-today", monthOf(v.Today), v.Today, utils.T(ctx, locales.LK_ExpensesDateToday), "") {
+				@components.T(locales.LK_ChoresDueToday)
+			}
+			@calendarMonthLink(actor, "cal-prev", v.Month.AddDate(0, -1, 0), time.Time{}, utils.T(ctx, locales.LK_ExpensesDatePreviousMonth), "icon") {
+				@navIcon("chevron-left", "size-5")
+			}
+			@calendarMonthLink(actor, "cal-next", v.Month.AddDate(0, 1, 0), time.Time{}, utils.T(ctx, locales.LK_ExpensesDateNextMonth), "icon") {
+				@navIcon("chevron-right", "size-5")
+			}
+		</div>
+		<table class="w-full table-fixed border-separate border-spacing-0 overflow-hidden rounded-xl border bg-card">
+			<thead>
+				<tr>
+					for _, wd := range calendarWeekdays {
+						<th scope="col" class="border-b px-2.5 py-2 text-start text-xs font-medium text-muted-foreground">
+							<abbr title={ utils.T(ctx, choreWeekdayLong[wd]) } class="no-underline">{ utils.T(ctx, choreWeekdayShort[wd]) }</abbr>
+						</th>
+					}
+				</tr>
+			</thead>
+			<tbody>
+				for w, week := range calendarWeeks(v.Month) {
+					<tr>
+						for i, day := range week {
+							<td class={ "p-0 align-top", templ.KV("border-t", w > 0), templ.KV("border-l", i > 0) }>
+								@calendarCell(actor, v, day, byDay[day.Format(services.DateLayout)])
+							</td>
+						}
+					</tr>
+				}
+			</tbody>
+		</table>
+		<section id="cal-day" class="flex flex-col gap-3">
+			<h3 class="text-lg font-semibold">{ calendarDayHeading(ctx, v.Day, v.Today) }</h3>
+			if items := byDay[v.Day.Format(services.DateLayout)]; len(items) == 0 {
+				<p class="text-muted-foreground">
+					@components.T(locales.LK_CalendarDayEmpty)
+				</p>
+			} else {
+				@calendarDayList(actor, items)
+			}
+		</section>
+	</div>
+}
+
+// calendarSwap are the attributes of a link that shows another day or month of the grid in place
+func calendarSwap(url templ.SafeURL) templ.Attributes {
+	return templ.Attributes{"hx-get": string(url), "hx-target": "#cal-month", "hx-select": "#cal-month", "hx-swap": "outerHTML", "hx-replace-url": "true"}
+}
+
+// calendarMonthLink goes to month with day picked, size "icon" for an arrow
+templ calendarMonthLink(actor services.Membership, id string, month, day time.Time, label string, size button.Size) {
+	{{ url := calendarMonthURL(actor.HouseholdID, month, day) }}
+	<a
+		id={ id }
+		href={ url }
+		aria-label={ label }
+		class={ button.Variants(button.Props{Variant: button.VariantGhost, Size: utils.IfElse(size == "", button.SizeLg, size)}), templ.KV("size-11", size != "") }
+		{ calendarSwap(url)... }
+	>
+		{ children... }
+	</a>
+}
+
+// calendarCell is a day of the grid, a link that picks it: its number, today filled, and up to
+// three of its items, all-day events as bars and timed ones with their time
+templ calendarCell(actor services.Membership, v CalendarView, day time.Time, items []services.CalendarItem) {
+	{{
+		url := calendarMonthURL(actor.HouseholdID, monthOf(day), day)
+		picked := day.Equal(v.Day)
+	}}
+	<a
+		id={ "cal-" + day.Format(services.DateLayout) }
+		href={ url }
+		if picked {
+			aria-current="true"
+		}
+		class={ "flex min-h-28 flex-col gap-1 p-1.5 outline-none hover:bg-accent/60 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset",
+			templ.KV("bg-accent hover:bg-accent", picked),
+			templ.KV("bg-muted/40 text-muted-foreground", day.Month() != v.Month.Month()) }
+		{ calendarSwap(url)... }
+	>
+		<span class="sr-only">{ calendarDayHeading(ctx, day, v.Today) }</span>
+		<span
+			aria-hidden="true"
+			class={ "grid size-7 place-items-center rounded-full text-sm tabular-nums",
+				templ.KV("bg-primary font-semibold text-primary-foreground", day.Equal(v.Today)),
+				templ.KV("font-semibold", picked) }
+		>{ strconv.Itoa(day.Day()) }</span>
+		for _, it := range items[:min(len(items), 3)] {
+			@calendarChip(it)
+		}
+		if len(items) > 3 {
+			<span class="px-1 text-xs text-muted-foreground">{ utils.T(ctx, locales.LK_CalendarDayMore, len(items)-3) }</span>
+		}
+	</a>
+}
+
+// calendarChip is an item in a day of the grid
+templ calendarChip(it services.CalendarItem) {
+	switch {
+		case it.Kind == services.CalendarKindChore || it.Kind == services.CalendarKindRecurring:
+			<span class="flex min-w-0 items-center gap-1 px-1 text-xs text-muted-foreground">
+				@navIcon(utils.IfElse(it.Kind == services.CalendarKindChore, "chores", "expenses"), "size-3 shrink-0")
+				<span class="truncate">{ it.Title }</span>
+			</span>
+		case calendarChipClock(it) == "":
+			<span class="truncate rounded-sm bg-primary px-1.5 py-0.5 text-xs font-medium text-primary-foreground">{ it.Title }</span>
+		default:
+			<span class="flex min-w-0 items-baseline gap-1 px-1 text-xs">
+				<span class="size-1.5 shrink-0 self-center rounded-full bg-primary"></span>
+				<span class="text-muted-foreground tabular-nums">{ calendarChipClock(it) }</span>
+				<span class="truncate font-medium">{ it.Title }</span>
+			</span>
+	}
+}
+
+// eventNew is a fold with the form, open again after an error
+templ eventNew(actor services.Membership, members []dbqueries.ListActiveMembersRow, f EventForm) {
+	{{ action := householdURL(actor.HouseholdID, "calendar", "events") }}
+	<details id="event-new" class="group/new max-w-3xl" open?={ f.Open }>
+		<summary class={ utils.CN(button.Variants(button.Props{Variant: button.VariantSecondary, Size: button.SizeLg}), "cursor-pointer list-none [&::-webkit-details-marker]:hidden") }>
+			@navIcon("plus", "size-4")
+			@components.T(locales.LK_CalendarNew)
+		</summary>
+		<div class="mt-3">
+			<form
+				id="event-new-form"
+				action={ action }
+				method="post"
+				hx-post={ string(action) }
+				hx-target="#event-new"
+				hx-select="#event-new"
+				hx-select-oob="#calendar, #calendar-notice"
+				hx-swap="outerHTML"
+				class={ sheetClass + " flex flex-col gap-5" }
+			>
+				@eventFields(members, f, "event-new", true)
+				<div class="flex items-center gap-3">
+					@button.Button(button.Props{Type: button.TypeSubmit, Size: button.SizeLg}) {
+						@components.T(locales.LK_CalendarCreate)
+					}
+				</div>
+			</form>
+		</div>
+	</details>
+}
+
+// EventPage is an occurrence of an event with what is known of it, the files and for who may change
+// it the form and the delete; fileError is the outcome of an upload
+//
+// the form and the summary are swapped together, #event-main, after a save
+templ EventPage(actor services.Membership, d services.EventDetail, members []dbqueries.ListActiveMembersRow, f EventForm, fileError string) {
+	@appShell(d.Title, &HouseholdNav{HouseholdID: actor.HouseholdID, Section: SectionCalendar}) {
+		@doorplateHeader(householdURL(actor.HouseholdID, "calendar"), utils.T(ctx, locales.LK_CalendarTitle), d.Title)
+		<div id="event-main" class="flex flex-col gap-8">
+			@eventSummary(d)
+			if d.CanEdit {
+				@eventEdit(actor, d, members, f)
+				@eventDelete(actor, d)
+			}
+		</div>
+		if d.CanEdit {
+			@attachedFiles(actor, householdURL(actor.HouseholdID, "calendar", "events", d.EventID.String()), d.Files, "", fileError)
+		} else if len(d.Files) > 0 {
+			<section class={ utils.CN(sheetClass, "space-y-3") } aria-labelledby="attachments-title">
+				<h2 id="attachments-title" class="text-xl font-semibold">
+					@components.T(locales.LK_FilesAttachments)
+				</h2>
+				<ul class="divide-y">
+					for _, file := range d.Files {
+						<li>
+							<a href={ householdURL(actor.HouseholdID, "files", file.ID.String()) } class="flex min-h-11 items-center font-medium break-words hover:underline">{ file.Name }</a>
+						</li>
+					}
+				</ul>
+			</section>
+		}
+	}
+}
+
+// eventSummary is when, where and for who, what repeats and the notes
+templ eventSummary(d services.EventDetail) {
+	<section class={ sheetClass + " flex flex-col gap-3" }>
+		<dl class="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2">
+			<dt class="text-muted-foreground">
+				@components.T(locales.LK_CalendarWhen)
+			</dt>
+			<dd class="min-w-0 break-words">{ calendarWhen(ctx, d.Occurrence) }</dd>
+			if repeat := calendarRepeat(ctx, d.Input); repeat != "" {
+				<dt class="text-muted-foreground">
+					@components.T(locales.LK_CalendarRepeats)
+				</dt>
+				<dd class="min-w-0 break-words">{ repeat }</dd>
+			}
+			if d.Location != "" {
+				<dt class="text-muted-foreground">
+					@components.T(locales.LK_CalendarFormLocation)
+				</dt>
+				<dd class="min-w-0 break-words">{ d.Location }</dd>
+			}
+			if d.Input.Remind != nil {
+				<dt class="text-muted-foreground">
+					@components.T(locales.LK_CalendarRemind)
+				</dt>
+				<dd class="min-w-0 break-words">{ calendarRemindLabel(ctx, d.AllDay, *d.Input.Remind) }</dd>
+			}
+			<dt class="text-muted-foreground">
+				@components.T(locales.LK_CalendarMembers)
+			</dt>
+			<dd class="min-w-0 break-words">{ calendarWho(ctx, d.Occurrence) }</dd>
+		</dl>
+		if d.Notes != "" {
+			<p class="break-words whitespace-pre-line">{ d.Notes }</p>
+		}
+	</section>
+}
+
+// eventEdit saves in place and says so next to the button, a series asks which events the change is for
+templ eventEdit(actor services.Membership, d services.EventDetail, members []dbqueries.ListActiveMembersRow, f EventForm) {
+	{{ action := eventURL(actor.HouseholdID, d.EventID, d.On) }}
+	<form
+		id="event-edit"
+		action={ action }
+		method="post"
+		hx-post={ string(action) }
+		hx-target="#event-main"
+		hx-select="#event-main"
+		hx-swap="outerHTML"
+		class={ sheetClass + " flex flex-col gap-5" }
+	>
+		<h2 class="text-lg font-semibold">
+			@components.T(locales.LK_CalendarEdit)
+		</h2>
+		@eventFields(members, f, "event-edit", !d.Detached)
+		if d.Repeats && !d.Detached {
+			@eventScope("event-edit-scope", cmp.Or(f.Scope, services.EventScopeThis), locales.LK_CalendarScopeEdit)
+		} else {
+			<input type="hidden" name="scope" value={ services.EventScopeAll }/>
+		}
+		<div class="flex flex-wrap items-center gap-3">
+			@button.Button(button.Props{Type: button.TypeSubmit, Size: button.SizeLg}) {
+				@components.T(locales.LK_CommonSave)
+			}
+			<span role="status" class="text-sm text-muted-foreground">
+				if f.Saved {
+					@components.T(locales.LK_CommonSaved)
+				}
+			</span>
+		</div>
+	</form>
+}
+
+// eventDelete asks first, for a series in a dialog that also asks which events go
+templ eventDelete(actor services.Membership, d services.EventDetail) {
+	{{ action := string(householdURL(actor.HouseholdID, "calendar", "events", d.EventID.String(), "delete")) + "?on=" + d.On.Format(services.DateLayout) }}
+	if d.Repeats && !d.Detached {
+		<div>
+			@alertdialog.AlertDialog(alertdialog.Props{ID: "delete-event", Open: nil, DefaultOpen: false}) {
+				@button.Button(button.Props{Variant: button.VariantOutline, Size: button.SizeLg, Class: "text-destructive hover:text-destructive", Attributes: alertdialog.Trigger(ctx)}) {
+					@components.T(locales.LK_CommonDelete)
+				}
+				@alertdialog.Content(alertdialog.ContentProps{Class: "max-h-[calc(100dvh-2rem)] w-[calc(100vw-2rem)] overflow-y-auto", Attributes: nil, Size: ""}) {
+					<form action={ templ.SafeURL(action) } method="post" hx-boost="true" class="grid gap-4">
+						@alertdialog.Header(alertdialog.HeaderProps{ID: "", Class: "", Attributes: nil}) {
+							@alertdialog.Title(alertdialog.TitleProps{ID: "", Class: "", Attributes: nil}) {
+								@components.T(locales.LK_CalendarDeleteTitle)
+							}
+							@alertdialog.Description(alertdialog.DescriptionProps{ID: "", Class: "", Attributes: nil}) {
+								@components.T(locales.LK_CalendarDeleteSeries)
+							}
+						}
+						@eventScope("event-delete-scope", services.EventScopeThis, locales.LK_CalendarScopeDelete)
+						@alertdialog.Footer(alertdialog.FooterProps{ID: "", Class: "", Attributes: nil}) {
+							@alertdialog.Cancel(alertdialog.CancelProps{ID: "", Class: "h-11", Attributes: nil, Variant: "", Size: ""}) {
+								@components.T(locales.LK_CommonCancel)
+							}
+							@alertdialog.Action(alertdialog.ActionProps{ID: "", Class: "h-11", Attributes: templ.Attributes{"type": "submit"}, Variant: button.VariantDestructive, Size: ""}) {
+								@components.T(locales.LK_CommonDelete)
+							}
+						}
+					</form>
+				}
+			}
+		</div>
+	} else {
+		<form action={ templ.SafeURL(action) } method="post" hx-boost="true" hx-confirm={ utils.T(ctx, locales.LK_CalendarDeleteConfirm) }>
+			<input type="hidden" name="scope" value={ services.EventScopeAll }/>
+			@deleteButton(locales.LK_CommonDelete)
+		</form>
+	}
+}
+
+// eventScope is which events of a series a change is for
+templ eventScope(id, selected string, legend locales.LK) {
+	<fieldset class="flex min-w-0 flex-col gap-1">
+		<legend class="mb-1 text-sm font-medium">
+			@components.T(legend)
+		</legend>
+		@radiogroup.RadioGroup(radiogroup.Props{Name: "scope", DefaultValue: selected, Class: "gap-0"}) {
+			for _, s := range calendarScopes {
+				@field.Field(field.Props{Orientation: field.OrientationHorizontal, Class: "min-h-11 items-center py-2"}) {
+					@radiogroup.Item(radiogroup.ItemProps{ID: id + "-" + s, Value: s})
+					@field.Label(field.LabelProps{For: id + "-" + s, Class: "text-base font-normal"}) {
+						@components.T(calendarScopeKeys[s])
+					}
+				}
+			}
+		}
+	</fieldset>
+}
+
+// eventFields are the fields of the event form, id is the prefix of their ids so the page has no two
+// alike, repeat says whether the event may repeat
+//
+// all-day hides the times and swaps the reminder choices, a tick shows the day it is for, both by CSS
+// on the control's state; the hidden fields are still posted and the server ignores them. A time is a
+// text field of HH:MM, no browser time control
+templ eventFields(members []dbqueries.ListActiveMembersRow, f EventForm, id string, repeat bool) {
+	{{ in := f.Input }}
+	{{
+		// the error sits at its field, aria-invalid and aria-describedby point the field at it
+		fieldAttrs := func(name string, attrs templ.Attributes) templ.Attributes {
+			if f.Field == name && f.Message != "" {
+				attrs["aria-invalid"] = "true"
+				attrs["aria-describedby"] = id + "-" + name + "-error"
+			}
+			return attrs
+		}
+	}}
+	<div class="group/ev flex min-w-0 flex-col gap-5">
+		if f.Field == "" {
+			@formError(f.Message)
+		}
+		@field.Field() {
+			@field.Label(field.LabelProps{For: id + "-title"}) {
+				@components.T(locales.LK_CalendarFormTitle)
+			}
+			@input.Input(input.Props{
+				ID:       id + "-title",
+				Name:     "title",
+				Type:     "text",
+				Value:    in.Title,
+				Required: true,
+				Class:    "h-11",
+				Attributes: fieldAttrs(services.FieldEventTitle, templ.Attributes{
+					"maxlength": services.MaxEventTitleLength,
+				}),
+			})
+			@eventFieldError(id, services.FieldEventTitle, f)
+		}
+		<label class="flex min-h-11 items-center gap-3">
+			@switchcomp.Switch(switchcomp.Props{ID: id + "-all-day", Name: "all_day", Value: "1", DefaultChecked: in.AllDay})
+			@components.T(locales.LK_CalendarAllDay)
+		</label>
+		@field.Field() {
+			@field.Label(field.LabelProps{For: id + "-start-date-popover-trigger"}) {
+				@components.T(locales.LK_CalendarStarts)
+			}
+			<div class="flex flex-wrap items-center gap-2">
+				<div class="min-w-40 flex-1">
+					@datePicker(id+"-start-date", "start_date", in.StartDate)
+				</div>
+				<div class="group-has-[input[name=all\_day]:checked]/ev:hidden">
+					@eventTime(id+"-start-time", "start_time", in.StartTime, utils.T(ctx, locales.LK_CalendarStartTime), fieldAttrs(services.FieldEventStart, templ.Attributes{}))
+				</div>
+			</div>
+			@eventFieldError(id, services.FieldEventStart, f)
+		}
+		@field.Field() {
+			<div class="group-has-[input[name=all\_day]:checked]/ev:hidden">
+				@field.Label(field.LabelProps{For: id + "-end-time"}) {
+					@components.T(locales.LK_CalendarEndTime)
+				}
+				<div class="mt-2">
+					@eventTime(id+"-end-time", "end_time", in.EndTime, utils.T(ctx, locales.LK_CalendarEndTime), fieldAttrs(services.FieldEventEnd, templ.Attributes{}))
+				</div>
+			</div>
+			<label class="flex min-h-11 items-center gap-3">
+				@checkbox.Checkbox(checkbox.Props{Name: "end_on", Value: "1", DefaultChecked: calendarEndOn(in), Class: "size-5"})
+				@components.T(locales.LK_CalendarEndOn)
+			</label>
+			<div class="hidden group-has-[input[name=end\_on]:checked]/ev:block">
+				@datePicker(id+"-end-date", "end_date", calendarDateOr(in.EndDate, in.StartDate))
+			</div>
+			@eventFieldError(id, services.FieldEventEnd, f)
+		}
+		if repeat {
+			@schedulePicker(id, schedulePick{Unit: in.Unit, Every: in.Every, Weekdays: in.Weekdays, None: true},
+				fieldAttrs(services.FieldEventSchedule, templ.Attributes{}), id+"-"+services.FieldEventSchedule+"-error",
+				utils.IfElse(f.Field == services.FieldEventSchedule, f.Message, ""), eventUntil(id, f))
+		} else {
+			<input type="hidden" name="schedule" value="none"/>
+		}
+		@field.Field() {
+			@field.Label(field.LabelProps{For: id + "-remind-timed-trigger"}) {
+				@components.T(locales.LK_CalendarRemind)
+			}
+			<div class="group-has-[input[name=all\_day]:checked]/ev:hidden">
+				{{
+					timed := []selectcomp.ItemData{{Value: "none", Label: utils.T(ctx, locales.LK_CalendarRemindNone)}}
+					for _, m := range g.RemindTimed {
+						timed = append(timed, selectcomp.ItemData{Value: strconv.Itoa(m), Label: calendarRemindLabel(ctx, false, m)})
+					}
+				}}
+				@optionSelect(id+"-remind-timed", "remind_timed", calendarRemindValue(in, false), "w-full data-[size=default]:h-11", fieldAttrs(services.FieldEventRemind, templ.Attributes{}), timed)
+			</div>
+			<div class="hidden group-has-[input[name=all\_day]:checked]/ev:block">
+				{{
+					allDay := []selectcomp.ItemData{{Value: "none", Label: utils.T(ctx, locales.LK_CalendarRemindNone)}}
+					for _, m := range g.RemindAllDay {
+						allDay = append(allDay, selectcomp.ItemData{Value: strconv.Itoa(m), Label: calendarRemindLabel(ctx, true, m)})
+					}
+				}}
+				@optionSelect(id+"-remind-allday", "remind_allday", calendarRemindValue(in, true), "w-full data-[size=default]:h-11",
+					fieldAttrs(services.FieldEventRemind, templ.Attributes{"aria-label": utils.T(ctx, locales.LK_CalendarRemind)}), allDay)
+			</div>
+			@eventFieldError(id, services.FieldEventRemind, f)
+		}
+		<fieldset class="flex min-w-0 flex-col gap-1" { fieldAttrs(services.FieldEventMembers, templ.Attributes{})... }>
+			<legend class="mb-1 text-sm font-medium">
+				@components.T(locales.LK_CalendarMembers)
+			</legend>
+			<p class="mb-1 text-sm text-muted-foreground">
+				@components.T(locales.LK_CalendarMembersHint)
+			</p>
+			for _, m := range members {
+				<label class="flex min-h-11 min-w-0 items-center gap-3">
+					@checkbox.Checkbox(checkbox.Props{
+						Name:           "member",
+						Value:          m.UserID.String(),
+						DefaultChecked: slices.Contains(in.Members, m.UserID),
+						Class:          "size-5",
+					})
+					<span class="break-words">{ m.Username }</span>
+				</label>
+			}
+			@eventFieldError(id, services.FieldEventMembers, f)
+		</fieldset>
+		@field.Field() {
+			@field.Label(field.LabelProps{For: id + "-location"}) {
+				@components.T(locales.LK_CalendarFormLocation)
+			}
+			@input.Input(input.Props{
+				ID:    id + "-location",
+				Name:  "location",
+				Type:  "text",
+				Value: in.Location,
+				Class: "h-11",
+				Attributes: fieldAttrs(services.FieldEventLocation, templ.Attributes{
+					"maxlength": services.MaxEventLocationLength,
+				}),
+			})
+			@eventFieldError(id, services.FieldEventLocation, f)
+		}
+		@field.Field() {
+			@field.Label(field.LabelProps{For: id + "-notes"}) {
+				@components.T(locales.LK_CalendarFormNotes)
+			}
+			@textarea.Textarea(textarea.Props{
+				ID:    id + "-notes",
+				Name:  "notes",
+				Value: in.Notes,
+				Attributes: fieldAttrs(services.FieldEventNotes, templ.Attributes{
+					"maxlength": services.MaxEventNotesLength,
+				}),
+			})
+			@eventFieldError(id, services.FieldEventNotes, f)
+		}
+	</div>
+}
+
+// eventTime is a time of day typed as HH:MM, 24 hours
+templ eventTime(id, name, value, label string, attrs templ.Attributes) {
+	@input.Input(input.Props{
+		ID:    id,
+		Name:  name,
+		Type:  "text",
+		Value: value,
+		Class: "h-11 w-24 text-center tabular-nums",
+		Attributes: utils.MergeAttributes(attrs, templ.Attributes{
+			"inputmode":    "numeric",
+			"pattern":      "([01][0-9]|2[0-3]):[0-5][0-9]",
+			"maxlength":    "5",
+			"placeholder":  "18:30",
+			"autocomplete": "off",
+			"aria-label":   label,
+		}),
+	})
+}
+
+// eventUntil is the last day of a repeat, an option of the schedule picker for a schedule that repeats
+templ eventUntil(id string, f EventForm) {
+	<div class="hidden flex-col gap-2 group-has-[input[name=schedule]:not([value=none]):checked]/sched:flex">
+		<label class="flex min-h-11 items-center gap-3">
+			@checkbox.Checkbox(checkbox.Props{Name: "until_on", Value: "1", DefaultChecked: f.Input.RepeatUntil != "", Class: "size-5"})
+			@components.T(locales.LK_CalendarUntilOn)
+		</label>
+		<div class="hidden group-has-[input[name=until\_on]:checked]/ev:block">
+			@datePicker(id+"-until", "repeat_until", calendarDateOr(f.Input.RepeatUntil, f.Input.StartDate))
+			@eventFieldError(id, services.FieldEventRepeatUntil, f)
+		</div>
+	</div>
+}
+
+// eventFieldError is the error of a failed submit under its field, nothing for the other fields
+templ eventFieldError(id, name string, f EventForm) {
+	if f.Field == name && f.Message != "" {
+		<div id={ id + "-" + name + "-error" }>
+			@formError(f.Message)
+		</div>
+	}
+}

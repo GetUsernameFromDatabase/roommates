@@ -31,7 +31,8 @@ var (
 		"item":    locales.LK_FilesPlaceItem,
 		"expense": locales.LK_FilesPlaceExpense,
 		"message": locales.LK_FilesPlaceMessage,
-		"none":    locales.LK_FilesPlaceNone,
+		"event":   locales.LK_FilesPlaceEvent,
+		"none":   locales.LK_FilesPlaceNone,
 	}
 )
 
@@ -68,6 +69,10 @@ templ HouseholdFiles(actor services.Membership, files []dbqueries.ListFilesRow, 
 								} else if f.ExpenseTitle != nil {
 									<a href={ householdURL(actor.HouseholdID, "expenses", f.ExpenseID.String()) } class={ fileContextClass }>
 										{ utils.T(ctx, locales.LK_FilesOnExpense, *f.ExpenseTitle) }
+									</a>
+								} else if f.EventTitle != nil {
+									<a href={ householdURL(actor.HouseholdID, "calendar", "events", f.EventID.String()) } class={ fileContextClass }>
+										{ utils.T(ctx, locales.LK_FilesOnEvent, *f.EventTitle) }
 									</a>
 								} else if f.MessageID.Valid {
 									<a href={ householdURL(actor.HouseholdID, "chat") } class={ fileContextClass }>
@@ -358,8 +363,11 @@ templ FilePage(actor services.Membership, f services.FileMeta, errorMessage stri
 	} else if f.ExpenseTitle != nil {
 		{{ back = householdURL(actor.HouseholdID, "expenses", f.ExpenseID.String()) }}
 		{{ backText, section = utils.T(ctx, locales.LK_FilesOnExpense, *f.ExpenseTitle), SectionExpenses }}
+	} else if f.EventTitle != nil {
+		{{ back = householdURL(actor.HouseholdID, "calendar", "events", f.EventID.String()) }}
+		{{ backText, section = utils.T(ctx, locales.LK_FilesOnEvent, *f.EventTitle), SectionCalendar }}
 	} else if f.MessageID.Valid {
-		{{ back, backText, section = householdURL(actor.HouseholdID, "chat"), utils.T(ctx, locales.LK_FilesOnMessage), SectionChat }}
+		{{ back, backText, section =householdURL(actor.HouseholdID, "chat"), utils.T(ctx, locales.LK_FilesOnMessage), SectionChat }}
 	}
 	@appShell(f.Name, &HouseholdNav{HouseholdID: actor.HouseholdID, Section: section}) {
 		if f.UploaderID == actor.UserID {

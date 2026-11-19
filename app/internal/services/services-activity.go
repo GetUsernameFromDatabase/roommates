@@ -90,6 +90,7 @@ func (s *DefaultService) PurgeActivity(ctx context.Context) error {
 		ShoppingSecs: g.ActivityRetention[g.ActivityShopping].Seconds(),
 		NotesSecs:    g.ActivityRetention[g.ActivityNotes].Seconds(),
 		ChoresSecs:   g.ActivityRetention[g.ActivityChores].Seconds(),
+		CalendarSecs: g.ActivityRetention[g.ActivityCalendar].Seconds(),
 		MembersSecs:  g.ActivityRetention[g.ActivityMembers].Seconds(),
 	})
 }

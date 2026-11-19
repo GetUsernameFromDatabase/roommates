@@ -100,7 +100,7 @@ func (s *DefaultService) PostMessage(ctx context.Context, actor Membership, body
 		return err
 	}
 	for _, file := range files {
-		t := FileTarget{NoteID: pgtype.UUID{}, ListID: pgtype.UUID{}, ShoppingItemID: pgtype.UUID{}, ExpenseID: pgtype.UUID{}, MessageID: messageID}
+		t := FileTarget{NoteID: pgtype.UUID{}, ListID: pgtype.UUID{}, ShoppingItemID: pgtype.UUID{}, ExpenseID: pgtype.UUID{}, MessageID: messageID, EventID: pgtype.UUID{}}
 		if _, err := s.UploadFile(ctx, actor, t, file.Name, file.Body, file.Size); err != nil {
 			// the form shows the text again, sending it twice would duplicate it,
 			// the files already stored go with the message

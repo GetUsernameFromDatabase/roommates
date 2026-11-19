@@ -283,7 +283,7 @@ func ActivityPage(actor services.Membership, rows []services.ActivityRow, hasMor
 				}
 				return nil
 			})
-			templ_7745c5c3_Err = liveRegion("activity", events.TopicShopping, events.TopicNotes, events.TopicFiles, events.TopicExpenses, events.TopicPeople, events.TopicChores).Render(templ.WithChildren(ctx, templ_7745c5c3_Var7), templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = liveRegion("activity", events.TopicShopping, events.TopicNotes, events.TopicFiles, events.TopicExpenses, events.TopicPeople, events.TopicChores, events.TopicCalendar).Render(templ.WithChildren(ctx, templ_7745c5c3_Var7), templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}

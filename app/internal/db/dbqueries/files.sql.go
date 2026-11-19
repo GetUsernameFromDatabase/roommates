@@ -63,6 +63,7 @@ WHERE file_id = $1
     note_id = $3
     OR shopping_item_id = $4
     OR expense_id = $5
+    OR event_id = $6
   )
 `
 
@@ -72,6 +73,7 @@ type DeleteFileRefParams struct {
 	NoteID         pgtype.UUID `json:"note_id"`
 	ShoppingItemID pgtype.UUID `json:"shopping_item_id"`
 	ExpenseID      pgtype.UUID `json:"expense_id"`
+	EventID        pgtype.UUID `json:"event_id"`
 }
 
 // a trigger deletes the file with its last reference unless it is kept
@@ -82,6 +84,7 @@ func (q *Queries) DeleteFileRef(ctx context.Context, arg DeleteFileRefParams) er
 		arg.NoteID,
 		arg.ShoppingItemID,
 		arg.ExpenseID,
+		arg.EventID,
 	)
 	return err
 }
@@ -110,14 +113,17 @@ SELECT f.id,
   i.text AS item_text,
   r.expense_id,
   e.title AS expense_title,
-  r.message_id
+  r.message_id,
+  r.event_id,
+  ev.title AS event_title
 FROM files f
   JOIN users uploader ON uploader.id = f.uploader_id
   LEFT JOIN LATERAL (
     SELECT p.note_id,
       p.shopping_item_id,
       p.expense_id,
-      p.message_id
+      p.message_id,
+      p.event_id
     FROM file_refs p
       LEFT JOIN notes pn ON pn.id = p.note_id
     WHERE p.file_id = f.id
@@ -132,6 +138,7 @@ FROM files f
   LEFT JOIN notes n ON n.id = r.note_id
   LEFT JOIN shopping_items i ON i.id = r.shopping_item_id
   LEFT JOIN expenses e ON e.id = r.expense_id
+  LEFT JOIN events ev ON ev.id = r.event_id
 WHERE f.id = $2
   AND f.household_id = $3
   AND file_visible(f.id, $1)
@@ -164,6 +171,8 @@ type GetFileRow struct {
 	ExpenseID      pgtype.UUID        `json:"expense_id"`
 	ExpenseTitle   *string            `json:"expense_title"`
 	MessageID      pgtype.UUID        `json:"message_id"`
+	EventID        pgtype.UUID        `json:"event_id"`
+	EventTitle     *string            `json:"event_title"`
 }
 
 func (q *Queries) GetFile(ctx context.Context, arg GetFileParams) (GetFileRow, error) {
@@ -190,6 +199,8 @@ func (q *Queries) GetFile(ctx context.Context, arg GetFileParams) (GetFileRow, e
 		&i.ExpenseID,
 		&i.ExpenseTitle,
 		&i.MessageID,
+		&i.EventID,
+		&i.EventTitle,
 	)
 	return i, err
 }
@@ -243,17 +254,19 @@ INSERT INTO file_refs (
     note_id,
     shopping_item_id,
     expense_id,
-    message_id
+    message_id,
+    event_id
   )
 SELECT f.id,
   f.household_id,
   $1::uuid,
   $2::uuid,
   $3::uuid,
-  $4::uuid
+  $4::uuid,
+  $5::uuid
 FROM files f
-WHERE f.id = $5
-  AND f.household_id = $6
+WHERE f.id = $6
+  AND f.household_id = $7
   AND file_visible(f.id, NULL) ON CONFLICT DO NOTHING
 `
 
@@ -262,6 +275,7 @@ type InsertFileRefParams struct {
 	ShoppingItemID pgtype.UUID `json:"shopping_item_id"`
 	ExpenseID      pgtype.UUID `json:"expense_id"`
 	MessageID      pgtype.UUID `json:"message_id"`
+	EventID        pgtype.UUID `json:"event_id"`
 	FileID         pgtype.UUID `json:"file_id"`
 	HouseholdID    pgtype.UUID `json:"household_id"`
 }
@@ -274,6 +288,7 @@ func (q *Queries) InsertFileRef(ctx context.Context, arg InsertFileRefParams) er
 		arg.ShoppingItemID,
 		arg.ExpenseID,
 		arg.MessageID,
+		arg.EventID,
 		arg.FileID,
 		arg.HouseholdID,
 	)
@@ -328,8 +343,9 @@ WHERE r.household_id = $1
     OR r.shopping_item_id = $3
     OR r.expense_id = $4
     OR r.message_id = $5
+    OR r.event_id = $6
   )
-  AND file_visible(f.id, $6)
+  AND file_visible(f.id, $7)
 ORDER BY r.created_at
 `
 
@@ -339,6 +355,7 @@ type ListAttachedFilesParams struct {
 	ShoppingItemID pgtype.UUID `json:"shopping_item_id"`
 	ExpenseID      pgtype.UUID `json:"expense_id"`
 	MessageID      pgtype.UUID `json:"message_id"`
+	EventID        pgtype.UUID `json:"event_id"`
 	UserID         pgtype.UUID `json:"user_id"`
 }
 
@@ -365,6 +382,7 @@ func (q *Queries) ListAttachedFiles(ctx context.Context, arg ListAttachedFilesPa
 		arg.ShoppingItemID,
 		arg.ExpenseID,
 		arg.MessageID,
+		arg.EventID,
 		arg.UserID,
 	)
 	if err != nil {
@@ -450,14 +468,17 @@ SELECT f.id,
   i.text AS item_text,
   r.expense_id,
   e.title AS expense_title,
-  r.message_id
+  r.message_id,
+  r.event_id,
+  ev.title AS event_title
 FROM files f
   JOIN users uploader ON uploader.id = f.uploader_id
   LEFT JOIN LATERAL (
     SELECT p.note_id,
       p.shopping_item_id,
       p.expense_id,
-      p.message_id
+      p.message_id,
+      p.event_id
     FROM file_refs p
       LEFT JOIN notes pn ON pn.id = p.note_id
     WHERE p.file_id = f.id
@@ -472,6 +493,7 @@ FROM files f
   LEFT JOIN notes n ON n.id = r.note_id
   LEFT JOIN shopping_items i ON i.id = r.shopping_item_id
   LEFT JOIN expenses e ON e.id = r.expense_id
+  LEFT JOIN events ev ON ev.id = r.event_id
 WHERE f.household_id = $2
   AND file_visible(f.id, $1)
   AND (
@@ -517,6 +539,12 @@ WHERE f.household_id = $2
       WHERE x.file_id = f.id
         AND x.message_id IS NOT NULL
     )
+    WHEN 'event' THEN EXISTS (
+      SELECT 1
+      FROM file_refs x
+      WHERE x.file_id = f.id
+        AND x.event_id IS NOT NULL
+    )
     ELSE NOT EXISTS (
       SELECT 1
       FROM file_refs x
@@ -553,6 +581,8 @@ type ListFilesRow struct {
 	ExpenseID      pgtype.UUID        `json:"expense_id"`
 	ExpenseTitle   *string            `json:"expense_title"`
 	MessageID      pgtype.UUID        `json:"message_id"`
+	EventID        pgtype.UUID        `json:"event_id"`
+	EventTitle     *string            `json:"event_title"`
 }
 
 // every file the user may see, newest first, with the first place it is attached to that
@@ -592,6 +622,8 @@ func (q *Queries) ListFiles(ctx context.Context, arg ListFilesParams) ([]ListFil
 			&i.ExpenseID,
 			&i.ExpenseTitle,
 			&i.MessageID,
+			&i.EventID,
+			&i.EventTitle,
 		); err != nil {
 			return nil, err
 		}

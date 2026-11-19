@@ -17,7 +17,7 @@ func TestChatFileRefs(t *testing.T) {
 	ctx := context.Background()
 	ownerM, memberM, strangerM := newTestHousehold(t, s)
 	none := pgtype.UUID{}
-	loose := FileTarget{NoteID: none, ListID: none, ShoppingItemID: none, ExpenseID: none, MessageID: none}
+	loose := FileTarget{NoteID: none, ListID: none, ShoppingItemID: none, ExpenseID: none, MessageID: none, EventID: none}
 
 	lease, err := s.UploadFile(ctx, ownerM, loose, "lease.txt", strings.NewReader("lease"), 5)
 	if err != nil {
@@ -166,7 +166,7 @@ func TestChat(t *testing.T) {
 
 	// only the author attaches to or deletes a message
 	photoMessage := c.Messages[0].ID
-	onMessage := FileTarget{NoteID: none, ListID: none, ShoppingItemID: none, ExpenseID: none, MessageID: photoMessage}
+	onMessage := FileTarget{NoteID: none, ListID: none, ShoppingItemID: none, ExpenseID: none, MessageID: photoMessage, EventID: none}
 	_, err = s.UploadFile(ctx, memberM, onMessage, "x.txt", strings.NewReader("x"), 1)
 	wantErr(t, "member attaches to owner's message", err, g.ErrorNotFound)
 	wantErr(t, "member deletes", s.DeleteMessage(ctx, memberM, photoMessage), g.ErrorNotFound)

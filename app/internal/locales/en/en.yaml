@@ -254,6 +254,7 @@ en:
     all: All files
     on-expense: "On expense: %s"
     on-message: In the chat
+    on-event: "On event: %s"
     search: Search by name
     no-match: No files match
     type: File type
@@ -267,6 +268,7 @@ en:
     place-item: Shopping items
     place-expense: Expenses
     place-message: Chat
+    place-event: Events
     place-none: Not attached
     detach: Remove
     detach-last: "Remove %s?\nThe file goes too\nThis is the only place it is used."
@@ -358,6 +360,7 @@ en:
     settings: Settings
     households-add: Create or join
     chores: Chores
+    calendar: Calendar
   invite-page:
     title: Join %s
     description: You have been invited to join this household.
@@ -504,6 +507,76 @@ en:
     stale: This repeat was already added or skipped.
     push-title: An expense is due in %s
     push-body: "%s, %s. Add or skip it under Expenses."
+  calendar:
+    push-title: "%s: reminder"
+    push-body: "%s, %s"
+    title: Calendar
+    new: New event
+    create: Add event
+    empty: Nothing planned in the next 30 days. Add the first event.
+    more: Show 30 more days
+    none-until: "Nothing planned until %s."
+    day-empty: Nothing planned for this day.
+    day-more: "+%d more"
+    month-1: January
+    month-2: February
+    month-3: March
+    month-4: April
+    month-5: May
+    month-6: June
+    month-7: July
+    month-8: August
+    month-9: September
+    month-10: October
+    month-11: November
+    month-12: December
+    all-day: All day
+    until-clock: "until %s"
+    kind-chore: Chore
+    kind-recurring: Recurring expense
+    overdue: Overdue
+    notice-added: Event added.
+    when: When
+    repeats: Repeats
+    until: "until %s"
+    whole-household: Whole household
+    edit: Edit event
+    form-title: Title
+    form-location: Location
+    form-notes: Notes
+    starts: Starts
+    start-time: Start time
+    end-time: End time (optional)
+    end-on: Ends on another day
+    repeat-none: Does not repeat
+    until-on: Stop repeating on a date
+    remind: Reminder
+    remind-none: No reminder
+    remind-start: At the start
+    remind-on-day: On the day
+    remind-15: 15 minutes before
+    remind-60: 1 hour before
+    remind-day: 1 day before
+    members: Members
+    members-hint: Leave empty for the whole household.
+    scope-edit: Apply the change to
+    scope-delete: Delete
+    scope-this: This event
+    scope-following: This and following events
+    scope-all: All events
+    delete-title: Delete event
+    delete-series: Choose which events of the series to delete.
+    delete-confirm: Delete this event?
+    title-invalid: "Title must be 1 to %d characters."
+    location-invalid: "Location can be up to %d characters."
+    notes-invalid: "Notes can be up to %d characters."
+    start-invalid: Pick a start day and, for a timed event, a time like 18:30.
+    end-invalid: The end must be after the start. An end on another day needs an end time.
+    until-invalid: The last day must be on or after the start.
+    remind-invalid: Pick a reminder from the list.
+    members-invalid: Pick members of this household.
+    invalid: Check the form fields.
+    too-many: "This household already has %d upcoming events. Delete one first."
   chores:
     title: Chores
     new: New chore
@@ -634,6 +707,8 @@ en:
     recurring-description: A recurring expense has reached its due date.
     chores: Chores
     chores-description: It is your turn for a chore, a reminder the day after, and when someone passes their turn to you.
+    calendar: Calendar reminders
+    calendar-description: A reminder before an event you are part of, when the event asks for one.
     household: Household changes
     household-description: Someone joins or leaves, the owner changes, the household is deleted or restored.
   activity:
@@ -713,6 +788,10 @@ en:
     household-restored-you: "You restored the household"
     chore-added-you: "You added the chore %[2]s"
     chore-deleted-you: "You deleted the chore %[2]s"
+    event-added: "%[1]s added the event %[2]s"
+    event-added-you: "You added the event %[2]s"
+    event-deleted: "%[1]s deleted the event %[2]s"
+    event-deleted-you: "You deleted the event %[2]s"
     chore-done-you: "You did the chore %[2]s"
     chore-skipped-you: "You skipped the chore %[2]s"
     chore-passed-you: "You passed the chore %[2]s on to %[3]s"

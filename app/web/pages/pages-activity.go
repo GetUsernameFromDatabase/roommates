@@ -50,6 +50,8 @@ var activityKeys = map[string]locales.LK{
 	g.ActChoreDone:            locales.LK_ActivityChoreDone,
 	g.ActChoreSkipped:         locales.LK_ActivityChoreSkipped,
 	g.ActChorePassed:          locales.LK_ActivityChorePassed,
+	g.ActEventAdded:           locales.LK_ActivityEventAdded,
+	g.ActEventDeleted:         locales.LK_ActivityEventDeleted,
 }
 
 // activityText is the sentence of a row, "Mari added the expense Rent · 650,00 €",
@@ -90,6 +92,8 @@ func activityLink(householdID pgtype.UUID, r services.ActivityRow) templ.SafeURL
 		return householdURL(householdID, "recurring")
 	case r.ChoreExists:
 		return householdURL(householdID, "chores", id)
+	case r.EventExists:
+		return householdURL(householdID, "calendar", "events", id)
 	}
 	return ""
 }

@@ -21,6 +21,7 @@ const (
 	SectionFiles    = "files"
 	SectionChat     = "chat"
 	SectionChores   = "chores"
+	SectionCalendar = "calendar"
 	SectionPeople   = "people"
 	SectionActivity = "activity"
 	SectionSettings = "settings"
@@ -137,7 +138,7 @@ templ confirmDialog() {
 // the chat is wider so both sides of the conversation have room, and on phones
 // only clears the tab bar so it gets most of the screen, with the safe area
 // only in the installed app like [householdNav]
-const pageMainClass = "mx-auto flex flex-1 w-full max-w-lg flex-col gap-8 px-4 py-6 sm:p-10 md:has-[#chat]:max-w-3xl lg:max-w-3xl has-[#chat]:min-h-0 max-lg:has-[#chat]:pt-2 max-lg:has-[#chat]:pb-[4.5rem] [@media(display-mode:standalone)]:max-lg:has-[#chat]:pb-[calc(4.5rem+env(safe-area-inset-bottom))]"
+const pageMainClass = "mx-auto flex flex-1 w-full max-w-lg flex-col gap-8 px-4 py-6 sm:p-10 md:has-[#chat]:max-w-3xl lg:max-w-3xl lg:has-[#cal-month]:max-w-5xl has-[#chat]:min-h-0 max-lg:has-[#chat]:pt-2 max-lg:has-[#chat]:pb-[4.5rem] [@media(display-mode:standalone)]:max-lg:has-[#chat]:pb-[calc(4.5rem+env(safe-area-inset-bottom))]"
 
 // sheetClass is the one raised surface of a page, the thing used most on it
 const sheetClass = "rounded-2xl bg-card p-4 text-card-foreground ring-1 ring-foreground/10 sm:p-5"
@@ -170,6 +171,7 @@ templ householdNav(nav HouseholdNav) {
 			@householdNavItem(householdURL(nav.HouseholdID, "notes"), locales.LK_NavNotes, "notes", nav.Section == SectionNotes, "")
 			@householdNavItem(householdURL(nav.HouseholdID, "files"), locales.LK_NavFiles, "files", nav.Section == SectionFiles, desktopOnly)
 			@householdNavItem(householdURL(nav.HouseholdID, "chores"), locales.LK_NavChores, "chores", nav.Section == SectionChores, desktopOnly)
+			@householdNavItem(householdURL(nav.HouseholdID, "calendar"), locales.LK_NavCalendar, "calendar", nav.Section == SectionCalendar, desktopOnly)
 			@householdNavItem(householdURL(nav.HouseholdID, "chat"), locales.LK_NavChat, "chat", nav.Section == SectionChat, "") {
 				// the chat page marks everything read
 				if nav.Section != SectionChat {
@@ -241,6 +243,7 @@ templ householdMenu(nav HouseholdNav) {
 			@householdMenuItem(householdURL(nav.HouseholdID, "expenses"), locales.LK_NavExpenses, "expenses", nav.Section == SectionExpenses)
 			@householdMenuItem(householdURL(nav.HouseholdID, "files"), locales.LK_NavFiles, "files", nav.Section == SectionFiles)
 			@householdMenuItem(householdURL(nav.HouseholdID, "chores"), locales.LK_NavChores, "chores", nav.Section == SectionChores)
+			@householdMenuItem(householdURL(nav.HouseholdID, "calendar"), locales.LK_NavCalendar, "calendar", nav.Section == SectionCalendar)
 			@householdMenuItem(householdURL(nav.HouseholdID, "people"), locales.LK_NavPeople, "people", nav.Section == SectionPeople)
 			@householdMenuItem(householdURL(nav.HouseholdID, "activity"), locales.LK_ActivityTitle, "activity", nav.Section == SectionActivity)
 			@householdMenuItem(householdURL(nav.HouseholdID, "settings"), locales.LK_NavSettings, "settings", nav.Section == SectionSettings)
@@ -291,6 +294,11 @@ templ navIcon(name, class string) {
 				<path d="M13 6h8"></path>
 				<path d="M13 12h8"></path>
 				<path d="M13 18h8"></path>
+			case "calendar":
+				<path d="M8 2v4"></path>
+				<path d="M16 2v4"></path>
+				<rect width="18" height="18" x="3" y="4" rx="2"></rect>
+				<path d="M3 10h18"></path>
 			case "people":
 				<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
 				<circle cx="9" cy="7" r="4"></circle>
@@ -315,6 +323,10 @@ templ navIcon(name, class string) {
 				<line x1="4" x2="20" y1="18" y2="18"></line>
 			case "chevron-down":
 				<path d="m6 9 6 6 6-6"></path>
+			case "chevron-left":
+				<path d="m15 18-6-6 6-6"></path>
+			case "chevron-right":
+				<path d="m9 18 6-6-6-6"></path>
 			case "bold":
 				<path d="M6 12h9a4 4 0 0 1 0 8H7a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1h7a4 4 0 0 1 0 8"></path>
 			case "italic":

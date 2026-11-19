@@ -31,12 +31,13 @@ const (
 	TopicPeople   = "people"
 	TopicChat     = "chat"
 	TopicChores   = "chores"
+	TopicCalendar = "calendar"
 	// someone read the chat, their badges on other devices go to zero
 	TopicRead = "read"
 )
 
 // Topics are all topics, sent when events may have been missed
-var Topics = []string{TopicShopping, TopicNotes, TopicFiles, TopicExpenses, TopicPeople, TopicChat, TopicChores, TopicRead}
+var Topics = []string{TopicShopping, TopicNotes, TopicFiles, TopicExpenses, TopicPeople, TopicChat, TopicChores, TopicCalendar, TopicRead}
 
 // subscriberBuffer is how many topics wait for a slow subscriber, more are dropped,
 // the page refetches on the next one anyway

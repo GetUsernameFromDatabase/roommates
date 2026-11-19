@@ -254,7 +254,7 @@ func TestActivityNotes(t *testing.T) {
 		t.Fatal(err)
 	}
 	body := []byte("hello")
-	fileID, err := s.UploadFile(ctx, ownerM, FileTarget{NoteID: pgtype.UUID{}, ListID: pgtype.UUID{}, ShoppingItemID: pgtype.UUID{}, ExpenseID: pgtype.UUID{}, MessageID: pgtype.UUID{}},
+	fileID, err := s.UploadFile(ctx, ownerM, FileTarget{NoteID: pgtype.UUID{}, ListID: pgtype.UUID{}, ShoppingItemID: pgtype.UUID{}, ExpenseID: pgtype.UUID{}, MessageID: pgtype.UUID{}, EventID: pgtype.UUID{}},
 		"hello.txt", bytes.NewReader(body), int64(len(body)))
 	if err != nil {
 		t.Fatal(err)

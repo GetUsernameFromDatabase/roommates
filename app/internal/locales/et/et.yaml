@@ -254,6 +254,7 @@ et:
     all: Kõik failid
     on-expense: "Kulul: %s"
     on-message: Vestluses
+    on-event: "Sündmusel: %s"
     search: Otsi nime järgi
     no-match: Ühtegi sobivat faili pole
     type: Faili tüüp
@@ -267,6 +268,7 @@ et:
     place-item: Ostud
     place-expense: Kulud
     place-message: Vestlus
+    place-event: Sündmused
     place-none: Lisamata
     detach: Eemalda
     detach-last: "Kas eemaldada %s?\nFail kaob samuti\nSee on ainus koht, kus faili kasutatakse."
@@ -358,6 +360,7 @@ et:
     settings: Seaded
     households-add: Loo või liitu
     chores: Kodutööd
+    calendar: Kalender
   invite-page:
     title: Liitu leibkonnaga %s
     description: Sind on kutsutud selle leibkonnaga liituma.
@@ -504,6 +507,76 @@ et:
     stale: Seda kordust on juba lisatud või see jäeti vahele.
     push-title: Kulu on tähtajal leibkonnas %s
     push-body: "%s, %s. Lisa või jäta vahele kulude all."
+  calendar:
+    push-title: "%s: meeldetuletus"
+    push-body: "%s, %s"
+    title: Kalender
+    new: Uus sündmus
+    create: Lisa sündmus
+    empty: Järgmise 30 päeva jooksul pole midagi plaanis. Lisa esimene sündmus.
+    more: Näita veel 30 päeva
+    none-until: "Kuni %s pole midagi plaanis."
+    day-empty: Sellel päeval pole midagi plaanis.
+    day-more: "+%d veel"
+    month-1: Jaanuar
+    month-2: Veebruar
+    month-3: Märts
+    month-4: Aprill
+    month-5: Mai
+    month-6: Juuni
+    month-7: Juuli
+    month-8: August
+    month-9: September
+    month-10: Oktoober
+    month-11: November
+    month-12: Detsember
+    all-day: Terve päev
+    until-clock: "kuni %s"
+    kind-chore: Kodutöö
+    kind-recurring: Korduv kulu
+    overdue: Hilinenud
+    notice-added: Sündmus lisatud.
+    when: Millal
+    repeats: Kordub
+    until: "kuni %s"
+    whole-household: Terve leibkond
+    edit: Muuda sündmust
+    form-title: Pealkiri
+    form-location: Asukoht
+    form-notes: Märkused
+    starts: Algus
+    start-time: Algusaeg
+    end-time: Lõpuaeg (valikuline)
+    end-on: Lõpeb teisel päeval
+    repeat-none: Ei kordu
+    until-on: Lõpeta kordamine kuupäeval
+    remind: Meeldetuletus
+    remind-none: Pole
+    remind-start: Alguse ajal
+    remind-on-day: Sündmuse päeval
+    remind-15: 15 minutit enne
+    remind-60: 1 tund enne
+    remind-day: 1 päev enne
+    members: Osalejad
+    members-hint: Kui jätad märkimata, on sündmus kogu leibkonnale.
+    scope-edit: Rakenda muudatus
+    scope-delete: Kustuta
+    scope-this: Ainult see sündmus
+    scope-following: See ja järgmised sündmused
+    scope-all: Kõik sündmused
+    delete-title: Kustuta sündmus
+    delete-series: Vali, millised seeria sündmused kustutada.
+    delete-confirm: Kustutada see sündmus?
+    title-invalid: "Pealkiri peab olema 1 kuni %d tähte pikk."
+    location-invalid: "Asukoht võib olla kuni %d tähte pikk."
+    notes-invalid: "Märkused võivad olla kuni %d tähte pikad."
+    start-invalid: Vali alguskuupäev ja ajaga sündmusel kellaaeg kujul 18:30.
+    end-invalid: Lõpp peab olema pärast algust. Teisel päeval lõppeval sündmusel on vaja lõpuaega.
+    until-invalid: Viimane päev peab olema algusega samal või hilisemal kuupäeval.
+    remind-invalid: Vali meeldetuletus nimekirjast.
+    members-invalid: Vali selle leibkonna liikmed.
+    invalid: Kontrolli vormi välju.
+    too-many: "Leibkonnas on juba %d tulevast sündmust. Kustuta enne mõni."
   chores:
     title: Kodutööd
     new: Uus kodutöö
@@ -634,6 +707,8 @@ et:
     recurring-description: Korduva kulu järgmine kuupäev on käes.
     chores: Kodutööd
     chores-description: Sinu kord teha kodutööd, meeldetuletus järgmisel päeval ja kui keegi annab oma korra sulle.
+    calendar: Kalendri meeldetuletused
+    calendar-description: Meeldetuletus enne sündmust, milles sa osaled, kui sündmus seda soovib.
     household: Majapidamise muudatused
     household-description: Liitumine, lahkumine, omaniku vahetus, kustutamine ja taastamine.
   activity:
@@ -713,6 +788,10 @@ et:
     household-restored-you: "Sa taastasid majapidamise"
     chore-added-you: "Sa lisasid kodutöö %[2]s"
     chore-deleted-you: "Sa kustutasid kodutöö %[2]s"
+    event-added: "%[1]s lisas sündmuse %[2]s"
+    event-added-you: "Sa lisasid sündmuse %[2]s"
+    event-deleted: "%[1]s kustutas sündmuse %[2]s"
+    event-deleted-you: "Sa kustutasid sündmuse %[2]s"
     chore-done-you: "Sa tegid kodutöö %[2]s"
     chore-skipped-you: "Sa jätsid kodutöö %[2]s vahele"
     chore-passed-you: "Sa andsid kodutöö %[2]s edasi: %[3]s"

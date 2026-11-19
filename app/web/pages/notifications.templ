@@ -17,6 +17,8 @@ func notificationLabels(kind string) (title, description locales.LK) {
 		return locales.LK_NotificationsRecurring, locales.LK_NotificationsRecurringDescription
 	case g.NotifyChores:
 		return locales.LK_NotificationsChores, locales.LK_NotificationsChoresDescription
+	case g.NotifyCalendar:
+		return locales.LK_NotificationsCalendar, locales.LK_NotificationsCalendarDescription
 	default:
 		return locales.LK_NotificationsHousehold, locales.LK_NotificationsHouseholdDescription
 	}
