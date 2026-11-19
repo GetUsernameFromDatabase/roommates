@@ -47,6 +47,8 @@ After [Setup](#setup). Run from `app/` unless noted.
 
 Whole stack in Docker instead: `docker compose up --build` from the repo root, app on <https://127.0.0.1:8000>. That also runs the `backup` service (db dump + files into `./backups`), see [deploy/backup/README.md](./deploy/backup/README.md) for config and restore.
 
+Running it on a server (Cloudflare Tunnel, upgrades, rollback): [docs/DEPLOY.md](./docs/DEPLOY.md).
+
 ## Setup
 
 Install golang
@@ -58,7 +60,7 @@ Install [mkcert](https://github.com/FiloSottile/mkcert#installation) for the loc
 
 Install binaries with go
 
-- `go install github.com/sqlc-dev/sqlc/cmd/sqlc@latest`
+- `go install github.com/sqlc-dev/sqlc/cmd/sqlc@v1.31.1`
   - [sqlc](https://docs.sqlc.dev/en/latest/overview/install.html)
   - generate go code to interact with database
 - `go install github.com/go-task/task/v3/cmd/task@latest`

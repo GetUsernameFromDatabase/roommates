@@ -29,3 +29,14 @@ func TestBuildMessage(t *testing.T) {
 		t.Error("newline in To must be rejected")
 	}
 }
+
+func TestIsLocalHost(t *testing.T) {
+	for host, want := range map[string]bool{
+		"localhost": true, "127.0.0.1": true, "::1": true, "mailpit": true, "MailPit": true,
+		"smtp.example.com": false, "10.0.0.5": false, "localhost.example.com": false,
+	} {
+		if got := isLocalHost(host); got != want {
+			t.Errorf("isLocalHost(%q) = %v", host, got)
+		}
+	}
+}

@@ -64,7 +64,27 @@ var migrationFS embed.FS
 var fniRegex = regexp.MustCompile(`^(\d{5})_(.+)\.(up|down)\.sql$`)
 var ctx = context.Background()
 
+// arbitrary, differs from testDBLockKey
+const migrationLockKey = 7_201_027
+
+// MigrateToLatest holds a Postgres advisory lock while migrating,
+// so app processes starting together migrate one after another
 func MigrateToLatest(db *pgxpool.Pool) {
+	conn, err := db.Acquire(ctx)
+	if err != nil {
+		log.Fatal().Err(err).Msg("could not acquire connection for migration lock")
+	}
+	defer conn.Release()
+	if _, err = conn.Exec(ctx, "SELECT pg_advisory_lock($1)", migrationLockKey); err != nil {
+		log.Fatal().Err(err).Msg("could not take migration lock")
+	}
+	defer func() {
+		if _, err := conn.Exec(ctx, "SELECT pg_advisory_unlock($1)", migrationLockKey); err != nil {
+			log.Fatal().Err(err).Msg("could not release migration lock")
+		}
+	}()
+
+	// the version is read inside the lock, another process may have just migrated
 	m := NewMigrations(db)
 	m.MigrateTo(m.maxVersion)
 }

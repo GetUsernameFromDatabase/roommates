@@ -4,6 +4,13 @@
 # env is automatically loaded, you can just use interpolation
 #  if you don't want to bind the entire file to service
 #  https://docs.docker.com/compose/how-tos/environment-variables/variable-interpolation/#env-file
+# json-file grows without bound by default
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: 10m
+    max-file: "3"
+
 volumes:
   db_data:
   rustfs_data:
@@ -27,7 +34,7 @@ services:
     volumes:
       - ./deploy/postgres/postgresql.conf:/etc/postgresql.conf # should match with command: -c config_file
       - db_data:/var/lib/postgresql # PG 18 path
-      - ./logs/postgresql:/logs
+    logging: *logging
     healthcheck:
       test: ["CMD-SHELL", "pg_isready"]
       interval: 10s
@@ -47,11 +54,12 @@ services:
       RUSTFS_VOLUMES: /data
       RUSTFS_ADDRESS: :9000
       RUSTFS_CONSOLE_ADDRESS: :9001
-      RUSTFS_CONSOLE_ENABLE: "true"
+      RUSTFS_CONSOLE_ENABLE: ${RUSTFS_CONSOLE_ENABLE:-false} # `task dev` turns it on
       RUSTFS_ACCESS_KEY: ${S3_ACCESS_KEY} # REQUIRED
       RUSTFS_SECRET_KEY: ${S3_SECRET_KEY} # REQUIRED
     volumes:
       - rustfs_data:/data
+    logging: *logging
     healthcheck:
       test: ["CMD-SHELL", "curl -fs http://localhost:9000/health"]
       interval: 10s
@@ -71,6 +79,15 @@ services:
     environment:
       BACKUP_KEEP_DAYS: ${BACKUP_KEEP_DAYS:-14}
       S3_BUCKET: ${S3_BUCKET}
+      # failure alert mail, see backup.sh; no BACKUP_ALERT_EMAIL = log only
+      SMTP_HOST: ${SMTP_HOST:-mailpit}
+      SMTP_PORT: ${SMTP_PORT:-1025}
+      SMTP_USERNAME: ${SMTP_USERNAME:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      SMTP_FROM: ${SMTP_FROM:-Roommates <noreply@localhost>}
+      BACKUP_ALERT_EMAIL: ${BACKUP_ALERT_EMAIL:-}
+      # its host names the server in the alert subject
+      APP_BASE_URL: ${APP_BASE_URL:-}
       # pg_dump, https://www.postgresql.org/docs/current/libpq-envars.html
       PGHOST: db # service name
       PGUSER: ${POSTGRES_USER}
@@ -85,11 +102,14 @@ services:
       RCLONE_CONFIG_RUSTFS_FORCE_PATH_STYLE: "true"
     volumes:
       - ${BACKUP_DIR:-./backups}:/backups
+    logging: *logging
   # --- EMAIL (development) ---
   # catches every email, inbox at http://127.0.0.1:8025
+  # only with the dev profile (COMPOSE_PROFILES=dev in .env, `task dev` adds it);
   # for `task dev` set SMTP_HOST=localhost SMTP_PORT=1025 in .env
   # https://mailpit.axllent.org/docs/configuration/runtime-options/
   mailpit:
+    profiles: [dev]
     build:
       context: ./deploy/mailpit
       dockerfile: Dockerfile
@@ -97,6 +117,22 @@ services:
     ports:
       - 127.0.0.1:1025:1025 # SMTP
       - 127.0.0.1:8025:8025 # web inbox
+    logging: *logging
+  # --- PUBLIC ACCESS (production) ---
+  # Cloudflare tunnel to http://app:8080, set up in the Cloudflare dashboard, see docs/DEPLOY.md
+  cloudflared:
+    profiles: [prod]
+    build:
+      context: ./deploy/cloudflared
+      dockerfile: Dockerfile
+    command: tunnel --no-autoupdate run
+    restart: unless-stopped
+    environment:
+      TUNNEL_TOKEN: ${CLOUDFLARE_TUNNEL_TOKEN:-}
+    depends_on:
+      app:
+        condition: service_healthy
+    logging: *logging
   # ----------------------------------------------------------------------------
   app:
     depends_on:
@@ -110,8 +146,12 @@ services:
     build:
       context: ./app
       dockerfile: ../deploy/app/Dockerfile
+    restart: unless-stopped
+    logging: *logging
     ports:
       # match latter with [SERVER_PORT] env
+      # loopback only, never forward it: with TRUSTED_PLATFORM the app speaks plain HTTP
+      # and trusts the Cloudflare client-IP header
       - 127.0.0.1:8000:8080
     volumes:
       # the TLS key stays out of the image, see deploy/app/Dockerfile.dockerignore
@@ -126,15 +166,19 @@ services:
       # match with service
       DATABASE_HOST: db # service name
       DATABASE_PORT: 5432 # service container port
-      # emails go to the mailpit service, replace for real delivery
       S3_ENDPOINT: http://rustfs:9000 # service name and container port
-      SMTP_HOST: mailpit
-      SMTP_PORT: 1025
-      SMTP_FROM: Roommates <noreply@localhost>
-      APP_BASE_URL: https://127.0.0.1:8000
+      # falls back to the root keys until the limited key exists
+      S3_ACCESS_KEY: ${APP_S3_ACCESS_KEY:-${S3_ACCESS_KEY}}
+      S3_SECRET_KEY: ${APP_S3_SECRET_KEY:-${S3_SECRET_KEY}}
+      # these override env_file, so they are interpolated; the defaults deliver to the dev mailpit
+      SMTP_HOST: ${SMTP_HOST:-mailpit}
+      SMTP_PORT: ${SMTP_PORT:-1025}
+      SMTP_FROM: ${SMTP_FROM:-Roommates <noreply@localhost>}
+      APP_BASE_URL: ${APP_BASE_URL:-https://127.0.0.1:8000}
     healthcheck:
-      # busybox wget, the image has no curl; plain http when TRUSTED_PLATFORM is set
-      test: ["CMD-SHELL", "wget -qO- http://localhost:8080/healthz || wget --no-check-certificate -qO- https://localhost:8080/healthz"]
+      # busybox wget, the image has no curl; plain http when TRUSTED_PLATFORM is set.
+      # https first: a plain http probe of the TLS server logs a handshake error each time
+      test: ["CMD-SHELL", "wget --no-check-certificate -qO- https://localhost:8080/healthz || wget -qO- http://localhost:8080/healthz"]
       interval: 10s
       timeout: 5s
       retries: 5

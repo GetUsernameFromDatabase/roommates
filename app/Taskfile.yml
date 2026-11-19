@@ -11,6 +11,7 @@ vars:
   TAILWIND_INPUT: './web/assets/globals.css'
   TAILWIND_OUTPUT: './web/assets/public/output.css'
   # the only pin: deploy/app/Dockerfile downloads this version via 'task tailwind-version'
+  # (bump its TAILWIND_SHA256_* with it)
   TAILWIND_VERSION: '4.3.3'
   PROXY_TLS_CRT: './certificates/server.pem'
   PROXY_TLS_KEY: './certificates/server.key'
@@ -31,6 +32,9 @@ tasks:
       - sh ./scripts/dev-run.sh
     env:
       SERVER_PORT: '{{.PORT}}'
+      # the compose mailpit seen from the host; containers default to mailpit while .env leaves these unset
+      SMTP_HOST: localhost
+      SMTP_PORT: '1025'
     dotenv:
       - ../.env
 
@@ -106,7 +110,8 @@ tasks:
   dev:
     env:
       SHADCN_TEMPL_DEV: 'true'
+      RUSTFS_CONSOLE_ENABLE: 'true'
     desc: Start development server with hot reload
     cmds:
-      - docker compose -f ../docker-compose.yml up -d --wait db rustfs mailpit
+      - docker compose -f ../docker-compose.yml --profile dev up -d --wait db rustfs mailpit
       - task --parallel tailwind scripts-watch templ server restart-watch

@@ -13,6 +13,7 @@ import (
 	g "roommates/internal/config"
 	"roommates/internal/logger"
 	"slices"
+	"strings"
 	"time"
 
 	webpush "github.com/SherClockHolmes/webpush-go"
@@ -52,15 +53,27 @@ type Pusher interface {
 
 // New returns a pusher with the VAPID keys from env, see [g.EVK_VAPIDPublicKey]
 //
-// in development without keys, notifications are logged instead
+// in development without keys, notifications are logged instead,
+// otherwise panics when a key is empty or unset
 func New() Pusher {
-	if g.EVK_VAPIDPrivateKey.Get("") == "" && g.IsDevelopment() {
+	publicKey, privateKey := g.EVK_VAPIDPublicKey.Get(""), g.EVK_VAPIDPrivateKey.Get("")
+	if privateKey == "" && g.IsDevelopment() {
 		log.Warn().Msg("VAPID_PRIVATE_KEY not set, push notifications are written to the log")
 		return LogPusher{}
 	}
+	var missing []string
+	if publicKey == "" {
+		missing = append(missing, g.EVK_VAPIDPublicKey.String())
+	}
+	if privateKey == "" {
+		missing = append(missing, g.EVK_VAPIDPrivateKey.String())
+	}
+	if len(missing) > 0 {
+		panic(strings.Join(missing, " and ") + " must be set, generate both with `go run ./tools/vapid-keys` from app/")
+	}
 	return &WebPusher{
-		publicKey:  g.EVK_VAPIDPublicKey.MustGet(),
-		privateKey: g.EVK_VAPIDPrivateKey.MustGet(),
+		publicKey:  publicKey,
+		privateKey: privateKey,
 		subject:    g.EVK_VAPIDSubject.Get(g.GetAppBaseURL()),
 		client:     &http.Client{Transport: nil, CheckRedirect: nil, Jar: nil, Timeout: 30 * time.Second},
 	}

@@ -6,6 +6,7 @@ import (
 	"errors"
 	"io"
 	g "roommates/internal/config"
+	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/credentials"
@@ -44,6 +45,9 @@ func New(ctx context.Context) *S3Store {
 		ResponseChecksumValidation: aws.ResponseChecksumValidationWhenRequired,
 	})
 	s := &S3Store{client: client, bucket: g.EVK_S3Bucket.MustGet()}
+	// an unreachable store would otherwise hang startup
+	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
+	defer cancel()
 	if err := s.ensureBucket(ctx); err != nil {
 		panic("object storage: " + err.Error())
 	}

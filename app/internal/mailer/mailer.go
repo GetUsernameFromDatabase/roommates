@@ -65,8 +65,8 @@ type SMTPMailer struct {
 
 const smtpTimeout = 30 * time.Second
 
-// Send uses STARTTLS when the server offers it, net/smtp refuses to
-// send the password unencrypted unless the host is localhost
+// Send requires STARTTLS unless the host is local, see [isLocalHost];
+// net/smtp also refuses to send the password unencrypted unless the host is localhost
 func (m *SMTPMailer) Send(msg Message) error {
 	from, err := mail.ParseAddress(m.From)
 	if err != nil {
@@ -94,6 +94,9 @@ func (m *SMTPMailer) Send(msg Message) error {
 		if err := c.StartTLS(&tls.Config{ServerName: m.Host}); err != nil {
 			return err
 		}
+	} else if !isLocalHost(m.Host) {
+		// emails carry login and reset links, never send them in plain text over the network
+		return fmt.Errorf("SMTP server %s does not offer STARTTLS", m.Host)
 	}
 	if m.Username != "" {
 		if err := c.Auth(smtp.PlainAuth("", m.Username, m.Password, m.Host)); err != nil {
@@ -117,6 +120,15 @@ func (m *SMTPMailer) Send(msg Message) error {
 		return err
 	}
 	return c.Quit()
+}
+
+// isLocalHost reports hosts where plain SMTP is fine, mailpit is the compose dev mail catcher
+func isLocalHost(host string) bool {
+	switch strings.ToLower(host) {
+	case "localhost", "127.0.0.1", "::1", "mailpit":
+		return true
+	}
+	return false
 }
 
 func buildMessage(from *mail.Address, msg Message) ([]byte, error) {

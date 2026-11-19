@@ -22,6 +22,8 @@ const (
 	EVK_DatabaseName     EnvironmentVariableKey = "POSTGRES_DB"
 	EVK_DatabaseUser     EnvironmentVariableKey = "POSTGRES_USER"
 	EVK_DatabasePassword EnvironmentVariableKey = "POSTGRES_PASSWORD"
+	// pgxpool pool_max_conns, defaults to 10
+	EVK_DatabaseMaxConns EnvironmentVariableKey = "DATABASE_MAX_CONNS"
 )
 
 // REQUIRED env key for server
@@ -139,9 +141,13 @@ func MustGetEnv(key EnvironmentVariableKey) string {
 // GetDatabaseURL constructs a database url using environment
 //
 //	sslmode=disable
+//	pool_max_conns=[EVK_DatabaseMaxConns]
 //
 // a URL so that values with spaces, quotes etc. are escaped
 func GetDatabaseURL() string {
+	query := url.Values{}
+	query.Set("sslmode", "disable")
+	query.Set("pool_max_conns", EVK_DatabaseMaxConns.Get("10"))
 	//exhaustruct:ignore
 	u := url.URL{
 		Scheme: "postgres",
@@ -151,7 +157,7 @@ func GetDatabaseURL() string {
 		),
 		Host:     net.JoinHostPort(MustGetEnv(EVK_DatabaseHost), MustGetEnv(EVK_DatabasePort)),
 		Path:     MustGetEnv(EVK_DatabaseName),
-		RawQuery: "sslmode=disable",
+		RawQuery: query.Encode(),
 	}
 	return u.String()
 }
