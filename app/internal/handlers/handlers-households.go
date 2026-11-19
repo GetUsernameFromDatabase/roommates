@@ -214,6 +214,90 @@ func (h *DefaultHandler) PromoteMember(ctx *gin.Context) {
 	})
 }
 
+// TransferOwnership makes a member an owner and the actor a member, the page then shows the new role
+func (h *DefaultHandler) TransferOwnership(ctx *gin.Context) {
+	h.householdTargetAction(ctx, g.ParamUserID, pages.PeopleAtMembers, func(actor services.Membership, userID pgtype.UUID) error {
+		return h.reloadActor(ctx, actor, h.service.TransferOwnership(ctx, actor, userID))
+	})
+}
+
+// StepDown makes the actor a member while another owner is left
+func (h *DefaultHandler) StepDown(ctx *gin.Context) {
+	h.householdAction(ctx, pages.PeopleAtStepDown, func(actor services.Membership) error {
+		return h.reloadActor(ctx, actor, h.service.StepDown(ctx, actor))
+	})
+}
+
+// reloadActor stores the actor's membership again after a role change without an error,
+// so the page rendered next is the one of their new role
+func (h *DefaultHandler) reloadActor(ctx *gin.Context, actor services.Membership, err error) error {
+	if err != nil {
+		return err
+	}
+	m, err := h.service.GetMembership(ctx, actor.HouseholdID, actor.UserID)
+	if err != nil {
+		return err
+	}
+	ctx.Set(g.GinKeyMembership, m)
+	return nil
+}
+
+// DeleteHousehold deletes the household after its name was typed, the page is shown again
+// read-only, an error is swapped into the open dialog by the name field
+func (h *DefaultHandler) DeleteHousehold(ctx *gin.Context) {
+	actor := membershipFromContext(ctx)
+	err := h.service.DeleteHousehold(ctx, actor, ctx.PostForm("name"))
+	var field services.FieldError
+	switch {
+	case err == nil:
+		stay(ctx, householdPath(actor.HouseholdID)+"/settings")
+	case errors.As(err, &field):
+		if IsRequestHTMX(ctx) {
+			ctx.Header(g.HHK_HXRetarget.String(), "#household-delete-error")
+			ctx.Header(g.HHK_HXReswap.String(), "innerHTML")
+		}
+		RenderTemplStatus(ctx, http.StatusUnprocessableEntity,
+			pages.DeleteHouseholdError(utils.T(ctx.Request.Context(), locales.LK_OwnershipDeleteNameMismatch)))
+	case errors.Is(err, g.ErrorForbidden):
+		swapMainOnError(ctx)
+		RenderTemplStatus(ctx, http.StatusForbidden, pages.Error())
+	default:
+		InternalError(ctx, err)
+	}
+}
+
+// RestoreHousehold undoes a deletion, the page the restore button is on is shown again
+func (h *DefaultHandler) RestoreHousehold(ctx *gin.Context) {
+	userID, err := sessionUserID(ctx)
+	if err != nil {
+		InternalError(ctx, err)
+		return
+	}
+	householdID, err := utils.ParseUUID(ctx.Param(g.ParamHouseholdID))
+	if err != nil {
+		err = g.ErrorNotFound
+	} else {
+		err = h.service.RestoreHousehold(ctx, userID, householdID)
+	}
+	switch {
+	case err == nil:
+		// the household page the banner is on, or home
+		next := "/"
+		if u, err := url.Parse(ctx.GetHeader("HX-Current-URL")); err == nil && strings.HasPrefix(u.Path, householdPath(householdID)) {
+			next = u.RequestURI()
+		}
+		stay(ctx, next)
+	case errors.Is(err, g.ErrorForbidden):
+		swapMainOnError(ctx)
+		RenderTemplStatus(ctx, http.StatusForbidden, pages.Error())
+	case errors.Is(err, g.ErrorNotFound):
+		swapMainOnError(ctx)
+		RenderTemplStatus(ctx, http.StatusNotFound, pages.NotFound())
+	default:
+		InternalError(ctx, err)
+	}
+}
+
 // LeaveHousehold sends the user home, the household page is no longer theirs
 func (h *DefaultHandler) LeaveHousehold(ctx *gin.Context) {
 	actor := membershipFromContext(ctx)

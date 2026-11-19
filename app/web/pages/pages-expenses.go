@@ -3,6 +3,7 @@ package pages
 import (
 	"context"
 	"net/url"
+	g "roommates/internal/config"
 	"roommates/internal/db/dbqueries"
 	"roommates/internal/locales"
 	"roommates/internal/services"
@@ -13,6 +14,15 @@ import (
 	"github.com/a-h/templ"
 	"github.com/jackc/pgx/v5/pgtype"
 )
+
+// amountValue shows a form amount with the decimal comma outside English, like
+// [utils.FormatMoney]; [services.ParseCents] reads either separator back
+func amountValue(ctx context.Context, s string) string {
+	if utils.GetLocaleString(ctx) == "en" {
+		return s
+	}
+	return strings.Replace(s, ".", ",", 1)
+}
 
 // newExpenseURL opens the expense form with title filled in
 func newExpenseURL(householdID, listID, itemID pgtype.UUID) templ.SafeURL {
@@ -58,6 +68,36 @@ func settlementLine(ctx context.Context, method *string, note string) string {
 		parts = append(parts, note)
 	}
 	return strings.Join(parts, " · ")
+}
+
+// repeatNever is the repeat select's value for an expense that does not repeat
+const repeatNever = "never"
+
+var intervalKeys = map[string]locales.LK{
+	repeatNever:     locales.LK_RecurringNever,
+	g.IntervalWeek:  locales.LK_RecurringWeek,
+	g.IntervalMonth: locales.LK_RecurringMonth,
+	g.IntervalYear:  locales.LK_RecurringYear,
+}
+
+// expenseFrame is what the forms of [expenseForm] differ in
+type expenseFrame struct {
+	Action, Back      templ.SafeURL
+	BackText, Heading string
+	Submit            locales.LK
+	// Lock is the [services.Expense.AmountLock] of an expense being edited
+	Lock string
+	// PayerID gets the leftover cents of an equal split, see expense-split.js
+	PayerID   pgtype.UUID
+	DateLabel locales.LK
+	// Repeats are the repeat select's options, none hides it, Repeat is the chosen one or the first
+	Repeats []string
+	Repeat  string
+}
+
+// canEditRecurring says whether the actor can change schedule r, see services.UpdateRecurring
+func canEditRecurring(actor services.Membership, r services.RecurringRow) bool {
+	return r.PayerID == actor.UserID || actor.Role == g.RoleOwner
 }
 
 // SettleSlip is a failed "I paid" shown again in the slip of To, with what was typed

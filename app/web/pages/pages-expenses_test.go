@@ -21,7 +21,7 @@ func TestExpenseEditorCarriesTheItemLink(t *testing.T) {
 		t.Fatal(err)
 	}
 	list, item := pgtype.UUID{Bytes: [16]byte{1}, Valid: true}, pgtype.UUID{Bytes: [16]byte{2}, Valid: true}
-	actor := services.Membership{HouseholdID: pgtype.UUID{}, UserID: pgtype.UUID{}, Role: "", Currency: "", UnreadMessages: 0, PendingSettlements: 0}
+	actor := services.Membership{HouseholdID: pgtype.UUID{}, UserID: pgtype.UUID{}, Role: "", Currency: "", UnreadMessages: 0, PendingSettlements: 0, DeletedAt: pgtype.Timestamptz{}}
 	in := services.ExpenseInput{Title: "", Amount: "", Category: "groceries", IncurredOn: "2026-10-01", Custom: false,
 		Members: nil, Shares: nil, ListID: list, ItemID: item}
 	members := []dbqueries.ListActiveMembersRow{{UserID: item, Username: "Ben", AvatarKey: nil, Role: "", JoinedAt: pgtype.Timestamptz{}}}
@@ -54,7 +54,7 @@ func TestHouseholdExpensesSettledStamp(t *testing.T) {
 		t.Fatal(err)
 	}
 	you, ben := pgtype.UUID{Bytes: [16]byte{1}, Valid: true}, pgtype.UUID{Bytes: [16]byte{2}, Valid: true}
-	actor := services.Membership{HouseholdID: pgtype.UUID{}, UserID: you, Role: "", Currency: "EUR", UnreadMessages: 0, PendingSettlements: 0}
+	actor := services.Membership{HouseholdID: pgtype.UUID{}, UserID: you, Role: "", Currency: "EUR", UnreadMessages: 0, PendingSettlements: 0, DeletedAt: pgtype.Timestamptz{}}
 	expenses := []dbqueries.ListExpensesRow{{ID: pgtype.UUID{}, Category: "other", Title: "Bread", AmountCents: 1, Currency: "EUR",
 		IncurredOn: pgtype.Date{}, PayerID: ben, PayerName: "Ben", FullyPaid: false}}
 	debts := []services.Debt{{From: you, FromName: "", To: ben, ToName: "Ben", Cents: 1, Items: nil}}
@@ -83,7 +83,7 @@ func TestHouseholdExpensesSettledStamp(t *testing.T) {
 func TestYoursFirst(t *testing.T) {
 	you, ben, cleo, dan := pgtype.UUID{Bytes: [16]byte{1}, Valid: true}, pgtype.UUID{Bytes: [16]byte{2}, Valid: true},
 		pgtype.UUID{Bytes: [16]byte{3}, Valid: true}, pgtype.UUID{Bytes: [16]byte{4}, Valid: true}
-	actor := services.Membership{HouseholdID: pgtype.UUID{}, UserID: you, Role: "", Currency: "", UnreadMessages: 0, PendingSettlements: 0}
+	actor := services.Membership{HouseholdID: pgtype.UUID{}, UserID: you, Role: "", Currency: "", UnreadMessages: 0, PendingSettlements: 0, DeletedAt: pgtype.Timestamptz{}}
 	debt := func(from, to pgtype.UUID, cents int64) services.Debt {
 		return services.Debt{From: from, FromName: "", To: to, ToName: "", Cents: cents, Items: nil}
 	}
@@ -101,7 +101,7 @@ func TestYoursFirst(t *testing.T) {
 
 func TestItemClass(t *testing.T) {
 	ben, you, other := pgtype.UUID{Bytes: [16]byte{1}, Valid: true}, pgtype.UUID{Bytes: [16]byte{2}, Valid: true}, pgtype.UUID{Bytes: [16]byte{3}, Valid: true}
-	actor := services.Membership{HouseholdID: pgtype.UUID{}, UserID: you, Role: "", Currency: "", UnreadMessages: 0, PendingSettlements: 0}
+	actor := services.Membership{HouseholdID: pgtype.UUID{}, UserID: you, Role: "", Currency: "", UnreadMessages: 0, PendingSettlements: 0, DeletedAt: pgtype.Timestamptz{}}
 	youOwe := services.Debt{From: you, FromName: "", To: ben, ToName: "", Cents: 1, Items: nil}
 	owesYou := services.Debt{From: ben, FromName: "", To: you, ToName: "", Cents: 1, Items: nil}
 	others := services.Debt{From: ben, FromName: "", To: other, ToName: "", Cents: 1, Items: nil}

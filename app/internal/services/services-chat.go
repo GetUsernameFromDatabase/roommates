@@ -128,7 +128,7 @@ func (s *DefaultService) notifyChat(ctx context.Context, actor Membership, body 
 			ids = append(ids, m.UserID)
 		}
 	}
-	s.notifyAsync(ctx, actor, ids, func(ctx context.Context, _ pgtype.UUID, author, household string) push.Message {
+	s.notifyAsync(ctx, actor, g.NotifyChat, ids, func(ctx context.Context, _ pgtype.UUID, author, household string) push.Message {
 		text := pushPreview(body)
 		if text == "" {
 			text = utils.T(ctx, locales.LK_PushChatFile)

@@ -1,0 +1,82 @@
+package pages
+
+import "roommates/web/components"
+import "roommates/web/components/switch"
+import g "roommates/internal/config"
+import "roommates/internal/locales"
+import "roommates/internal/services"
+
+// notificationLabels are the name and the description of a kind of notification
+func notificationLabels(kind string) (title, description locales.LK) {
+	switch kind {
+	case g.NotifyChat:
+		return locales.LK_NotificationsChat, locales.LK_NotificationsChatDescription
+	case g.NotifyMoney:
+		return locales.LK_NotificationsMoney, locales.LK_NotificationsMoneyDescription
+	case g.NotifyRecurring:
+		return locales.LK_NotificationsRecurring, locales.LK_NotificationsRecurringDescription
+	default:
+		return locales.LK_NotificationsHousehold, locales.LK_NotificationsHouseholdDescription
+	}
+}
+
+// NotificationSection is what the member gets push notifications about in this household,
+// a switch posts its wanted state and swaps only this section
+templ NotificationSection(m *services.Membership, settings []services.NotificationSetting) {
+	@notificationSection(m, settings, false)
+}
+
+// NotificationSectionSaved is the section after a save, with the note by the switches
+templ NotificationSectionSaved(m *services.Membership, settings []services.NotificationSetting) {
+	@notificationSection(m, settings, true)
+}
+
+templ notificationSection(m *services.Membership, settings []services.NotificationSetting, saved bool) {
+	<section id="notifications-section" aria-labelledby="notifications-title" class={ sheetClass + " flex flex-col gap-4" }>
+		<div>
+			<h2 id="notifications-title" class="text-xl font-semibold">
+				@components.T(locales.LK_NotificationsTitle)
+			</h2>
+			<p class="text-sm text-muted-foreground">
+				@components.T(locales.LK_NotificationsDescription)
+			</p>
+		</div>
+		for _, n := range settings {
+			{{ title, description := notificationLabels(n.Kind) }}
+			<form
+				action={ householdURL(m.HouseholdID, "settings", "notifications") }
+				method="post"
+				hx-post={ string(householdURL(m.HouseholdID, "settings", "notifications")) }
+				hx-trigger="change"
+				hx-target="#notifications-section"
+				hx-swap="outerHTML"
+			>
+				<input type="hidden" name="kind" value={ n.Kind }/>
+				<label class="flex min-h-11 cursor-pointer items-center justify-between gap-3">
+					<span class="flex min-w-0 flex-col">
+						<span class="text-sm font-medium">
+							@components.T(title)
+						</span>
+						<span class="text-sm text-muted-foreground">
+							@components.T(description)
+						</span>
+					</span>
+					@switchcomp.Switch(switchcomp.Props{Name: "on", Value: "1", DefaultChecked: n.On})
+				</label>
+				<noscript>
+					<button type="submit" class="h-11 text-sm underline">
+						@components.T(locales.LK_CommonSave)
+					</button>
+				</noscript>
+			</form>
+		}
+		if saved {
+			<p role="status" class="text-sm font-medium text-muted-foreground">
+				@components.T(locales.LK_CommonSaved)
+			</p>
+		}
+		<p class="text-sm text-muted-foreground">
+			@components.T(locales.LK_NotificationsHint)
+		</p>
+	</section>
+}

@@ -309,6 +309,8 @@ en:
     expense-body: "%s added %s, your share is %s"
     settlement-title: "%s says they paid you"
     settlement-body: "%s in %s. Confirm it under Expenses."
+    confirmed-title: "%s confirmed your payment"
+    confirmed-body: "%s in %s."
   offline:
     title: You are offline
     description: Roommates needs a connection. Check your network and try again.
@@ -474,6 +476,132 @@ en:
     title: Something went wrong
     description: Please try again later.
     back: Back to home
+  recurring:
+    title: Recurring expenses
+    repeat: Repeat
+    never: Never
+    week: Weekly
+    month: Monthly
+    year: Yearly
+    next-due: Next due
+    none: No recurring expenses yet. Choose Repeat when you add an expense.
+    edit-title: Edit recurring expense
+    delete-confirm: Delete this recurring expense? Expenses already added stay.
+    paid-by: Paid by %s
+    paid-by-you: Paid by you
+    due: Due
+    add: Add
+    skip: Skip
+    stale: This repeat was already added or skipped.
+    push-title: An expense is due in %s
+    push-body: "%s, %s. Add or skip it under Expenses."
+  ownership:
+    delete-title: Delete household
+    delete-description: "Nobody can change anything in it any more. It stays readable for %d days and an owner can restore it until then, after that it is gone for good with all its files."
+    delete-open-debts: "Debts are still open, settle them first or save the expenses:"
+    delete-debt: "%s owes %s %s"
+    delete-export: Download the expenses (CSV)
+    delete-confirm-label: "Type %s to confirm"
+    delete-name-mismatch: The name does not match
+    deleted-banner: "Deleted · read-only until %s"
+    deleted-home: "Deleted · purged on %s"
+    restore: Restore
+    read-only-title: This household is read-only
+    read-only: "This household was deleted and is read-only until %s."
+    back: Back to the household
+    transfer: Make owner and step down
+    transfer-confirm: "Make %s an owner and become a member yourself?"
+    step-down: Step down as owner
+    step-down-confirm: "Become a member? The other owners keep managing the household."
+    push-joined: "%s joined"
+    push-left: "%s left"
+    push-removed: "%s removed %s"
+    push-removed-you: "%s removed you from the household"
+    push-owner: "%s made you an owner"
+    push-deleted: "%s deleted the household, an owner can restore it until %s"
+    push-restored: "%s restored the household"
+  notifications:
+    title: Notifications
+    description: Choose what this household sends you notifications about.
+    hint: Notifications must also be turned on for each device, use the device switch on this page.
+    chat: Chat messages
+    chat-description: A new message in the household chat.
+    money: Expenses and settlements
+    money-description: A new expense you share and settlements paid to you.
+    recurring: Recurring expense is due
+    recurring-description: A recurring expense has reached its due date.
+    household: Household changes
+    household-description: Someone joins or leaves, the owner changes, the household is deleted or restored.
+  activity:
+    title: Activity
+    none: Nothing has happened yet
+    none-hint: Expenses, shopping, notes, files and changes to the household show up here.
+    more: Load more
+    someone: Someone
+    expense-added: "%[1]s added the expense %[2]s"
+    expense-edited: "%[1]s edited the expense %[2]s"
+    expense-deleted: "%[1]s deleted the expense %[2]s"
+    share-paid: "%[1]s marked a share of %[2]s as paid"
+    share-unpaid: "%[1]s marked a share of %[2]s as unpaid"
+    settlement-requested: "%[1]s asked %[3]s to confirm a payment"
+    settlement-confirmed: "%[1]s confirmed a payment from %[3]s"
+    settlement-declined: "%[1]s declined a payment from %[3]s"
+    recurring-added: "%[1]s added the recurring expense %[2]s"
+    recurring-edited: "%[1]s edited the recurring expense %[2]s"
+    recurring-deleted: "%[1]s deleted the recurring expense %[2]s"
+    recurring-skipped: "%[1]s skipped a turn of the recurring expense %[2]s"
+    list-created: "%[1]s created the list %[2]s"
+    list-renamed: "%[1]s renamed a list to %[2]s"
+    list-deleted: "%[1]s deleted the list %[2]s"
+    item-bought: "%[1]s bought %[2]s"
+    items-cleared: "%[1]s cleared the checked items from %[2]s"
+    note-created: "%[1]s added the note %[2]s"
+    note-edited: "%[1]s edited the note %[2]s"
+    note-deleted: "%[1]s deleted the note %[2]s"
+    file-uploaded: "%[1]s uploaded the file %[2]s"
+    file-removed: "%[1]s removed the file %[2]s"
+    member-joined: "%[1]s joined the household"
+    member-left: "%[1]s left the household"
+    member-removed: "%[1]s removed %[3]s from the household"
+    member-promoted: "%[1]s made %[3]s an owner"
+    ownership-transferred: "%[1]s handed ownership to %[3]s"
+    stepped-down: "%[1]s stepped down as an owner"
+    household-renamed: "%[1]s renamed the household to %[2]s"
+    currency-changed: "%[1]s changed the currency to %[2]s"
+    household-deleted: "%[1]s deleted the household"
+    household-restored: "%[1]s restored the household"
+    expense-added-you: "You added the expense %[2]s"
+    expense-edited-you: "You edited the expense %[2]s"
+    expense-deleted-you: "You deleted the expense %[2]s"
+    share-paid-you: "You marked a share of %[2]s as paid"
+    share-unpaid-you: "You marked a share of %[2]s as unpaid"
+    settlement-requested-you: "You asked %[3]s to confirm a payment"
+    settlement-confirmed-you: "You confirmed a payment from %[3]s"
+    settlement-declined-you: "You declined a payment from %[3]s"
+    recurring-added-you: "You added the recurring expense %[2]s"
+    recurring-edited-you: "You edited the recurring expense %[2]s"
+    recurring-deleted-you: "You deleted the recurring expense %[2]s"
+    recurring-skipped-you: "You skipped a turn of the recurring expense %[2]s"
+    list-created-you: "You created the list %[2]s"
+    list-renamed-you: "You renamed a list to %[2]s"
+    list-deleted-you: "You deleted the list %[2]s"
+    item-bought-you: "You bought %[2]s"
+    items-cleared-you: "You cleared the checked items from %[2]s"
+    note-created-you: "You added the note %[2]s"
+    note-edited-you: "You edited the note %[2]s"
+    note-deleted-you: "You deleted the note %[2]s"
+    file-uploaded-you: "You uploaded the file %[2]s"
+    file-removed-you: "You removed the file %[2]s"
+    member-joined-you: "You joined the household"
+    member-left-you: "You left the household"
+    member-removed-you: "You removed %[3]s from the household"
+    member-promoted-you: "You made %[3]s an owner"
+    ownership-transferred-you: "You handed ownership to %[3]s"
+    stepped-down-you: "You stepped down as an owner"
+    household-renamed-you: "You renamed the household to %[2]s"
+    currency-changed-you: "You changed the currency to %[2]s"
+    household-deleted-you: "You deleted the household"
+    household-restored-you: "You restored the household"
   validation-errors:
     email:
       generic: Invalid email address

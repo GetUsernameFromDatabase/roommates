@@ -1,0 +1,74 @@
+package pages
+
+import "roommates/web/assets"
+import "roommates/web/components"
+import "roommates/web/components/button"
+import "roommates/internal/events"
+import "roommates/internal/services"
+import "roommates/internal/locales"
+import "roommates/internal/utils"
+
+// ActivityPage is what happened in the household, newest first, hasMore shows the button for older rows
+//
+// the live region refetches the page's own URL, so it shows the first rows again
+templ ActivityPage(actor services.Membership, rows []services.ActivityRow, hasMore bool) {
+	// no SectionActivity in layout.templ yet: the literal is what it will be
+	@appShell(utils.T(ctx, locales.LK_ActivityTitle), &HouseholdNav{HouseholdID: actor.HouseholdID, Section: SectionActivity}) {
+		@localTimeScript.Once() {
+			<script src={ assets.URL("local-time.js") }></script>
+		}
+		<header>
+			<h1 class="doorplate">
+				@components.T(locales.LK_ActivityTitle)
+			</h1>
+		</header>
+		<section class={ utils.CN(sheetClass, "max-sm:-mx-4 max-sm:rounded-none max-sm:px-4") }>
+			@liveRegion("activity", events.TopicShopping, events.TopicNotes, events.TopicFiles, events.TopicExpenses, events.TopicPeople) {
+				if len(rows) == 0 {
+					<div class="flex flex-col gap-1 py-6 text-center">
+						<p class="font-medium">
+							@components.T(locales.LK_ActivityNone)
+						</p>
+						<p class="text-sm text-muted-foreground">
+							@components.T(locales.LK_ActivityNoneHint)
+						</p>
+					</div>
+				} else {
+					<ul id="activity-list" class="divide-y divide-border">
+						for _, r := range rows {
+							<li class="flex flex-col gap-0.5 py-3 sm:flex-row sm:items-baseline sm:justify-between sm:gap-4">
+								<p class="min-w-0 text-sm break-words">
+									if link := activityLink(actor.HouseholdID, r); link != "" {
+										<a href={ link } class="underline-offset-4 hover:underline">{ activityText(ctx, actor, r) }</a>
+									} else {
+										{ activityText(ctx, actor, r) }
+									}
+								</p>
+								<span class="shrink-0 text-xs text-muted-foreground">
+									@noteTime(r.CreatedAt)
+								</span>
+							</li>
+						}
+						if hasMore {
+							<li id="activity-more" class="py-3 text-center">
+								@button.Button(button.Props{
+									Href:    string(activityMoreURL(actor.HouseholdID, rows)),
+									Variant: button.VariantOutline,
+									Class:   "h-11",
+									Attributes: templ.Attributes{
+										"hx-get":    string(activityMoreURL(actor.HouseholdID, rows)),
+										"hx-target": "#activity-more",
+										"hx-select": "#activity-list > *",
+										"hx-swap":   "outerHTML",
+									},
+								}) {
+									@components.T(locales.LK_ActivityMore)
+								}
+							</li>
+						}
+					</ul>
+				}
+			}
+		</section>
+	}
+}

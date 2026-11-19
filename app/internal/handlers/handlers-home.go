@@ -92,7 +92,12 @@ func (h *DefaultHandler) renderSettings(ctx *gin.Context, status int, errorMessa
 			InternalError(ctx, err)
 			return
 		}
-		member = &pages.SettingsMember{Actor: actor, Household: household, ShowPayment: show}
+		notifications, err := h.service.ListNotificationSettings(ctx, actor)
+		if err != nil {
+			InternalError(ctx, err)
+			return
+		}
+		member = &pages.SettingsMember{Actor: actor, Household: household, ShowPayment: show, Notifications: notifications}
 	}
 	RenderTemplStatus(ctx, status, pages.Settings(h.service.PushPublicKey(), nav, path, user, errorMessage, payment, member))
 }

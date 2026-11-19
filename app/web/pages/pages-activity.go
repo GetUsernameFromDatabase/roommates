@@ -1,0 +1,94 @@
+package pages
+
+import (
+	"context"
+	g "roommates/internal/config"
+	"roommates/internal/locales"
+	"roommates/internal/services"
+	"roommates/internal/utils"
+	"time"
+
+	"github.com/a-h/templ"
+	"github.com/jackc/pgx/v5/pgtype"
+)
+
+var activityKeys = map[string]locales.LK{
+	g.ActExpenseAdded:         locales.LK_ActivityExpenseAdded,
+	g.ActExpenseEdited:        locales.LK_ActivityExpenseEdited,
+	g.ActExpenseDeleted:       locales.LK_ActivityExpenseDeleted,
+	g.ActSharePaid:            locales.LK_ActivitySharePaid,
+	g.ActShareUnpaid:          locales.LK_ActivityShareUnpaid,
+	g.ActSettlementRequested:  locales.LK_ActivitySettlementRequested,
+	g.ActSettlementConfirmed:  locales.LK_ActivitySettlementConfirmed,
+	g.ActSettlementDeclined:   locales.LK_ActivitySettlementDeclined,
+	g.ActRecurringAdded:       locales.LK_ActivityRecurringAdded,
+	g.ActRecurringEdited:      locales.LK_ActivityRecurringEdited,
+	g.ActRecurringDeleted:     locales.LK_ActivityRecurringDeleted,
+	g.ActRecurringSkipped:     locales.LK_ActivityRecurringSkipped,
+	g.ActListCreated:          locales.LK_ActivityListCreated,
+	g.ActListRenamed:          locales.LK_ActivityListRenamed,
+	g.ActListDeleted:          locales.LK_ActivityListDeleted,
+	g.ActItemBought:           locales.LK_ActivityItemBought,
+	g.ActItemsCleared:         locales.LK_ActivityItemsCleared,
+	g.ActNoteCreated:          locales.LK_ActivityNoteCreated,
+	g.ActNoteEdited:           locales.LK_ActivityNoteEdited,
+	g.ActNoteDeleted:          locales.LK_ActivityNoteDeleted,
+	g.ActFileUploaded:         locales.LK_ActivityFileUploaded,
+	g.ActFileRemoved:          locales.LK_ActivityFileRemoved,
+	g.ActMemberJoined:         locales.LK_ActivityMemberJoined,
+	g.ActMemberLeft:           locales.LK_ActivityMemberLeft,
+	g.ActMemberRemoved:        locales.LK_ActivityMemberRemoved,
+	g.ActMemberPromoted:       locales.LK_ActivityMemberPromoted,
+	g.ActOwnershipTransferred: locales.LK_ActivityOwnershipTransferred,
+	g.ActSteppedDown:          locales.LK_ActivitySteppedDown,
+	g.ActHouseholdRenamed:     locales.LK_ActivityHouseholdRenamed,
+	g.ActCurrencyChanged:      locales.LK_ActivityCurrencyChanged,
+	g.ActHouseholdDeleted:     locales.LK_ActivityHouseholdDeleted,
+	g.ActHouseholdRestored:    locales.LK_ActivityHouseholdRestored,
+}
+
+// activityText is the sentence of a row, "Mari added the expense Rent · 650,00 €",
+// the viewer's own rows use the "-you" variant of the key ("You added the expense Rent")
+func activityText(ctx context.Context, actor services.Membership, r services.ActivityRow) string {
+	someone := utils.T(ctx, locales.LK_ActivitySomeone)
+	who, target := someone, someone
+	key := activityKeys[r.Kind]
+	if r.ActorName != nil {
+		who = *r.ActorName
+		if r.ActorID == actor.UserID {
+			key += "-you"
+		}
+	}
+	if r.TargetName != nil {
+		target = *r.TargetName
+	}
+	s := utils.T(ctx, key, who, r.Title, target)
+	if r.AmountCents != nil && r.Currency != nil {
+		s += " · " + utils.FormatMoney(ctx, *r.AmountCents, *r.Currency)
+	}
+	return s
+}
+
+// activityLink is where the row's subject is, "" when it is gone or has no page
+func activityLink(householdID pgtype.UUID, r services.ActivityRow) templ.SafeURL {
+	id := r.SubjectID.String()
+	switch {
+	case r.ExpenseExists:
+		return householdURL(householdID, "expenses", id)
+	case r.ListExists:
+		return householdURL(householdID, "lists", id)
+	case r.NoteExists:
+		return householdURL(householdID, "notes", id)
+	case r.FileExists:
+		return householdURL(householdID, "files", id)
+	case r.RecurringExists:
+		return householdURL(householdID, "recurring")
+	}
+	return ""
+}
+
+// activityMoreURL loads the rows older than the last of rows
+func activityMoreURL(householdID pgtype.UUID, rows []services.ActivityRow) templ.SafeURL {
+	before := rows[len(rows)-1].CreatedAt.Time.UTC().Format(time.RFC3339Nano)
+	return templ.SafeURL(string(householdURL(householdID, "activity")) + "?before=" + before)
+}

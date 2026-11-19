@@ -198,17 +198,34 @@ func (s *DefaultService) UploadFile(ctx context.Context, actor Membership, t Fil
 			SizeBytes:   size,
 			Kept:        kept,
 		})
-		if err != nil || kept {
+		if err != nil {
 			return err
 		}
-		return q.InsertFileRef(ctx, dbqueries.InsertFileRefParams{
-			FileID:         fileID,
-			HouseholdID:    actor.HouseholdID,
-			NoteID:         t.NoteID,
-			ShoppingItemID: t.ShoppingItemID,
-			ExpenseID:      t.ExpenseID,
-			MessageID:      t.MessageID,
-		})
+		if !kept {
+			if err := q.InsertFileRef(ctx, dbqueries.InsertFileRefParams{
+				FileID:         fileID,
+				HouseholdID:    actor.HouseholdID,
+				NoteID:         t.NoteID,
+				ShoppingItemID: t.ShoppingItemID,
+				ExpenseID:      t.ExpenseID,
+				MessageID:      t.MessageID,
+			}); err != nil {
+				return err
+			}
+		}
+		// chat files are chat's business, a private note's files are for its author
+		if t.MessageID.Valid {
+			return nil
+		}
+		visibility := g.NoteVisibilityHousehold
+		if t.NoteID.Valid {
+			n, err := q.GetNote(ctx, dbqueries.GetNoteParams{ID: t.NoteID, HouseholdID: actor.HouseholdID, UserID: actor.UserID})
+			if err != nil {
+				return noRowsAs(err, g.ErrorNotFound)
+			}
+			visibility = n.Visibility
+		}
+		return logNote(ctx, q, actor, g.ActFileUploaded, fileID, name, visibility)
 	})
 	if err != nil {
 		deleteStored()
@@ -401,12 +418,25 @@ func (s *DefaultService) RenameFile(ctx context.Context, actor Membership, fileI
 // DeleteFile returns [g.ErrorNotFound] unless the actor uploaded the file or is an owner who can see it,
 // the object is removed later by [DefaultService.PurgeFiles]
 func (s *DefaultService) DeleteFile(ctx context.Context, actor Membership, fileID pgtype.UUID) error {
-	return rowsAffected(s.db.DeleteFile(ctx, dbqueries.DeleteFileParams{
-		ID:          fileID,
-		HouseholdID: actor.HouseholdID,
-		UploaderID:  actor.UserID,
-		IsOwner:     actor.Role == g.RoleOwner,
-	}))
+	return s.inTx(ctx, func(q *dbqueries.Queries) error {
+		f, err := q.GetFile(ctx, dbqueries.GetFileParams{UserID: actor.UserID, ID: fileID, HouseholdID: actor.HouseholdID})
+		if err != nil {
+			return noRowsAs(err, g.ErrorNotFound)
+		}
+		if err := rowsAffected(q.DeleteFile(ctx, dbqueries.DeleteFileParams{
+			ID:          fileID,
+			HouseholdID: actor.HouseholdID,
+			UploaderID:  actor.UserID,
+			IsOwner:     actor.Role == g.RoleOwner,
+		})); err != nil {
+			return err
+		}
+		// only a file everyone sees, and not one that lives in the chat alone
+		if !f.Shared || (f.MessageID.Valid && !f.NoteID.Valid && !f.ShoppingItemID.Valid && !f.ExpenseID.Valid) {
+			return nil
+		}
+		return logActivity(ctx, q, actor, ActivityEntry{Kind: g.ActFileRemoved, SubjectID: fileID, TargetUserID: pgtype.UUID{}, Title: f.Name, AmountCents: nil, Currency: ""})
+	})
 }
 
 // PurgeFiles removes the objects of deleted files from storage,
@@ -437,11 +467,21 @@ func (s *DefaultService) RunCleanup(ctx context.Context, interval time.Duration)
 	t := time.NewTicker(interval)
 	defer t.Stop()
 	for {
+		// before PurgeFiles, so a purged household's files go in the same run
+		if err := s.PurgeDeletedHouseholds(ctx); err != nil {
+			log.Error().Err(err).Msg("could not purge deleted households")
+		}
 		if err := s.PurgeFiles(ctx); err != nil {
 			log.Error().Err(err).Msg("could not purge deleted files")
 		}
 		if err := s.db.DeleteExpiredEmailTokens(ctx); err != nil {
 			log.Error().Err(err).Msg("could not delete expired email tokens")
+		}
+		if err := s.PurgeActivity(ctx); err != nil {
+			log.Error().Err(err).Msg("could not purge activity")
+		}
+		if err := s.NotifyRecurringDue(ctx); err != nil {
+			log.Error().Err(err).Msg("could not notify due recurring expenses")
 		}
 		select {
 		case <-ctx.Done():

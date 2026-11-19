@@ -8,6 +8,20 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+type Activity struct {
+	ID           pgtype.UUID        `json:"id"`
+	HouseholdID  pgtype.UUID        `json:"household_id"`
+	ActorID      pgtype.UUID        `json:"actor_id"`
+	Grp          string             `json:"grp"`
+	Kind         string             `json:"kind"`
+	SubjectID    pgtype.UUID        `json:"subject_id"`
+	TargetUserID pgtype.UUID        `json:"target_user_id"`
+	Title        string             `json:"title"`
+	AmountCents  *int64             `json:"amount_cents"`
+	Currency     *string            `json:"currency"`
+	CreatedAt    pgtype.Timestamptz `json:"created_at"`
+}
+
 type EmailToken struct {
 	TokenHash []byte             `json:"token_hash"`
 	UserID    pgtype.UUID        `json:"user_id"`
@@ -75,6 +89,7 @@ type Household struct {
 	CreatedBy pgtype.UUID        `json:"created_by"`
 	CreatedAt pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
+	DeletedAt pgtype.Timestamptz `json:"deleted_at"`
 }
 
 type HttpSession struct {
@@ -129,6 +144,12 @@ type Note struct {
 	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
 }
 
+type NotificationMute struct {
+	HouseholdID pgtype.UUID `json:"household_id"`
+	UserID      pgtype.UUID `json:"user_id"`
+	Kind        string      `json:"kind"`
+}
+
 type PushSubscription struct {
 	Endpoint  string             `json:"endpoint"`
 	UserID    pgtype.UUID        `json:"user_id"`
@@ -136,6 +157,28 @@ type PushSubscription struct {
 	Auth      string             `json:"auth"`
 	Lang      string             `json:"lang"`
 	CreatedAt pgtype.Timestamptz `json:"created_at"`
+}
+
+type RecurringExpense struct {
+	ID          pgtype.UUID        `json:"id"`
+	HouseholdID pgtype.UUID        `json:"household_id"`
+	PayerID     pgtype.UUID        `json:"payer_id"`
+	Category    string             `json:"category"`
+	Title       string             `json:"title"`
+	AmountCents int64              `json:"amount_cents"`
+	Custom      bool               `json:"custom"`
+	Interval    string             `json:"interval"`
+	Anchor      pgtype.Date        `json:"anchor"`
+	NextDue     pgtype.Date        `json:"next_due"`
+	NotifiedOn  pgtype.Date        `json:"notified_on"`
+	CreatedAt   pgtype.Timestamptz `json:"created_at"`
+}
+
+type RecurringExpenseShare struct {
+	RecurringID pgtype.UUID `json:"recurring_id"`
+	HouseholdID pgtype.UUID `json:"household_id"`
+	UserID      pgtype.UUID `json:"user_id"`
+	AmountCents *int64      `json:"amount_cents"`
 }
 
 type Settlement struct {

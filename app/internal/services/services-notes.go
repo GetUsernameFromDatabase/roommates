@@ -46,13 +46,30 @@ func (s *DefaultService) CreateNote(ctx context.Context, actor Membership, in No
 	if err != nil {
 		return pgtype.UUID{}, err
 	}
-	return s.db.InsertNote(ctx, dbqueries.InsertNoteParams{
-		HouseholdID: actor.HouseholdID,
-		AuthorID:    actor.UserID,
-		Title:       in.Title,
-		BodyMd:      in.BodyMD,
-		Visibility:  visibility,
+	var id pgtype.UUID
+	err = s.inTx(ctx, func(q *dbqueries.Queries) error {
+		var err error
+		id, err = q.InsertNote(ctx, dbqueries.InsertNoteParams{
+			HouseholdID: actor.HouseholdID,
+			AuthorID:    actor.UserID,
+			Title:       in.Title,
+			BodyMd:      in.BodyMD,
+			Visibility:  visibility,
+		})
+		if err != nil {
+			return err
+		}
+		return logNote(ctx, q, actor, g.ActNoteCreated, id, in.Title, visibility)
 	})
+	return id, err
+}
+
+// logNote logs a note, but not a private one, its title is for its author only
+func logNote(ctx context.Context, q *dbqueries.Queries, actor Membership, kind string, id pgtype.UUID, title, visibility string) error {
+	if visibility == g.NoteVisibilityPrivate {
+		return nil
+	}
+	return logActivity(ctx, q, actor, ActivityEntry{Kind: kind, SubjectID: id, TargetUserID: pgtype.UUID{}, Title: title, AmountCents: nil, Currency: ""})
 }
 
 // ListNotes returns the household's notes and the actor's private ones, only those with q
@@ -81,14 +98,24 @@ func (s *DefaultService) UpdateNote(ctx context.Context, actor Membership, noteI
 	if err != nil {
 		return err
 	}
-	return rowsAffected(s.db.UpdateNote(ctx, dbqueries.UpdateNoteParams{
-		Title:       in.Title,
-		BodyMd:      in.BodyMD,
-		UserID:      actor.UserID,
-		Visibility:  visibility,
-		ID:          noteID,
-		HouseholdID: actor.HouseholdID,
-	}))
+	return s.inTx(ctx, func(q *dbqueries.Queries) error {
+		if err := rowsAffected(q.UpdateNote(ctx, dbqueries.UpdateNoteParams{
+			Title:       in.Title,
+			BodyMd:      in.BodyMD,
+			UserID:      actor.UserID,
+			Visibility:  visibility,
+			ID:          noteID,
+			HouseholdID: actor.HouseholdID,
+		})); err != nil {
+			return err
+		}
+		// a member cannot make a note private, so the note's own visibility is the one that counts
+		n, err := q.GetNote(ctx, dbqueries.GetNoteParams{ID: noteID, HouseholdID: actor.HouseholdID, UserID: actor.UserID})
+		if err != nil {
+			return err
+		}
+		return logNote(ctx, q, actor, g.ActNoteEdited, noteID, in.Title, n.Visibility)
+	})
 }
 
 func (s *DefaultService) SetNotePinned(ctx context.Context, actor Membership, noteID pgtype.UUID, pinned bool) error {
@@ -102,10 +129,19 @@ func (s *DefaultService) SetNotePinned(ctx context.Context, actor Membership, no
 
 // DeleteNote returns [g.ErrorNotFound] unless the actor wrote the note or is an owner and the note is shared
 func (s *DefaultService) DeleteNote(ctx context.Context, actor Membership, noteID pgtype.UUID) error {
-	return rowsAffected(s.db.DeleteNote(ctx, dbqueries.DeleteNoteParams{
-		ID:          noteID,
-		HouseholdID: actor.HouseholdID,
-		AuthorID:    actor.UserID,
-		IsOwner:     actor.Role == g.RoleOwner,
-	}))
+	return s.inTx(ctx, func(q *dbqueries.Queries) error {
+		n, err := q.GetNote(ctx, dbqueries.GetNoteParams{ID: noteID, HouseholdID: actor.HouseholdID, UserID: actor.UserID})
+		if err != nil {
+			return noRowsAs(err, g.ErrorNotFound)
+		}
+		if err := rowsAffected(q.DeleteNote(ctx, dbqueries.DeleteNoteParams{
+			ID:          noteID,
+			HouseholdID: actor.HouseholdID,
+			AuthorID:    actor.UserID,
+			IsOwner:     actor.Role == g.RoleOwner,
+		})); err != nil {
+			return err
+		}
+		return logNote(ctx, q, actor, g.ActNoteDeleted, noteID, n.Title, n.Visibility)
+	})
 }

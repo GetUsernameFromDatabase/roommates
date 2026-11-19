@@ -41,12 +41,21 @@ func (s *DefaultService) CreateShoppingList(ctx context.Context, actor Membershi
 	if !ok || !slices.Contains(g.ExpenseCategories, category) {
 		return pgtype.UUID{}, g.ErrorInvalidInput
 	}
-	return s.db.InsertShoppingList(ctx, dbqueries.InsertShoppingListParams{
-		HouseholdID: actor.HouseholdID,
-		Name:        name,
-		Category:    category,
-		CreatedBy:   actor.UserID,
+	var id pgtype.UUID
+	err := s.inTx(ctx, func(q *dbqueries.Queries) error {
+		var err error
+		id, err = q.InsertShoppingList(ctx, dbqueries.InsertShoppingListParams{
+			HouseholdID: actor.HouseholdID,
+			Name:        name,
+			Category:    category,
+			CreatedBy:   actor.UserID,
+		})
+		if err != nil {
+			return err
+		}
+		return logActivity(ctx, q, actor, ActivityEntry{Kind: g.ActListCreated, SubjectID: id, TargetUserID: pgtype.UUID{}, Title: name, AmountCents: nil, Currency: ""})
 	})
+	return id, err
 }
 
 type ShoppingList struct {
@@ -95,11 +104,16 @@ func (s *DefaultService) RenameShoppingList(ctx context.Context, actor Membershi
 	if !ok {
 		return g.ErrorInvalidInput
 	}
-	return rowsAffected(s.db.SetShoppingListName(ctx, dbqueries.SetShoppingListNameParams{
-		ID:          listID,
-		HouseholdID: actor.HouseholdID,
-		Name:        name,
-	}))
+	return s.inTx(ctx, func(q *dbqueries.Queries) error {
+		if err := rowsAffected(q.SetShoppingListName(ctx, dbqueries.SetShoppingListNameParams{
+			ID:          listID,
+			HouseholdID: actor.HouseholdID,
+			Name:        name,
+		})); err != nil {
+			return err
+		}
+		return logActivity(ctx, q, actor, ActivityEntry{Kind: g.ActListRenamed, SubjectID: listID, TargetUserID: pgtype.UUID{}, Title: name, AmountCents: nil, Currency: ""})
+	})
 }
 
 // SetShoppingListCategory returns [g.ErrorInvalidInput] unless category is one of [g.ExpenseCategories]
@@ -135,12 +149,21 @@ func (s *DefaultService) ShoppingExpenseDraft(ctx context.Context, actor Members
 
 // DeleteShoppingList returns [g.ErrorNotFound] unless the actor created the list or is an owner
 func (s *DefaultService) DeleteShoppingList(ctx context.Context, actor Membership, listID pgtype.UUID) error {
-	return rowsAffected(s.db.DeleteShoppingList(ctx, dbqueries.DeleteShoppingListParams{
-		ID:          listID,
-		HouseholdID: actor.HouseholdID,
-		CreatedBy:   actor.UserID,
-		IsOwner:     actor.Role == g.RoleOwner,
-	}))
+	return s.inTx(ctx, func(q *dbqueries.Queries) error {
+		name, err := listName(ctx, q, actor.HouseholdID, listID)
+		if err != nil {
+			return err
+		}
+		if err := rowsAffected(q.DeleteShoppingList(ctx, dbqueries.DeleteShoppingListParams{
+			ID:          listID,
+			HouseholdID: actor.HouseholdID,
+			CreatedBy:   actor.UserID,
+			IsOwner:     actor.Role == g.RoleOwner,
+		})); err != nil {
+			return err
+		}
+		return logActivity(ctx, q, actor, ActivityEntry{Kind: g.ActListDeleted, SubjectID: listID, TargetUserID: pgtype.UUID{}, Title: name, AmountCents: nil, Currency: ""})
+	})
 }
 
 // -----------------------------------------------------------------------------
@@ -233,13 +256,22 @@ func (s *DefaultService) SetShoppingItemClaim(ctx context.Context, actor Members
 }
 
 func (s *DefaultService) SetShoppingItemChecked(ctx context.Context, actor Membership, listID, itemID pgtype.UUID, checked bool) error {
-	return rowsAffected(s.db.SetShoppingItemChecked(ctx, dbqueries.SetShoppingItemCheckedParams{
-		Checked:     checked,
-		UserID:      actor.UserID,
-		ID:          itemID,
-		ListID:      listID,
-		HouseholdID: actor.HouseholdID,
-	}))
+	return s.inTx(ctx, func(q *dbqueries.Queries) error {
+		if err := rowsAffected(q.SetShoppingItemChecked(ctx, dbqueries.SetShoppingItemCheckedParams{
+			Checked:     checked,
+			UserID:      actor.UserID,
+			ID:          itemID,
+			ListID:      listID,
+			HouseholdID: actor.HouseholdID,
+		})); err != nil || !checked {
+			return err
+		}
+		it, err := q.GetShoppingItem(ctx, dbqueries.GetShoppingItemParams{ID: itemID, ListID: listID, HouseholdID: actor.HouseholdID})
+		if err != nil {
+			return noRowsAs(err, g.ErrorNotFound)
+		}
+		return logActivity(ctx, q, actor, ActivityEntry{Kind: g.ActItemBought, SubjectID: listID, TargetUserID: pgtype.UUID{}, Title: it.Text, AmountCents: nil, Currency: ""})
+	})
 }
 
 // DeleteShoppingItem returns [g.ErrorNotFound] unless the actor created the item
@@ -254,8 +286,17 @@ func (s *DefaultService) DeleteShoppingItem(ctx context.Context, actor Membershi
 
 // ClearCheckedShoppingItems lets any member remove the bought items, they stay to be bought again
 func (s *DefaultService) ClearCheckedShoppingItems(ctx context.Context, actor Membership, listID pgtype.UUID) error {
-	return s.db.HideCheckedShoppingItems(ctx, dbqueries.HideCheckedShoppingItemsParams{
-		ListID:      listID,
-		HouseholdID: actor.HouseholdID,
+	return s.inTx(ctx, func(q *dbqueries.Queries) error {
+		name, err := listName(ctx, q, actor.HouseholdID, listID)
+		if err != nil {
+			return err
+		}
+		if err := q.HideCheckedShoppingItems(ctx, dbqueries.HideCheckedShoppingItemsParams{
+			ListID:      listID,
+			HouseholdID: actor.HouseholdID,
+		}); err != nil {
+			return err
+		}
+		return logActivity(ctx, q, actor, ActivityEntry{Kind: g.ActItemsCleared, SubjectID: listID, TargetUserID: pgtype.UUID{}, Title: name, AmountCents: nil, Currency: ""})
 	})
 }

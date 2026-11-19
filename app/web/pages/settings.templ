@@ -17,6 +17,8 @@ type SettingsMember struct {
 	Actor       services.Membership
 	Household   services.HouseholdSettings
 	ShowPayment bool
+	// push kinds switched on or off in this household
+	Notifications []services.NotificationSetting
 }
 
 // Settings is the user's picture and what is set per device, its appearance and notifications,
@@ -39,6 +41,7 @@ templ Settings(pushKey string, nav *HouseholdNav, path string, user dbqueries.Ge
 		if member != nil {
 			@PaymentSection(path, payment, &member.ShowPayment, "", "")
 			@HouseholdSettingsSection(path, member.Actor, member.Household, "", "")
+			@NotificationSection(&member.Actor, member.Notifications)
 		} else {
 			@PaymentSection(path, payment, nil, "", "")
 		}

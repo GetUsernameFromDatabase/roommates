@@ -9,6 +9,7 @@ import "roommates/internal/models"
 import g "roommates/internal/config"
 import "roommates/internal/locales"
 import "roommates/internal/utils"
+import "roommates/internal/services"
 
 // Home is shown to signed in users at "/", the landing: a door per household and
 // a dashed plot that leads to the form for a new one
@@ -51,6 +52,14 @@ templ Home(username string, emailValidated bool, households []dbqueries.ListHous
 							{ h.Name }
 						}
 						<span class="text-sm text-muted-foreground">{ RoleName(ctx, h.Role) }</span>
+						if h.DeletedAt.Valid {
+							<span class="max-w-32 text-center text-sm font-medium text-destructive">
+								{ utils.T(ctx, locales.LK_OwnershipDeletedHome, utils.FormatDate(ctx, services.PurgeDate(h.DeletedAt))) }
+							</span>
+							if h.Role == g.RoleOwner {
+								@restoreForm(h.ID)
+							}
+						}
 					</li>
 				}
 				<li>

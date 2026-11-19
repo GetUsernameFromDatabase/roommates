@@ -53,7 +53,8 @@ func (q *Queries) InsertHousehold(ctx context.Context, arg InsertHouseholdParams
 const listHouseholdsOfUser = `-- name: ListHouseholdsOfUser :many
 SELECT h.id,
   h.name,
-  m.role
+  m.role,
+  h.deleted_at
 FROM households h
   JOIN memberships m ON m.household_id = h.id
 WHERE m.user_id = $1
@@ -62,9 +63,10 @@ ORDER BY h.name
 `
 
 type ListHouseholdsOfUserRow struct {
-	ID   pgtype.UUID `json:"id"`
-	Name string      `json:"name"`
-	Role string      `json:"role"`
+	ID        pgtype.UUID        `json:"id"`
+	Name      string             `json:"name"`
+	Role      string             `json:"role"`
+	DeletedAt pgtype.Timestamptz `json:"deleted_at"`
 }
 
 func (q *Queries) ListHouseholdsOfUser(ctx context.Context, userID pgtype.UUID) ([]ListHouseholdsOfUserRow, error) {
@@ -76,7 +78,12 @@ func (q *Queries) ListHouseholdsOfUser(ctx context.Context, userID pgtype.UUID) 
 	var items []ListHouseholdsOfUserRow
 	for rows.Next() {
 		var i ListHouseholdsOfUserRow
-		if err := rows.Scan(&i.ID, &i.Name, &i.Role); err != nil {
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.Role,
+			&i.DeletedAt,
+		); err != nil {
 			return nil, err
 		}
 		items = append(items, i)
@@ -97,6 +104,44 @@ UPDATE
 // locks the household row so membership changes in it run one at a time
 func (q *Queries) LockHousehold(ctx context.Context, id pgtype.UUID) error {
 	_, err := q.db.Exec(ctx, lockHousehold, id)
+	return err
+}
+
+const purgeDeletedHouseholds = `-- name: PurgeDeletedHouseholds :execrows
+DELETE FROM households
+WHERE deleted_at < $1
+`
+
+// every household table cascades, the files trigger queues their storage keys in file_purges
+func (q *Queries) PurgeDeletedHouseholds(ctx context.Context, deletedBefore pgtype.Timestamptz) (int64, error) {
+	result, err := q.db.Exec(ctx, purgeDeletedHouseholds, deletedBefore)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
+const restoreHousehold = `-- name: RestoreHousehold :exec
+UPDATE households
+SET deleted_at = NULL
+WHERE id = $1
+`
+
+func (q *Queries) RestoreHousehold(ctx context.Context, id pgtype.UUID) error {
+	_, err := q.db.Exec(ctx, restoreHousehold, id)
+	return err
+}
+
+const softDeleteHousehold = `-- name: SoftDeleteHousehold :exec
+UPDATE households
+SET deleted_at = CURRENT_TIMESTAMP
+WHERE id = $1
+  AND deleted_at IS NULL
+`
+
+// a deleted household is read-only until PurgeDeletedHouseholds removes it
+func (q *Queries) SoftDeleteHousehold(ctx context.Context, id pgtype.UUID) error {
+	_, err := q.db.Exec(ctx, softDeleteHousehold, id)
 	return err
 }
 

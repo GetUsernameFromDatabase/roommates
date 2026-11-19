@@ -2,7 +2,11 @@
 ALTER TABLE http_sessions DROP COLUMN user_id;
 -- -----------------------------------------------------------------------------
 -- triggers go with their tables
-DROP TABLE push_subscriptions,
+DROP TABLE activity,
+recurring_expense_shares,
+recurring_expenses,
+notification_mutes,
+push_subscriptions,
 file_refs,
 file_purges,
 files,
@@ -21,7 +25,8 @@ memberships,
 households,
 users;
 -- -----------------------------------------------------------------------------
-DROP FUNCTION delete_unreferenced_file(),
+DROP FUNCTION end_recurring_of_leaver(),
+delete_unreferenced_file(),
 file_visible(UUID, UUID),
 notify_household_expense_share(),
 notify_household(),

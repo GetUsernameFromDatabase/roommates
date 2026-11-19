@@ -56,6 +56,8 @@ SELECT m.household_id,
   m.user_id,
   m.role,
   h.currency,
+  -- set while the household is deleted and read-only, see NewHouseholdMember
+  h.deleted_at,
   (
     SELECT count(*)
     FROM messages msg
@@ -84,12 +86,13 @@ type GetActiveMembershipParams struct {
 }
 
 type GetActiveMembershipRow struct {
-	HouseholdID        pgtype.UUID `json:"household_id"`
-	UserID             pgtype.UUID `json:"user_id"`
-	Role               string      `json:"role"`
-	Currency           string      `json:"currency"`
-	UnreadMessages     int64       `json:"unread_messages"`
-	PendingSettlements int64       `json:"pending_settlements"`
+	HouseholdID        pgtype.UUID        `json:"household_id"`
+	UserID             pgtype.UUID        `json:"user_id"`
+	Role               string             `json:"role"`
+	Currency           string             `json:"currency"`
+	DeletedAt          pgtype.Timestamptz `json:"deleted_at"`
+	UnreadMessages     int64              `json:"unread_messages"`
+	PendingSettlements int64              `json:"pending_settlements"`
 }
 
 func (q *Queries) GetActiveMembership(ctx context.Context, arg GetActiveMembershipParams) (GetActiveMembershipRow, error) {
@@ -100,6 +103,7 @@ func (q *Queries) GetActiveMembership(ctx context.Context, arg GetActiveMembersh
 		&i.UserID,
 		&i.Role,
 		&i.Currency,
+		&i.DeletedAt,
 		&i.UnreadMessages,
 		&i.PendingSettlements,
 	)

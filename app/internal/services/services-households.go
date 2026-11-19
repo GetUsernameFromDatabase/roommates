@@ -7,6 +7,9 @@ import (
 	"net/url"
 	g "roommates/internal/config"
 	"roommates/internal/db/dbqueries"
+	"roommates/internal/locales"
+	"roommates/internal/push"
+	"roommates/internal/utils"
 	"slices"
 	"strings"
 	"time"
@@ -185,6 +188,7 @@ func (s *DefaultService) GetInvite(ctx context.Context, code string) (dbqueries.
 func (s *DefaultService) JoinWithInvite(ctx context.Context, code string, userID pgtype.UUID) (pgtype.UUID, error) {
 	code = NormalizeInviteCode(code)
 	var householdID pgtype.UUID
+	var joined Membership
 	err := s.inTx(ctx, func(q *dbqueries.Queries) error {
 		invite, err := q.GetInviteByCode(ctx, code)
 		if err != nil {
@@ -209,23 +213,62 @@ func (s *DefaultService) JoinWithInvite(ctx context.Context, code string, userID
 		if !errors.Is(err, pgx.ErrNoRows) {
 			return err
 		}
-		return q.UpsertMembership(ctx, dbqueries.UpsertMembershipParams{
+		err = q.UpsertMembership(ctx, dbqueries.UpsertMembershipParams{
 			HouseholdID: householdID,
 			UserID:      userID,
 			Role:        g.RoleMember,
 		})
+		if err != nil {
+			return err
+		}
+		joined, err = q.GetActiveMembership(ctx, dbqueries.GetActiveMembershipParams{
+			HouseholdID: householdID,
+			UserID:      userID,
+		})
+		if err != nil {
+			return err
+		}
+		return logActivity(ctx, q, joined, ActivityEntry{Kind: g.ActMemberJoined, SubjectID: pgtype.UUID{}, TargetUserID: pgtype.UUID{}, Title: "", AmountCents: nil, Currency: ""})
 	})
 	if err != nil {
 		return pgtype.UUID{}, err
 	}
+	// an existing member joined nobody new
+	if joined.UserID.Valid {
+		s.notifyHousehold(ctx, joined, nil, "people", func(ctx context.Context, _ pgtype.UUID, actorName string) string {
+			return utils.T(ctx, locales.LK_OwnershipPushJoined, actorName)
+		})
+	}
 	return householdID, nil
+}
+
+// notifyHousehold sends a [g.NotifyHousehold] push about a change made by actor to userIDs,
+// or to the other members when nil, the notification opens the household page at path
+func (s *DefaultService) notifyHousehold(ctx context.Context, actor Membership, userIDs []pgtype.UUID, path string,
+	body func(ctx context.Context, userID pgtype.UUID, actorName string) string) {
+	if userIDs == nil {
+		var err error
+		if userIDs, err = s.otherMemberIDs(ctx, actor); err != nil {
+			// the change is made, only the notifications are missing
+			log.Error().Err(err).Msg("could not list members for household push")
+			return
+		}
+	}
+	s.notifyAsync(ctx, actor, g.NotifyHousehold, userIDs, func(ctx context.Context, userID pgtype.UUID, actorName, household string) push.Message {
+		return push.Message{
+			Title: household,
+			Body:  body(ctx, userID, actorName),
+			URL:   householdPath(actor.HouseholdID, path),
+			Tag:   "household-" + actor.HouseholdID.String(),
+		}
+	})
 }
 
 // -----------------------------------------------------------------------------
 
 // Leave ends the actor's membership, see [g.ErrorLastOwner] and [g.ErrorBalanceNotZero]
 func (s *DefaultService) Leave(ctx context.Context, actor Membership) error {
-	return s.inTx(ctx, func(q *dbqueries.Queries) error {
+	err := s.inTx(ctx, func(q *dbqueries.Queries) error {
 		if err := q.LockHousehold(ctx, actor.HouseholdID); err != nil {
 			return err
 		}
@@ -245,11 +288,20 @@ func (s *DefaultService) Leave(ctx context.Context, actor Membership) error {
 				return err
 			}
 		}
-		return q.EndMembership(ctx, dbqueries.EndMembershipParams{
+		if err := q.EndMembership(ctx, dbqueries.EndMembershipParams{
 			HouseholdID: actor.HouseholdID,
 			UserID:      actor.UserID,
-		})
+		}); err != nil {
+			return err
+		}
+		return logActivity(ctx, q, actor, ActivityEntry{Kind: g.ActMemberLeft, SubjectID: pgtype.UUID{}, TargetUserID: pgtype.UUID{}, Title: "", AmountCents: nil, Currency: ""})
 	})
+	if err == nil {
+		s.notifyHousehold(ctx, actor, nil, "people", func(ctx context.Context, _ pgtype.UUID, actorName string) string {
+			return utils.T(ctx, locales.LK_OwnershipPushLeft, actorName)
+		})
+	}
+	return err
 }
 
 // ownerActsOnMember checks that actor is an owner and target an active
@@ -278,7 +330,7 @@ func ownerActsOnMember(ctx context.Context, q *dbqueries.Queries, actor Membersh
 // all invites are revoked so the removed member cannot rejoin with one,
 // see [g.ErrorBalanceNotZero]
 func (s *DefaultService) RemoveMember(ctx context.Context, actor Membership, targetID pgtype.UUID) error {
-	return s.inTx(ctx, func(q *dbqueries.Queries) error {
+	err := s.inTx(ctx, func(q *dbqueries.Queries) error {
 		if err := ownerActsOnMember(ctx, q, actor, targetID); err != nil {
 			return err
 		}
@@ -288,25 +340,222 @@ func (s *DefaultService) RemoveMember(ctx context.Context, actor Membership, tar
 		if err := q.DeleteInvitesOfHousehold(ctx, actor.HouseholdID); err != nil {
 			return err
 		}
-		return q.EndMembership(ctx, dbqueries.EndMembershipParams{
+		if err := q.EndMembership(ctx, dbqueries.EndMembershipParams{
 			HouseholdID: actor.HouseholdID,
 			UserID:      targetID,
-		})
+		}); err != nil {
+			return err
+		}
+		return logActivity(ctx, q, actor, ActivityEntry{Kind: g.ActMemberRemoved, SubjectID: pgtype.UUID{}, TargetUserID: targetID, Title: "", AmountCents: nil, Currency: ""})
 	})
+	if err != nil {
+		return err
+	}
+	// the member is removed, a failure below only loses the notifications
+	target, err := s.db.GetUser(ctx, targetID)
+	if err != nil {
+		log.Error().Err(err).Msg("could not get removed member for push")
+		return nil
+	}
+	ids, err := s.otherMemberIDs(ctx, actor)
+	if err != nil {
+		log.Error().Err(err).Msg("could not list members for household push")
+		return nil
+	}
+	s.notifyHousehold(ctx, actor, ids, "people", func(ctx context.Context, _ pgtype.UUID, actorName string) string {
+		return utils.T(ctx, locales.LK_OwnershipPushRemoved, actorName, target.Username)
+	})
+	// the removed member cannot open the household any more, so theirs links home
+	s.notifyAsync(ctx, actor, g.NotifyHousehold, []pgtype.UUID{targetID}, func(ctx context.Context, _ pgtype.UUID, actorName, household string) push.Message {
+		return push.Message{
+			Title: household,
+			Body:  utils.T(ctx, locales.LK_OwnershipPushRemovedYou, actorName),
+			URL:   "/",
+			Tag:   "household-" + actor.HouseholdID.String(),
+		}
+	})
+	return nil
+}
+
+// otherMemberIDs are the active members of actor's household but actor
+func (s *DefaultService) otherMemberIDs(ctx context.Context, actor Membership) ([]pgtype.UUID, error) {
+	members, err := s.db.ListActiveMembers(ctx, actor.HouseholdID)
+	ids := []pgtype.UUID{}
+	for _, m := range members {
+		if m.UserID != actor.UserID {
+			ids = append(ids, m.UserID)
+		}
+	}
+	return ids, err
 }
 
 // PromoteMember lets an owner make a member an owner
 func (s *DefaultService) PromoteMember(ctx context.Context, actor Membership, targetID pgtype.UUID) error {
-	return s.inTx(ctx, func(q *dbqueries.Queries) error {
+	err := s.inTx(ctx, func(q *dbqueries.Queries) error {
 		if err := ownerActsOnMember(ctx, q, actor, targetID); err != nil {
 			return err
 		}
-		return q.SetMembershipRole(ctx, dbqueries.SetMembershipRoleParams{
+		if err := q.SetMembershipRole(ctx, dbqueries.SetMembershipRoleParams{
+			HouseholdID: actor.HouseholdID,
+			UserID:      targetID,
+			Role:        g.RoleOwner,
+		}); err != nil {
+			return err
+		}
+		return logActivity(ctx, q, actor, ActivityEntry{Kind: g.ActMemberPromoted, SubjectID: pgtype.UUID{}, TargetUserID: targetID, Title: "", AmountCents: nil, Currency: ""})
+	})
+	if err == nil {
+		s.notifyMadeOwner(ctx, actor, targetID)
+	}
+	return err
+}
+
+func (s *DefaultService) notifyMadeOwner(ctx context.Context, actor Membership, targetID pgtype.UUID) {
+	s.notifyHousehold(ctx, actor, []pgtype.UUID{targetID}, "people", func(ctx context.Context, _ pgtype.UUID, actorName string) string {
+		return utils.T(ctx, locales.LK_OwnershipPushOwner, actorName)
+	})
+}
+
+// TransferOwnership makes a member an owner and the actor a member in one go,
+// returns [g.ErrorForbidden] unless an owner hands over to an active member
+func (s *DefaultService) TransferOwnership(ctx context.Context, actor Membership, targetID pgtype.UUID) error {
+	err := s.inTx(ctx, func(q *dbqueries.Queries) error {
+		if err := ownerActsOnMember(ctx, q, actor, targetID); err != nil {
+			return err
+		}
+		err := q.SetMembershipRole(ctx, dbqueries.SetMembershipRoleParams{
 			HouseholdID: actor.HouseholdID,
 			UserID:      targetID,
 			Role:        g.RoleOwner,
 		})
+		if err != nil {
+			return err
+		}
+		if err := q.SetMembershipRole(ctx, dbqueries.SetMembershipRoleParams{
+			HouseholdID: actor.HouseholdID,
+			UserID:      actor.UserID,
+			Role:        g.RoleMember,
+		}); err != nil {
+			return err
+		}
+		return logActivity(ctx, q, actor, ActivityEntry{Kind: g.ActOwnershipTransferred, SubjectID: pgtype.UUID{}, TargetUserID: targetID, Title: "", AmountCents: nil, Currency: ""})
 	})
+	if err == nil {
+		s.notifyMadeOwner(ctx, actor, targetID)
+	}
+	return err
+}
+
+// StepDown makes an owner a member while another owner is left, see [g.ErrorLastOwner]
+func (s *DefaultService) StepDown(ctx context.Context, actor Membership) error {
+	if actor.Role != g.RoleOwner {
+		return g.ErrorForbidden
+	}
+	return s.inTx(ctx, func(q *dbqueries.Queries) error {
+		if err := q.LockHousehold(ctx, actor.HouseholdID); err != nil {
+			return err
+		}
+		counts, err := q.CountActiveMembers(ctx, actor.HouseholdID)
+		if err != nil {
+			return err
+		}
+		if counts.Owners < 2 {
+			return g.ErrorLastOwner
+		}
+		if err := q.SetMembershipRole(ctx, dbqueries.SetMembershipRoleParams{
+			HouseholdID: actor.HouseholdID,
+			UserID:      actor.UserID,
+			Role:        g.RoleMember,
+		}); err != nil {
+			return err
+		}
+		return logActivity(ctx, q, actor, ActivityEntry{Kind: g.ActSteppedDown, SubjectID: pgtype.UUID{}, TargetUserID: pgtype.UUID{}, Title: "", AmountCents: nil, Currency: ""})
+	})
+}
+
+// PurgeDate is when a household deleted at deletedAt is purged, until then it can be restored
+func PurgeDate(deletedAt pgtype.Timestamptz) time.Time {
+	return deletedAt.Time.Add(g.HouseholdPurgeAfter)
+}
+
+// DeleteHousehold lets an owner delete the household after typing its name, a mismatch is
+// a [FieldError] of [FieldName]; open debts do not stop it, the page warns about them,
+// the household stays read-only and restorable until [PurgeDate], its invites are gone at once
+func (s *DefaultService) DeleteHousehold(ctx context.Context, actor Membership, confirmName string) error {
+	if actor.Role != g.RoleOwner {
+		return g.ErrorForbidden
+	}
+	err := s.inTx(ctx, func(q *dbqueries.Queries) error {
+		if err := q.LockHousehold(ctx, actor.HouseholdID); err != nil {
+			return err
+		}
+		h, err := q.GetHousehold(ctx, actor.HouseholdID)
+		if err != nil {
+			return noRowsAs(err, g.ErrorNotFound)
+		}
+		if strings.TrimSpace(confirmName) != h.Name {
+			return FieldError{Field: FieldName}
+		}
+		if err := q.DeleteInvitesOfHousehold(ctx, actor.HouseholdID); err != nil {
+			return err
+		}
+		if err := q.SoftDeleteHousehold(ctx, actor.HouseholdID); err != nil {
+			return err
+		}
+		return logActivity(ctx, q, actor, ActivityEntry{Kind: g.ActHouseholdDeleted, SubjectID: pgtype.UUID{}, TargetUserID: pgtype.UUID{}, Title: h.Name, AmountCents: nil, Currency: ""})
+	})
+	if err == nil {
+		purge := time.Now().Add(g.HouseholdPurgeAfter)
+		s.notifyHousehold(ctx, actor, nil, "", func(ctx context.Context, _ pgtype.UUID, actorName string) string {
+			return utils.T(ctx, locales.LK_OwnershipPushDeleted, actorName, utils.FormatDate(ctx, purge))
+		})
+	}
+	return err
+}
+
+// RestoreHousehold lets an active owner undo [DefaultService.DeleteHousehold] before it is purged,
+// returns [g.ErrorNotFound] for non-members and [g.ErrorForbidden] for members
+func (s *DefaultService) RestoreHousehold(ctx context.Context, userID, householdID pgtype.UUID) error {
+	var actor Membership
+	err := s.inTx(ctx, func(q *dbqueries.Queries) error {
+		if err := q.LockHousehold(ctx, householdID); err != nil {
+			return err
+		}
+		var err error
+		actor, err = q.GetActiveMembership(ctx, dbqueries.GetActiveMembershipParams{
+			HouseholdID: householdID,
+			UserID:      userID,
+		})
+		if err != nil {
+			return noRowsAs(err, g.ErrorNotFound)
+		}
+		if actor.Role != g.RoleOwner {
+			return g.ErrorForbidden
+		}
+		if !actor.DeletedAt.Valid {
+			return nil
+		}
+		if err := q.RestoreHousehold(ctx, householdID); err != nil {
+			return err
+		}
+		return logActivity(ctx, q, actor, ActivityEntry{Kind: g.ActHouseholdRestored, SubjectID: pgtype.UUID{}, TargetUserID: pgtype.UUID{}, Title: "", AmountCents: nil, Currency: ""})
+	})
+	if err == nil && actor.DeletedAt.Valid {
+		s.notifyHousehold(ctx, actor, nil, "", func(ctx context.Context, _ pgtype.UUID, actorName string) string {
+			return utils.T(ctx, locales.LK_OwnershipPushRestored, actorName)
+		})
+	}
+	return err
+}
+
+// PurgeDeletedHouseholds removes the households deleted longer than [g.HouseholdPurgeAfter] ago
+// with everything in them, their files are queued for [DefaultService.PurgeFiles]
+func (s *DefaultService) PurgeDeletedHouseholds(ctx context.Context) error {
+	n, err := s.db.PurgeDeletedHouseholds(ctx, timestamptz(time.Now().Add(-g.HouseholdPurgeAfter)))
+	if n > 0 {
+		log.Info().Int64("households", n).Msg("purged deleted households")
+	}
+	return err
 }
 
 // -----------------------------------------------------------------------------
@@ -327,6 +576,8 @@ type HouseholdSettings struct {
 	Currency string
 	// Settled is true while the currency can change, nobody owes anybody
 	Settled bool
+	// who owes whom, deleting the household warns about them
+	Debts []Debt
 }
 
 func (s *DefaultService) GetHouseholdSettings(ctx context.Context, actor Membership) (HouseholdSettings, error) {
@@ -335,7 +586,11 @@ func (s *DefaultService) GetHouseholdSettings(ctx context.Context, actor Members
 		return HouseholdSettings{}, noRowsAs(err, g.ErrorNotFound)
 	}
 	settled, err := householdSettled(ctx, s.db, actor.HouseholdID)
-	return HouseholdSettings{Name: h.Name, Currency: h.Currency, Settled: settled}, err
+	if err != nil {
+		return HouseholdSettings{}, err
+	}
+	debts, err := s.Debts(ctx, actor)
+	return HouseholdSettings{Name: h.Name, Currency: h.Currency, Settled: settled, Debts: debts}, err
 }
 
 // UpdateHousehold lets an owner rename the household and change its currency,
@@ -360,7 +615,15 @@ func (s *DefaultService) UpdateHousehold(ctx context.Context, actor Membership, 
 		if err != nil {
 			return noRowsAs(err, g.ErrorNotFound)
 		}
+		if h.Name != name {
+			if err := logActivity(ctx, q, actor, ActivityEntry{Kind: g.ActHouseholdRenamed, SubjectID: pgtype.UUID{}, TargetUserID: pgtype.UUID{}, Title: name, AmountCents: nil, Currency: ""}); err != nil {
+				return err
+			}
+		}
 		if h.Currency != currency {
+			if err := logActivity(ctx, q, actor, ActivityEntry{Kind: g.ActCurrencyChanged, SubjectID: pgtype.UUID{}, TargetUserID: pgtype.UUID{}, Title: currency, AmountCents: nil, Currency: ""}); err != nil {
+				return err
+			}
 			settled, err := householdSettled(ctx, q, actor.HouseholdID)
 			if err != nil {
 				return err

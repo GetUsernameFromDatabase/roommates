@@ -10,6 +10,8 @@ SELECT m.household_id,
   m.user_id,
   m.role,
   h.currency,
+  -- set while the household is deleted and read-only, see NewHouseholdMember
+  h.deleted_at,
   (
     SELECT count(*)
     FROM messages msg

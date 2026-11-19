@@ -49,7 +49,32 @@ const (
 	PeopleAtInvites     = "invites"
 	PeopleAtInviteEmail = "invite-email"
 	PeopleAtLeave       = "leave"
+	PeopleAtStepDown    = "step-down"
 )
+
+type membershipKey struct{}
+
+// WithMembership keeps the membership of a household page for the layout, see [MembershipFrom]
+func WithMembership(ctx context.Context, m services.Membership) context.Context {
+	return context.WithValue(ctx, membershipKey{}, m)
+}
+
+// MembershipFrom is the membership middleware.NewHouseholdMember stored, ok is false outside a household
+func MembershipFrom(ctx context.Context) (services.Membership, bool) {
+	m, ok := ctx.Value(membershipKey{}).(services.Membership)
+	return m, ok
+}
+
+// ownerCount is how many of members are owners
+func ownerCount(members []dbqueries.ListActiveMembersRow) int {
+	n := 0
+	for _, m := range members {
+		if m.Role == g.RoleOwner {
+			n++
+		}
+	}
+	return n
+}
 
 // formatDate shows only the date, the server time zone (UTC in Docker) is not the user's
 func formatDate(ctx context.Context, t pgtype.Timestamptz) string {

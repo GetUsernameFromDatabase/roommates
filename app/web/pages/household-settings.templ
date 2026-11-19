@@ -1,7 +1,10 @@
 package pages
 
 import "roommates/web/components"
+import "roommates/web/components/alert"
+import "roommates/web/components/alertdialog"
 import "roommates/web/components/button"
+import "roommates/web/components/field"
 import "roommates/web/components/input"
 import "roommates/web/components/select"
 import "roommates/internal/locales"
@@ -63,6 +66,9 @@ templ HouseholdSettingsSection(path string, actor services.Membership, h service
 				</div>
 				@formError(errorMessage)
 			</form>
+			if !actor.DeletedAt.Valid {
+				@deleteHousehold(path, actor, h)
+			}
 		} else {
 			<dl class="flex flex-col gap-3">
 				<div>
@@ -80,6 +86,76 @@ templ HouseholdSettingsSection(path string, actor services.Membership, h service
 			</dl>
 		}
 	</section>
+}
+
+// deleteHousehold asks an owner to type the household's name, open debts do not stop it but
+// are listed with the CSV downloads, an error is swapped into #household-delete-error
+templ deleteHousehold(path string, actor services.Membership, h services.HouseholdSettings) {
+	{{ days := int(g.HouseholdPurgeAfter.Hours() / 24) }}
+	<div class="flex flex-col items-start gap-3 border-t pt-4">
+		<h3 class="font-semibold text-destructive">
+			@components.T(locales.LK_OwnershipDeleteTitle)
+		</h3>
+		<p class="text-sm text-muted-foreground">
+			{ utils.T(ctx, locales.LK_OwnershipDeleteDescription, days) }
+		</p>
+		@alertdialog.AlertDialog(alertdialog.Props{ID: "delete-household", Open: nil, DefaultOpen: false}) {
+			@button.Button(button.Props{Variant: button.VariantDestructive, Class: "h-11", Attributes: alertdialog.Trigger(ctx)}) {
+				@components.T(locales.LK_OwnershipDeleteTitle)
+			}
+			@alertdialog.Content(alertdialog.ContentProps{Class: "max-h-[calc(100dvh-2rem)] w-[calc(100vw-2rem)] overflow-y-auto", Attributes: nil, Size: ""}) {
+				<form action={ templ.SafeURL(path + "/household/delete") } method="post" hx-boost="true" class="grid gap-4">
+					@alertdialog.Header(alertdialog.HeaderProps{ID: "", Class: "", Attributes: nil}) {
+						@alertdialog.Title(alertdialog.TitleProps{ID: "", Class: "", Attributes: nil}) {
+							@components.T(locales.LK_OwnershipDeleteTitle)
+						}
+						@alertdialog.Description(alertdialog.DescriptionProps{ID: "", Class: "", Attributes: nil}) {
+							{ utils.T(ctx, locales.LK_OwnershipDeleteDescription, days) }
+						}
+					}
+					if len(h.Debts) > 0 {
+						@alert.Alert(alert.Props{ID: "", Class: "gap-2", Attributes: nil, Variant: alert.VariantDestructive}) {
+							@alert.Title(alert.TitleProps{ID: "", Class: "", Attributes: nil}) {
+								@components.T(locales.LK_OwnershipDeleteOpenDebts)
+							}
+							<ul class="list-disc pl-5">
+								for _, d := range h.Debts {
+									<li>{ utils.T(ctx, locales.LK_OwnershipDeleteDebt, d.FromName, d.ToName, utils.FormatMoney(ctx, d.Cents, h.Currency)) }</li>
+								}
+							</ul>
+						}
+						@expenseExports(actor, string(householdURL(actor.HouseholdID, "expenses")))
+					}
+					@field.Field() {
+						@field.Label(field.LabelProps{For: "delete-household-name"}) {
+							{ utils.T(ctx, locales.LK_OwnershipDeleteConfirmLabel, h.Name) }
+						}
+						// the server checks the name, its error shows below the field
+						@input.Input(input.Props{
+							ID:       "delete-household-name",
+							Name:     "name",
+							Type:     "text",
+							Required: true,
+							Class:    "h-11",
+							Attributes: templ.Attributes{
+								"autocomplete":     "off",
+								"aria-describedby": "household-delete-error",
+							},
+						})
+						<div id="household-delete-error"></div>
+					}
+					@alertdialog.Footer(alertdialog.FooterProps{ID: "", Class: "", Attributes: nil}) {
+						@alertdialog.Cancel(alertdialog.CancelProps{ID: "", Class: "h-11", Attributes: nil, Variant: "", Size: ""}) {
+							@components.T(locales.LK_CommonCancel)
+						}
+						@alertdialog.Action(alertdialog.ActionProps{ID: "", Class: "h-11", Attributes: templ.Attributes{"type": "submit"}, Variant: button.VariantDestructive, Size: ""}) {
+							@components.T(locales.LK_OwnershipDeleteTitle)
+						}
+					}
+				</form>
+			}
+		}
+	</div>
 }
 
 // currencySelect is disabled while a debt is open, a disabled field posts nothing,

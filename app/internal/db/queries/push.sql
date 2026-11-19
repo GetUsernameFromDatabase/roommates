@@ -14,11 +14,19 @@ WHERE endpoint = $1
 -- name: DeleteGonePushSubscription :exec
 DELETE FROM push_subscriptions
 WHERE endpoint = $1;
+-- leaves out the users who turned kind off in the household, see notification_mutes
 -- name: ListPushSubscriptionsOfUsers :many
-SELECT endpoint,
-  user_id,
-  p256dh,
-  auth,
-  lang
-FROM push_subscriptions
-WHERE user_id = ANY(sqlc.arg(user_ids)::uuid []);
+SELECT p.endpoint,
+  p.user_id,
+  p.p256dh,
+  p.auth,
+  p.lang
+FROM push_subscriptions p
+WHERE p.user_id = ANY(sqlc.arg(user_ids)::uuid [])
+  AND NOT EXISTS (
+    SELECT 1
+    FROM notification_mutes n
+    WHERE n.household_id = sqlc.arg(household_id)
+      AND n.user_id = p.user_id
+      AND n.kind = sqlc.arg(kind)
+  );

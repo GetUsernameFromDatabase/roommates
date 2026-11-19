@@ -29,7 +29,9 @@ CREATE TABLE households (
   currency TEXT NOT NULL DEFAULT 'EUR',
   created_by UUID NOT NULL REFERENCES users (id),
   created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
+  updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  -- soft delete: read-only until purged g.HouseholdPurgeAfter later, an owner can restore it
+  deleted_at TIMESTAMP WITH TIME ZONE
 );
 -- -----------------------------------------------------------------------------
 -- a row is kept after leaving (left_at set) so history still shows former members,
@@ -291,6 +293,65 @@ CREATE TABLE push_subscriptions (
 );
 CREATE INDEX idx_push_subscriptions_user_id ON push_subscriptions (user_id);
 -- -----------------------------------------------------------------------------
+-- a row turns that kind of push off for the member in that household, no row means on
+CREATE TABLE notification_mutes (
+  household_id UUID NOT NULL,
+  user_id UUID NOT NULL,
+  kind TEXT NOT NULL CHECK (kind IN ('chat', 'money', 'recurring', 'household')),
+  PRIMARY KEY (household_id, user_id, kind),
+  FOREIGN KEY (household_id, user_id) REFERENCES memberships (household_id, user_id) ON DELETE CASCADE
+);
+-- -----------------------------------------------------------------------------
+-- a schedule makes a draft on next_due that the payer adds (through CreateExpense) or skips,
+-- either moves next_due one interval on from anchor; ended by a trigger when the payer leaves
+CREATE TABLE recurring_expenses (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  household_id UUID NOT NULL REFERENCES households (id) ON DELETE CASCADE,
+  payer_id UUID NOT NULL,
+  category TEXT NOT NULL REFERENCES expense_categories (id) ON UPDATE CASCADE,
+  title TEXT NOT NULL,
+  -- in the household's currency when the draft is added
+  amount_cents BIGINT NOT NULL CHECK (amount_cents > 0),
+  custom BOOLEAN NOT NULL,
+  interval TEXT NOT NULL CHECK (interval IN ('week', 'month', 'year')),
+  anchor DATE NOT NULL,
+  next_due DATE NOT NULL,
+  -- the next_due the payer was pushed about
+  notified_on DATE,
+  created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE (id, household_id),
+  FOREIGN KEY (household_id, payer_id) REFERENCES memberships (household_id, user_id)
+);
+CREATE INDEX idx_recurring_expenses_due ON recurring_expenses (next_due);
+CREATE TABLE recurring_expense_shares (
+  recurring_id UUID NOT NULL,
+  household_id UUID NOT NULL,
+  user_id UUID NOT NULL,
+  -- NULL when the schedule splits equally
+  amount_cents BIGINT CHECK (amount_cents >= 0),
+  PRIMARY KEY (recurring_id, user_id),
+  FOREIGN KEY (recurring_id, household_id) REFERENCES recurring_expenses (id, household_id) ON DELETE CASCADE,
+  FOREIGN KEY (household_id, user_id) REFERENCES memberships (household_id, user_id)
+);
+-- -----------------------------------------------------------------------------
+-- who did what, written by the services in the same transaction, kept per grp for
+-- g.ActivityRetention; title and amount are copies so the row outlives its subject
+CREATE TABLE activity (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  household_id UUID NOT NULL REFERENCES households (id) ON DELETE CASCADE,
+  actor_id UUID REFERENCES users (id) ON DELETE SET NULL,
+  grp TEXT NOT NULL CHECK (grp IN ('money', 'shopping', 'notes', 'members')),
+  kind TEXT NOT NULL,
+  subject_id UUID,
+  target_user_id UUID REFERENCES users (id) ON DELETE SET NULL,
+  title TEXT NOT NULL DEFAULT '',
+  amount_cents BIGINT,
+  currency TEXT,
+  created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX idx_activity_household ON activity (household_id, created_at DESC);
+CREATE INDEX idx_activity_created ON activity (created_at);
+-- -----------------------------------------------------------------------------
 -- http_sessions belongs to the session store (pgstore), which creates it on start, after the
 -- migrations, so it is created here the same way, only user_id is ours: sessions.Login sets it,
 -- a password reset deletes the user's sessions by it
@@ -323,6 +384,17 @@ CREATE FUNCTION queue_avatar_purge() RETURNS TRIGGER AS $$ BEGIN
 INSERT INTO file_purges (object_key)
 VALUES (OLD.avatar_key) ON CONFLICT DO NOTHING;
 RETURN OLD;
+END;
+$$ LANGUAGE plpgsql;
+-- a leaver's schedules, and their shares in the others' schedules, end with the membership
+CREATE FUNCTION end_recurring_of_leaver() RETURNS TRIGGER AS $$ BEGIN
+DELETE FROM recurring_expenses
+WHERE household_id = NEW.household_id
+  AND payer_id = NEW.user_id;
+DELETE FROM recurring_expense_shares
+WHERE household_id = NEW.household_id
+  AND user_id = NEW.user_id;
+RETURN NULL;
 END;
 $$ LANGUAGE plpgsql;
 -- live updates: '<household_id> <topic>' on household_events, sent on commit,
@@ -447,3 +519,8 @@ CREATE TRIGGER notify_invites
 AFTER INSERT OR UPDATE OR DELETE ON invites FOR EACH ROW EXECUTE FUNCTION notify_household('people');
 CREATE TRIGGER notify_messages
 AFTER INSERT OR UPDATE OR DELETE ON messages FOR EACH ROW EXECUTE FUNCTION notify_household('chat');
+CREATE TRIGGER notify_recurring_expenses
+AFTER INSERT OR UPDATE OR DELETE ON recurring_expenses FOR EACH ROW EXECUTE FUNCTION notify_household('expenses');
+CREATE TRIGGER end_recurring_of_leaver
+AFTER UPDATE OF left_at ON memberships FOR EACH ROW
+  WHEN (NEW.left_at IS NOT NULL) EXECUTE FUNCTION end_recurring_of_leaver();

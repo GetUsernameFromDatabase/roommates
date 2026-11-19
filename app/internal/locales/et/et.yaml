@@ -309,6 +309,8 @@ et:
     expense-body: "%s lisas kulu %s, sinu osa on %s"
     settlement-title: "%s teatab, et maksis sulle"
     settlement-body: "%s leibkonnas %s. Kinnita see kulude all."
+    confirmed-title: "%s kinnitas sinu makse"
+    confirmed-body: "%s leibkonnas %s."
   offline:
     title: Ühendus puudub
     description: Toakaaslased vajab internetiühendust. Kontrolli võrku ja proovi uuesti.
@@ -474,6 +476,132 @@ et:
     title: Midagi läks valesti
     description: Palun proovi hiljem uuesti.
     back: Tagasi avalehele
+  recurring:
+    title: Korduvad kulud
+    repeat: Kordub
+    never: Ei kordu
+    week: Iga nädal
+    month: Iga kuu
+    year: Iga aasta
+    next-due: Järgmine kord
+    none: Korduvaid kulusid pole. Uue kulu juures saad valida, et see kordub.
+    edit-title: Muuda korduvat kulu
+    delete-confirm: Kustutad selle korduva kulu? Juba lisatud kulud jäävad alles.
+    paid-by: Maksab %s
+    paid-by-you: Maksad sina
+    due: Tähtajal
+    add: Lisa
+    skip: Jäta vahele
+    stale: Seda kordust on juba lisatud või see jäeti vahele.
+    push-title: Kulu on tähtajal leibkonnas %s
+    push-body: "%s, %s. Lisa või jäta vahele kulude all."
+  ownership:
+    delete-title: Kustuta majapidamine
+    delete-description: "Keegi ei saa selles enam midagi muuta. See jääb %d päevaks loetavaks ja omanik saab selle seni taastada, seejärel kaob see koos kõigi failidega jäädavalt."
+    delete-open-debts: "Võlad on veel lahtised, arveldage need enne või salvestage kulud:"
+    delete-debt: "%s võlgneb kasutajale %s %s"
+    delete-export: Laadi kulud alla (CSV)
+    delete-confirm-label: "Kinnitamiseks kirjuta %s"
+    delete-name-mismatch: Nimi ei klapi
+    deleted-banner: "Kustutatud · ainult loetav kuni %s"
+    deleted-home: "Kustutatud · eemaldatakse %s"
+    restore: Taasta
+    read-only-title: See majapidamine on ainult loetav
+    read-only: "See majapidamine on kustutatud ja ainult loetav kuni %s."
+    back: Tagasi majapidamisse
+    transfer: Tee omanikuks ja astu tagasi
+    transfer-confirm: "Kas teha %s omanikuks ja jääda ise liikmeks?"
+    step-down: Astu omaniku kohalt tagasi
+    step-down-confirm: "Kas jääda liikmeks? Teised omanikud haldavad majapidamist edasi."
+    push-joined: "%s liitus"
+    push-left: "%s lahkus"
+    push-removed: "%s eemaldas kasutaja %s"
+    push-removed-you: "%s eemaldas sind majapidamisest"
+    push-owner: "%s tegi sinust omaniku"
+    push-deleted: "%s kustutas majapidamise, omanik saab selle taastada kuni %s"
+    push-restored: "%s taastas majapidamise"
+  notifications:
+    title: Teavitused
+    description: Vali, millest see majapidamine sulle teavitusi saadab.
+    hint: Teavitused peavad olema sisse lülitatud ka igas seadmes, kasuta selle lehe seadme lülitit.
+    chat: Vestluse sõnumid
+    chat-description: Uus sõnum majapidamise vestluses.
+    money: Kulud ja arveldused
+    money-description: Uus kulu, kus sul on osa, ja sulle tehtud arveldus.
+    recurring: Korduv kulu on tähtajal
+    recurring-description: Korduva kulu järgmine kuupäev on käes.
+    household: Majapidamise muudatused
+    household-description: Liitumine, lahkumine, omaniku vahetus, kustutamine ja taastamine.
+  activity:
+    title: Tegevused
+    none: Midagi pole veel juhtunud
+    none-hint: Siin on näha kulud, ostud, märkmed, failid ja majapidamise muudatused.
+    more: Näita rohkem
+    someone: Keegi
+    expense-added: "%[1]s lisas kulu %[2]s"
+    expense-edited: "%[1]s muutis kulu %[2]s"
+    expense-deleted: "%[1]s kustutas kulu %[2]s"
+    share-paid: "%[1]s märkis kulu %[2]s osa tasutuks"
+    share-unpaid: "%[1]s märkis kulu %[2]s osa tasumata"
+    settlement-requested: "%[1]s palus kasutajal %[3]s makse kinnitada"
+    settlement-confirmed: "%[1]s kinnitas makse kasutajalt %[3]s"
+    settlement-declined: "%[1]s lükkas tagasi makse kasutajalt %[3]s"
+    recurring-added: "%[1]s lisas korduva kulu %[2]s"
+    recurring-edited: "%[1]s muutis korduvat kulu %[2]s"
+    recurring-deleted: "%[1]s kustutas korduva kulu %[2]s"
+    recurring-skipped: "%[1]s jättis korduva kulu %[2]s ühe korra vahele"
+    list-created: "%[1]s lõi nimekirja %[2]s"
+    list-renamed: "%[1]s nimetas nimekirja ümber: %[2]s"
+    list-deleted: "%[1]s kustutas nimekirja %[2]s"
+    item-bought: "%[1]s ostis: %[2]s"
+    items-cleared: "%[1]s eemaldas nimekirjast %[2]s märgitud kirjed"
+    note-created: "%[1]s lisas märkme %[2]s"
+    note-edited: "%[1]s muutis märget %[2]s"
+    note-deleted: "%[1]s kustutas märke %[2]s"
+    file-uploaded: "%[1]s laadis üles faili %[2]s"
+    file-removed: "%[1]s eemaldas faili %[2]s"
+    member-joined: "%[1]s liitus majapidamisega"
+    member-left: "%[1]s lahkus majapidamisest"
+    member-removed: "%[1]s eemaldas majapidamisest kasutaja %[3]s"
+    member-promoted: "%[1]s tegi kasutaja %[3]s omanikuks"
+    ownership-transferred: "%[1]s andis omanikuõigused kasutajale %[3]s"
+    stepped-down: "%[1]s loobus omaniku rollist"
+    household-renamed: "%[1]s nimetas majapidamise ümber: %[2]s"
+    currency-changed: "%[1]s muutis valuutat: %[2]s"
+    household-deleted: "%[1]s kustutas majapidamise"
+    household-restored: "%[1]s taastas majapidamise"
+    expense-added-you: "Sa lisasid kulu %[2]s"
+    expense-edited-you: "Sa muutsid kulu %[2]s"
+    expense-deleted-you: "Sa kustutasid kulu %[2]s"
+    share-paid-you: "Sa märkisid kulu %[2]s osa tasutuks"
+    share-unpaid-you: "Sa märkisid kulu %[2]s osa tasumata"
+    settlement-requested-you: "Sa palusid kasutajal %[3]s makse kinnitada"
+    settlement-confirmed-you: "Sa kinnitasid makse kasutajalt %[3]s"
+    settlement-declined-you: "Sa lükkasid tagasi makse kasutajalt %[3]s"
+    recurring-added-you: "Sa lisasid korduva kulu %[2]s"
+    recurring-edited-you: "Sa muutsid korduvat kulu %[2]s"
+    recurring-deleted-you: "Sa kustutasid korduva kulu %[2]s"
+    recurring-skipped-you: "Sa jätsid korduva kulu %[2]s ühe korra vahele"
+    list-created-you: "Sa lõid nimekirja %[2]s"
+    list-renamed-you: "Sa nimetasid nimekirja ümber: %[2]s"
+    list-deleted-you: "Sa kustutasid nimekirja %[2]s"
+    item-bought-you: "Sa ostsid: %[2]s"
+    items-cleared-you: "Sa eemaldasid nimekirjast %[2]s märgitud kirjed"
+    note-created-you: "Sa lisasid märkme %[2]s"
+    note-edited-you: "Sa muutsid märget %[2]s"
+    note-deleted-you: "Sa kustutasid märke %[2]s"
+    file-uploaded-you: "Sa laadisid üles faili %[2]s"
+    file-removed-you: "Sa eemaldasid faili %[2]s"
+    member-joined-you: "Sa liitusid majapidamisega"
+    member-left-you: "Sa lahkusid majapidamisest"
+    member-removed-you: "Sa eemaldasid majapidamisest kasutaja %[3]s"
+    member-promoted-you: "Sa tegid kasutaja %[3]s omanikuks"
+    ownership-transferred-you: "Sa andsid omanikuõigused kasutajale %[3]s"
+    stepped-down-you: "Sa loobusid omaniku rollist"
+    household-renamed-you: "Sa nimetasid majapidamise ümber: %[2]s"
+    currency-changed-you: "Sa muutsid valuutat: %[2]s"
+    household-deleted-you: "Sa kustutasid majapidamise"
+    household-restored-you: "Sa taastasid majapidamise"
   validation-errors:
     email:
       generic: Ebasobiv e-maili address

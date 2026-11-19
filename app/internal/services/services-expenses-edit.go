@@ -79,7 +79,10 @@ func (s *DefaultService) UpdateExpense(ctx context.Context, actor Membership, ex
 			if cents, err := ParseCents(in.Amount); in.Amount != "" && (err != nil || cents != ex.AmountCents) {
 				return FieldError{Field: FieldAmount}
 			}
-			return q.UpdateExpense(ctx, p)
+			if err := q.UpdateExpense(ctx, p); err != nil {
+				return err
+			}
+			return logExpenseEdit(ctx, q, actor, p)
 		}
 		members, err := q.ListActiveMembers(ctx, actor.HouseholdID)
 		if err != nil {
@@ -93,8 +96,16 @@ func (s *DefaultService) UpdateExpense(ctx context.Context, actor Membership, ex
 		if err := q.UpdateExpense(ctx, p); err != nil {
 			return err
 		}
-		return editShares(ctx, q, actor.HouseholdID, expenseID, actor.UserID, ex.Currency, old, shares)
+		if err := editShares(ctx, q, actor.HouseholdID, expenseID, actor.UserID, ex.Currency, old, shares); err != nil {
+			return err
+		}
+		return logExpenseEdit(ctx, q, actor, p)
 	})
+}
+
+func logExpenseEdit(ctx context.Context, q *dbqueries.Queries, actor Membership, p dbqueries.UpdateExpenseParams) error {
+	cents := p.AmountCents
+	return logActivity(ctx, q, actor, ActivityEntry{Kind: g.ActExpenseEdited, SubjectID: p.ID, TargetUserID: pgtype.UUID{}, Title: p.Title, AmountCents: &cents, Currency: actor.Currency})
 }
 
 // editShares turns the locked old shares of an expense into shares, see [DefaultService.UpdateExpense]

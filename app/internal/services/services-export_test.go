@@ -122,7 +122,7 @@ func TestBalanceRows(t *testing.T) {
 	}
 	members := []dbqueries.ListActiveMembersRow{person(ann, "Ann"), person(bob, "Bob"), person(cy, "Cy")}
 
-	owner := Membership{HouseholdID: uid(9), UserID: ann, Role: g.RoleOwner, Currency: "EUR", UnreadMessages: 0, PendingSettlements: 0}
+	owner := Membership{HouseholdID: uid(9), UserID: ann, Role: g.RoleOwner, Currency: "EUR", UnreadMessages: 0, PendingSettlements: 0, DeletedAt: pgtype.Timestamptz{}}
 	rows := balanceRows(ctx, owner, items, members)
 	want := [][2]string{{"Ann", "6.00"}, {"Bob", "-8.00"}, {"Cy", "2.00"}}
 	if len(rows) != 4 {
@@ -135,7 +135,7 @@ func TestBalanceRows(t *testing.T) {
 	}
 
 	// the member only sees their own pairs: bob owes ann, ann owes cy
-	member := Membership{HouseholdID: uid(9), UserID: ann, Role: g.RoleMember, Currency: "EUR", UnreadMessages: 0, PendingSettlements: 0}
+	member := Membership{HouseholdID: uid(9), UserID: ann, Role: g.RoleMember, Currency: "EUR", UnreadMessages: 0, PendingSettlements: 0, DeletedAt: pgtype.Timestamptz{}}
 	rows = balanceRows(ctx, member, items, nil)
 	if len(rows) != 3 || rows[1][0] != "Bob" || rows[1][1] != "8.00" || rows[2][0] != "Cy" || rows[2][1] != "-2.00" {
 		t.Errorf("member rows %v", rows)

@@ -99,7 +99,8 @@ templ HouseholdPeople(actor services.Membership, o services.HouseholdOverview, i
 			<h2 id="members-title" class="sr-only">
 				@components.T(locales.LK_HouseholdMembers)
 			</h2>
-			@liveRegionWith("members", "#invites", events.TopicPeople) {
+			// only owners have invites, after stepping down the page has none to refresh
+			@liveRegionWith("members", utils.IfElse(isOwner, "#invites", ""), events.TopicPeople) {
 				<p class="text-sm text-muted-foreground">
 					@components.N(locales.LK_HouseholdCount, len(o.Members), i18n.M{"count": len(o.Members)})
 				</p>
@@ -147,6 +148,22 @@ templ HouseholdPeople(actor services.Membership, o services.HouseholdOverview, i
 											Size:    button.SizeSm,
 										}) {
 											@components.T(locales.LK_HouseholdPromote)
+										}
+									</form>
+									<form
+										action={ householdURL(actor.HouseholdID, "members", m.UserID.String(), "transfer") }
+										method="post"
+										hx-boost="true"
+										hx-confirm={ utils.T(ctx, locales.LK_OwnershipTransferConfirm, m.Username) }
+										data-confirm-label={ utils.T(ctx, locales.LK_OwnershipTransfer) }
+										data-confirm-neutral
+									>
+										@button.Button(button.Props{
+											Type:    button.TypeSubmit,
+											Variant: button.VariantOutline,
+											Size:    button.SizeSm,
+										}) {
+											@components.T(locales.LK_OwnershipTransfer)
 										}
 									</form>
 									<form
@@ -272,6 +289,26 @@ templ HouseholdPeople(actor services.Membership, o services.HouseholdOverview, i
 					</div>
 				</div>
 			</section>
+		}
+		// the last owner cannot step down, they hand over with "make owner and step down"
+		if isOwner && ownerCount(o.Members) > 1 {
+			<form
+				action={ householdURL(actor.HouseholdID, "step-down") }
+				method="post"
+				hx-boost="true"
+				hx-confirm={ utils.T(ctx, locales.LK_OwnershipStepDownConfirm) }
+				data-confirm-label={ utils.T(ctx, locales.LK_OwnershipStepDown) }
+				data-confirm-neutral
+				class="space-y-2"
+			>
+				@formError(errorFor(PeopleAtStepDown))
+				@button.Button(button.Props{
+					Type:    button.TypeSubmit,
+					Variant: button.VariantOutline,
+				}) {
+					@components.T(locales.LK_OwnershipStepDown)
+				}
+			</form>
 		}
 		<form
 			action={ householdURL(actor.HouseholdID, "leave") }

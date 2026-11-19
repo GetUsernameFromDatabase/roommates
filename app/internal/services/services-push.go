@@ -67,14 +67,19 @@ func (s *DefaultService) WaitPushes() {
 // notifyAsync sends build's message to every device of userIDs, in the language
 // each device subscribed with, build gets the names of actor and their household
 //
-// it runs after the response so push services cannot slow it down, failures are only logged
-func (s *DefaultService) notifyAsync(ctx context.Context, actor Membership, userIDs []pgtype.UUID, build func(ctx context.Context, userID pgtype.UUID, actorName, householdName string) push.Message) {
+// it runs after the response so push services cannot slow it down, failures are only logged;
+// users who turned kind (a g.Notify* value) off in the actor's household get nothing
+func (s *DefaultService) notifyAsync(ctx context.Context, actor Membership, kind string, userIDs []pgtype.UUID, build func(ctx context.Context, userID pgtype.UUID, actorName, householdName string) push.Message) {
 	if len(userIDs) == 0 {
 		return
 	}
 	ctx = context.WithoutCancel(ctx)
 	s.pushing.Go(func() {
-		subs, err := s.db.ListPushSubscriptionsOfUsers(ctx, userIDs)
+		subs, err := s.db.ListPushSubscriptionsOfUsers(ctx, dbqueries.ListPushSubscriptionsOfUsersParams{
+			UserIds:     userIDs,
+			HouseholdID: actor.HouseholdID,
+			Kind:        kind,
+		})
 		if err != nil || len(subs) == 0 {
 			if err != nil {
 				log.Error().Err(err).Msg("could not list push subscriptions")

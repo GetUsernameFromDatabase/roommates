@@ -21,6 +21,7 @@ const (
 	SectionFiles    = "files"
 	SectionChat     = "chat"
 	SectionPeople   = "people"
+	SectionActivity = "activity"
 	SectionSettings = "settings"
 )
 
@@ -66,6 +67,9 @@ templ appShell(title string, nav *HouseholdNav) {
 			}
 			// tabindex: live-resync.js focuses main after a boosted navigation
 			<main tabindex="-1" class={ utils.CN(pageMainClass, "focus:outline-none", utils.IfElse(nav != nil, "pb-28 lg:pb-10", "")) }>
+				if m, ok := MembershipFrom(ctx); ok {
+					@DeletedBanner(m)
+				}
 				{ children... }
 			</main>
 			@confirmDialog()
@@ -174,6 +178,7 @@ templ householdNav(nav HouseholdNav) {
 		// the house itself, set apart by space only
 		<ul class={ desktopOnly + " mt-6 flex flex-col gap-1" }>
 			@householdNavItem(householdURL(nav.HouseholdID, "people"), locales.LK_NavPeople, "people", nav.Section == SectionPeople, "")
+			@householdNavItem(householdURL(nav.HouseholdID, "activity"), locales.LK_ActivityTitle, "activity", nav.Section == SectionActivity, "")
 			@householdNavItem(householdURL(nav.HouseholdID, "settings"), locales.LK_NavSettings, "settings", nav.Section == SectionSettings, "")
 		</ul>
 		<div class={ desktopOnly + " mt-auto" }>
@@ -234,6 +239,7 @@ templ householdMenu(nav HouseholdNav) {
 			@householdMenuItem(householdURL(nav.HouseholdID, "expenses"), locales.LK_NavExpenses, "expenses", nav.Section == SectionExpenses)
 			@householdMenuItem(householdURL(nav.HouseholdID, "files"), locales.LK_NavFiles, "files", nav.Section == SectionFiles)
 			@householdMenuItem(householdURL(nav.HouseholdID, "people"), locales.LK_NavPeople, "people", nav.Section == SectionPeople)
+			@householdMenuItem(householdURL(nav.HouseholdID, "activity"), locales.LK_ActivityTitle, "activity", nav.Section == SectionActivity)
 			@householdMenuItem(householdURL(nav.HouseholdID, "settings"), locales.LK_NavSettings, "settings", nav.Section == SectionSettings)
 			<li class="mt-1 border-t pt-1">
 				@logoutForm()
@@ -281,6 +287,10 @@ templ navIcon(name, class string) {
 				<circle cx="9" cy="7" r="4"></circle>
 				<path d="M22 21v-2a4 4 0 0 0-3-3.87"></path>
 				<path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+			case "activity":
+				<path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
+				<path d="M3 3v5h5"></path>
+				<path d="M12 7v5l4 2"></path>
 			case "settings":
 				<path d="M20 7h-9"></path>
 				<path d="M14 17H5"></path>

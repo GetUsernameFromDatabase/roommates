@@ -81,6 +81,11 @@ type ExpenseInput struct {
 	// ListID links the list's bought items to the expense, only ItemID when that is set too
 	ListID pgtype.UUID
 	ItemID pgtype.UUID
+	// RecurringID adds the draft of that schedule due on RecurringDue, see [advanceRecurring]
+	//exhaustruct:optional
+	RecurringID pgtype.UUID
+	//exhaustruct:optional
+	RecurringDue pgtype.Date
 }
 
 type expenseShare struct {
@@ -95,6 +100,8 @@ const (
 	FieldDate   = "date"
 	// the split: custom amounts, or nobody ticked
 	FieldShares = "shares"
+	// the draft was added or skipped since the form was opened
+	FieldRecurring = "recurring"
 )
 
 // FieldError is [g.ErrorInvalidInput] for one form field, errors.Is still matches it
@@ -188,8 +195,24 @@ func (in ExpenseInput) clean(payer pgtype.UUID, members []dbqueries.ListActiveMe
 	return p, shares, nil
 }
 
-// CreateExpense records an expense the actor paid, see [ExpenseInput.clean] for errors
+// CreateExpense records an expense the actor paid, see [ExpenseInput.clean] for errors,
+// with in.RecurringID it adds that draft, see [advanceRecurring]
 func (s *DefaultService) CreateExpense(ctx context.Context, actor Membership, in ExpenseInput) (pgtype.UUID, error) {
+	return s.createExpense(ctx, actor, in, "")
+}
+
+// CreateRecurring is [DefaultService.CreateExpense] that also starts a schedule repeating it
+// every in.Interval from its date, [g.ErrorInvalidInput] for an interval not in [g.Intervals]
+func (s *DefaultService) CreateRecurring(ctx context.Context, actor Membership, in RecurringInput) (pgtype.UUID, error) {
+	if !slices.Contains(g.Intervals, in.Interval) {
+		return pgtype.UUID{}, g.ErrorInvalidInput
+	}
+	in.RecurringID = pgtype.UUID{}
+	return s.createExpense(ctx, actor, in.ExpenseInput, in.Interval)
+}
+
+// createExpense starts a schedule when interval is not ""
+func (s *DefaultService) createExpense(ctx context.Context, actor Membership, in ExpenseInput, interval string) (pgtype.UUID, error) {
 	var expenseID pgtype.UUID
 	var p dbqueries.InsertExpenseParams
 	var shares []expenseShare
@@ -207,8 +230,28 @@ func (s *DefaultService) CreateExpense(ctx context.Context, actor Membership, in
 			return err
 		}
 		p.HouseholdID = actor.HouseholdID
+		if in.RecurringID.Valid {
+			if _, err := advanceRecurring(ctx, q, actor, in.RecurringID, in.RecurringDue); err != nil {
+				return err
+			}
+		}
+		var recurringID pgtype.UUID
+		if interval != "" {
+			if recurringID, err = insertRecurring(ctx, q, p, in.Custom, interval, shares); err != nil {
+				return err
+			}
+		}
 		if expenseID, err = q.InsertExpense(ctx, p); err != nil {
 			return err
+		}
+		cents := p.AmountCents
+		if err := logActivity(ctx, q, actor, ActivityEntry{Kind: g.ActExpenseAdded, SubjectID: expenseID, TargetUserID: pgtype.UUID{}, Title: p.Title, AmountCents: &cents, Currency: actor.Currency}); err != nil {
+			return err
+		}
+		if recurringID.Valid {
+			if err := logActivity(ctx, q, actor, ActivityEntry{Kind: g.ActRecurringAdded, SubjectID: recurringID, TargetUserID: pgtype.UUID{}, Title: p.Title, AmountCents: &cents, Currency: actor.Currency}); err != nil {
+				return err
+			}
 		}
 		for _, sh := range shares {
 			if err := q.InsertExpenseShare(ctx, dbqueries.InsertExpenseShareParams{
@@ -240,7 +283,7 @@ func (s *DefaultService) CreateExpense(ctx context.Context, actor Membership, in
 			ids = append(ids, sh.userID)
 		}
 	}
-	s.notifyAsync(ctx, actor, ids, func(ctx context.Context, userID pgtype.UUID, payer, household string) push.Message {
+	s.notifyAsync(ctx, actor, g.NotifyMoney, ids, func(ctx context.Context, userID pgtype.UUID, payer, household string) push.Message {
 		return push.Message{
 			Title: utils.T(ctx, locales.LK_PushExpenseTitle, household),
 			Body:  utils.T(ctx, locales.LK_PushExpenseBody, payer, p.Title, utils.FormatMoney(ctx, owed[userID], actor.Currency)),
@@ -277,6 +320,9 @@ type ExpensesOverview struct {
 	// Expenses match the filter, HasExpenses says whether the household has any at all
 	Expenses    []dbqueries.ListExpensesRow
 	HasExpenses bool
+	// Due are the drafts the actor is to add or skip, see [DefaultService.ListDueRecurring]
+	//exhaustruct:optional
+	Due []RecurringRow
 }
 
 func (s *DefaultService) GetExpensesOverview(ctx context.Context, actor Membership, filter ExpenseFilter) (ExpensesOverview, error) {
@@ -289,6 +335,9 @@ func (s *DefaultService) GetExpensesOverview(ctx context.Context, actor Membersh
 		return o, err
 	}
 	if o.HasExpenses, err = s.db.HouseholdHasExpenses(ctx, actor.HouseholdID); err != nil {
+		return o, err
+	}
+	if o.Due, err = s.ListDueRecurring(ctx, actor); err != nil {
 		return o, err
 	}
 	o.Expenses, err = s.db.ListExpenses(ctx, dbqueries.ListExpensesParams{
@@ -364,11 +413,23 @@ func (e Expense) CopyInput(order []pgtype.UUID) ExpenseInput {
 // DeleteExpense returns [g.ErrorNotFound] unless the actor paid the expense
 // and everyone sharing it is still a member
 func (s *DefaultService) DeleteExpense(ctx context.Context, actor Membership, expenseID pgtype.UUID) error {
-	return rowsAffected(s.db.DeleteExpense(ctx, dbqueries.DeleteExpenseParams{
+	return s.inTx(ctx, func(q *dbqueries.Queries) error { return deleteExpense(ctx, q, actor, expenseID) })
+}
+
+// deleteExpense deletes the actor's expense and logs it
+func deleteExpense(ctx context.Context, q *dbqueries.Queries, actor Membership, expenseID pgtype.UUID) error {
+	e, err := expenseOf(ctx, q, actor.HouseholdID, expenseID)
+	if err != nil {
+		return err
+	}
+	if err := rowsAffected(q.DeleteExpense(ctx, dbqueries.DeleteExpenseParams{
 		ID:          expenseID,
 		HouseholdID: actor.HouseholdID,
 		PayerID:     actor.UserID,
-	}))
+	})); err != nil {
+		return err
+	}
+	return logActivity(ctx, q, actor, ActivityEntry{Kind: g.ActExpenseDeleted, SubjectID: expenseID, TargetUserID: pgtype.UUID{}, Title: e.Title, AmountCents: &e.AmountCents, Currency: e.Currency})
 }
 
 // DeleteExpenseKeepingFiles is [DefaultService.DeleteExpense] that leaves the files only the
@@ -379,11 +440,7 @@ func (s *DefaultService) DeleteExpenseKeepingFiles(ctx context.Context, actor Me
 		if err != nil {
 			return err
 		}
-		return rowsAffected(q.DeleteExpense(ctx, dbqueries.DeleteExpenseParams{
-			ID:          expenseID,
-			HouseholdID: actor.HouseholdID,
-			PayerID:     actor.UserID,
-		}))
+		return deleteExpense(ctx, q, actor, expenseID)
 	})
 }
 
@@ -418,7 +475,7 @@ func (s *DefaultService) SetExpenseSharePaid(ctx context.Context, actor Membersh
 			if debtor && uncovered > 0 {
 				return g.ErrorNotFound
 			}
-			return nil
+			return logShare(ctx, q, actor, g.ActSharePaid, expenseID, userID, sh.AmountCents)
 		}
 		if err := rowsAffected(q.SetExpenseSharePaid(ctx, dbqueries.SetExpenseSharePaidParams{
 			Paid:        false,
@@ -429,7 +486,10 @@ func (s *DefaultService) SetExpenseSharePaid(ctx context.Context, actor Membersh
 		})); err != nil {
 			return err
 		}
-		return q.DeleteSettlementShares(ctx, dbqueries.DeleteSettlementSharesParams{ExpenseID: expenseID, UserID: userID})
+		if err := q.DeleteSettlementShares(ctx, dbqueries.DeleteSettlementSharesParams{ExpenseID: expenseID, UserID: userID}); err != nil {
+			return err
+		}
+		return logShare(ctx, q, actor, g.ActShareUnpaid, expenseID, userID, sh.AmountCents)
 	})
 }
 
@@ -731,19 +791,22 @@ func (s *DefaultService) CreateSettlement(ctx context.Context, actor Membership,
 		}); err != nil {
 			return noRowsAs(err, g.ErrorInvalidInput)
 		}
-		return q.InsertSettlement(ctx, dbqueries.InsertSettlementParams{
+		if err := q.InsertSettlement(ctx, dbqueries.InsertSettlementParams{
 			HouseholdID: actor.HouseholdID,
 			FromUser:    actor.UserID,
 			ToUser:      toUserID,
 			AmountCents: cents,
 			Method:      &method,
 			Note:        note,
-		})
+		}); err != nil {
+			return err
+		}
+		return logActivity(ctx, q, actor, ActivityEntry{Kind: g.ActSettlementRequested, SubjectID: pgtype.UUID{}, TargetUserID: toUserID, Title: "", AmountCents: &cents, Currency: actor.Currency})
 	})
 	if err != nil {
 		return err
 	}
-	s.notifyAsync(ctx, actor, []pgtype.UUID{toUserID}, func(ctx context.Context, _ pgtype.UUID, from, household string) push.Message {
+	s.notifyAsync(ctx, actor, g.NotifyMoney, []pgtype.UUID{toUserID}, func(ctx context.Context, _ pgtype.UUID, from, household string) push.Message {
 		return push.Message{
 			Title: utils.T(ctx, locales.LK_PushSettlementTitle, from),
 			Body:  utils.T(ctx, locales.LK_PushSettlementBody, utils.FormatMoney(ctx, cents, actor.Currency), household),
@@ -763,9 +826,18 @@ func (s *DefaultService) ListPendingSettlements(ctx context.Context, actor Membe
 }
 
 // ConfirmSettlement returns [g.ErrorNotFound] unless the actor receives the pending settlement,
-// a payment that clears the debt marks its shares paid, see [closePaidDebt]
+// a payment that clears the debt marks its shares paid, see [closePaidDebt], the payer is pushed
 func (s *DefaultService) ConfirmSettlement(ctx context.Context, actor Membership, settlementID pgtype.UUID) error {
-	return s.inTx(ctx, func(q *dbqueries.Queries) error {
+	var confirmed dbqueries.ListPendingSettlementsRow
+	err := s.inTx(ctx, func(q *dbqueries.Queries) error {
+		// read first for the push, ConfirmSettlement returns only who paid whom
+		pending, err := q.ListPendingSettlements(ctx, dbqueries.ListPendingSettlementsParams{HouseholdID: actor.HouseholdID, UserID: actor.UserID})
+		if err != nil {
+			return err
+		}
+		if i := slices.IndexFunc(pending, func(p dbqueries.ListPendingSettlementsRow) bool { return p.ID == settlementID }); i >= 0 {
+			confirmed = pending[i]
+		}
 		st, err := q.ConfirmSettlement(ctx, dbqueries.ConfirmSettlementParams{
 			ID:          settlementID,
 			HouseholdID: actor.HouseholdID,
@@ -774,15 +846,46 @@ func (s *DefaultService) ConfirmSettlement(ctx context.Context, actor Membership
 		if err != nil {
 			return noRowsAs(err, g.ErrorNotFound)
 		}
-		return closePaidDebt(ctx, q, actor.HouseholdID, st.FromUser, st.ToUser)
+		if err := closePaidDebt(ctx, q, actor.HouseholdID, st.FromUser, st.ToUser); err != nil {
+			return err
+		}
+		return logActivity(ctx, q, actor, ActivityEntry{Kind: g.ActSettlementConfirmed, SubjectID: settlementID, TargetUserID: st.FromUser, Title: "", AmountCents: &confirmed.AmountCents, Currency: confirmed.Currency})
 	})
+	if err != nil {
+		return err
+	}
+	s.notifyAsync(ctx, actor, g.NotifyMoney, []pgtype.UUID{confirmed.FromUser}, func(ctx context.Context, _ pgtype.UUID, receiver, household string) push.Message {
+		return push.Message{
+			Title: utils.T(ctx, locales.LK_PushConfirmedTitle, receiver),
+			Body:  utils.T(ctx, locales.LK_PushConfirmedBody, utils.FormatMoney(ctx, confirmed.AmountCents, confirmed.Currency), household),
+			URL:   householdPath(actor.HouseholdID, "expenses"),
+			Tag:   "settlement-confirmed-" + settlementID.String(),
+		}
+	})
+	return nil
 }
 
 // DeleteSettlement lets the sender cancel or the receiver reject a pending settlement
 func (s *DefaultService) DeleteSettlement(ctx context.Context, actor Membership, settlementID pgtype.UUID) error {
-	return rowsAffected(s.db.DeleteSettlement(ctx, dbqueries.DeleteSettlementParams{
-		ID:          settlementID,
-		HouseholdID: actor.HouseholdID,
-		UserID:      actor.UserID,
-	}))
+	return s.inTx(ctx, func(q *dbqueries.Queries) error {
+		// read first to tell a rejection from a cancel, only a rejection is logged
+		pending, err := q.ListPendingSettlements(ctx, dbqueries.ListPendingSettlementsParams{HouseholdID: actor.HouseholdID, UserID: actor.UserID})
+		if err != nil {
+			return err
+		}
+		var rejected *dbqueries.ListPendingSettlementsRow
+		if i := slices.IndexFunc(pending, func(p dbqueries.ListPendingSettlementsRow) bool {
+			return p.ID == settlementID && p.ToUser == actor.UserID
+		}); i >= 0 {
+			rejected = &pending[i]
+		}
+		if err := rowsAffected(q.DeleteSettlement(ctx, dbqueries.DeleteSettlementParams{
+			ID:          settlementID,
+			HouseholdID: actor.HouseholdID,
+			UserID:      actor.UserID,
+		})); err != nil || rejected == nil {
+			return err
+		}
+		return logActivity(ctx, q, actor, ActivityEntry{Kind: g.ActSettlementDeclined, SubjectID: settlementID, TargetUserID: rejected.FromUser, Title: "", AmountCents: &rejected.AmountCents, Currency: rejected.Currency})
+	})
 }

@@ -1,6 +1,7 @@
 package services
 
 import (
+	"bytes"
 	"context"
 	"crypto/rand"
 	"errors"
@@ -420,5 +421,126 @@ func TestUpdateHousehold(t *testing.T) {
 	rows, err := s.db.ListDebtItems(ctx, dbqueries.ListDebtItemsParams{HouseholdID: ownerM.HouseholdID, UserID: pgtype.UUID{}})
 	if err != nil || len(rows) != 0 {
 		t.Fatalf("open items after the change %v %v", rows, err)
+	}
+}
+
+func TestTransferOwnershipAndStepDown(t *testing.T) {
+	s := newTestService(t)
+	ctx := context.Background()
+	ownerM, memberM, strangerM := newTestHousehold(t, s)
+
+	wantErr(t, "member transfers", s.TransferOwnership(ctx, memberM, ownerM.UserID), g.ErrorForbidden)
+	wantErr(t, "transfer to a stranger", s.TransferOwnership(ctx, ownerM, strangerM.UserID), g.ErrorNotFound)
+	wantErr(t, "only owner steps down", s.StepDown(ctx, ownerM), g.ErrorLastOwner)
+
+	if err := s.TransferOwnership(ctx, ownerM, memberM.UserID); err != nil {
+		t.Fatal(err)
+	}
+	formerOwner := mustMembership(t, s, ownerM.HouseholdID, ownerM.UserID)
+	newOwner := mustMembership(t, s, ownerM.HouseholdID, memberM.UserID)
+	if formerOwner.Role != g.RoleMember || newOwner.Role != g.RoleOwner {
+		t.Fatalf("roles after transfer: former %s, new %s", formerOwner.Role, newOwner.Role)
+	}
+	wantErr(t, "member steps down", s.StepDown(ctx, formerOwner), g.ErrorForbidden)
+	wantErr(t, "new only owner steps down", s.StepDown(ctx, newOwner), g.ErrorLastOwner)
+
+	if err := s.PromoteMember(ctx, newOwner, formerOwner.UserID); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.StepDown(ctx, newOwner); err != nil {
+		t.Fatalf("step down with two owners: %v", err)
+	}
+	if m := mustMembership(t, s, ownerM.HouseholdID, memberM.UserID); m.Role != g.RoleMember {
+		t.Fatalf("role after stepping down %s", m.Role)
+	}
+}
+
+func TestDeleteAndRestoreHousehold(t *testing.T) {
+	s := newTestService(t)
+	ctx := context.Background()
+	ownerM, memberM, strangerM := newTestHousehold(t, s)
+	if err := s.CreateInvite(ctx, ownerM); err != nil {
+		t.Fatal(err)
+	}
+	// an open debt does not stop the deletion
+	if _, err := s.CreateExpense(ctx, ownerM, ExpenseInput{
+		Title: "Rent", Amount: "10", Category: "rent", IncurredOn: "2026-10-01",
+		Custom: false, Members: []pgtype.UUID{ownerM.UserID, memberM.UserID}, Shares: nil,
+		ListID: pgtype.UUID{}, ItemID: pgtype.UUID{},
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if settings, err := s.GetHouseholdSettings(ctx, ownerM); err != nil || len(settings.Debts) != 1 {
+		t.Fatalf("settings debts %+v, %v", settings.Debts, err)
+	}
+
+	wantErr(t, "member deletes", s.DeleteHousehold(ctx, memberM, "Flat"), g.ErrorForbidden)
+	err := s.DeleteHousehold(ctx, ownerM, "flat")
+	var fe FieldError
+	if !errors.As(err, &fe) || fe.Field != FieldName {
+		t.Fatalf("wrong name: error %v is not a name FieldError", err)
+	}
+	if m := mustMembership(t, s, ownerM.HouseholdID, ownerM.UserID); m.DeletedAt.Valid {
+		t.Fatal("deleted after a wrong name")
+	}
+
+	if err := s.DeleteHousehold(ctx, ownerM, " Flat "); err != nil {
+		t.Fatal(err)
+	}
+	if m := mustMembership(t, s, ownerM.HouseholdID, memberM.UserID); !m.DeletedAt.Valid {
+		t.Fatal("deleted_at not set")
+	}
+	invites, err := s.db.ListActiveInvites(ctx, ownerM.HouseholdID)
+	if err != nil || len(invites) != 0 {
+		t.Fatalf("invites after delete %v, %v", invites, err)
+	}
+
+	wantErr(t, "member restores", s.RestoreHousehold(ctx, memberM.UserID, ownerM.HouseholdID), g.ErrorForbidden)
+	wantErr(t, "stranger restores", s.RestoreHousehold(ctx, strangerM.UserID, ownerM.HouseholdID), g.ErrorNotFound)
+	if err := s.RestoreHousehold(ctx, ownerM.UserID, ownerM.HouseholdID); err != nil {
+		t.Fatal(err)
+	}
+	if m := mustMembership(t, s, ownerM.HouseholdID, memberM.UserID); m.DeletedAt.Valid {
+		t.Fatal("deleted_at still set after restore")
+	}
+}
+
+func TestPurgeDeletedHouseholds(t *testing.T) {
+	s := newTestService(t)
+	ctx := context.Background()
+	oldM, _, _ := newTestHousehold(t, s)
+	recentM, _, _ := newTestHousehold(t, s)
+	none := FileTarget{NoteID: pgtype.UUID{}, ListID: pgtype.UUID{}, ShoppingItemID: pgtype.UUID{}, ExpenseID: pgtype.UUID{}, MessageID: pgtype.UUID{}}
+	body := []byte("\x89PNG\r\n\x1a\n rest of the image")
+	fileID, err := s.UploadFile(ctx, oldM, none, "photo.png", bytes.NewReader(body), int64(len(body)))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var key string
+	if err := s.pool.QueryRow(ctx, "SELECT object_key FROM files WHERE id = $1", fileID).Scan(&key); err != nil {
+		t.Fatal(err)
+	}
+	for _, m := range []Membership{oldM, recentM} {
+		if err := s.DeleteHousehold(ctx, m, "Flat"); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if _, err := s.pool.Exec(ctx, "UPDATE households SET deleted_at = $2 WHERE id = $1",
+		oldM.HouseholdID, time.Now().Add(-g.HouseholdPurgeAfter-time.Hour)); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := s.PurgeDeletedHouseholds(ctx); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := s.db.GetHousehold(ctx, oldM.HouseholdID); !errors.Is(err, pgx.ErrNoRows) {
+		t.Fatalf("old household after purge: %v", err)
+	}
+	if _, err := s.db.GetHousehold(ctx, recentM.HouseholdID); err != nil {
+		t.Fatalf("recently deleted household purged: %v", err)
+	}
+	var queued int
+	if err := s.pool.QueryRow(ctx, "SELECT count(*) FROM file_purges WHERE object_key = $1", key).Scan(&queued); err != nil || queued != 1 {
+		t.Fatalf("queued %d, %v", queued, err)
 	}
 }

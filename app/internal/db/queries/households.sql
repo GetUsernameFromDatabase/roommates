@@ -5,7 +5,8 @@ RETURNING id;
 -- name: ListHouseholdsOfUser :many
 SELECT h.id,
   h.name,
-  m.role
+  m.role,
+  h.deleted_at
 FROM households h
   JOIN memberships m ON m.household_id = h.id
 WHERE m.user_id = $1
@@ -29,3 +30,17 @@ UPDATE households
 SET name = sqlc.arg(name),
   currency = sqlc.arg(currency)
 WHERE id = sqlc.arg(id);
+-- a deleted household is read-only until PurgeDeletedHouseholds removes it
+-- name: SoftDeleteHousehold :exec
+UPDATE households
+SET deleted_at = CURRENT_TIMESTAMP
+WHERE id = $1
+  AND deleted_at IS NULL;
+-- name: RestoreHousehold :exec
+UPDATE households
+SET deleted_at = NULL
+WHERE id = $1;
+-- every household table cascades, the files trigger queues their storage keys in file_purges
+-- name: PurgeDeletedHouseholds :execrows
+DELETE FROM households
+WHERE deleted_at < sqlc.arg(deleted_before);

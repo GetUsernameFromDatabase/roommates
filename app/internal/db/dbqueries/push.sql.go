@@ -39,14 +39,27 @@ func (q *Queries) DeletePushSubscription(ctx context.Context, arg DeletePushSubs
 }
 
 const listPushSubscriptionsOfUsers = `-- name: ListPushSubscriptionsOfUsers :many
-SELECT endpoint,
-  user_id,
-  p256dh,
-  auth,
-  lang
-FROM push_subscriptions
-WHERE user_id = ANY($1::uuid [])
+SELECT p.endpoint,
+  p.user_id,
+  p.p256dh,
+  p.auth,
+  p.lang
+FROM push_subscriptions p
+WHERE p.user_id = ANY($1::uuid [])
+  AND NOT EXISTS (
+    SELECT 1
+    FROM notification_mutes n
+    WHERE n.household_id = $2
+      AND n.user_id = p.user_id
+      AND n.kind = $3
+  )
 `
+
+type ListPushSubscriptionsOfUsersParams struct {
+	UserIds     []pgtype.UUID `json:"user_ids"`
+	HouseholdID pgtype.UUID   `json:"household_id"`
+	Kind        string        `json:"kind"`
+}
 
 type ListPushSubscriptionsOfUsersRow struct {
 	Endpoint string      `json:"endpoint"`
@@ -56,8 +69,9 @@ type ListPushSubscriptionsOfUsersRow struct {
 	Lang     string      `json:"lang"`
 }
 
-func (q *Queries) ListPushSubscriptionsOfUsers(ctx context.Context, userIds []pgtype.UUID) ([]ListPushSubscriptionsOfUsersRow, error) {
-	rows, err := q.db.Query(ctx, listPushSubscriptionsOfUsers, userIds)
+// leaves out the users who turned kind off in the household, see notification_mutes
+func (q *Queries) ListPushSubscriptionsOfUsers(ctx context.Context, arg ListPushSubscriptionsOfUsersParams) ([]ListPushSubscriptionsOfUsersRow, error) {
+	rows, err := q.db.Query(ctx, listPushSubscriptionsOfUsers, arg.UserIds, arg.HouseholdID, arg.Kind)
 	if err != nil {
 		return nil, err
 	}

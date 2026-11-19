@@ -1,0 +1,121 @@
+package pages
+
+import "roommates/web/components"
+import "roommates/web/components/button"
+import "roommates/internal/db/dbqueries"
+import "roommates/internal/services"
+import "roommates/internal/events"
+import g "roommates/internal/config"
+import "roommates/internal/locales"
+import "roommates/internal/utils"
+
+// HouseholdRecurring lists every schedule of the household, the payer and owners open one to edit it
+templ HouseholdRecurring(actor services.Membership, rows []services.RecurringRow) {
+	{{ title := utils.T(ctx, locales.LK_RecurringTitle) }}
+	@appShell(title, &HouseholdNav{HouseholdID: actor.HouseholdID, Section: SectionExpenses}) {
+		@doorplateHeader(householdURL(actor.HouseholdID, "expenses"), utils.T(ctx, locales.LK_ExpensesBack), title)
+		@liveRegion("recurring", events.TopicExpenses) {
+			<section class="till-roll w-full max-w-2xl">
+				<div class="till-paper">
+					if len(rows) == 0 {
+						<p class="text-muted-foreground">
+							@components.T(locales.LK_RecurringNone)
+						</p>
+					} else {
+						<ul class="divide-y divide-dashed">
+							for _, r := range rows {
+								<li>
+									if canEditRecurring(actor, r) {
+										<a href={ householdURL(actor.HouseholdID, "recurring", r.ID.String()) } class="block min-h-12 py-2 hover:underline">
+											@recurringLine(actor, r)
+										</a>
+									} else {
+										<div class="py-2">
+											@recurringLine(actor, r)
+										</div>
+									}
+								</li>
+							}
+						</ul>
+					}
+				</div>
+			</section>
+		}
+	}
+}
+
+templ recurringLine(actor services.Membership, r services.RecurringRow) {
+	<span class="till-line">
+		<span class="min-w-0 font-heading font-semibold break-words">{ r.Title }</span>
+		<span aria-hidden="true" class="till-leader"></span>
+		<span class="shrink-0 font-semibold tabular-nums">{ utils.FormatMoney(ctx, r.AmountCents, actor.Currency) }</span>
+	</span>
+	<span class="flex flex-wrap justify-between gap-x-3 text-xs text-muted-foreground">
+		<span>{ utils.T(ctx, intervalKeys[r.Interval]) } · { utils.T(ctx, locales.LK_RecurringNextDue) }: { formatDay(ctx, r.NextDue) }</span>
+		if r.PayerID == actor.UserID {
+			<span>{ utils.T(ctx, locales.LK_RecurringPaidByYou) }</span>
+		} else {
+			<span>{ utils.T(ctx, locales.LK_RecurringPaidBy, r.PayerName) }</span>
+		}
+	</span>
+}
+
+// RecurringEditor is the form of schedule r, its date the next due day, changing it starts the
+// schedule again from that day
+templ RecurringEditor(actor services.Membership, members []dbqueries.ListActiveMembersRow, r services.RecurringRow, in services.RecurringInput, errorMessage string, errorField string) {
+	{{ recurringURL := householdURL(actor.HouseholdID, "recurring", r.ID.String()) }}
+	{{
+		f := expenseFrame{
+			Action: recurringURL, Back: householdURL(actor.HouseholdID, "recurring"), BackText: utils.T(ctx, locales.LK_RecurringTitle),
+			Heading: utils.T(ctx, locales.LK_RecurringEditTitle), Submit: locales.LK_ExpensesSave, Lock: "",
+			PayerID: r.PayerID, DateLabel: locales.LK_RecurringNextDue, Repeats: g.Intervals, Repeat: in.Interval,
+		}
+	}}
+	@appShell(f.Heading, &HouseholdNav{HouseholdID: actor.HouseholdID, Section: SectionExpenses}) {
+		@doorplateHeader(f.Back, f.BackText, r.Title)
+		<p class="text-sm text-muted-foreground">
+			if r.PayerID == actor.UserID {
+				@components.T(locales.LK_RecurringPaidByYou)
+			} else {
+				{ utils.T(ctx, locales.LK_RecurringPaidBy, r.PayerName) }
+			}
+		</p>
+		@expenseForm(members, f, in.ExpenseInput, errorMessage, errorField)
+		<form action={ recurringURL + "/delete" } method="post" hx-boost="true" hx-confirm={ utils.T(ctx, locales.LK_RecurringDeleteConfirm) }>
+			@deleteButton(locales.LK_CommonDelete)
+		</form>
+	}
+}
+
+// recurringDue are the drafts the actor is to add or skip, oldest first
+templ recurringDue(actor services.Membership, due []services.RecurringRow) {
+	<section aria-labelledby="recurring-due-title">
+		<h2 id="recurring-due-title" class="sr-only">
+			@components.T(locales.LK_RecurringDue)
+		</h2>
+		<ul class="flex flex-col gap-3">
+			for _, r := range due {
+				<li class="till-slip">
+					<div class="till-paper flex flex-wrap items-center gap-x-3 gap-y-2">
+						<p class="min-w-0 flex-1 break-words">
+							<span class="font-heading font-semibold">{ r.Title }</span>
+							{ " · " + formatDay(ctx, r.NextDue) + " · " }
+							<span class="tabular-nums">{ utils.FormatMoney(ctx, r.AmountCents, actor.Currency) }</span>
+						</p>
+						<div class="flex gap-2">
+							@button.Button(button.Props{Href: string(householdURL(actor.HouseholdID, "expenses", "new")) + "?recurring=" + r.ID.String(), Class: "h-11 px-4"}) {
+								@components.T(locales.LK_RecurringAdd)
+							}
+							<form action={ householdURL(actor.HouseholdID, "recurring", r.ID.String(), "skip") } method="post" hx-boost="true">
+								<input type="hidden" name="due" value={ r.NextDue.Time.Format(services.DateLayout) }/>
+								@button.Button(button.Props{Type: button.TypeSubmit, Variant: button.VariantGhost, Class: "h-11 px-3"}) {
+									@components.T(locales.LK_RecurringSkip)
+								}
+							</form>
+						</div>
+					</div>
+				</li>
+			}
+		</ul>
+	</section>
+}

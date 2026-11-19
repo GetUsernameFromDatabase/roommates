@@ -104,12 +104,26 @@ func (h *DefaultHandler) PageNewExpense(ctx *gin.Context) {
 		}
 		in = e.CopyInput(utils.Map(members, func(m dbqueries.ListActiveMembersRow) pgtype.UUID { return m.UserID }))
 	}
-	h.renderExpenseEditor(ctx, http.StatusOK, nil, in, "", "")
+	// the draft of a schedule the actor pays
+	if recurring := ctx.Query("recurring"); recurring != "" {
+		r, ok := h.loadRecurring(ctx, recurring)
+		if !ok {
+			return
+		}
+		if r.PayerID != actor.UserID {
+			pageError(ctx, g.ErrorNotFound)
+			return
+		}
+		in = r.Input().ExpenseInput
+		in.RecurringID, in.RecurringDue = r.ID, r.NextDue
+	}
+	h.renderExpenseEditor(ctx, http.StatusOK, nil, in, "", "", "")
 }
 
 // renderExpenseEditor shows the expense form, editing edit when it is not nil, an equal split with no
-// one ticked ticks everyone, errorField is the [services.FieldError] field the errorMessage shows at
-func (h *DefaultHandler) renderExpenseEditor(ctx *gin.Context, status int, edit *services.Expense, in services.ExpenseInput, errorMessage, errorField string) {
+// one ticked ticks everyone, errorField is the [services.FieldError] field the errorMessage shows at,
+// repeat the chosen repeat of a new expense
+func (h *DefaultHandler) renderExpenseEditor(ctx *gin.Context, status int, edit *services.Expense, in services.ExpenseInput, repeat, errorMessage, errorField string) {
 	actor := membershipFromContext(ctx)
 	members, err := h.service.ListMembers(ctx, actor)
 	if err != nil {
@@ -133,7 +147,7 @@ func (h *DefaultHandler) renderExpenseEditor(ctx *gin.Context, status int, edit 
 			in.Members = append(in.Members, m.UserID)
 		}
 	}
-	RenderTemplStatus(ctx, status, pages.ExpenseEditor(actor, members, edit, in, errorMessage, errorField))
+	RenderTemplStatus(ctx, status, pages.ExpenseEditorWithRepeat(actor, members, edit, in, repeat, errorMessage, errorField))
 }
 
 // expenseInputError is the message for an invalid expense form and the field it shows at
@@ -147,6 +161,10 @@ func expenseInputError(ctx *gin.Context, err error) (message, field string) {
 		services.FieldDate:   utils.T(c, locales.LK_ExpensesInvalidDate),
 		services.FieldShares: utils.T(c, locales.LK_ExpensesInvalidShares),
 	}[fe.Field]
+	// not a field of the form, it shows at the top
+	if fe.Field == services.FieldRecurring {
+		return utils.T(c, locales.LK_RecurringStale), ""
+	}
 	return cmp.Or(message, utils.T(c, locales.LK_ExpensesInvalid, services.MaxExpenseTitleLength)), fe.Field
 }
 
@@ -171,6 +189,13 @@ func expenseFromForm(ctx *gin.Context) services.ExpenseInput {
 	if id, err := utils.ParseUUID(ctx.PostForm("item")); err == nil {
 		in.ItemID = id
 	}
+	// a bad due day is refused as stale, see [services.FieldRecurring]
+	if id, err := utils.ParseUUID(ctx.PostForm("recurring")); err == nil {
+		in.RecurringID = id
+		if due, err := time.Parse(services.DateLayout, ctx.PostForm("recurring_due")); err == nil {
+			in.RecurringDue = pgtype.Date{Time: due, InfinityModifier: pgtype.Finite, Valid: true}
+		}
+	}
 	for _, v := range ctx.PostFormArray("member") {
 		if id, err := utils.ParseUUID(v); err == nil {
 			in.Members = append(in.Members, id)
@@ -186,19 +211,26 @@ func expenseFromForm(ctx *gin.Context) services.ExpenseInput {
 	return in
 }
 
-// CreateExpense opens the new expense
+// CreateExpense opens the new expense, with a "repeat" of [g.Intervals] it starts a schedule too
 func (h *DefaultHandler) CreateExpense(ctx *gin.Context) {
 	actor := membershipFromContext(ctx)
 	in := expenseFromForm(ctx)
-	expenseID, err := h.service.CreateExpense(ctx, actor, in)
+	repeat := ctx.PostForm("repeat")
+	var expenseID pgtype.UUID
+	var err error
+	if slices.Contains(g.Intervals, repeat) && !in.RecurringID.Valid {
+		expenseID, err = h.service.CreateRecurring(ctx, actor, services.RecurringInput{ExpenseInput: in, Interval: repeat})
+	} else {
+		expenseID, err = h.service.CreateExpense(ctx, actor, in)
+	}
 	switch {
 	case err == nil:
 		Redirect(ctx, expensePath(actor.HouseholdID, expenseID))
 	case errors.Is(err, g.ErrorInvalidInput):
 		message, field := expenseInputError(ctx, err)
-		h.renderExpenseEditor(ctx, http.StatusUnprocessableEntity, nil, in, message, field)
+		h.renderExpenseEditor(ctx, http.StatusUnprocessableEntity, nil, in, repeat, message, field)
 	default:
-		InternalError(ctx, err)
+		pageError(ctx, err)
 	}
 }
 
@@ -219,7 +251,7 @@ func (h *DefaultHandler) PageEditExpense(ctx *gin.Context) {
 		return
 	}
 	in := e.EditInput(utils.Map(members, func(m dbqueries.ListActiveMembersRow) pgtype.UUID { return m.UserID }))
-	h.renderExpenseEditor(ctx, http.StatusOK, &e, in, "", "")
+	h.renderExpenseEditor(ctx, http.StatusOK, &e, in, "", "", "")
 }
 
 // UpdateExpense saves the edit form and goes back to the expense
@@ -236,7 +268,7 @@ func (h *DefaultHandler) UpdateExpense(ctx *gin.Context) {
 		backTo(ctx, expensePath(actor.HouseholdID, e.Expense.ID))
 	case errors.Is(err, g.ErrorInvalidInput):
 		message, field := expenseInputError(ctx, err)
-		h.renderExpenseEditor(ctx, http.StatusUnprocessableEntity, &e, in, message, field)
+		h.renderExpenseEditor(ctx, http.StatusUnprocessableEntity, &e, in, "", message, field)
 	default:
 		pageError(ctx, err)
 	}

@@ -41,9 +41,15 @@ templ HouseholdExpenses(actor services.Membership, o services.ExpensesOverview, 
 		if settleTo == "" {
 			@formError(errorMessage)
 		}
+		// refreshed with the "expenses" region
+		<div id="recurring-due" class="empty:hidden">
+			if len(o.Due) > 0 {
+				@recurringDue(actor, o.Due)
+			}
+		</div>
 		<div class="flex flex-col gap-8 lg:grid lg:grid-cols-[minmax(0,1fr)_20rem] lg:items-start">
 			// the "I paid" amount is the debt, when that changes the amount should too
-			@liveRegionWith("expenses", "#expense-list", events.TopicExpenses) {
+			@liveRegionWith("expenses", "#expense-list, #recurring-due", events.TopicExpenses) {
 				{{ settled := len(o.Debts) == 0 && len(o.Pending) == 0 && o.HasExpenses }}
 				if len(o.Pending) > 0 || len(o.Debts) > 0 || settled {
 					<div class="flex min-w-0 flex-col gap-6">
@@ -136,6 +142,9 @@ templ HouseholdExpenses(actor services.Membership, o services.ExpensesOverview, 
 				}
 			}
 			<div class="flex min-w-0 flex-col gap-4">
+				@button.Button(button.Props{Href: string(householdURL(actor.HouseholdID, "recurring")), Variant: button.VariantOutline, Class: "h-11 self-start"}) {
+					@components.T(locales.LK_RecurringTitle)
+				}
 				@expenseFilters(actor, filter)
 				<section id="expense-list" class="till-roll">
 					<div class="till-paper">
@@ -329,19 +338,40 @@ templ debtBreakdown(actor services.Membership, d services.Debt) {
 
 var expenseSplitScript = templ.NewOnceHandle()
 
-// ExpenseEditor is the new expense form, the actor pays it, or the form editing edit when that is
-// not nil, its amount and split disabled with the reason while it has an [services.Expense.AmountLock]
+// ExpenseEditor is [ExpenseEditorWithRepeat] with the repeat select on never
 templ ExpenseEditor(actor services.Membership, members []dbqueries.ListActiveMembersRow, edit *services.Expense, in services.ExpenseInput, errorMessage string, errorField string) {
+	@ExpenseEditorWithRepeat(actor, members, edit, in, "", errorMessage, errorField)
+}
+
+// ExpenseEditorWithRepeat is the new expense form, the actor pays it, or the form editing edit when that is
+// not nil, its amount and split disabled with the reason while it has an [services.Expense.AmountLock];
+// a new expense that is not a schedule's draft can repeat, every repeat of [g.Intervals] or never
+templ ExpenseEditorWithRepeat(actor services.Membership, members []dbqueries.ListActiveMembersRow, edit *services.Expense, in services.ExpenseInput, repeat string, errorMessage string, errorField string) {
 	{{ expensesURL := householdURL(actor.HouseholdID, "expenses") }}
 	{{
-		action, back, backText, heading, submit := expensesURL, expensesURL, utils.T(ctx, locales.LK_ExpensesBack), utils.T(ctx, locales.LK_ExpensesNew), locales.LK_ExpensesAdd
-		lock := ""
+		f := expenseFrame{
+			Action: expensesURL, Back: expensesURL, BackText: utils.T(ctx, locales.LK_ExpensesBack),
+			Heading: utils.T(ctx, locales.LK_ExpensesNew), Submit: locales.LK_ExpensesAdd, Lock: "",
+			PayerID: actor.UserID, DateLabel: locales.LK_ExpensesDate, Repeats: nil, Repeat: repeat,
+		}
+		if !in.RecurringID.Valid {
+			f.Repeats = append([]string{repeatNever}, g.Intervals...)
+		}
 		if edit != nil {
-			action = householdURL(actor.HouseholdID, "expenses", edit.Expense.ID.String())
-			back, backText, heading, submit = action, edit.Expense.Title, utils.T(ctx, locales.LK_ExpensesEditTitle), locales.LK_ExpensesSave
-			lock = edit.AmountLock(actor.Currency)
+			f.Action = householdURL(actor.HouseholdID, "expenses", edit.Expense.ID.String())
+			f.Back, f.BackText, f.Heading, f.Submit = f.Action, edit.Expense.Title, utils.T(ctx, locales.LK_ExpensesEditTitle), locales.LK_ExpensesSave
+			f.Lock, f.Repeats = edit.AmountLock(actor.Currency), nil
 		}
 	}}
+	@appShell(f.Heading, &HouseholdNav{HouseholdID: actor.HouseholdID, Section: SectionExpenses}) {
+		@doorplateHeader(f.Back, f.BackText, f.Heading)
+		@expenseForm(members, f, in, errorMessage, errorField)
+	}
+}
+
+// expenseForm is the form of an expense or a schedule as f says, see [ExpenseEditorWithRepeat]
+templ expenseForm(members []dbqueries.ListActiveMembersRow, f expenseFrame, in services.ExpenseInput, errorMessage string, errorField string) {
+	{{ action, submit, lock := f.Action, f.Submit, f.Lock }}
 	{{
 		// the error sits at its field, aria-invalid and aria-describedby point the field at it
 		fieldAttrs := func(name string, attrs templ.Attributes) templ.Attributes {
@@ -352,126 +382,142 @@ templ ExpenseEditor(actor services.Membership, members []dbqueries.ListActiveMem
 			return attrs
 		}
 	}}
-	@appShell(heading, &HouseholdNav{HouseholdID: actor.HouseholdID, Section: SectionExpenses}) {
-		@doorplateHeader(back, backText, heading)
-		<div class="till-slip w-full max-w-md">
-			<form action={ action } method="post" hx-boost="true" data-expense-split={ actor.UserID.String() } class="till-paper space-y-4">
-				// the shopping items this expense paid for
-				if in.ListID.Valid {
-					<input type="hidden" name="list" value={ in.ListID.String() }/>
+	<div class="till-slip w-full max-w-md">
+		<form action={ action } method="post" hx-boost="true" data-expense-split={ f.PayerID.String() } class="till-paper space-y-4">
+			// the shopping items this expense paid for
+			if in.ListID.Valid {
+				<input type="hidden" name="list" value={ in.ListID.String() }/>
+			}
+			if in.ItemID.Valid {
+				<input type="hidden" name="item" value={ in.ItemID.String() }/>
+			}
+			// the schedule draft this adds, see services.ExpenseInput
+			if in.RecurringID.Valid {
+				<input type="hidden" name="recurring" value={ in.RecurringID.String() }/>
+				<input type="hidden" name="recurring_due" value={ in.RecurringDue.Time.Format(services.DateLayout) }/>
+			}
+			if errorField == "" {
+				@formError(errorMessage)
+			}
+			@field.Field() {
+				@field.Label(field.LabelProps{For: "expense-title"}) {
+					@components.T(locales.LK_ExpensesWhat)
 				}
-				if in.ItemID.Valid {
-					<input type="hidden" name="item" value={ in.ItemID.String() }/>
+				@input.Input(input.Props{
+					ID:       "expense-title",
+					Name:     "title",
+					Type:     "text",
+					Value:    in.Title,
+					Required: true,
+					Class:    tillFieldClass,
+					Attributes: fieldAttrs("title", templ.Attributes{
+						"maxlength": services.MaxExpenseTitleLength,
+					}),
+				})
+				@expenseFieldError("title", errorField, errorMessage)
+			}
+			@field.Field() {
+				@field.Label(field.LabelProps{For: "expense-amount"}) {
+					@components.T(locales.LK_ExpensesAmount)
 				}
-				if errorField == "" {
-					@formError(errorMessage)
+				@input.Input(input.Props{
+					ID:       "expense-amount",
+					Name:     "amount",
+					Type:     "text",
+					Value:    amountValue(ctx, in.Amount),
+					Required: true,
+					Disabled: lock != "",
+					Class:    utils.CN(tillFieldClass, "h-14 font-heading text-3xl font-semibold tabular-nums md:text-3xl"),
+					Attributes: fieldAttrs("amount", templ.Attributes{
+						"inputmode":   "decimal",
+						"placeholder": "0,00",
+					}),
+				})
+				if lock != "" {
+					<p class="text-sm text-muted-foreground">
+						@components.T(utils.IfElse(lock == services.AmountLockCurrency, locales.LK_ExpensesAmountLockedCurrency, locales.LK_ExpensesAmountLockedLeft))
+					</p>
+				}
+				@expenseFieldError("amount", errorField, errorMessage)
+			}
+			<div class="grid grid-cols-2 gap-3">
+				@field.Field() {
+					@field.Label(field.LabelProps{For: "expense-date-popover-trigger"}) {
+						@components.T(f.DateLabel)
+					}
+					@datePicker("expense-date", "incurred_on", in.IncurredOn)
 				}
 				@field.Field() {
-					@field.Label(field.LabelProps{For: "expense-title"}) {
-						@components.T(locales.LK_ExpensesWhat)
+					@field.Label(field.LabelProps{For: "expense-category-trigger"}) {
+						@components.T(locales.LK_ExpensesCategory)
 					}
-					@input.Input(input.Props{
-						ID:       "expense-title",
-						Name:     "title",
-						Type:     "text",
-						Value:    in.Title,
-						Required: true,
-						Class:    tillFieldClass,
-						Attributes: fieldAttrs("title", templ.Attributes{
-							"maxlength": services.MaxExpenseTitleLength,
-						}),
-					})
-					@expenseFieldError("title", errorField, errorMessage)
+					@categorySelect("expense-category", in.Category, utils.CN(tillFieldClass, "w-full data-[size=default]:h-11"), nil)
 				}
+			</div>
+			// the date is a hidden input behind a picker, there is no field to mark invalid
+			@expenseFieldError("date", errorField, errorMessage)
+			if len(f.Repeats) > 0 {
 				@field.Field() {
-					@field.Label(field.LabelProps{For: "expense-amount"}) {
-						@components.T(locales.LK_ExpensesAmount)
+					@field.Label(field.LabelProps{For: "expense-repeat-trigger"}) {
+						@components.T(locales.LK_RecurringRepeat)
 					}
-					@input.Input(input.Props{
-						ID:       "expense-amount",
-						Name:     "amount",
-						Type:     "text",
-						Value:    in.Amount,
-						Required: true,
-						Disabled: lock != "",
-						Class:    utils.CN(tillFieldClass, "h-14 font-heading text-3xl font-semibold tabular-nums md:text-3xl"),
-						Attributes: fieldAttrs("amount", templ.Attributes{
-							"inputmode":   "decimal",
-							"placeholder": "0,00",
-						}),
-					})
-					if lock != "" {
-						<p class="text-sm text-muted-foreground">
-							@components.T(utils.IfElse(lock == services.AmountLockCurrency, locales.LK_ExpensesAmountLockedCurrency, locales.LK_ExpensesAmountLockedLeft))
-						</p>
-					}
-					@expenseFieldError("amount", errorField, errorMessage)
+					{{
+						repeats := utils.Map(f.Repeats, func(r string) selectcomp.ItemData {
+							return selectcomp.ItemData{Value: r, Label: utils.T(ctx, intervalKeys[r])}
+						})
+					}}
+					@optionSelect("expense-repeat", "repeat", utils.IfElse(f.Repeat == "", f.Repeats[0], f.Repeat),
+						utils.CN(tillFieldClass, "w-full data-[size=default]:h-11"), nil, repeats)
 				}
-				<div class="grid grid-cols-2 gap-3">
-					@field.Field() {
-						@field.Label(field.LabelProps{For: "expense-date-popover-trigger"}) {
-							@components.T(locales.LK_ExpensesDate)
-						}
-						@datePicker("expense-date", "incurred_on", in.IncurredOn)
-					}
-					@field.Field() {
-						@field.Label(field.LabelProps{For: "expense-category-trigger"}) {
-							@components.T(locales.LK_ExpensesCategory)
-						}
-						@categorySelect("expense-category", in.Category, utils.CN(tillFieldClass, "w-full data-[size=default]:h-11"), nil)
-					}
-				</div>
-				// the date is a hidden input behind a picker, there is no field to mark invalid
-				@expenseFieldError("date", errorField, errorMessage)
-				<fieldset class="space-y-2 disabled:opacity-60" disabled?={ lock != "" } { fieldAttrs("shares", templ.Attributes{})... }>
-					<legend class="text-sm font-medium">
-						@components.T(locales.LK_ExpensesSplit)
-					</legend>
-					@radiogroup.RadioGroup(radiogroup.Props{Name: "split", DefaultValue: utils.IfElse(in.Custom, "custom", "equal"), Class: "gap-0"}) {
-						@splitOption("split-equal", "equal", locales.LK_ExpensesSplitEqual)
-						@splitOption("split-custom", "custom", locales.LK_ExpensesSplitCustom)
-					}
-					<ul class="divide-y divide-dashed">
-						for _, m := range members {
-							<li class="till-line items-center py-1">
-								<label class="flex min-h-11 min-w-0 items-center gap-3">
-									@checkbox.Checkbox(checkbox.Props{
-										Name:           "member",
-										Value:          m.UserID.String(),
-										DefaultChecked: slices.Contains(in.Members, m.UserID),
-										Class:          "size-5",
-									})
-									<span class="break-words">{ m.Username }</span>
-								</label>
-								<span aria-hidden="true" class="till-leader"></span>
-								@input.Input(input.Props{
-									Name:  "share-" + m.UserID.String(),
-									Type:  "text",
-									Value: in.Shares[m.UserID],
-									// an equal split is a result, not a field to fill in
-									Class: utils.CN(tillFieldClass, "w-28 shrink-0 text-right tabular-nums read-only:border-transparent"),
-									Attributes: templ.Attributes{
-										"inputmode":   "decimal",
-										"placeholder": "0,00",
-										"aria-label":  utils.T(ctx, locales.LK_ExpensesAmount) + ": " + m.Username,
-									},
+			}
+			<fieldset class="space-y-2 disabled:opacity-60" disabled?={ lock != "" } { fieldAttrs("shares", templ.Attributes{})... }>
+				<legend class="text-sm font-medium">
+					@components.T(locales.LK_ExpensesSplit)
+				</legend>
+				@radiogroup.RadioGroup(radiogroup.Props{Name: "split", DefaultValue: utils.IfElse(in.Custom, "custom", "equal"), Class: "gap-0"}) {
+					@splitOption("split-equal", "equal", locales.LK_ExpensesSplitEqual)
+					@splitOption("split-custom", "custom", locales.LK_ExpensesSplitCustom)
+				}
+				<ul class="divide-y divide-dashed">
+					for _, m := range members {
+						<li class="till-line items-center py-1">
+							<label class="flex min-h-11 min-w-0 items-center gap-3">
+								@checkbox.Checkbox(checkbox.Props{
+									Name:           "member",
+									Value:          m.UserID.String(),
+									DefaultChecked: slices.Contains(in.Members, m.UserID),
+									Class:          "size-5",
 								})
-							</li>
-						}
-					</ul>
-					@expenseFieldError("shares", errorField, errorMessage)
-				</fieldset>
-				<div class="till-perforation">
-					@button.Button(button.Props{Type: button.TypeSubmit, Size: button.SizeLg, Class: "w-full"}) {
-						@components.T(submit)
+								<span class="break-words">{ m.Username }</span>
+							</label>
+							<span aria-hidden="true" class="till-leader"></span>
+							@input.Input(input.Props{
+								Name:  "share-" + m.UserID.String(),
+								Type:  "text",
+								Value: amountValue(ctx, in.Shares[m.UserID]),
+								// an equal split is a result, not a field to fill in
+								Class: utils.CN(tillFieldClass, "w-28 shrink-0 text-right tabular-nums read-only:border-transparent"),
+								Attributes: templ.Attributes{
+									"inputmode":   "decimal",
+									"placeholder": "0,00",
+									"aria-label":  utils.T(ctx, locales.LK_ExpensesAmount) + ": " + m.Username,
+								},
+							})
+						</li>
 					}
-				</div>
-			</form>
-		</div>
-		// after the form, it fills in the shares as soon as it runs
-		@expenseSplitScript.Once() {
-			<script src={ assets.URL("expense-split.js") }></script>
-		}
+				</ul>
+				@expenseFieldError("shares", errorField, errorMessage)
+			</fieldset>
+			<div class="till-perforation">
+				@button.Button(button.Props{Type: button.TypeSubmit, Size: button.SizeLg, Class: "w-full"}) {
+					@components.T(submit)
+				}
+			</div>
+		</form>
+	</div>
+	// after the form, it fills in the shares as soon as it runs
+	@expenseSplitScript.Once() {
+		<script src={ assets.URL("expense-split.js") }></script>
 	}
 }
 

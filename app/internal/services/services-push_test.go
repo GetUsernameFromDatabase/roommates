@@ -3,6 +3,8 @@ package services
 import (
 	"context"
 	"crypto/rand"
+	g "roommates/internal/config"
+	"roommates/internal/db/dbqueries"
 	"roommates/internal/locales"
 	"roommates/internal/push"
 	"strings"
@@ -158,7 +160,11 @@ func TestPushNotifications(t *testing.T) {
 		t.Fatal(err)
 	}
 	wantPushes(t, "gone", takePushes(s))
-	subs, err := s.db.ListPushSubscriptionsOfUsers(ctx, []pgtype.UUID{ownerM.UserID})
+	subs, err := s.db.ListPushSubscriptionsOfUsers(ctx, dbqueries.ListPushSubscriptionsOfUsersParams{
+		UserIds:     []pgtype.UUID{ownerM.UserID},
+		HouseholdID: ownerM.HouseholdID,
+		Kind:        g.NotifyChat,
+	})
 	if err != nil || len(subs) != 0 {
 		t.Fatalf("gone subscription was kept: %v %v", subs, err)
 	}
