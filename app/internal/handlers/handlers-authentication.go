@@ -66,8 +66,6 @@ func (h *DefaultHandler) PageLogin(ctx *gin.Context) {
 			}
 		}
 		Redirect(ctx, safeNextPath(model.Next))
-	default:
-		ctx.String(http.StatusMethodNotAllowed, "method %s not allowed", method)
 	}
 }
 
@@ -127,8 +125,6 @@ func (h *DefaultHandler) PageRegister(ctx *gin.Context) {
 			Username: model.Username,
 		})
 		Redirect(ctx, safeNextPath(model.Next))
-	default:
-		ctx.String(http.StatusMethodNotAllowed, "method %s not allowed", method)
 	}
 }
 

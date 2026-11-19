@@ -152,7 +152,7 @@ func TestExpenses(t *testing.T) {
 	if e.Expense.Title != "Electricity" || e.Expense.AmountCents != 1001 || len(e.Shares) != 2 {
 		t.Fatalf("expense = %+v", e)
 	}
-	if in := e.CopyInput(); in.Custom || len(in.Members) != 2 {
+	if in := e.CopyInput([]pgtype.UUID{ownerM.UserID, memberM.UserID}); in.Custom || len(in.Members) != 2 {
 		t.Errorf("copy of an equal split = %+v", in)
 	}
 	_, err = s.GetExpense(ctx, strangerM, expenseID)
@@ -243,7 +243,7 @@ func TestExpenses(t *testing.T) {
 	}
 	pizza, err := s.GetExpense(ctx, ownerM, pizzaID)
 	// one share is an equal split between one person
-	if in := pizza.CopyInput(); err != nil || len(pizza.Files) != 1 || in.Custom || !slices.Equal(in.Members, []pgtype.UUID{memberM.UserID}) {
+	if in := pizza.CopyInput([]pgtype.UUID{ownerM.UserID, memberM.UserID}); err != nil || len(pizza.Files) != 1 || in.Custom || !slices.Equal(in.Members, []pgtype.UUID{memberM.UserID}) {
 		t.Fatalf("pizza = %+v, %v", pizza, err)
 	}
 	wantErr(t, "member deletes payer's expense", s.DeleteExpense(ctx, memberM, pizzaID), g.ErrorNotFound)
@@ -462,6 +462,75 @@ func TestConfirmWaitsForMarkInFlight(t *testing.T) {
 	wantPaid("the share the confirm closed", older, true)
 	// 45 paid against 30 of shares, a second spend on the marked share would leave 0
 	wantDebt("after both", -1500)
+}
+
+// an expense waits for a member leaving in flight and is then refused, the leaver owes nothing
+func TestExpenseWaitsForLeave(t *testing.T) {
+	s := newTestService(t)
+	ctx := context.Background()
+	ownerM, memberM, _ := newTestHousehold(t, s)
+
+	// the leave in flight, as far as Leave gets before it ends the membership
+	tx, pid := lockHouseholdInTx(t, s, ownerM.HouseholdID)
+	created := make(chan error, 1)
+	go func() {
+		_, err := s.CreateExpense(ctx, ownerM, ExpenseInput{
+			Title:      "Rent",
+			Amount:     "10",
+			Category:   "other",
+			IncurredOn: "2026-10-01",
+			Custom:     false,
+			Members:    []pgtype.UUID{ownerM.UserID, memberM.UserID},
+			Shares:     nil,
+			ListID:     pgtype.UUID{},
+			ItemID:     pgtype.UUID{},
+		})
+		created <- err
+	}()
+	waitBlockedBy(t, s, pid)
+	if err := s.db.WithTx(tx).EndMembership(ctx, dbqueries.EndMembershipParams{
+		HouseholdID: memberM.HouseholdID,
+		UserID:      memberM.UserID,
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if err := tx.Commit(ctx); err != nil {
+		t.Fatal(err)
+	}
+
+	wantErr(t, "expense on a member who left meanwhile", <-created, g.ErrorInvalidInput)
+	if debts, err := s.Debts(ctx, ownerM); err != nil || len(debts) != 0 {
+		t.Fatalf("debts = %+v, %v", debts, err)
+	}
+}
+
+// the shares are listed by name, the form split the leftover cents in its member order
+func TestCopyInputFormOrder(t *testing.T) {
+	a, b, c := testUUID(1), testUUID(2), testUUID(3)
+	share := func(id pgtype.UUID, cents int64) dbqueries.ListExpenseSharesRow {
+		return dbqueries.ListExpenseSharesRow{UserID: id, Username: id.String(), AmountCents: cents, PaidAt: pgtype.Timestamptz{}}
+	}
+	for _, tc := range []struct {
+		order  []pgtype.UUID
+		shares []dbqueries.ListExpenseSharesRow
+		custom bool
+	}{
+		{[]pgtype.UUID{c, a}, []dbqueries.ListExpenseSharesRow{share(a, 500), share(c, 501)}, false},
+		{[]pgtype.UUID{a, c}, []dbqueries.ListExpenseSharesRow{share(a, 501), share(c, 500)}, false},
+		// the extra cent went to the second person, so it was typed by hand
+		{[]pgtype.UUID{a, c}, []dbqueries.ListExpenseSharesRow{share(a, 500), share(c, 501)}, true},
+		{[]pgtype.UUID{a, c}, []dbqueries.ListExpenseSharesRow{share(a, 300), share(c, 701)}, true},
+	} {
+		e := Expense{
+			Expense: dbqueries.GetExpenseRow{ID: testUUID(9), Category: "other", Title: "Bill", AmountCents: 1001,
+				IncurredOn: pgtype.Date{}, PayerID: b, PayerName: "b"},
+			Shares: tc.shares,
+			Files:  nil,
+		}
+		if in := e.CopyInput(tc.order); in.Custom != tc.custom || len(in.Members) != 2 {
+			t.Errorf("CopyInput of %+v = %+v, want custom %v", tc.shares, in, tc.custom)
+		}
+	}
 }
 
 func TestExpenseFilter(t *testing.T) {

@@ -63,6 +63,7 @@ en:
     invite-email-title: Invite by email
     invite-email-submit: Send invite
     invite-email-sent: Invite sent to %s
+    invite-too-many: Too many invites sent. Try again in an hour.
     since: "%s, since %s"
     manage: Manage
     count:

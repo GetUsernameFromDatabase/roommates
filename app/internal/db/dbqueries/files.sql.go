@@ -387,12 +387,18 @@ func (q *Queries) ListAttachedFiles(ctx context.Context, arg ListAttachedFilesPa
 const listFilePurges = `-- name: ListFilePurges :many
 SELECT object_key
 FROM file_purges
-ORDER BY created_at
-LIMIT $1
+ORDER BY created_at,
+  object_key
+LIMIT $2 OFFSET $1
 `
 
-func (q *Queries) ListFilePurges(ctx context.Context, limit int32) ([]string, error) {
-	rows, err := q.db.Query(ctx, listFilePurges, limit)
+type ListFilePurgesParams struct {
+	Skip int32 `json:"skip"`
+	Max  int32 `json:"max"`
+}
+
+func (q *Queries) ListFilePurges(ctx context.Context, arg ListFilePurgesParams) ([]string, error) {
+	rows, err := q.db.Query(ctx, listFilePurges, arg.Skip, arg.Max)
 	if err != nil {
 		return nil, err
 	}

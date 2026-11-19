@@ -344,7 +344,7 @@ func TestShoppingBuyAgain(t *testing.T) {
 		t.Fatalf("another household's items %+v", l.BuyAgain)
 	}
 
-	// any spelling brings the same item back on this list as a new purchase
+	// any spelling brings the same item back on this list as a new purchase, its author stays
 	if err := s.AddShoppingItem(ctx, memberM, otherList, "MILK", "3 l"); err != nil {
 		t.Fatal(err)
 	}
@@ -357,7 +357,7 @@ func TestShoppingBuyAgain(t *testing.T) {
 	}
 	it := l.Items[0]
 	if it.ID != milk || it.Text != "Milk" || it.Qty != "3 l" || it.Description != "the blue one" ||
-		it.CheckedAt.Valid || it.ClaimedBy.Valid || it.ExpenseID.Valid || it.CreatedBy != memberM.UserID {
+		it.CheckedAt.Valid || it.ClaimedBy.Valid || it.ExpenseID.Valid || it.CreatedBy != ownerM.UserID {
 		t.Fatalf("revived item %+v", it)
 	}
 	if l, _ = s.GetShoppingList(ctx, ownerM, listID); len(l.Items) != 0 {

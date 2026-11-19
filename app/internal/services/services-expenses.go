@@ -94,11 +94,12 @@ func (in ExpenseInput) clean(payer pgtype.UUID, members []dbqueries.ListActiveMe
 	title, okTitle := trimToLength(in.Title, 1, MaxExpenseTitleLength)
 	total, errAmount := ParseCents(in.Amount)
 	date, errDate := time.Parse(DateLayout, strings.TrimSpace(in.IncurredOn))
-	if !okTitle || errAmount != nil || errDate != nil || !slices.Contains(g.ExpenseCategories, in.Category) {
-		return p, nil, g.ErrorInvalidInput
-	}
 	active := func(id pgtype.UUID) bool {
 		return slices.ContainsFunc(members, func(m dbqueries.ListActiveMembersRow) bool { return m.UserID == id })
+	}
+	// the payer can have left since the request was let in
+	if !okTitle || errAmount != nil || errDate != nil || !slices.Contains(g.ExpenseCategories, in.Category) || !active(payer) {
+		return p, nil, g.ErrorInvalidInput
 	}
 
 	var shares []expenseShare
@@ -151,6 +152,10 @@ func (s *DefaultService) CreateExpense(ctx context.Context, actor Membership, in
 	var p dbqueries.InsertExpenseParams
 	var shares []expenseShare
 	err := s.inTx(ctx, func(q *dbqueries.Queries) error {
+		// a member leaving waits for the expense, or the expense sees them gone, see [DefaultService.Leave]
+		if err := q.LockHousehold(ctx, actor.HouseholdID); err != nil {
+			return err
+		}
 		members, err := q.ListActiveMembers(ctx, actor.HouseholdID)
 		if err != nil {
 			return err
@@ -280,8 +285,9 @@ func (s *DefaultService) GetExpense(ctx context.Context, actor Membership, expen
 }
 
 // CopyInput fills the expense form from e for today, as an equal split
-// when e was split equally, so a new amount can be typed in
-func (e Expense) CopyInput() ExpenseInput {
+// when e was split equally, so a new amount can be typed in; order is the
+// form's member order (see [DefaultService.ListMembers])
+func (e Expense) CopyInput(order []pgtype.UUID) ExpenseInput {
 	in := ExpenseInput{
 		Title:      e.Expense.Title,
 		Amount:     FormatCentsInput(e.Expense.AmountCents),
@@ -293,8 +299,18 @@ func (e Expense) CopyInput() ExpenseInput {
 		ListID:     pgtype.UUID{},
 		ItemID:     pgtype.UUID{},
 	}
+	// the form gives the leftover cents to the first people in its order, the shares are
+	// listed by name, so compare them in the form's order; people who left go last
+	pos := func(id pgtype.UUID) int {
+		if i := slices.Index(order, id); i >= 0 {
+			return i
+		}
+		return len(order)
+	}
+	shares := slices.Clone(e.Shares)
+	slices.SortStableFunc(shares, func(a, b dbqueries.ListExpenseSharesRow) int { return cmp.Compare(pos(a.UserID), pos(b.UserID)) })
 	var cents []int64
-	for _, sh := range e.Shares {
+	for _, sh := range shares {
 		in.Members = append(in.Members, sh.UserID)
 		in.Shares[sh.UserID] = FormatCentsInput(sh.AmountCents)
 		cents = append(cents, sh.AmountCents)

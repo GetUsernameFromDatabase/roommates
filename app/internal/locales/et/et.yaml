@@ -63,6 +63,7 @@ et:
     invite-email-title: Kutsu e-postiga
     invite-email-submit: Saada kutse
     invite-email-sent: Kutse saadetud aadressile %s
+    invite-too-many: Liiga palju kutseid saadetud. Proovi tunni aja pärast uuesti.
     since: "%s, alates %s"
     manage: Halda
     count:

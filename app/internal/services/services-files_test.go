@@ -3,6 +3,7 @@ package services
 import (
 	"bytes"
 	"context"
+	"errors"
 	"image"
 	"image/png"
 	"io"
@@ -21,10 +22,11 @@ import (
 type fakeStore struct {
 	mu      sync.Mutex
 	objects map[string][]byte
+	failKey string // Delete of this key fails
 }
 
 func newFakeStore() *fakeStore {
-	return &fakeStore{mu: sync.Mutex{}, objects: map[string][]byte{}}
+	return &fakeStore{mu: sync.Mutex{}, objects: map[string][]byte{}, failKey: ""}
 }
 
 func (f *fakeStore) Put(_ context.Context, key string, body io.ReadSeeker, _ int64, _ string) error {
@@ -47,6 +49,9 @@ func (f *fakeStore) Get(_ context.Context, key string) (io.ReadCloser, error) {
 func (f *fakeStore) Delete(_ context.Context, key string) error {
 	f.mu.Lock()
 	defer f.mu.Unlock()
+	if key == f.failKey {
+		return errors.New("delete failed")
+	}
 	delete(f.objects, key)
 	return nil
 }
@@ -603,6 +608,25 @@ func TestFiles(t *testing.T) {
 	}
 	if store.has(key) || store.has(thumbKey) {
 		t.Fatal("objects left after the purge")
+	}
+
+	// a failing delete is skipped, the others are purged and the failed one stays queued
+	for _, k := range []string{"bad", "good"} {
+		store.objects[k] = nil
+		if _, err := s.pool.Exec(ctx, "INSERT INTO file_purges (object_key) VALUES ($1)", k); err != nil {
+			t.Fatal(err)
+		}
+	}
+	store.failKey = "bad"
+	if err := s.PurgeFiles(ctx); err != nil {
+		t.Fatal(err)
+	}
+	if store.has("good") || !store.has("bad") {
+		t.Fatal("purge should remove good and keep bad")
+	}
+	store.failKey = ""
+	if err := s.PurgeFiles(ctx); err != nil || store.has("bad") {
+		t.Fatalf("bad key not purged after recovery: %v", err)
 	}
 
 	if err := s.DeleteFile(ctx, memberM, loose); err != nil {

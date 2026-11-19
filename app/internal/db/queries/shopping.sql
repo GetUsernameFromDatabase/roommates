@@ -161,7 +161,6 @@ WHERE list_id = $1
 UPDATE shopping_items
 SET list_id = sqlc.arg(list_id),
   qty = sqlc.arg(qty),
-  created_by = sqlc.arg(created_by),
   created_at = CURRENT_TIMESTAMP,
   cleared_at = NULL,
   checked_at = NULL,

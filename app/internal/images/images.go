@@ -18,7 +18,10 @@ import (
 
 // maxPixels is checked before decoding, a small file can claim a huge size
 // and decoding it would take all memory; a var so tests can lower it
-var maxPixels int64 = 50_000_000
+var maxPixels int64 = 24_000_000
+
+// decoding holds the whole bitmap in memory, so only two run at once
+var decoding = make(chan struct{}, 2)
 
 var ErrTooLarge = errors.New("image has too many pixels")
 
@@ -32,6 +35,8 @@ func Thumbnail(r io.ReadSeeker, maxSide int) ([]byte, error) {
 	if cfg.Width <= 0 || cfg.Height <= 0 || int64(cfg.Width)*int64(cfg.Height) > maxPixels {
 		return nil, ErrTooLarge
 	}
+	decoding <- struct{}{}
+	defer func() { <-decoding }()
 	orientation := 1
 	if format == "jpeg" {
 		if _, err := r.Seek(0, io.SeekStart); err != nil {

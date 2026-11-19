@@ -10,6 +10,7 @@ import (
 	"roommates/internal/locales"
 	"roommates/internal/mailer"
 	"roommates/internal/utils"
+	"sync"
 	"time"
 
 	"github.com/jackc/pgx/v5"
@@ -51,11 +52,58 @@ func newEmailToken(ctx context.Context, q *dbqueries.Queries, userID pgtype.UUID
 // sendAsync so the response does not wait for SMTP, and its timing does
 // not reveal whether an email was sent, failures are only logged
 func (s *DefaultService) sendAsync(msg mailer.Message) {
-	go func() {
+	emailing.Go(func() {
 		if err := s.mailer.Send(msg); err != nil {
 			log.Error().Err(err).Str("subject", msg.Subject).Msg("could not send email")
 		}
-	}()
+	})
+}
+
+// emailing tracks the emails still being sent, see [DefaultService.WaitEmails]
+var emailing sync.WaitGroup
+
+// WaitEmails waits for the emails still being sent, call it after the server stopped
+func (s *DefaultService) WaitEmails() {
+	emailing.Wait()
+}
+
+// ErrorTooManyInvites is returned when a user sends invite emails faster than [inviteEmails] allows
+var ErrorTooManyInvites = errors.New("too many invite emails")
+
+// inviteEmails caps invite emails per account, the per-IP limit alone is dodged by changing IP
+var inviteEmails = userLimit{
+	mu: sync.Mutex{}, limit: 10, window: time.Hour, windowEnd: time.Time{}, counts: map[pgtype.UUID]int{},
+}
+
+// userLimit allows each user at most limit calls per window
+//
+// shortcut: counters live in this process, move them to the database
+// once more than one app process runs
+type userLimit struct {
+	mu        sync.Mutex
+	limit     int
+	window    time.Duration
+	windowEnd time.Time
+	counts    map[pgtype.UUID]int
+}
+
+// allow reports whether id is under the limit, only [userLimit.add] counts,
+// so failed attempts are free; parallel calls can pass a few over, which is fine here
+func (l *userLimit) allow(id pgtype.UUID) bool {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	if now := time.Now(); now.After(l.windowEnd) {
+		// a fresh map every window keeps memory bounded
+		l.counts = map[pgtype.UUID]int{}
+		l.windowEnd = now.Add(l.window)
+	}
+	return l.counts[id] < l.limit
+}
+
+func (l *userLimit) add(id pgtype.UUID) {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	l.counts[id]++
 }
 
 // -----------------------------------------------------------------------------
@@ -178,6 +226,9 @@ func (s *DefaultService) ResetPassword(ctx context.Context, token, password stri
 
 // SendInviteEmail creates an invite and sends it to email, see [DefaultService.CreateInvite]
 func (s *DefaultService) SendInviteEmail(ctx context.Context, actor Membership, email string) error {
+	if !inviteEmails.allow(actor.UserID) {
+		return ErrorTooManyInvites
+	}
 	code, err := s.createInvite(ctx, actor)
 	if err != nil {
 		return err
@@ -196,5 +247,6 @@ func (s *DefaultService) SendInviteEmail(ctx context.Context, actor Membership, 
 		Subject: utils.T(ctx, locales.LK_MailInviteSubject, inviter.Username, household.Name),
 		Body:    utils.T(ctx, locales.LK_MailInviteBody, inviter.Username, household.Name, link, code),
 	})
+	inviteEmails.add(actor.UserID)
 	return nil
 }

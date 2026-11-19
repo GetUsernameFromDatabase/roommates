@@ -23,6 +23,9 @@ func NormalizeEmail(email string) string {
 // ~250ms per hash, see the auth rate limit in routes.go
 const bcryptCost = 12
 
+// compared against when the email is unknown, made once at start so it costs the same as a real hash
+var dummyHash, _ = bcrypt.GenerateFromPassword([]byte("dummy"), bcryptCost)
+
 func (s *DefaultService) RegisterUser(ctx *gin.Context, user dbqueries.InsertUserParams) (*pgtype.UUID, error) {
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcryptCost)
 	if err != nil { // only happens if password is longer than 72 bytes
@@ -57,6 +60,8 @@ func (s *DefaultService) ShouldUserBeSignedIn(ctx *gin.Context, req models.Login
 	credsInDB, err := s.db.GetUserCredentials(ctx, NormalizeEmail(req.Email))
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
+			// same cost as a real check, so timing does not show if the account exists
+			_ = bcrypt.CompareHashAndPassword(dummyHash, []byte(req.Password))
 			return nil, g.ErrorInvalidCredential
 		}
 		return nil, err

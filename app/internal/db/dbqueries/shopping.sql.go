@@ -461,7 +461,6 @@ const reviveShoppingItem = `-- name: ReviveShoppingItem :execrows
 UPDATE shopping_items
 SET list_id = $1,
   qty = $2,
-  created_by = $3,
   created_at = CURRENT_TIMESTAMP,
   cleared_at = NULL,
   checked_at = NULL,
@@ -471,9 +470,9 @@ SET list_id = $1,
 WHERE id = (
     SELECT h.id
     FROM shopping_items h
-    WHERE h.household_id = $4
+    WHERE h.household_id = $3
       AND h.cleared_at IS NOT NULL
-      AND lower(h.text) = lower($5)
+      AND lower(h.text) = lower($4)
     ORDER BY h.cleared_at DESC
     LIMIT 1
   )
@@ -482,7 +481,6 @@ WHERE id = (
 type ReviveShoppingItemParams struct {
 	ListID      pgtype.UUID `json:"list_id"`
 	Qty         string      `json:"qty"`
-	CreatedBy   pgtype.UUID `json:"created_by"`
 	HouseholdID pgtype.UUID `json:"household_id"`
 	Text        string      `json:"text"`
 }
@@ -494,7 +492,6 @@ func (q *Queries) ReviveShoppingItem(ctx context.Context, arg ReviveShoppingItem
 	result, err := q.db.Exec(ctx, reviveShoppingItem,
 		arg.ListID,
 		arg.Qty,
-		arg.CreatedBy,
 		arg.HouseholdID,
 		arg.Text,
 	)

@@ -22,6 +22,21 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
+// limitBody caps every request body, so no route reads an endless one
+//
+// form parsing hides the cut-off from handlers, so a declared size above max
+// gets its 413 here and a chunked body is cut by the reader (a 400 in most handlers)
+func limitBody(max int64) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		if c.Request.ContentLength > max {
+			c.AbortWithStatus(http.StatusRequestEntityTooLarge)
+			return
+		}
+		c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, max)
+		c.Next()
+	}
+}
+
 func initRoutes(r *gin.Engine, h *handlers.DefaultHandler, service *services.DefaultService) {
 	mwI18n := middleware.NewInternationalization()
 	// separate counters per kind, flatmates on one Wi-Fi share an IP
@@ -31,6 +46,7 @@ func initRoutes(r *gin.Engine, h *handlers.DefaultHandler, service *services.Def
 	mwEmailLimit := middleware.NewRateLimit(10, time.Minute)
 	// invite codes are short enough to be worth guessing
 	mwInviteLimit := middleware.NewRateLimit(20, time.Minute)
+	r.Use(limitBody(services.MaxFileSize + 1<<20))
 	r.Use(middleware.NewSecurityHeader())
 	r.Use(middleware.NewCrossOriginProtection())
 	// before every page, error pages too, so all of them render in the chosen theme

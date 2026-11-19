@@ -13,6 +13,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -131,6 +132,69 @@ func mustMembership(t *testing.T, s *DefaultService, householdID, userID pgtype.
 		t.Fatal(err)
 	}
 	return m
+}
+
+// lockHouseholdInTx is a household change in flight, holding the lock until tx ends,
+// pid is its connection for [waitBlockedBy]
+func lockHouseholdInTx(t *testing.T, s *DefaultService, householdID pgtype.UUID) (tx pgx.Tx, pid int32) {
+	t.Helper()
+	tx, err := s.pool.Begin(t.Context())
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { tx.Rollback(context.Background()) }) //nolint:errcheck // no-op after commit
+	if err := s.db.WithTx(tx).LockHousehold(t.Context(), householdID); err != nil {
+		t.Fatal(err)
+	}
+	if err := tx.QueryRow(t.Context(), "SELECT pg_backend_pid()").Scan(&pid); err != nil {
+		t.Fatal(err)
+	}
+	return tx, pid
+}
+
+// waitBlockedBy waits until another connection waits for a lock pid holds
+func waitBlockedBy(t *testing.T, s *DefaultService, pid int32) {
+	t.Helper()
+	deadline := time.Now().Add(5 * time.Second)
+	for blocked := false; !blocked; time.Sleep(10 * time.Millisecond) {
+		if time.Now().After(deadline) {
+			t.Fatal("nothing waited for the lock")
+		}
+		if err := s.pool.QueryRow(t.Context(),
+			"SELECT EXISTS (SELECT 1 FROM pg_stat_activity WHERE $1::int = ANY(pg_blocking_pids(pid)))", pid,
+		).Scan(&blocked); err != nil {
+			t.Fatal(err)
+		}
+	}
+}
+
+// a join waits for a revoke in flight and then finds the invite gone
+func TestJoinWaitsForRevoke(t *testing.T) {
+	s := newTestService(t)
+	ctx := context.Background()
+	ownerM, _, strangerM := newTestHousehold(t, s)
+	overview, err := s.GetHouseholdOverview(ctx, ownerM)
+	if err != nil || len(overview.Invites) == 0 {
+		t.Fatalf("invites = %+v, %v", overview.Invites, err)
+	}
+
+	tx, pid := lockHouseholdInTx(t, s, ownerM.HouseholdID)
+	joined := make(chan error, 1)
+	go func() {
+		_, err := s.JoinWithInvite(ctx, overview.Invites[0].Code, strangerM.UserID)
+		joined <- err
+	}()
+	waitBlockedBy(t, s, pid)
+	if err := s.db.WithTx(tx).DeleteInvitesOfHousehold(ctx, ownerM.HouseholdID); err != nil {
+		t.Fatal(err)
+	}
+	if err := tx.Commit(ctx); err != nil {
+		t.Fatal(err)
+	}
+
+	wantErr(t, "join with an invite revoked meanwhile", <-joined, g.ErrorInviteInvalid)
+	_, err = s.GetMembership(ctx, ownerM.HouseholdID, strangerM.UserID)
+	wantErr(t, "membership after the refused join", err, g.ErrorNotFound)
 }
 
 func wantErr(t *testing.T, step string, got, want error) {

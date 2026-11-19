@@ -161,7 +161,6 @@ func (s *DefaultService) AddShoppingItem(ctx context.Context, actor Membership, 
 	revived, err := s.db.ReviveShoppingItem(ctx, dbqueries.ReviveShoppingItemParams{
 		ListID:      listID,
 		Qty:         qty,
-		CreatedBy:   actor.UserID,
 		HouseholdID: actor.HouseholdID,
 		Text:        text,
 	})

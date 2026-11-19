@@ -192,9 +192,6 @@ func NewPostgreSessionStoreHandler(dbpool *pgxpool.Pool) gin.HandlerFunc {
 	sessionDB = sql.OpenDB(pgxstdlib.GetPoolConnector(dbpool))
 	// idle sql connections stay borrowed from dbpool, and dbpool.Close waits for them forever
 	sessionDB.SetMaxIdleConns(0)
-	// FIX FOR securecookie: error - caused by:
-	//  gob: type not registered for interface: config.GinSessionKey
-	// gob.Register(g.GinSessionKey("")) NO LONGER USED will keep here tho
 
 	pairs, err := g.GetSessionKeyPairs()
 	if err != nil {

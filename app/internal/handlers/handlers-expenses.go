@@ -6,6 +6,7 @@ import (
 	"maps"
 	"net/http"
 	g "roommates/internal/config"
+	"roommates/internal/db/dbqueries"
 	"roommates/internal/locales"
 	"roommates/internal/services"
 	"roommates/internal/utils"
@@ -84,7 +85,12 @@ func (h *DefaultHandler) PageNewExpense(ctx *gin.Context) {
 			pageError(ctx, err)
 			return
 		}
-		in = e.CopyInput()
+		members, err := h.service.ListMembers(ctx, actor)
+		if err != nil {
+			InternalError(ctx, err)
+			return
+		}
+		in = e.CopyInput(utils.Map(members, func(m dbqueries.ListActiveMembersRow) pgtype.UUID { return m.UserID }))
 	}
 	h.renderExpenseEditor(ctx, http.StatusOK, in, "")
 }

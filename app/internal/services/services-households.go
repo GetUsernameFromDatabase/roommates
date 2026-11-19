@@ -182,24 +182,42 @@ func (s *DefaultService) GetInvite(ctx context.Context, code string) (dbqueries.
 
 // JoinWithInvite makes userID a member, an existing member keeps their role
 func (s *DefaultService) JoinWithInvite(ctx context.Context, code string, userID pgtype.UUID) (pgtype.UUID, error) {
-	invite, err := s.GetInvite(ctx, code)
+	code = NormalizeInviteCode(code)
+	var householdID pgtype.UUID
+	err := s.inTx(ctx, func(q *dbqueries.Queries) error {
+		invite, err := q.GetInviteByCode(ctx, code)
+		if err != nil {
+			return noRowsAs(err, g.ErrorInviteInvalid)
+		}
+		if err := q.LockHousehold(ctx, invite.HouseholdID); err != nil {
+			return err
+		}
+		// read again under the lock, a removal or the last member leaving revokes the invites
+		if invite, err = q.GetInviteByCode(ctx, code); err != nil {
+			return noRowsAs(err, g.ErrorInviteInvalid)
+		}
+		householdID = invite.HouseholdID
+
+		_, err = q.GetActiveMembership(ctx, dbqueries.GetActiveMembershipParams{
+			HouseholdID: householdID,
+			UserID:      userID,
+		})
+		if err == nil {
+			return nil
+		}
+		if !errors.Is(err, pgx.ErrNoRows) {
+			return err
+		}
+		return q.UpsertMembership(ctx, dbqueries.UpsertMembershipParams{
+			HouseholdID: householdID,
+			UserID:      userID,
+			Role:        g.RoleMember,
+		})
+	})
 	if err != nil {
 		return pgtype.UUID{}, err
 	}
-
-	_, err = s.GetMembership(ctx, invite.HouseholdID, userID)
-	if err == nil {
-		return invite.HouseholdID, nil
-	}
-	if !errors.Is(err, g.ErrorNotFound) {
-		return pgtype.UUID{}, err
-	}
-
-	return invite.HouseholdID, s.db.UpsertMembership(ctx, dbqueries.UpsertMembershipParams{
-		HouseholdID: invite.HouseholdID,
-		UserID:      userID,
-		Role:        g.RoleMember,
-	})
+	return householdID, nil
 }
 
 // -----------------------------------------------------------------------------

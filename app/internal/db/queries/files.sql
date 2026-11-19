@@ -244,8 +244,9 @@ WHERE id = $1
 -- name: ListFilePurges :many
 SELECT object_key
 FROM file_purges
-ORDER BY created_at
-LIMIT $1;
+ORDER BY created_at,
+  object_key
+LIMIT sqlc.arg(max) OFFSET sqlc.arg(skip);
 -- name: DeleteFilePurge :exec
 DELETE FROM file_purges
 WHERE object_key = $1;

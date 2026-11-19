@@ -411,14 +411,18 @@ func (s *DefaultService) DeleteFile(ctx context.Context, actor Membership, fileI
 // PurgeFiles removes the objects of deleted files from storage,
 // a trigger queues them, so files deleted by a cascade are included
 func (s *DefaultService) PurgeFiles(ctx context.Context) error {
+	// failed keys stay queued for the next run at the front of the queue, skip past them
+	var failed int32
 	for {
-		keys, err := s.db.ListFilePurges(ctx, 100)
+		keys, err := s.db.ListFilePurges(ctx, dbqueries.ListFilePurgesParams{Max: 100, Skip: failed})
 		if err != nil || len(keys) == 0 {
 			return err
 		}
 		for _, key := range keys {
 			if err := s.store.Delete(ctx, key); err != nil {
-				return err
+				log.Error().Err(err).Str("key", key).Msg("could not delete object of a deleted file")
+				failed++
+				continue
 			}
 			if err := s.db.DeleteFilePurge(ctx, key); err != nil {
 				return err

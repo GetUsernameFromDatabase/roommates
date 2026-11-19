@@ -41,6 +41,7 @@ func main() {
 		Addr:              serverAddr,
 		Handler:           r,
 		ReadHeaderTimeout: 10 * time.Second,
+		ReadTimeout:       5 * time.Minute,
 		IdleTimeout:       120 * time.Second,
 	}
 	serveErr := make(chan error, 1)
@@ -64,6 +65,7 @@ func main() {
 		log.Error().Err(err).Msg("http server did not shut down cleanly")
 	}
 	service.WaitPushes()
+	service.WaitEmails()
 	log.Info().Msg("server stopped")
 }
 

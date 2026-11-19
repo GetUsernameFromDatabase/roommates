@@ -179,6 +179,7 @@ const (
 	LK_HouseholdInviteEmailSent             LK = "household.invite-email-sent"
 	LK_HouseholdInviteEmailSubmit           LK = "household.invite-email-submit"
 	LK_HouseholdInviteEmailTitle            LK = "household.invite-email-title"
+	LK_HouseholdInviteTooMany               LK = "household.invite-too-many"
 	LK_HouseholdInvites                     LK = "household.invites"
 	LK_HouseholdInvitesDescription          LK = "household.invites-description"
 	LK_HouseholdLastOwner                   LK = "household.last-owner"

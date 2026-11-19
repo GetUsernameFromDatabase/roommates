@@ -35,6 +35,10 @@ func (h *DefaultHandler) Events(ctx *gin.Context) {
 		case <-h.hub.Stopped():
 			return false
 		case <-ping.C:
+			// a removed member gets no more events, TopicPeople alone cannot be relied on to end the stream
+			if _, err := h.service.GetMembership(ctx, actor.HouseholdID, actor.UserID); err != nil {
+				return false
+			}
 			_, err := io.WriteString(w, ": ping\n\n")
 			return err == nil
 		case t := <-topics:

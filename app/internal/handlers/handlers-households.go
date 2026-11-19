@@ -133,6 +133,9 @@ func (h *DefaultHandler) householdAction(ctx *gin.Context, at string, action fun
 	case errors.Is(err, g.ErrorEmailNotVerified):
 		h.renderPeople(ctx, http.StatusForbidden, "", at,
 			utils.T(ctx.Request.Context(), locales.LK_HouseholdVerifyToInvite))
+	case errors.Is(err, services.ErrorTooManyInvites):
+		h.renderPeople(ctx, http.StatusTooManyRequests, "", at,
+			utils.T(ctx.Request.Context(), locales.LK_HouseholdInviteTooMany))
 	case errors.Is(err, g.ErrorNotFound):
 		RenderTemplStatus(ctx, http.StatusNotFound, pages.NotFound())
 	case errors.Is(err, g.ErrorForbidden):
@@ -208,19 +211,10 @@ func (h *DefaultHandler) PromoteMember(ctx *gin.Context) {
 func (h *DefaultHandler) LeaveHousehold(ctx *gin.Context) {
 	actor := membershipFromContext(ctx)
 	err := h.service.Leave(ctx, actor)
-	if errors.Is(err, g.ErrorLastOwner) {
-		h.renderPeople(ctx, http.StatusConflict, "", pages.PeopleAtLeave,
-			utils.T(ctx.Request.Context(), locales.LK_HouseholdLastOwner))
+	if err == nil {
+		Redirect(ctx, "/")
 		return
 	}
-	if errors.Is(err, g.ErrorBalanceNotZero) {
-		h.renderPeople(ctx, http.StatusConflict, "", pages.PeopleAtLeave,
-			utils.T(ctx.Request.Context(), locales.LK_HouseholdBalanceNotZero))
-		return
-	}
-	if err != nil {
-		InternalError(ctx, err)
-		return
-	}
-	Redirect(ctx, "/")
+	// the errors are mapped as in any other people action
+	h.householdAction(ctx, pages.PeopleAtLeave, func(services.Membership) error { return err })
 }
