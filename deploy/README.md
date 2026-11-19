@@ -101,7 +101,7 @@ A new major version cannot read the old data folder. Never just bump the tag on 
 - **Logs:** `docker compose logs <service>` (add `-f` to follow). Each service's log is rotated at 10 MB, 3 files kept.
 - **Certificates:** only needed without `TRUSTED_PLATFORM`. The app image runs as a non-root user (uid 1000), so on a Linux host the bind-mounted `./app/certificates` must be readable by that user.
 - **Backups:** what runs, the alert and how to restore: [deploy/backup/README.md](./backup/README.md).
-- **Second copy on one machine:** give it its own folder name or `COMPOSE_PROJECT_NAME`, otherwise both share containers and volumes. To run both at once, give it other host ports too: `DATABASE_PORT`, `APP_PORT`, `RUSTFS_PORT` (and `S3_ENDPOINT` with it), `RUSTFS_CONSOLE_PORT`, `MAILPIT_SMTP_PORT`, `MAILPIT_WEB_PORT`, see `.env.example`. `task dev`'s server port (8090) and debugger (2345) are fixed, so only one `task dev` runs at a time.
+- **Second copy on one machine:** give it its own folder name or `COMPOSE_PROJECT_NAME`, otherwise both share containers and volumes. To run both at once, give it other host ports too: `DATABASE_PORT`, `APP_PORT`, `RUSTFS_PORT`, `RUSTFS_CONSOLE_PORT`, `MAILPIT_SMTP_PORT`, `MAILPIT_WEB_PORT`, see `.env.example`. `task dev`'s server port (8090) and debugger (2345) are fixed, so only one `task dev` runs at a time.
 
 ### 7. One-time setup
 

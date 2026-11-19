@@ -83,7 +83,8 @@ services:
       S3_BUCKET: ${S3_BUCKET}
       # failure alert mail, see backup.sh; no BACKUP_ALERT_EMAIL = log only
       SMTP_HOST: ${SMTP_HOST:-mailpit}
-      SMTP_PORT: ${SMTP_PORT:-1025}
+      # unset = 1025 for mailpit, 587 otherwise (backup.sh)
+      SMTP_PORT: ${SMTP_PORT:-}
       SMTP_USERNAME: ${SMTP_USERNAME:-}
       SMTP_PASSWORD: ${SMTP_PASSWORD:-}
       SMTP_FROM: ${SMTP_FROM:-Roommates <noreply@localhost>}
@@ -187,7 +188,8 @@ services:
       APP_S3_SECRET_KEY: ${APP_S3_SECRET_KEY:-}
       # the defaults deliver to the dev mailpit
       SMTP_HOST: ${SMTP_HOST:-mailpit}
-      SMTP_PORT: ${SMTP_PORT:-1025}
+      # unset = 1025 for mailpit, 587 otherwise (internal/mailer)
+      SMTP_PORT: ${SMTP_PORT:-}
       SMTP_USERNAME: ${SMTP_USERNAME:-}
       SMTP_PASSWORD: ${SMTP_PASSWORD:-}
       SMTP_FROM: ${SMTP_FROM:-Roommates <noreply@localhost>}

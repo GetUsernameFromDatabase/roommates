@@ -38,9 +38,14 @@ func New() Mailer {
 		log.Warn().Msg("SMTP_HOST not set, emails are written to the log")
 		return LogMailer{}
 	}
+	// mailpit listens on 1025, real providers on the STARTTLS port
+	port := "587"
+	if isLocalHost(host) {
+		port = "1025"
+	}
 	return &SMTPMailer{
 		Host:     g.EVK_SMTPHost.MustGet(),
-		Port:     g.EVK_SMTPPort.Get("587"),
+		Port:     g.EVK_SMTPPort.Get(port),
 		Username: g.EVK_SMTPUsername.Get(""),
 		Password: g.EVK_SMTPPassword.Get(""),
 		From:     g.EVK_SMTPFrom.Get("Roommates <noreply@localhost>"),

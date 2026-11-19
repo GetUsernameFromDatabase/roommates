@@ -12,6 +12,8 @@
       "program": "${workspaceFolder}/app/cmd/server",
       "cwd": "${workspaceFolder}/app",
       "envFile": "${workspaceFolder}/.env",
+      // .env has no S3_ENDPOINT (the Taskfile builds it), change the port if RUSTFS_PORT is not 9000
+      "env": { "S3_ENDPOINT": "http://127.0.0.1:9000" },
       "preLaunchTask": "build"
     },
     {

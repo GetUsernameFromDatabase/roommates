@@ -45,8 +45,8 @@ run_once() {
 # shortcut: STARTTLS on the given port only (no implicit-TLS smtps on 465), upgrade if a provider needs it
 send_mail() {
     case "${SMTP_HOST:-mailpit}" in
-        localhost|127.0.0.1|::1|mailpit) ssl="" ;;
-        *) ssl="--ssl-reqd" ;;
+        localhost|127.0.0.1|::1|mailpit) ssl="" port=1025 ;;
+        *) ssl="--ssl-reqd" port=587 ;;
     esac
     # "Roommates <a@b>" -> a@b
     from=$(printf '%s' "${SMTP_FROM:-}" | sed 's/.*<\(.*\)>.*/\1/')
@@ -56,7 +56,7 @@ send_mail() {
         "${SMTP_FROM:-}" "$BACKUP_ALERT_EMAIL" "$server" "$1" "$(date -R)" "$2" |
         curl -sS --fail --crlf $ssl \
             ${SMTP_USERNAME:+--user "$SMTP_USERNAME:${SMTP_PASSWORD:-}"} \
-            --url "smtp://${SMTP_HOST:-mailpit}:${SMTP_PORT:-1025}" \
+            --url "smtp://${SMTP_HOST:-mailpit}:${SMTP_PORT:-$port}" \
             --mail-from "$from" --mail-rcpt "$BACKUP_ALERT_EMAIL" --upload-file -
 }
 

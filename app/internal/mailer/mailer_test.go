@@ -30,6 +30,16 @@ func TestBuildMessage(t *testing.T) {
 	}
 }
 
+func TestNewDefaultPort(t *testing.T) {
+	t.Setenv("SMTP_PORT", "")
+	for host, want := range map[string]string{"mailpit": "1025", "localhost": "1025", "smtp.example.com": "587"} {
+		t.Setenv("SMTP_HOST", host)
+		if got := New().(*SMTPMailer).Port; got != want {
+			t.Errorf("SMTP_HOST=%s: port %s, want %s", host, got, want)
+		}
+	}
+}
+
 func TestIsLocalHost(t *testing.T) {
 	for host, want := range map[string]bool{
 		"localhost": true, "127.0.0.1": true, "::1": true, "mailpit": true, "MailPit": true,

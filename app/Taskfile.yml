@@ -7,6 +7,8 @@ version: '3'
 use_gitignore: true
 
 vars:
+  # fixed, as is dlv's 2345 (scripts/dev-run.sh), so one `task dev` at a time;
+  # the browser-check skill (.claude/skills/browser-check) hard-codes https://localhost:8090
   PORT: '8090'
   TAILWIND_INPUT: './web/assets/globals.css'
   TAILWIND_OUTPUT: './web/assets/public/output.css'
@@ -27,8 +29,8 @@ tasks:
   server:
     desc: Run the server under dlv, restarted on every templ signal
     cmds:
-      # the compose mailpit seen from the host; containers default to mailpit while .env leaves SMTP_* unset
-      - SMTP_PORT=${MAILPIT_SMTP_PORT:-1025} sh ./scripts/dev-run.sh
+      # the compose mailpit and rustfs seen from the host; containers default to mailpit while .env leaves SMTP_* unset
+      - SMTP_PORT=${MAILPIT_SMTP_PORT:-1025} S3_ENDPOINT=http://127.0.0.1:${RUSTFS_PORT:-9000} sh ./scripts/dev-run.sh
     env:
       SERVER_PORT: '{{.PORT}}'
       SMTP_HOST: localhost
@@ -95,7 +97,7 @@ tasks:
   seed:
     desc: Add example users and a household to the development database
     cmds:
-      - go run ./tools/dev-seed
+      - S3_ENDPOINT=http://127.0.0.1:${RUSTFS_PORT:-9000} go run ./tools/dev-seed
     dotenv:
       - ../.env
 
