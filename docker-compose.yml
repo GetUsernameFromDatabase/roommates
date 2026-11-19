@@ -25,7 +25,7 @@ services:
     restart: always
     ports:
       # not 5432, so a stopped container fails loudly instead of reaching a system postgres
-      - 127.0.0.1:5433:5432
+      - 127.0.0.1:${DATABASE_PORT:-5433}:5432
     environment:
       # https://hub.docker.com/_/postgres/#environment-variables
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD} # REQUIRED
@@ -36,19 +36,20 @@ services:
       - db_data:/var/lib/postgresql # PG 18 path
     logging: *logging
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready"]
+      # -U/-d: without them pg_isready connects as "root" and the log fills with FATAL lines
+      test: ["CMD-SHELL", "pg_isready -U \"$${POSTGRES_USER}\" -d \"$${POSTGRES_DB}\""]
       interval: 10s
       timeout: 5s
       retries: 5
-  # files, an S3 API on :9000, console at http://127.0.0.1:9001
+  # files, an S3 API on http://127.0.0.1:9000, console at http://127.0.0.1:9001
   rustfs:
     build:
       context: ./deploy/rustfs
       dockerfile: Dockerfile
     restart: always
     ports:
-      - 127.0.0.1:9000:9000 # S3 API
-      - 127.0.0.1:9001:9001 # console
+      - 127.0.0.1:${RUSTFS_PORT:-9000}:9000 # S3 API
+      - 127.0.0.1:${RUSTFS_CONSOLE_PORT:-9001}:9001 # console
     environment:
       # https://docs.rustfs.com/en/reference/environment-variables
       RUSTFS_VOLUMES: /data
@@ -57,6 +58,7 @@ services:
       RUSTFS_CONSOLE_ENABLE: ${RUSTFS_CONSOLE_ENABLE:-false} # `task dev` turns it on
       RUSTFS_ACCESS_KEY: ${S3_ACCESS_KEY} # REQUIRED
       RUSTFS_SECRET_KEY: ${S3_SECRET_KEY} # REQUIRED
+      S3_BUCKET: ${S3_BUCKET} # not for RustFS: deploy/rustfs/app-key.sh reads it
     volumes:
       - rustfs_data:/data
     logging: *logging
@@ -106,7 +108,7 @@ services:
   # --- EMAIL (development) ---
   # catches every email, inbox at http://127.0.0.1:8025
   # only with the dev profile (COMPOSE_PROFILES=dev in .env, `task dev` adds it);
-  # for `task dev` set SMTP_HOST=localhost SMTP_PORT=1025 in .env
+  # `task dev` points the server at it (SMTP_HOST=localhost, SMTP_PORT=MAILPIT_SMTP_PORT)
   # https://mailpit.axllent.org/docs/configuration/runtime-options/
   mailpit:
     profiles: [dev]
@@ -115,11 +117,11 @@ services:
       dockerfile: Dockerfile
     restart: always
     ports:
-      - 127.0.0.1:1025:1025 # SMTP
-      - 127.0.0.1:8025:8025 # web inbox
+      - 127.0.0.1:${MAILPIT_SMTP_PORT:-1025}:1025 # SMTP
+      - 127.0.0.1:${MAILPIT_WEB_PORT:-8025}:8025 # web inbox
     logging: *logging
   # --- PUBLIC ACCESS (production) ---
-  # Cloudflare tunnel to http://app:8080, set up in the Cloudflare dashboard, see docs/DEPLOY.md
+  # Cloudflare tunnel to http://app:8080, set up in the Cloudflare dashboard, see deploy/README.md
   cloudflared:
     profiles: [prod]
     build:
@@ -149,32 +151,49 @@ services:
     restart: unless-stopped
     logging: *logging
     ports:
-      # match latter with [SERVER_PORT] env
+      # 8080 = SERVER_PORT below
       # loopback only, never forward it: with TRUSTED_PLATFORM the app speaks plain HTTP
       # and trusts the Cloudflare client-IP header
-      - 127.0.0.1:8000:8080
+      - 127.0.0.1:${APP_PORT:-8000}:8080
     volumes:
       # the TLS key stays out of the image, see deploy/app/Dockerfile.dockerignore
       - ./app/certificates:/app/certificates:ro
     # shutdown waits up to 10 s for requests, then for push sends (30 s client timeout)
     stop_grace_period: 45s
-    env_file: .env
+    # only the keys the app reads (app/internal/config/globals-env.go), not the whole .env,
+    # so the tunnel token and backup settings stay out; the app treats empty as unset
     environment:
-      SERVER_PORT: 8080
       # https://gin-gonic.com/en/docs/faq/#how-do-i-run-gin-in-production-mode
       GIN_MODE: release
-      # match with service
+      SERVER_PORT: 8080
       DATABASE_HOST: db # service name
       DATABASE_PORT: 5432 # service container port
+      POSTGRES_DB: ${POSTGRES_DB:-}
+      POSTGRES_USER: ${POSTGRES_USER:-}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-}
+      DATABASE_MAX_CONNS: ${DATABASE_MAX_CONNS:-}
+      SESSION_HASH_KEY: ${SESSION_HASH_KEY:-}
+      SESSION_BLOCK_KEY: ${SESSION_BLOCK_KEY:-}
+      SESSION_HASH_KEY_PREVIOUS: ${SESSION_HASH_KEY_PREVIOUS:-}
+      SESSION_BLOCK_KEY_PREVIOUS: ${SESSION_BLOCK_KEY_PREVIOUS:-}
+      TRUSTED_PLATFORM: ${TRUSTED_PLATFORM:-}
+      # the localhost default and mailpit below are refused when TRUSTED_PLATFORM is set
+      APP_BASE_URL: ${APP_BASE_URL:-https://127.0.0.1:${APP_PORT:-8000}}
       S3_ENDPOINT: http://rustfs:9000 # service name and container port
-      # falls back to the root keys until the limited key exists
-      S3_ACCESS_KEY: ${APP_S3_ACCESS_KEY:-${S3_ACCESS_KEY}}
-      S3_SECRET_KEY: ${APP_S3_SECRET_KEY:-${S3_SECRET_KEY}}
-      # these override env_file, so they are interpolated; the defaults deliver to the dev mailpit
+      S3_BUCKET: ${S3_BUCKET:-}
+      S3_REGION: ${S3_REGION:-}
+      # the app's own key (deploy/rustfs/app-key.sh), never the root keys
+      APP_S3_ACCESS_KEY: ${APP_S3_ACCESS_KEY:-}
+      APP_S3_SECRET_KEY: ${APP_S3_SECRET_KEY:-}
+      # the defaults deliver to the dev mailpit
       SMTP_HOST: ${SMTP_HOST:-mailpit}
       SMTP_PORT: ${SMTP_PORT:-1025}
+      SMTP_USERNAME: ${SMTP_USERNAME:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
       SMTP_FROM: ${SMTP_FROM:-Roommates <noreply@localhost>}
-      APP_BASE_URL: ${APP_BASE_URL:-https://127.0.0.1:8000}
+      VAPID_PUBLIC_KEY: ${VAPID_PUBLIC_KEY:-}
+      VAPID_PRIVATE_KEY: ${VAPID_PRIVATE_KEY:-}
+      VAPID_SUBJECT: ${VAPID_SUBJECT:-}
     healthcheck:
       # busybox wget, the image has no curl; plain http when TRUSTED_PLATFORM is set.
       # https first: a plain http probe of the TLS server logs a handshake error each time

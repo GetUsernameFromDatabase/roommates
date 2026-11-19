@@ -36,13 +36,15 @@ docker compose run --rm backup test-alert
 - `BACKUP_DIR`: host folder mounted at `/backups`, default `./backups`.
 - `BACKUP_KEEP_DAYS`: days to keep, default 14.
 - `BACKUP_ALERT_EMAIL`: where failure alerts go, unset = log only.
-- DB, S3 and SMTP settings are the ones the app uses (`POSTGRES_*`, `S3_*` root keys, `SMTP_*`).
+- DB and SMTP settings are the ones the app uses (`POSTGRES_*`, `SMTP_*`); files are read with the `S3_*` root keys, not the app's own key.
 
 shortcut: same disk, point BACKUP_DIR at another drive or add off-site when affordable
 
 ## Restore
 
 Run from the repo root. The `rustfs:` remote is configured by the `RCLONE_CONFIG_RUSTFS_*` variables of the `backup` service in `docker-compose.yml`. Inside `-c '...'` refer to variables by name (`$PGDATABASE`, `$S3_BUCKET`) so their values are never typed or printed. Stop the app first: `docker compose stop app`, and `docker compose start app` when done.
+
+Restoring onto a new, empty RustFS volume: the backup holds the files but not the app's RustFS user, so run `sh deploy/rustfs/app-key.sh` and paste its output into `.env` before starting the app, see [deploy/README.md 7.6](../README.md#76-rustfs-key-for-the-app).
 
 ### Newest dump
 

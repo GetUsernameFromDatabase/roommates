@@ -23,6 +23,9 @@ func main() {
 	isDevelopmentMode := g.IsDevelopment()
 	serverAddr := ":" + g.EVK_ServerPort.Get("8080")
 	logger.InitLogger(isDevelopmentMode)
+	if err := g.CheckPublicEnv(); err != nil {
+		log.Fatal().Err(err).Msg("refusing to start")
+	}
 
 	dbpool := ensureDatabasePool(ctx)
 	defer dbpool.Close()

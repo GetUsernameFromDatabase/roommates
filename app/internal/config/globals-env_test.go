@@ -3,8 +3,48 @@ package config
 import (
 	"testing"
 
+	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
+
+func TestEmptyEnvIsUnset(t *testing.T) {
+	t.Setenv(EVK_S3Region.String(), "")
+	if got := EVK_S3Region.Get("us-east-1"); got != "us-east-1" {
+		t.Fatalf("empty value: Get = %q, want the fallback", got)
+	}
+	defer func() {
+		if recover() == nil {
+			t.Fatal("empty value: MustGet did not panic")
+		}
+	}()
+	EVK_S3Region.MustGet()
+}
+
+func TestCheckPublicEnv(t *testing.T) {
+	gin.SetMode(gin.ReleaseMode)
+	t.Cleanup(func() { gin.SetMode(gin.DebugMode) })
+	tests := []struct {
+		platform, baseURL, smtpHost string
+		ok                          bool
+	}{
+		{"", "https://127.0.0.1:8000", "mailpit", true}, // docker compose on a dev machine
+		{"cloudflare", "https://flat.example.com", "smtp.resend.com", true},
+		{"cloudflare", "https://127.0.0.1:8000", "smtp.resend.com", false},
+		{"cloudflare", "https://localhost", "smtp.resend.com", false},
+		{"cloudflare", "https://[::1]:8000", "smtp.resend.com", false},
+		{"cloudflare", "http://flat.example.com", "smtp.resend.com", false},
+		{"cloudflare", "", "smtp.resend.com", false},
+		{"cloudflare", "https://flat.example.com", "mailpit", false},
+	}
+	for _, tt := range tests {
+		t.Setenv(EVK_TrustedPlatform.String(), tt.platform)
+		t.Setenv(EVK_AppBaseURL.String(), tt.baseURL)
+		t.Setenv(EVK_SMTPHost.String(), tt.smtpHost)
+		if err := CheckPublicEnv(); (err == nil) != tt.ok {
+			t.Errorf("%+v: err = %v", tt, err)
+		}
+	}
+}
 
 func TestGetDatabaseURLEscapes(t *testing.T) {
 	const password = `a b'c\d@e/f?g`

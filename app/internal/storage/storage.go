@@ -33,12 +33,16 @@ type S3Store struct {
 //
 // panics if the env is missing or the store cannot be reached
 func New(ctx context.Context) *S3Store {
+	accessKey, secretKey := g.EVK_AppS3AccessKey.Get(""), g.EVK_AppS3SecretKey.Get("")
+	if accessKey == "" || secretKey == "" {
+		panic("object storage: set " + g.EVK_AppS3AccessKey.String() + " and " + g.EVK_AppS3SecretKey.String() +
+			" in .env, create them with: sh deploy/rustfs/app-key.sh")
+	}
 	//exhaustruct:ignore
 	client := s3.New(s3.Options{
 		BaseEndpoint: aws.String(g.EVK_S3Endpoint.MustGet()),
 		Region:       g.EVK_S3Region.Get("us-east-1"),
-		Credentials: credentials.NewStaticCredentialsProvider(
-			g.EVK_S3AccessKey.MustGet(), g.EVK_S3SecretKey.MustGet(), ""),
+		Credentials:  credentials.NewStaticCredentialsProvider(accessKey, secretKey, ""),
 		UsePathStyle: true,
 		// the default CRC checksums are AWS only, other stores may reject them
 		RequestChecksumCalculation: aws.RequestChecksumCalculationWhenRequired,

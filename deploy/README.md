@@ -38,16 +38,16 @@ All in `.env` at the repo root, starting from [.env.example](../.env.example). H
 | Variable | Value |
 | --- | --- |
 | `COMPOSE_PROFILES` | `prod` (starts `cloudflared`, leaves out the dev `mailpit`) |
-| `TRUSTED_PLATFORM` | `cloudflare` (TLS ends at Cloudflare; the app speaks plain HTTP) |
-| `APP_BASE_URL` | `https://<your hostname>`, used in email links |
-| `SMTP_HOST`, `SMTP_PORT`, `SMTP_USERNAME`, `SMTP_PASSWORD`, `SMTP_FROM` | a provider with STARTTLS (port 587); a non-local host without TLS fails |
+| `TRUSTED_PLATFORM` | `cloudflare` (TLS ends at Cloudflare; the app speaks plain HTTP). With it set, the app refuses to start on the development defaults below |
+| `APP_BASE_URL` | `https://<your hostname>`, used in email links; a localhost address is refused |
+| `SMTP_HOST`, `SMTP_PORT`, `SMTP_USERNAME`, `SMTP_PASSWORD`, `SMTP_FROM` | a provider with STARTTLS (port 587); a non-local host without TLS fails, `mailpit` is refused |
 | `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` | required: the app refuses to start without them. Generate once, keep forever |
 | `CLOUDFLARE_TUNNEL_TOKEN` | the tunnel's token; its public hostname targets `http://app:8080` |
-| `APP_S3_ACCESS_KEY`, `APP_S3_SECRET_KEY` | the app's own RustFS key (bucket only); unset, the app falls back to the root keys |
-| `BACKUP_ALERT_EMAIL` | where backup failure alerts go, see [deploy/backup/README.md](../deploy/backup/README.md) |
+| `APP_S3_ACCESS_KEY`, `APP_S3_SECRET_KEY` | required: the app's own RustFS key (bucket only), see [7.6](#76-rustfs-key-for-the-app); the app never uses the root keys |
+| `BACKUP_ALERT_EMAIL` | where backup failure alerts go, see [deploy/backup/README.md](./backup/README.md) |
 | `DATABASE_MAX_CONNS` | optional, connection pool size, default 10 |
 
-Plus the values every setup needs (`POSTGRES_*`, `SESSION_*`, `S3_*` root keys), as in `.env.example`.
+Plus the values every setup needs (`POSTGRES_*`, `SESSION_*`, `S3_*` root keys), as in `.env.example`. An empty value (`KEY=`) counts as unset. The app container gets only the keys listed under `app.environment` in `docker-compose.yml`, not the whole `.env`.
 
 ### 2. First deploy
 
@@ -76,7 +76,7 @@ git checkout <previous commit>
 docker compose up -d --build
 ```
 
-Migrations are **not** rolled back automatically. If the new version migrated the database, the old code may not work with it: stop the app and restore the dump made before the upgrade, see [Restore](../deploy/backup/README.md#restore).
+Migrations are **not** rolled back automatically. If the new version migrated the database, the old code may not work with it: stop the app and restore the dump made before the upgrade, see [Restore](./backup/README.md#restore).
 
 ### 5. Postgres major upgrade
 
@@ -100,7 +100,8 @@ A new major version cannot read the old data folder. Never just bump the tag on 
 - **Port 8000:** compose publishes the app on `127.0.0.1:8000` (loopback only) for local checks. Never forward it on the router or change it to a public address: with `TRUSTED_PLATFORM` the app speaks plain HTTP and trusts the client-IP header Cloudflare sets, which anyone reaching the port directly could fake. Only the tunnel should reach the app.
 - **Logs:** `docker compose logs <service>` (add `-f` to follow). Each service's log is rotated at 10 MB, 3 files kept.
 - **Certificates:** only needed without `TRUSTED_PLATFORM`. The app image runs as a non-root user (uid 1000), so on a Linux host the bind-mounted `./app/certificates` must be readable by that user.
-- **Backups:** what runs, the alert and how to restore: [deploy/backup/README.md](../deploy/backup/README.md).
+- **Backups:** what runs, the alert and how to restore: [deploy/backup/README.md](./backup/README.md).
+- **Second copy on one machine:** give it its own folder name or `COMPOSE_PROJECT_NAME`, otherwise both share containers and volumes. To run both at once, give it other host ports too: `DATABASE_PORT`, `APP_PORT`, `RUSTFS_PORT` (and `S3_ENDPOINT` with it), `RUSTFS_CONSOLE_PORT`, `MAILPIT_SMTP_PORT`, `MAILPIT_WEB_PORT`, see `.env.example`. `task dev`'s server port (8090) and debugger (2345) are fixed, so only one `task dev` runs at a time.
 
 ### 7. One-time setup
 
@@ -118,7 +119,7 @@ The free plan lets uploads up to 100 MB through; the app's own limit is 25 MB pe
 1. Cloudflare dashboard → Zero Trust → Networks → Tunnels → Create a tunnel → type **Cloudflared**.
 2. Name it (for example `roommates`). On the install screen pick Docker and copy only the token, the long string after `--token`.
 3. In `.env`: `CLOUDFLARE_TUNNEL_TOKEN=<the token>`.
-4. In the tunnel's **Public hostname** tab add one: your subdomain (for example `flat.example.com`), service type **HTTP**, URL `app:8080`. Compose fixes the app container's port at 8080, whatever `SERVER_PORT` says in `.env`.
+4. In the tunnel's **Public hostname** tab add one: your subdomain (for example `flat.example.com`), service type **HTTP**, URL `app:8080`. The app always listens on 8080 inside its container.
 
 You do not open any port on your router.
 
@@ -160,15 +161,19 @@ Test: register a new account on the real address and check that the verification
 
 #### 7.6 RustFS key for the app
 
-1. Open the RustFS console on <http://127.0.0.1:9001>: it is off by default, so either run `task dev` (turns it on) or set `RUSTFS_CONSOLE_ENABLE=true` in `.env` and `docker compose up -d rustfs`. Log in with the root keys (`S3_ACCESS_KEY` / `S3_SECRET_KEY`).
-2. Create an access key whose policy allows, on the app's bucket (`S3_BUCKET`) only: `s3:ListBucket` on the bucket, and `s3:GetObject`, `s3:PutObject`, `s3:DeleteObject` on its objects.
-3. In `.env`, set **both** `APP_S3_ACCESS_KEY` and `APP_S3_SECRET_KEY`.
-4. Turn the console off again (remove `RUSTFS_CONSOLE_ENABLE`) and `docker compose up -d`.
+1. `docker compose up -d --wait rustfs`, then `sh deploy/rustfs/app-key.sh`.
+2. Paste the two printed lines (`APP_S3_ACCESS_KEY`, `APP_S3_SECRET_KEY`) into `.env`, then `docker compose up -d`.
 
-While these are unset the app falls back to the root keys. The root keys stay with RustFS and the backup service.
+The script creates the RustFS user `roommates-app` for the bucket `S3_BUCKET` of `.env`. Its policy, near the top of the script, allows only what the app does: list, read, write and delete in that bucket, and create the bucket if it is missing. It allows no other bucket and nothing admin. It always works on the RustFS of the checkout it lives in, whatever folder you run it from.
+
+- **Changed the policy:** run it again. It re-applies the policy and keeps the secret.
+- **Secret leaked:** `sh deploy/rustfs/app-key.sh rotate`, paste the new lines, `docker compose up -d`. The old secret stops working at once.
+- **New RustFS volume** (new server, restore onto an empty volume): the user lives in the volume, not in the backup, so run the script again and paste.
+
+The app refuses to start without these. The root keys (`S3_ACCESS_KEY`, `S3_SECRET_KEY`) stay with RustFS and the backup service.
 
 #### 7.7 Backups
 
 1. In `.env`: `BACKUP_ALERT_EMAIL=<your address>`. Then check it arrives: `docker compose run --rm backup test-alert`.
 2. Recommended: point `BACKUP_DIR` at a different drive than the one holding the data.
-3. Read [deploy/backup/README.md](../deploy/backup/README.md) once, so the restore steps are familiar before you need them.
+3. Read [deploy/backup/README.md](./backup/README.md) once, so the restore steps are familiar before you need them.

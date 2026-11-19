@@ -104,7 +104,7 @@ Confirm the user stays in place, the page doesn't reload, and feedback appears n
 
 ## Email
 
-Mailpit's inbox is at `http://127.0.0.1:8025`. Read verify, reset and invite links from there, and open them on `localhost:8090`. It only receives mail when `.env` sets `SMTP_HOST=localhost` and `SMTP_PORT=1025`. Otherwise emails go to the server log.
+Mailpit's inbox is at `http://127.0.0.1:8025`. Read verify, reset and invite links from there, and open them on `localhost:8090`. `task dev` sends every email there; `.env` needs no SMTP settings for it.
 
 ## Report
 

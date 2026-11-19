@@ -3,6 +3,7 @@ package config
 //lint:file-ignore ST1003 goal is to ignore underscore issues
 
 import (
+	"fmt"
 	"net"
 	"net/url"
 	"os"
@@ -13,6 +14,9 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// EnvironmentVariableKey is an env key the app reads. An empty value counts as unset,
+// like compose's ${KEY:-default}. The app container gets only the keys listed under
+// app.environment in docker-compose.yml, so add a new key there too
 type EnvironmentVariableKey string
 
 // REQUIRED env key for postgreSQL database
@@ -28,8 +32,6 @@ const (
 
 // REQUIRED env key for server
 const (
-	EVK_ServerPort EnvironmentVariableKey = "SERVER_PORT"
-
 	// hash key https://github.com/gorilla/securecookie#examples
 	// generate one with
 	//  - openssl rand -hex 32
@@ -44,6 +46,8 @@ const (
 
 // env key for server
 const (
+	// defaults to 8080, the port inside the app container; `task dev` sets 8090
+	EVK_ServerPort EnvironmentVariableKey = "SERVER_PORT"
 	// to rotate out with [EVK_SessionHashKey]
 	EVK_SessionHashKeyPrevious EnvironmentVariableKey = "SESSION_HASH_KEY_PREVIOUS"
 	// to rotate out with [EVK_SessionBlockKey]
@@ -73,10 +77,12 @@ const (
 // REQUIRED env keys for file storage, an S3 API (RustFS in docker compose)
 const (
 	// e.g. http://127.0.0.1:9000, buckets are addressed path-style
-	EVK_S3Endpoint  EnvironmentVariableKey = "S3_ENDPOINT"
-	EVK_S3Bucket    EnvironmentVariableKey = "S3_BUCKET"
-	EVK_S3AccessKey EnvironmentVariableKey = "S3_ACCESS_KEY"
-	EVK_S3SecretKey EnvironmentVariableKey = "S3_SECRET_KEY"
+	EVK_S3Endpoint EnvironmentVariableKey = "S3_ENDPOINT"
+	EVK_S3Bucket   EnvironmentVariableKey = "S3_BUCKET"
+	// the app's own key, limited to the bucket, made by deploy/rustfs/app-key.sh;
+	// the root keys S3_ACCESS_KEY / S3_SECRET_KEY are for rustfs and backup only
+	EVK_AppS3AccessKey EnvironmentVariableKey = "APP_S3_ACCESS_KEY"
+	EVK_AppS3SecretKey EnvironmentVariableKey = "APP_S3_SECRET_KEY"
 	// defaults to us-east-1, RustFS ignores it
 	EVK_S3Region EnvironmentVariableKey = "S3_REGION"
 )
@@ -121,21 +127,41 @@ func IsDevelopment() bool {
 	return gin.Mode() == gin.DebugMode
 }
 
+// GetEnv returns the env value, or fallback when it is unset or empty
 func GetEnv(key EnvironmentVariableKey, fallback string) string {
-	if value, ok := os.LookupEnv(key.String()); ok {
+	if value := os.Getenv(key.String()); value != "" {
 		return value
 	}
 	return fallback
 }
 
-// MustGetEnv will get env value, panics if it does not exist
+// MustGetEnv returns the env value, panics when it is unset or empty
 func MustGetEnv(key EnvironmentVariableKey) string {
-	keyAsString := key.String()
-	if value, ok := os.LookupEnv(keyAsString); ok {
+	if value := os.Getenv(key.String()); value != "" {
 		return value
 	}
+	panic("environment variable " + strconv.Quote(key.String()) + " needs to be set")
+}
 
-	panic("environment variable " + strconv.Quote(keyAsString) + " needs to be set")
+// CheckPublicEnv catches a public deployment ([EVK_TrustedPlatform] set, release mode)
+// still running on the development values docker-compose.yml falls back to:
+// email links to a loopback address, or mail sent to the dev mailpit
+func CheckPublicEnv() error {
+	if IsDevelopment() || EVK_TrustedPlatform.Get("") == "" {
+		return nil
+	}
+	raw := EVK_AppBaseURL.Get("")
+	base, err := url.Parse(raw)
+	if err != nil || base.Scheme != "https" || base.Hostname() == "" ||
+		base.Hostname() == "localhost" || net.ParseIP(base.Hostname()).IsLoopback() {
+		return fmt.Errorf("%s must be the public https address when %s is set, got %q",
+			EVK_AppBaseURL, EVK_TrustedPlatform, raw)
+	}
+	if EVK_SMTPHost.Get("") == "mailpit" {
+		return fmt.Errorf("%s is the development mailpit, set a real provider when %s is set",
+			EVK_SMTPHost, EVK_TrustedPlatform)
+	}
+	return nil
 }
 
 // GetDatabaseURL constructs a database url using environment

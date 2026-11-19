@@ -39,15 +39,16 @@ roommates/
 After [Setup](#setup). Run from `app/` unless noted.
 
 1. From the repo root: `cp .env.example .env`, then replace the `REPLACE_WITH_*` and `` `openssl …` `` values
-2. Create the TLS certificate: [app/certificates/README.md](./app/certificates/README.md)
-3. `task vendor` downloads htmx and the fonts (not committed, `task dev` does not fetch them), see [app/web/assets/README.md](./app/web/assets/README.md)
-4. Mailpit gives an inbox at <http://127.0.0.1:8025> (`task dev` starts it). To send emails to the log instead, comment out `SMTP_HOST` in `.env`
-5. `task dev` starts db + rustfs + mailpit and serves the app with hot reload on <https://localhost:8090>. The database is migrated on start
-6. `task seed` adds example users and a household
+2. From the repo root: `docker compose up -d --wait rustfs`, then `sh deploy/rustfs/app-key.sh` and paste its `APP_S3_*` lines into `.env` (the app's own file storage key)
+3. Create the TLS certificate: [app/certificates/README.md](./app/certificates/README.md)
+4. `task vendor` downloads htmx and the fonts (not committed, `task dev` does not fetch them), see [app/web/assets/README.md](./app/web/assets/README.md)
+5. Mailpit gives an inbox at <http://127.0.0.1:8025>: `task dev` starts it and sends every email there
+6. `task dev` starts db + rustfs + mailpit and serves the app with hot reload on <https://localhost:8090>. The database is migrated on start
+7. `task seed` adds example users and a household
 
 Whole stack in Docker instead: `docker compose up --build` from the repo root, app on <https://127.0.0.1:8000>. That also runs the `backup` service (db dump + files into `./backups`), see [deploy/backup/README.md](./deploy/backup/README.md) for config and restore.
 
-Running it on a server (Cloudflare Tunnel, upgrades, rollback): [docs/DEPLOY.md](./docs/DEPLOY.md).
+Running it on a server (Cloudflare Tunnel, upgrades, rollback): [deploy/README.md](./deploy/README.md).
 
 ## Setup
 

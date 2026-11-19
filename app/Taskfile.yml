@@ -13,8 +13,6 @@ vars:
   # the only pin: deploy/app/Dockerfile downloads this version via 'task tailwind-version'
   # (bump its TAILWIND_SHA256_* with it)
   TAILWIND_VERSION: '4.3.3'
-  PROXY_TLS_CRT: './certificates/server.pem'
-  PROXY_TLS_KEY: './certificates/server.key'
 
 tasks:
   templ:
@@ -29,12 +27,11 @@ tasks:
   server:
     desc: Run the server under dlv, restarted on every templ signal
     cmds:
-      - sh ./scripts/dev-run.sh
+      # the compose mailpit seen from the host; containers default to mailpit while .env leaves SMTP_* unset
+      - SMTP_PORT=${MAILPIT_SMTP_PORT:-1025} sh ./scripts/dev-run.sh
     env:
       SERVER_PORT: '{{.PORT}}'
-      # the compose mailpit seen from the host; containers default to mailpit while .env leaves these unset
       SMTP_HOST: localhost
-      SMTP_PORT: '1025'
     dotenv:
       - ../.env
 
@@ -77,11 +74,6 @@ tasks:
     cmds:
       # not 'watch: true': in 'task --parallel' Task only starts watch tasks after the others exit, and they never do
       - task --watch restart-signal
-
-  # TODO: add sqlc https://docs.sqlc.dev/en/latest/reference/cli.html
-  # does not seem to have simple --watch like templ generate
-  # ust running it manualy should suffice, go files are watched
-  # sqlc generate --help
 
   vendor:
     desc: Download third-party assets from web/assets/vendor.json, no network once present
