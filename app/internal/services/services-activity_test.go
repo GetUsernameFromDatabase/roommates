@@ -34,7 +34,8 @@ func TestActivity(t *testing.T) {
 	// round trip with names and amount
 	log(ownerM, ActivityEntry{Kind: g.ActExpenseAdded, SubjectID: pgtype.UUID{}, TargetUserID: memberM.UserID, Title: "Rent", AmountCents: &cents, Currency: "EUR"})
 	rows, err := s.ListActivity(ctx, ownerM, pgtype.Timestamptz{})
-	if err != nil || len(rows) != 1 {
+	// newest first, after the member's join from newTestHousehold
+	if err != nil || len(rows) != 2 || rows[1].Kind != g.ActMemberJoined {
 		t.Fatalf("rows %+v, %v", rows, err)
 	}
 	r := rows[0]
@@ -59,7 +60,8 @@ func TestActivity(t *testing.T) {
 		t.Fatalf("page 1: %d rows, %v", len(page1), err)
 	}
 	page2, err := s.ListActivity(ctx, ownerM, page1[len(page1)-1].CreatedAt)
-	if err != nil || len(page2) != 11 {
+	// 60 + the expense + the member's join
+	if err != nil || len(page2) != 12 {
 		t.Fatalf("page 2: %d rows, %v", len(page2), err)
 	}
 	if !page2[0].CreatedAt.Time.Before(page1[len(page1)-1].CreatedAt.Time) {
@@ -280,7 +282,7 @@ func TestActivityMembers(t *testing.T) {
 	s := newTestService(t)
 	ctx := context.Background()
 	ownerM, memberM, _ := newTestHousehold(t, s)
-	if err := s.UpdateHousehold(ctx, ownerM, "Flat 2", "USD"); err != nil {
+	if err := s.UpdateHousehold(ctx, ownerM, "Flat 2", "USD", "Europe/Tallinn", 9); err != nil {
 		t.Fatal(err)
 	}
 	if err := s.PromoteMember(ctx, ownerM, memberM.UserID); err != nil {

@@ -22,7 +22,7 @@ var log = logger.Main.With().Str("package", "events").Logger()
 // Channel is the Postgres notification channel of the household triggers
 const Channel = "household_events"
 
-// topics sent by the triggers in migration 00009, and TopicRead by the chat service
+// topics sent by the notify_household triggers of the initial migration, and TopicRead by the chat service
 const (
 	TopicShopping = "shopping"
 	TopicNotes    = "notes"
@@ -30,12 +30,13 @@ const (
 	TopicExpenses = "expenses"
 	TopicPeople   = "people"
 	TopicChat     = "chat"
+	TopicChores   = "chores"
 	// someone read the chat, their badges on other devices go to zero
 	TopicRead = "read"
 )
 
 // Topics are all topics, sent when events may have been missed
-var Topics = []string{TopicShopping, TopicNotes, TopicFiles, TopicExpenses, TopicPeople, TopicChat, TopicRead}
+var Topics = []string{TopicShopping, TopicNotes, TopicFiles, TopicExpenses, TopicPeople, TopicChat, TopicChores, TopicRead}
 
 // subscriberBuffer is how many topics wait for a slow subscriber, more are dropped,
 // the page refetches on the next one anyway

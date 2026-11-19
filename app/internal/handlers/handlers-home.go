@@ -23,7 +23,7 @@ func (h *DefaultHandler) PageHome(ctx *gin.Context) {
 	if ctx.Request.Method == http.MethodPost {
 		_ = ctx.ShouldBind(&model)
 		if isValid, _ := model.IsValid(); isValid {
-			householdID, err := h.service.CreateHousehold(ctx, userID, model.Name)
+			householdID, err := h.service.CreateHousehold(ctx, userID, model.Name, ctx.PostForm("time_zone"))
 			if err != nil {
 				InternalError(ctx, err)
 				return

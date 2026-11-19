@@ -63,7 +63,7 @@ func TestNotificationSettings(t *testing.T) {
 	wantPushes(t, "expense still arrives", takePushes(s), ownerDevice)
 
 	// a mute is for one household
-	otherID, err := s.CreateHousehold(ctx, ownerM.UserID, "Second")
+	otherID, err := s.CreateHousehold(ctx, ownerM.UserID, "Second", "")
 	if err != nil {
 		t.Fatal(err)
 	}

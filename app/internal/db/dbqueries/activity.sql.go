@@ -94,7 +94,13 @@ SELECT a.id,
     FROM recurring_expenses r
     WHERE r.id = a.subject_id
       AND r.household_id = a.household_id
-  ) AS recurring_exists
+  ) AS recurring_exists,
+  EXISTS (
+    SELECT 1
+    FROM chores c
+    WHERE c.id = a.subject_id
+      AND c.household_id = a.household_id
+  ) AS chore_exists
 FROM activity a
   LEFT JOIN users actor ON actor.id = a.actor_id
   LEFT JOIN users target ON target.id = a.target_user_id
@@ -149,6 +155,7 @@ type ListActivityRow struct {
 	NoteExists      bool               `json:"note_exists"`
 	FileExists      bool               `json:"file_exists"`
 	RecurringExists bool               `json:"recurring_exists"`
+	ChoreExists     bool               `json:"chore_exists"`
 }
 
 // one page of the household's activity, newest first, before_at (NULL for the first page) leaves out
@@ -185,6 +192,7 @@ func (q *Queries) ListActivity(ctx context.Context, arg ListActivityParams) ([]L
 			&i.NoteExists,
 			&i.FileExists,
 			&i.RecurringExists,
+			&i.ChoreExists,
 		); err != nil {
 			return nil, err
 		}
@@ -204,7 +212,8 @@ WHERE created_at < now() - make_interval(
       WHEN 'money' THEN $1::float8
       WHEN 'shopping' THEN $2::float8
       WHEN 'notes' THEN $3::float8
-      ELSE $4::float8
+      WHEN 'chores' THEN $4::float8
+      ELSE $5::float8
     END
   )
 `
@@ -213,6 +222,7 @@ type PurgeActivityParams struct {
 	MoneySecs    float64 `json:"money_secs"`
 	ShoppingSecs float64 `json:"shopping_secs"`
 	NotesSecs    float64 `json:"notes_secs"`
+	ChoresSecs   float64 `json:"chores_secs"`
 	MembersSecs  float64 `json:"members_secs"`
 }
 
@@ -221,6 +231,7 @@ func (q *Queries) PurgeActivity(ctx context.Context, arg PurgeActivityParams) er
 		arg.MoneySecs,
 		arg.ShoppingSecs,
 		arg.NotesSecs,
+		arg.ChoresSecs,
 		arg.MembersSecs,
 	)
 	return err

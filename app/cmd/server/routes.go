@@ -154,6 +154,19 @@ func initRoutes(r *gin.Engine, h *handlers.DefaultHandler, service *services.Def
 			list.POST("/items/:"+g.ParamItemID+"/files", h.UploadShoppingItemFile)
 			h.FileRefRoutes(list.Group("/items/:"+g.ParamItemID), h.ShoppingItemFileTarget)
 
+			household.GET("/chores", h.PageChores)
+			household.POST("/chores", h.CreateChore)
+			chore := household.Group("/chores/:" + g.ParamChoreID)
+			chore.GET("", h.PageChore)
+			chore.POST("", h.UpdateChore)
+			chore.POST("/delete", h.DeleteChore)
+			chore.POST("/done", h.DoneChore)
+			chore.POST("/skip", h.SkipChore)
+			chore.POST("/pass", h.PassChore)
+			chore.POST("/assign", h.AssignChore)
+			// form value dir=up|down
+			chore.POST("/members/:"+g.ParamUserID+"/move", h.MoveChoreMember)
+
 			household.GET("/expenses", h.PageExpenses)
 			household.GET("/expenses/new", h.PageNewExpense)
 			household.POST("/expenses", h.CreateExpense)

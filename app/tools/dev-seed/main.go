@@ -76,7 +76,7 @@ func seed(ctx context.Context, s *services.DefaultService, q *dbqueries.Queries)
 	check(q.SetEmailValidated(ctx, *mari))
 	check(q.SetEmailValidated(ctx, *jaan))
 
-	householdID := must(s.CreateHousehold(ctx, *mari, "Tähe 3 korter"))
+	householdID := must(s.CreateHousehold(ctx, *mari, "Tähe 3 korter", "Europe/Tallinn"))
 	mariM := must(s.GetMembership(ctx, householdID, *mari))
 	check(s.CreateInvite(ctx, mariM))
 	overview := must(s.GetHouseholdOverview(ctx, mariM))

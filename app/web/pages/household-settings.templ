@@ -1,5 +1,8 @@
 package pages
 
+import "fmt"
+import "strconv"
+import "strings"
 import "roommates/web/components"
 import "roommates/web/components/alert"
 import "roommates/web/components/alertdialog"
@@ -58,6 +61,21 @@ templ HouseholdSettingsSection(path string, actor services.Membership, h service
 						</p>
 					}
 				</div>
+				<div class="flex w-full flex-col gap-2">
+					<label for="household-time-zone-trigger" class="text-sm font-medium">
+						@components.T(locales.LK_HouseholdSettingsTimeZone)
+					</label>
+					@timeZoneSelect(h)
+				</div>
+				<div class="flex w-full flex-col gap-2">
+					<label for="household-reminder-hour-trigger" class="text-sm font-medium">
+						@components.T(locales.LK_HouseholdSettingsReminderHour)
+					</label>
+					@reminderHourSelect(h)
+					<p id="household-reminder-hint" class="text-sm text-muted-foreground">
+						@components.T(locales.LK_HouseholdSettingsReminderHint)
+					</p>
+				</div>
 				<div class="flex flex-wrap items-center gap-3">
 					@button.Button(button.Props{Type: button.TypeSubmit, Class: "h-11"}) {
 						@components.T(locales.LK_CommonSave)
@@ -82,6 +100,18 @@ templ HouseholdSettingsSection(path string, actor services.Membership, h service
 						@components.T(locales.LK_HouseholdSettingsCurrency)
 					</dt>
 					<dd class="font-medium">{ h.Currency }</dd>
+				</div>
+				<div>
+					<dt class="text-sm text-muted-foreground">
+						@components.T(locales.LK_HouseholdSettingsTimeZone)
+					</dt>
+					<dd class="font-medium">{ timeZoneLabel(h.TimeZone) }</dd>
+				</div>
+				<div>
+					<dt class="text-sm text-muted-foreground">
+						@components.T(locales.LK_HouseholdSettingsReminderHour)
+					</dt>
+					<dd class="font-medium">{ reminderHourLabel(h.ReminderHour) }</dd>
 				</div>
 			</dl>
 		}
@@ -160,6 +190,60 @@ templ deleteHousehold(path string, actor services.Membership, h services.Househo
 
 // currencySelect is disabled while a debt is open, a disabled field posts nothing,
 // so the kept currency goes in a hidden input
+// timeZoneLabel is an IANA name as people read it: "America/New_York" is "America / New York"
+func timeZoneLabel(zone string) string {
+	return strings.ReplaceAll(strings.ReplaceAll(zone, "/", " / "), "_", " ")
+}
+
+func reminderHourLabel(hour int) string {
+	return fmt.Sprintf("%02d:00", hour)
+}
+
+// timeZoneSelect has no search, the kit select jumps to an option by typing its first letters
+templ timeZoneSelect(h services.HouseholdSettings) {
+	{{
+		items := utils.Map(h.TimeZones, func(z string) selectcomp.ItemData {
+			return selectcomp.ItemData{Value: z, Label: timeZoneLabel(z)}
+		})
+	}}
+	@selectcomp.Select(selectcomp.Props{ID: "household-time-zone", Name: "time_zone", Items: items, DefaultValue: h.TimeZone}) {
+		@selectcomp.Trigger(selectcomp.TriggerProps{Class: "bg-card data-[size=default]:h-11 dark:bg-card"}) {
+			@selectcomp.Value()
+		}
+		@selectcomp.Content() {
+			for _, z := range h.TimeZones {
+				@selectcomp.Item(selectcomp.ItemProps{Value: z}) {
+					{ timeZoneLabel(z) }
+				}
+			}
+		}
+	}
+}
+
+templ reminderHourSelect(h services.HouseholdSettings) {
+	{{
+		hours := make([]int, 24)
+		for i := range hours {
+			hours[i] = i
+		}
+		items := utils.Map(hours, func(i int) selectcomp.ItemData {
+			return selectcomp.ItemData{Value: strconv.Itoa(i), Label: reminderHourLabel(i)}
+		})
+	}}
+	@selectcomp.Select(selectcomp.Props{ID: "household-reminder-hour", Name: "reminder_hour", Items: items, DefaultValue: strconv.Itoa(h.ReminderHour)}) {
+		@selectcomp.Trigger(selectcomp.TriggerProps{Class: "bg-card data-[size=default]:h-11 dark:bg-card", Attributes: templ.Attributes{"aria-describedby": "household-reminder-hint"}}) {
+			@selectcomp.Value()
+		}
+		@selectcomp.Content() {
+			for _, i := range hours {
+				@selectcomp.Item(selectcomp.ItemProps{Value: strconv.Itoa(i)}) {
+					{ reminderHourLabel(i) }
+				}
+			}
+		}
+	}
+}
+
 templ currencySelect(h services.HouseholdSettings) {
 	{{
 		items := utils.Map(services.HouseholdCurrencies, func(c string) selectcomp.ItemData {

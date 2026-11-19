@@ -71,8 +71,9 @@ func noRowsAs(err, as error) error {
 
 // -----------------------------------------------------------------------------
 
-// CreateHousehold creates a household with userID as its owner
-func (s *DefaultService) CreateHousehold(ctx context.Context, userID pgtype.UUID, name string) (pgtype.UUID, error) {
+// CreateHousehold creates a household with userID as its owner, in timeZone (the creator's
+// browser's) when that is one of [HouseholdSettings.TimeZones], else in the column's default
+func (s *DefaultService) CreateHousehold(ctx context.Context, userID pgtype.UUID, name, timeZone string) (pgtype.UUID, error) {
 	var householdID pgtype.UUID
 	err := s.inTx(ctx, func(q *dbqueries.Queries) error {
 		var err error
@@ -82,6 +83,13 @@ func (s *DefaultService) CreateHousehold(ctx context.Context, userID pgtype.UUID
 		})
 		if err != nil {
 			return err
+		}
+		if ok, err := q.IsTimeZone(ctx, timeZone); err != nil {
+			return err
+		} else if ok {
+			if err := q.SetHouseholdTimeZone(ctx, dbqueries.SetHouseholdTimeZoneParams{ID: householdID, TimeZone: timeZone}); err != nil {
+				return err
+			}
 		}
 		return q.UpsertMembership(ctx, dbqueries.UpsertMembershipParams{
 			HouseholdID: householdID,
@@ -562,10 +570,12 @@ func (s *DefaultService) PurgeDeletedHouseholds(ctx context.Context) error {
 
 const MaxHouseholdNameLength = 64
 
-// FieldName and FieldCurrency are what a [FieldError] of [DefaultService.UpdateHousehold] names
+// what a [FieldError] of [DefaultService.UpdateHousehold] names
 const (
-	FieldName     = "name"
-	FieldCurrency = "currency"
+	FieldName         = "name"
+	FieldCurrency     = "currency"
+	FieldTimeZone     = "time_zone"
+	FieldReminderHour = "reminder_hour"
 )
 
 // HouseholdCurrencies are the currencies a household can use
@@ -574,6 +584,11 @@ var HouseholdCurrencies = []string{"EUR", "USD", "GBP", "SEK", "NOK", "DKK", "PL
 type HouseholdSettings struct {
 	Name     string
 	Currency string
+	// an IANA name, one of TimeZones
+	TimeZone  string
+	TimeZones []string
+	// local hour 0..23 of the chore and recurring expense reminders
+	ReminderHour int
 	// Settled is true while the currency can change, nobody owes anybody
 	Settled bool
 	// who owes whom, deleting the household warns about them
@@ -590,13 +605,17 @@ func (s *DefaultService) GetHouseholdSettings(ctx context.Context, actor Members
 		return HouseholdSettings{}, err
 	}
 	debts, err := s.Debts(ctx, actor)
-	return HouseholdSettings{Name: h.Name, Currency: h.Currency, Settled: settled, Debts: debts}, err
+	if err != nil {
+		return HouseholdSettings{}, err
+	}
+	zones, err := s.db.ListTimeZones(ctx)
+	return HouseholdSettings{Name: h.Name, Currency: h.Currency, TimeZone: h.TimeZone, TimeZones: zones, ReminderHour: int(h.ReminderHour), Settled: settled, Debts: debts}, err
 }
 
-// UpdateHousehold lets an owner rename the household and change its currency,
-// returns [g.ErrorForbidden] for others, a [FieldError] for a bad name or currency
+// UpdateHousehold lets an owner rename the household and change its currency, time zone and
+// reminder hour, returns [g.ErrorForbidden] for others, a [FieldError] for a bad field
 // and for a currency change while a debt is open, amounts would change their meaning
-func (s *DefaultService) UpdateHousehold(ctx context.Context, actor Membership, name, currency string) error {
+func (s *DefaultService) UpdateHousehold(ctx context.Context, actor Membership, name, currency, timeZone string, reminderHour int) error {
 	if actor.Role != g.RoleOwner {
 		return g.ErrorForbidden
 	}
@@ -606,6 +625,14 @@ func (s *DefaultService) UpdateHousehold(ctx context.Context, actor Membership, 
 	}
 	if !slices.Contains(HouseholdCurrencies, currency) {
 		return FieldError{Field: FieldCurrency}
+	}
+	if reminderHour < 0 || reminderHour > 23 {
+		return FieldError{Field: FieldReminderHour}
+	}
+	if ok, err := s.db.IsTimeZone(ctx, timeZone); err != nil {
+		return err
+	} else if !ok {
+		return FieldError{Field: FieldTimeZone}
 	}
 	return s.inTx(ctx, func(q *dbqueries.Queries) error {
 		if err := q.LockHousehold(ctx, actor.HouseholdID); err != nil {
@@ -636,9 +663,11 @@ func (s *DefaultService) UpdateHousehold(ctx context.Context, actor Membership, 
 			}
 		}
 		return q.UpdateHousehold(ctx, dbqueries.UpdateHouseholdParams{
-			Name:     name,
-			Currency: currency,
-			ID:       actor.HouseholdID,
+			Name:         name,
+			Currency:     currency,
+			TimeZone:     timeZone,
+			ReminderHour: int16(reminderHour),
+			ID:           actor.HouseholdID,
 		})
 	})
 }

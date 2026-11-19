@@ -186,7 +186,7 @@ func TestInviteNeedsConfirmedEmail(t *testing.T) {
 	ctx := englishContext(t)
 	owner := newTestUser(t, s)
 
-	householdID, err := s.CreateHousehold(ctx, owner, "Flat")
+	householdID, err := s.CreateHousehold(ctx, owner, "Flat", "")
 	if err != nil {
 		t.Fatal(err)
 	}

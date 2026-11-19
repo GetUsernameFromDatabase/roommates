@@ -23,7 +23,7 @@ templ ActivityPage(actor services.Membership, rows []services.ActivityRow, hasMo
 			</h1>
 		</header>
 		<section class={ utils.CN(sheetClass, "max-sm:-mx-4 max-sm:rounded-none max-sm:px-4") }>
-			@liveRegion("activity", events.TopicShopping, events.TopicNotes, events.TopicFiles, events.TopicExpenses, events.TopicPeople) {
+			@liveRegion("activity", events.TopicShopping, events.TopicNotes, events.TopicFiles, events.TopicExpenses, events.TopicPeople, events.TopicChores) {
 				if len(rows) == 0 {
 					<div class="flex flex-col gap-1 py-6 text-center">
 						<p class="font-medium">

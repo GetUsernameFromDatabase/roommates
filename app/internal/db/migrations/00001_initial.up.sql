@@ -31,7 +31,12 @@ CREATE TABLE households (
   created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
   -- soft delete: read-only until purged g.HouseholdPurgeAfter later, an owner can restore it
-  deleted_at TIMESTAMP WITH TIME ZONE
+  deleted_at TIMESTAMP WITH TIME ZONE,
+  -- an IANA name from pg_timezone_names (the service checks it), the household's "today"
+  -- for due dates is (now() AT TIME ZONE time_zone)::date
+  time_zone TEXT NOT NULL DEFAULT 'Europe/Tallinn',
+  -- local hour at which chore and recurring expense reminders are pushed
+  reminder_hour SMALLINT NOT NULL DEFAULT 9 CHECK (reminder_hour BETWEEN 0 AND 23)
 );
 -- -----------------------------------------------------------------------------
 -- a row is kept after leaving (left_at set) so history still shows former members,
@@ -297,7 +302,7 @@ CREATE INDEX idx_push_subscriptions_user_id ON push_subscriptions (user_id);
 CREATE TABLE notification_mutes (
   household_id UUID NOT NULL,
   user_id UUID NOT NULL,
-  kind TEXT NOT NULL CHECK (kind IN ('chat', 'money', 'recurring', 'household')),
+  kind TEXT NOT NULL CHECK (kind IN ('chat', 'money', 'recurring', 'household', 'chores')),
   PRIMARY KEY (household_id, user_id, kind),
   FOREIGN KEY (household_id, user_id) REFERENCES memberships (household_id, user_id) ON DELETE CASCADE
 );
@@ -334,13 +339,65 @@ CREATE TABLE recurring_expense_shares (
   FOREIGN KEY (household_id, user_id) REFERENCES memberships (household_id, user_id)
 );
 -- -----------------------------------------------------------------------------
+-- a chore is due on next_due for assignee_id (NULL: nobody's turn), either on weekdays
+-- (bit 0 Monday .. bit 6 Sunday) or every `every` every_unit counted from when it was done;
+-- chore_next_assignee says whose turn comes next
+CREATE TABLE chores (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  household_id UUID NOT NULL REFERENCES households (id) ON DELETE CASCADE,
+  title TEXT NOT NULL,
+  rotation TEXT NOT NULL CHECK (rotation IN ('fixed', 'least_recent', 'manual')),
+  every SMALLINT CHECK (every BETWEEN 1 AND 365),
+  every_unit TEXT CHECK (every_unit IN ('day', 'week', 'month')),
+  weekdays SMALLINT CHECK (weekdays BETWEEN 1 AND 127),
+  next_due DATE NOT NULL,
+  assignee_id UUID,
+  -- the next_due the assignee was pushed about, on the day and the day after
+  notified_on DATE,
+  nudged_on DATE,
+  created_by UUID NOT NULL REFERENCES users (id),
+  created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE (id, household_id),
+  CHECK ((every IS NULL) = (every_unit IS NULL)),
+  CHECK ((every IS NULL) <> (weekdays IS NULL)),
+  FOREIGN KEY (household_id, assignee_id) REFERENCES memberships (household_id, user_id)
+);
+CREATE INDEX idx_chores_household_id ON chores (household_id, next_due);
+CREATE INDEX idx_chores_due ON chores (next_due);
+-- the rota of a chore in position order, a leaver is taken out by end_recurring_of_leaver
+CREATE TABLE chore_members (
+  chore_id UUID NOT NULL,
+  household_id UUID NOT NULL,
+  user_id UUID NOT NULL,
+  position INT NOT NULL,
+  PRIMARY KEY (chore_id, user_id),
+  FOREIGN KEY (chore_id, household_id) REFERENCES chores (id, household_id) ON DELETE CASCADE,
+  FOREIGN KEY (household_id, user_id) REFERENCES memberships (household_id, user_id)
+);
+-- what happened to each due date: user_id did, skipped or passed it on assignee_id's turn;
+-- the last done per member orders a least_recent rota
+--
+-- shortcut: never purged, rows go with their chore; purge old ones in RunCleanup if it grows
+CREATE TABLE chore_log (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  chore_id UUID NOT NULL,
+  household_id UUID NOT NULL,
+  kind TEXT NOT NULL CHECK (kind IN ('done', 'skipped', 'passed')),
+  user_id UUID NOT NULL REFERENCES users (id),
+  assignee_id UUID REFERENCES users (id),
+  due DATE NOT NULL,
+  created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (chore_id, household_id) REFERENCES chores (id, household_id) ON DELETE CASCADE
+);
+CREATE INDEX idx_chore_log_chore_id ON chore_log (chore_id, created_at DESC);
+-- -----------------------------------------------------------------------------
 -- who did what, written by the services in the same transaction, kept per grp for
 -- g.ActivityRetention; title and amount are copies so the row outlives its subject
 CREATE TABLE activity (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   household_id UUID NOT NULL REFERENCES households (id) ON DELETE CASCADE,
   actor_id UUID REFERENCES users (id) ON DELETE SET NULL,
-  grp TEXT NOT NULL CHECK (grp IN ('money', 'shopping', 'notes', 'members')),
+  grp TEXT NOT NULL CHECK (grp IN ('money', 'shopping', 'notes', 'members', 'chores')),
   kind TEXT NOT NULL,
   subject_id UUID,
   target_user_id UUID REFERENCES users (id) ON DELETE SET NULL,
@@ -386,12 +443,74 @@ VALUES (OLD.avatar_key) ON CONFLICT DO NOTHING;
 RETURN OLD;
 END;
 $$ LANGUAGE plpgsql;
--- a leaver's schedules, and their shares in the others' schedules, end with the membership
+-- whose turn a chore is after after's: fixed is the next in the rota (wrapping round, the first
+-- when after is not in it), least_recent who did it longest ago (never first, then rota order),
+-- manual stays with after; exclude_after leaves after out (a pass, a leaver), NULL when nobody is left
+CREATE FUNCTION chore_next_assignee(chore UUID, after UUID, exclude_after BOOLEAN) RETURNS UUID AS $$
+SELECT CASE
+    c.rotation
+    WHEN 'manual' THEN CASE
+      WHEN exclude_after THEN NULL
+      ELSE after
+    END
+    WHEN 'fixed' THEN (
+      SELECT m.user_id
+      FROM chore_members m
+      WHERE m.chore_id = c.id
+        AND NOT (
+          exclude_after
+          AND m.user_id IS NOT DISTINCT FROM after
+        )
+      ORDER BY m.position <= COALESCE(
+          (
+            SELECT p.position
+            FROM chore_members p
+            WHERE p.chore_id = c.id
+              AND p.user_id = after
+          ),
+          -1
+        ),
+        m.position
+      LIMIT 1
+    )
+    ELSE (
+      SELECT m.user_id
+      FROM chore_members m
+      WHERE m.chore_id = c.id
+        AND NOT (
+          exclude_after
+          AND m.user_id IS NOT DISTINCT FROM after
+        )
+      ORDER BY (
+          SELECT max(l.created_at)
+          FROM chore_log l
+          WHERE l.chore_id = c.id
+            AND l.user_id = m.user_id
+            AND l.kind = 'done'
+        ) NULLS FIRST,
+        m.position
+      LIMIT 1
+    )
+  END
+FROM chores c
+WHERE c.id = chore;
+$$ LANGUAGE sql STABLE;
+-- a leaver's schedules, and their shares in the others' schedules, end with the membership;
+-- their chore turns move on and they leave every rota
 CREATE FUNCTION end_recurring_of_leaver() RETURNS TRIGGER AS $$ BEGIN
 DELETE FROM recurring_expenses
 WHERE household_id = NEW.household_id
   AND payer_id = NEW.user_id;
 DELETE FROM recurring_expense_shares
+WHERE household_id = NEW.household_id
+  AND user_id = NEW.user_id;
+UPDATE chores
+SET assignee_id = chore_next_assignee(id, NEW.user_id, TRUE),
+  notified_on = NULL,
+  nudged_on = NULL
+WHERE household_id = NEW.household_id
+  AND assignee_id = NEW.user_id;
+DELETE FROM chore_members
 WHERE household_id = NEW.household_id
   AND user_id = NEW.user_id;
 RETURN NULL;
@@ -521,6 +640,10 @@ CREATE TRIGGER notify_messages
 AFTER INSERT OR UPDATE OR DELETE ON messages FOR EACH ROW EXECUTE FUNCTION notify_household('chat');
 CREATE TRIGGER notify_recurring_expenses
 AFTER INSERT OR UPDATE OR DELETE ON recurring_expenses FOR EACH ROW EXECUTE FUNCTION notify_household('expenses');
+CREATE TRIGGER notify_chores
+AFTER INSERT OR UPDATE OR DELETE ON chores FOR EACH ROW EXECUTE FUNCTION notify_household('chores');
+CREATE TRIGGER notify_chore_members
+AFTER INSERT OR UPDATE OR DELETE ON chore_members FOR EACH ROW EXECUTE FUNCTION notify_household('chores');
 CREATE TRIGGER end_recurring_of_leaver
 AFTER UPDATE OF left_at ON memberships FOR EACH ROW
   WHEN (NEW.left_at IS NOT NULL) EXECUTE FUNCTION end_recurring_of_leaver();

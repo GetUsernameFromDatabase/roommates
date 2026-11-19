@@ -101,7 +101,7 @@ func newTestHousehold(t *testing.T, s *DefaultService) (ownerM, memberM, strange
 	ctx := t.Context()
 	owner, member, stranger := newVerifiedTestUser(t, s), newTestUser(t, s), newTestUser(t, s)
 
-	householdID, err := s.CreateHousehold(ctx, owner, "Flat")
+	householdID, err := s.CreateHousehold(ctx, owner, "Flat", "")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -118,7 +118,7 @@ func newTestHousehold(t *testing.T, s *DefaultService) (ownerM, memberM, strange
 	}
 	memberM = mustMembership(t, s, householdID, member)
 
-	otherID, err := s.CreateHousehold(ctx, stranger, "Other")
+	otherID, err := s.CreateHousehold(ctx, stranger, "Other", "")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -210,13 +210,24 @@ func TestHouseholdLifecycle(t *testing.T) {
 	ctx := context.Background()
 	owner, member, stranger := newVerifiedTestUser(t, s), newVerifiedTestUser(t, s), newTestUser(t, s)
 
-	householdID, err := s.CreateHousehold(ctx, owner, "  Flat 1 ")
+	householdID, err := s.CreateHousehold(ctx, owner, "  Flat 1 ", "Asia/Tokyo")
 	if err != nil {
 		t.Fatal(err)
 	}
 	ownerM := mustMembership(t, s, householdID, owner)
 	if ownerM.Role != g.RoleOwner {
 		t.Fatalf("creator role is %q", ownerM.Role)
+	}
+	// the creator's browser zone is kept, an unknown one leaves the default
+	if h, err := s.GetHouseholdSettings(ctx, ownerM); err != nil || h.TimeZone != "Asia/Tokyo" {
+		t.Fatalf("time zone %q %v", h.TimeZone, err)
+	}
+	otherID, err := s.CreateHousehold(ctx, owner, "Flat 2", "Mars/Olympus")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if h, err := s.GetHouseholdSettings(ctx, mustMembership(t, s, otherID, owner)); err != nil || h.TimeZone != "Europe/Tallinn" {
+		t.Fatalf("default time zone %q %v", h.TimeZone, err)
 	}
 
 	// isolation: a non-member cannot see the household
@@ -316,11 +327,11 @@ func TestDeleteInviteOnlyInOwnHousehold(t *testing.T) {
 	ctx := context.Background()
 	ownerA, ownerB := newVerifiedTestUser(t, s), newVerifiedTestUser(t, s)
 
-	householdA, err := s.CreateHousehold(ctx, ownerA, "A")
+	householdA, err := s.CreateHousehold(ctx, ownerA, "A", "")
 	if err != nil {
 		t.Fatal(err)
 	}
-	householdB, err := s.CreateHousehold(ctx, ownerB, "B")
+	householdB, err := s.CreateHousehold(ctx, ownerB, "B", "")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -372,17 +383,32 @@ func TestUpdateHousehold(t *testing.T) {
 	ctx := context.Background()
 	ownerM, memberM, _ := newTestHousehold(t, s)
 
-	wantErr(t, "member updates", s.UpdateHousehold(ctx, memberM, "Mine", "EUR"), g.ErrorForbidden)
-	wantErr(t, "empty name", s.UpdateHousehold(ctx, ownerM, "  ", "EUR"), g.ErrorInvalidInput)
-	wantErr(t, "long name", s.UpdateHousehold(ctx, ownerM, strings.Repeat("x", MaxHouseholdNameLength+1), "EUR"), g.ErrorInvalidInput)
-	wantErr(t, "unknown currency", s.UpdateHousehold(ctx, ownerM, "Flat", "XYZ"), g.ErrorInvalidInput)
+	const tz = "Europe/Tallinn"
+	wantErr(t, "member updates", s.UpdateHousehold(ctx, memberM, "Mine", "EUR", tz, 9), g.ErrorForbidden)
+	wantErr(t, "empty name", s.UpdateHousehold(ctx, ownerM, "  ", "EUR", tz, 9), g.ErrorInvalidInput)
+	wantErr(t, "long name", s.UpdateHousehold(ctx, ownerM, strings.Repeat("x", MaxHouseholdNameLength+1), "EUR", tz, 9), g.ErrorInvalidInput)
+	wantErr(t, "unknown currency", s.UpdateHousehold(ctx, ownerM, "Flat", "XYZ", tz, 9), g.ErrorInvalidInput)
+	for _, bad := range []string{"", "Mars/Olympus", "posix/Europe/Tallinn", "EST5EDT"} {
+		err := s.UpdateHousehold(ctx, ownerM, "Flat", "EUR", bad, 9)
+		var fe FieldError
+		if !errors.As(err, &fe) || fe.Field != FieldTimeZone {
+			t.Errorf("time zone %q: %v is not a time zone FieldError", bad, err)
+		}
+	}
+	for _, bad := range []int{-1, 24} {
+		err := s.UpdateHousehold(ctx, ownerM, "Flat", "EUR", tz, bad)
+		var fe FieldError
+		if !errors.As(err, &fe) || fe.Field != FieldReminderHour {
+			t.Errorf("hour %d: %v is not a reminder hour FieldError", bad, err)
+		}
+	}
 
 	// no expenses yet, so the currency can change
-	if err := s.UpdateHousehold(ctx, ownerM, " Home ", "USD"); err != nil {
+	if err := s.UpdateHousehold(ctx, ownerM, " Home ", "USD", "America/New_York", 20); err != nil {
 		t.Fatal(err)
 	}
 	got, err := s.GetHouseholdSettings(ctx, memberM)
-	if err != nil || got.Name != "Home" || got.Currency != "USD" || !got.Settled {
+	if err != nil || got.Name != "Home" || got.Currency != "USD" || !got.Settled || got.TimeZone != "America/New_York" || got.ReminderHour != 20 {
 		t.Fatalf("settings %+v %v", got, err)
 	}
 
@@ -393,7 +419,7 @@ func TestUpdateHousehold(t *testing.T) {
 	}); err != nil {
 		t.Fatal(err)
 	}
-	err = s.UpdateHousehold(ctx, ownerM, "Home", "EUR")
+	err = s.UpdateHousehold(ctx, ownerM, "Home", "EUR", tz, 9)
 	wantErr(t, "currency with a debt", err, g.ErrorInvalidInput)
 	var fe FieldError
 	if !errors.As(err, &fe) || fe.Field != FieldCurrency {
@@ -403,7 +429,7 @@ func TestUpdateHousehold(t *testing.T) {
 		t.Fatalf("settings with a debt %+v %v", got, err)
 	}
 	// the same currency is no change, a rename is fine
-	if err := s.UpdateHousehold(ctx, ownerM, "Flat", "USD"); err != nil {
+	if err := s.UpdateHousehold(ctx, ownerM, "Flat", "USD", tz, 9); err != nil {
 		t.Fatal(err)
 	}
 
@@ -415,7 +441,7 @@ func TestUpdateHousehold(t *testing.T) {
 	}); err != nil {
 		t.Fatal(err)
 	}
-	if err := s.UpdateHousehold(ctx, ownerM, "Flat", "EUR"); err != nil {
+	if err := s.UpdateHousehold(ctx, ownerM, "Flat", "EUR", tz, 9); err != nil {
 		t.Fatalf("currency when even: %v", err)
 	}
 	rows, err := s.db.ListDebtItems(ctx, dbqueries.ListDebtItemsParams{HouseholdID: ownerM.HouseholdID, UserID: pgtype.UUID{}})

@@ -125,7 +125,7 @@ Only list something as verified if it was exercised in this run.
 - Run `browser_close`.
 - Stop `task dev` only if this run started it. Leave the docker services running.
 - Delete screenshots in `.playwright-mcp/` that the report doesn't cite.
-- Add a section for this session's folder to the top of `.playwright-mcp/README.md`: a few lines on what changed, then links to the screenshots (a page × 390/1440 × light/dark table, plus single checks).
+- Write `README.md` inside this session's folder (there is no top-level index): a title, the commit or "uncommitted", a few lines on what changed, then links relative to the folder (a page × 390/1440 × light/dark table, plus single checks). A later run in the same folder adds its own section to that file.
 
 ## Limits
 

@@ -75,10 +75,39 @@ const (
 	NotifyMoney     = "money"
 	NotifyRecurring = "recurring"
 	NotifyHousehold = "household"
+	NotifyChores    = "chores"
 )
 
 // NotifyKinds are the notification kinds in the order the settings show them
-var NotifyKinds = []string{NotifyChat, NotifyMoney, NotifyRecurring, NotifyHousehold}
+var NotifyKinds = []string{NotifyChat, NotifyMoney, NotifyRecurring, NotifyChores, NotifyHousehold}
+
+// chores.rotation values, the table CHECKs these
+const (
+	RotationFixed       = "fixed"
+	RotationLeastRecent = "least_recent"
+	RotationManual      = "manual"
+)
+
+// Rotations are the rotation rules in the order the form shows them
+var Rotations = []string{RotationFixed, RotationLeastRecent, RotationManual}
+
+// how a chore repeats: chores.every_unit values (the table CHECKs these), or on weekdays
+const (
+	ChoreUnitDay      = "day"
+	ChoreUnitWeek     = "week"
+	ChoreUnitMonth    = "month"
+	ChoreUnitWeekdays = "weekdays"
+)
+
+// ChoreEveryUnits are the units of an "every N" chore in the order the form shows them
+var ChoreEveryUnits = []string{ChoreUnitDay, ChoreUnitWeek, ChoreUnitMonth}
+
+// chore_log.kind values, the table CHECKs these
+const (
+	ChoreDone    = "done"
+	ChoreSkipped = "skipped"
+	ChorePassed  = "passed"
+)
 
 // HouseholdPurgeAfter is how long a deleted household stays restorable (read-only) before it is purged
 const HouseholdPurgeAfter = 30 * 24 * time.Hour
@@ -89,6 +118,7 @@ const (
 	ActivityShopping = "shopping"
 	ActivityNotes    = "notes"
 	ActivityMembers  = "members"
+	ActivityChores   = "chores"
 )
 
 // ActivityRetention is how long activity of each group is kept
@@ -96,6 +126,7 @@ var ActivityRetention = map[string]time.Duration{
 	ActivityMoney:    365 * 24 * time.Hour,
 	ActivityMembers:  365 * 24 * time.Hour,
 	ActivityNotes:    90 * 24 * time.Hour,
+	ActivityChores:   90 * 24 * time.Hour,
 	ActivityShopping: 30 * 24 * time.Hour,
 }
 
@@ -133,6 +164,11 @@ const (
 	ActCurrencyChanged      = "currency_changed"
 	ActHouseholdDeleted     = "household_deleted"
 	ActHouseholdRestored    = "household_restored"
+	ActChoreAdded           = "chore_added"
+	ActChoreDeleted         = "chore_deleted"
+	ActChoreDone            = "chore_done"
+	ActChoreSkipped         = "chore_skipped"
+	ActChorePassed          = "chore_passed"
 )
 
 // ActivityGroup is the group (and so the retention) of each activity kind
@@ -149,6 +185,8 @@ var ActivityGroup = map[string]string{
 	ActMemberPromoted: ActivityMembers, ActOwnershipTransferred: ActivityMembers, ActSteppedDown: ActivityMembers,
 	ActHouseholdRenamed: ActivityMembers, ActCurrencyChanged: ActivityMembers,
 	ActHouseholdDeleted: ActivityMembers, ActHouseholdRestored: ActivityMembers,
+	ActChoreAdded: ActivityChores, ActChoreDeleted: ActivityChores,
+	ActChoreDone: ActivityChores, ActChoreSkipped: ActivityChores, ActChorePassed: ActivityChores,
 }
 
 // ExpenseCategories are the rows of the expense_categories table, which expenses and shopping lists reference
@@ -173,4 +211,5 @@ const (
 	ParamMessageID   = "messageID"
 	ParamSettleID    = "settlementID"
 	ParamRecurringID = "recurringID"
+	ParamChoreID     = "choreID"
 )

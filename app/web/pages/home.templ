@@ -1,5 +1,6 @@
 package pages
 
+import "roommates/web/assets"
 import "roommates/web/components"
 import "roommates/web/components/button"
 import "roommates/web/components/field"
@@ -91,6 +92,11 @@ templ Home(username string, emailValidated bool, households []dbqueries.ListHous
 templ CreateHouseholdForm(m models.Household) {
 	{{ nameValidations := m.ValidateName() }}
 	<form action={ g.RouteHouseholds } method="post" hx-boost="true" class="space-y-4">
+		@localTimeScript.Once() {
+			<script src={ assets.URL("local-time.js") }></script>
+		}
+		// local-time.js fills in the browser's time zone for the new household
+		<input type="hidden" name="time_zone" data-browser-time-zone/>
 		@field.Field() {
 			@field.Label(field.LabelProps{For: "name"}) {
 				@components.T(locales.LK_HouseholdName)

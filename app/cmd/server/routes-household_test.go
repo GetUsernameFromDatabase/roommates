@@ -88,7 +88,7 @@ func TestHouseholdRoutesHideFromStrangers(t *testing.T) {
 	r, service, signIn := newRouteTest(t)
 	memberID, memberCookies := signIn("member")
 	_, strangerCookies := signIn("stranger")
-	householdID, err := service.CreateHousehold(t.Context(), memberID, "Flat")
+	householdID, err := service.CreateHousehold(t.Context(), memberID, "Flat", "")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -127,7 +127,7 @@ func TestHouseholdRoutesHideFromStrangers(t *testing.T) {
 func TestDeletedHouseholdIsReadOnly(t *testing.T) {
 	r, service, signIn := newRouteTest(t)
 	ownerID, cookies := signIn("owner")
-	householdID, err := service.CreateHousehold(t.Context(), ownerID, "Flat")
+	householdID, err := service.CreateHousehold(t.Context(), ownerID, "Flat", "")
 	if err != nil {
 		t.Fatal(err)
 	}

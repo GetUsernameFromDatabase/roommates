@@ -22,6 +22,40 @@ type Activity struct {
 	CreatedAt    pgtype.Timestamptz `json:"created_at"`
 }
 
+type Chore struct {
+	ID          pgtype.UUID        `json:"id"`
+	HouseholdID pgtype.UUID        `json:"household_id"`
+	Title       string             `json:"title"`
+	Rotation    string             `json:"rotation"`
+	Every       *int16             `json:"every"`
+	EveryUnit   *string            `json:"every_unit"`
+	Weekdays    *int16             `json:"weekdays"`
+	NextDue     pgtype.Date        `json:"next_due"`
+	AssigneeID  pgtype.UUID        `json:"assignee_id"`
+	NotifiedOn  pgtype.Date        `json:"notified_on"`
+	NudgedOn    pgtype.Date        `json:"nudged_on"`
+	CreatedBy   pgtype.UUID        `json:"created_by"`
+	CreatedAt   pgtype.Timestamptz `json:"created_at"`
+}
+
+type ChoreLog struct {
+	ID          pgtype.UUID        `json:"id"`
+	ChoreID     pgtype.UUID        `json:"chore_id"`
+	HouseholdID pgtype.UUID        `json:"household_id"`
+	Kind        string             `json:"kind"`
+	UserID      pgtype.UUID        `json:"user_id"`
+	AssigneeID  pgtype.UUID        `json:"assignee_id"`
+	Due         pgtype.Date        `json:"due"`
+	CreatedAt   pgtype.Timestamptz `json:"created_at"`
+}
+
+type ChoreMember struct {
+	ChoreID     pgtype.UUID `json:"chore_id"`
+	HouseholdID pgtype.UUID `json:"household_id"`
+	UserID      pgtype.UUID `json:"user_id"`
+	Position    int32       `json:"position"`
+}
+
 type EmailToken struct {
 	TokenHash []byte             `json:"token_hash"`
 	UserID    pgtype.UUID        `json:"user_id"`
@@ -83,13 +117,15 @@ type FileRef struct {
 }
 
 type Household struct {
-	ID        pgtype.UUID        `json:"id"`
-	Name      string             `json:"name"`
-	Currency  string             `json:"currency"`
-	CreatedBy pgtype.UUID        `json:"created_by"`
-	CreatedAt pgtype.Timestamptz `json:"created_at"`
-	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
-	DeletedAt pgtype.Timestamptz `json:"deleted_at"`
+	ID           pgtype.UUID        `json:"id"`
+	Name         string             `json:"name"`
+	Currency     string             `json:"currency"`
+	CreatedBy    pgtype.UUID        `json:"created_by"`
+	CreatedAt    pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt    pgtype.Timestamptz `json:"updated_at"`
+	DeletedAt    pgtype.Timestamptz `json:"deleted_at"`
+	TimeZone     string             `json:"time_zone"`
+	ReminderHour int16              `json:"reminder_hour"`
 }
 
 type HttpSession struct {

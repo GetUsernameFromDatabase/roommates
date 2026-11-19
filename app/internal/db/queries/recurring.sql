@@ -21,7 +21,7 @@ DELETE FROM recurring_expense_shares
 WHERE recurring_id = $1
   AND household_id = $2;
 -- the household's schedules, only the one id when it is set, only those due_for pays that are due
--- when that is set
+-- (on the household's local date) when that is set
 -- name: ListRecurring :many
 SELECT r.id,
   r.payer_id,
@@ -35,6 +35,7 @@ SELECT r.id,
   r.next_due
 FROM recurring_expenses r
   JOIN users u ON u.id = r.payer_id
+  JOIN households h ON h.id = r.household_id
 WHERE r.household_id = @household_id
   AND (
     sqlc.narg(id)::uuid IS NULL
@@ -44,7 +45,7 @@ WHERE r.household_id = @household_id
     sqlc.narg(due_for)::uuid IS NULL
     OR (
       r.payer_id = sqlc.narg(due_for)::uuid
-      AND r.next_due <= current_date
+      AND r.next_due <= (now() AT TIME ZONE h.time_zone)::date
     )
   )
 ORDER BY r.next_due,
@@ -83,7 +84,8 @@ WHERE id = $1
 DELETE FROM recurring_expenses
 WHERE id = $1
   AND household_id = $2;
--- due schedules whose payer was not pushed about this due date yet, in live households
+-- due schedules whose payer was not pushed about this due date yet, in live households;
+-- on the due day itself only from the household's reminder hour on
 -- name: ListRecurringToNotify :many
 SELECT r.id,
   r.household_id,
@@ -94,7 +96,16 @@ FROM recurring_expenses r
   JOIN households h ON h.id = r.household_id
   JOIN memberships m ON m.household_id = r.household_id
   AND m.user_id = r.payer_id
-WHERE r.next_due <= current_date
+WHERE (
+    r.next_due < (now() AT TIME ZONE h.time_zone)::date
+    OR (
+      r.next_due = (now() AT TIME ZONE h.time_zone)::date
+      AND extract(
+        hour
+        FROM now() AT TIME ZONE h.time_zone
+      ) >= h.reminder_hour
+    )
+  )
   AND r.notified_on IS DISTINCT FROM r.next_due
   AND h.deleted_at IS NULL
   AND m.left_at IS NULL

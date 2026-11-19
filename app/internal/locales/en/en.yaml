@@ -80,6 +80,11 @@ en:
     settings-title: Household
     settings-currency: Currency
     settings-currency-locked: All debts must be settled first
+    settings-time-zone: Time zone
+    settings-time-zone-invalid: Choose a time zone from the list
+    settings-reminder-hour: Reminder time
+    settings-reminder-hour-invalid: Choose an hour from the list
+    settings-reminder-hint: Chore and recurring expense reminders are sent at this time in the household's time zone.
   shopping:
     back: All lists
     lists: Shopping lists
@@ -352,6 +357,7 @@ en:
     more-waiting: More, a payment waits for your confirmation
     settings: Settings
     households-add: Create or join
+    chores: Chores
   invite-page:
     title: Join %s
     description: You have been invited to join this household.
@@ -479,10 +485,13 @@ en:
   recurring:
     title: Recurring expenses
     repeat: Repeat
-    never: Never
     week: Weekly
     month: Monthly
     year: Yearly
+    never-short: Never
+    week-short: Week
+    month-short: Month
+    year-short: Year
     next-due: Next due
     none: No recurring expenses yet. Choose Repeat when you add an expense.
     edit-title: Edit recurring expense
@@ -495,6 +504,99 @@ en:
     stale: This repeat was already added or skipped.
     push-title: An expense is due in %s
     push-body: "%s, %s. Add or skip it under Expenses."
+  chores:
+    title: Chores
+    new: New chore
+    create: Add chore
+    empty: No chores yet. Add the first one and set up the rota.
+    turn: "Turn: %s"
+    turn-you: Your turn
+    turn-none: Unassigned
+    due-today: Today
+    due-tomorrow: Tomorrow
+    due-date: "Due %s"
+    due-overdue: "Overdue, %s"
+    schedule-weekdays: "Weekdays: %s"
+    schedule-days: "Every %d days"
+    schedule-day: Every day
+    schedule-weeks: "Every %d weeks"
+    schedule-week: Every week
+    schedule-months: "Every %d months"
+    schedule-month: Every month
+    done: Done
+    skip: Skip
+    pass: Pass
+    notice-done: "Done. Next: %s, %s."
+    notice-done-nobody: "Done. Next due: %s."
+    notice-skipped: "Skipped. Next: %s, %s."
+    notice-skipped-nobody: "Skipped. Next due: %s."
+    notice-passed: "The turn went to %s."
+    notice-assigned: "It is now the turn of %s."
+    notice-added: Chore added.
+    form-title: Title
+    title-invalid: "The title must be 1 to %d characters long."
+    schedule: Schedule
+    schedule-invalid: Check the schedule. Pick weekdays or a repeat interval.
+    schedule-weekdays-option: On weekdays
+    schedule-every-option: Repeating
+    every-before: Every
+    every-count: Interval
+    every-unit: Unit
+    unit-day: days
+    unit-week: weeks
+    unit-month: months
+    first-due: First due date
+    first-due-invalid: That date is not valid.
+    rotation: Rotation
+    rotation-invalid: Pick how the turn moves on.
+    rotation-fixed: In a fixed order
+    rotation-fixed-hint: The turn goes round in the same order every time.
+    rotation-least-recent: Whoever did it least recently
+    rotation-least-recent-hint: The turn goes to whoever has gone longest without doing it.
+    rotation-manual: By hand
+    rotation-manual-hint: The turn never moves by itself, it stays with whoever you assign.
+    members: Members
+    members-invalid: Pick at least one member.
+    assignee: Whose turn
+    assignee-invalid: Pick whose turn it is.
+    invalid: Check the form fields.
+    rota: Rota
+    current: Turn
+    last-done: "Done %s"
+    never-done: Never done
+    move-up: "Move %s up"
+    move-down: "Move %s down"
+    assign: Assign the turn
+    assign-to: To
+    history: History
+    history-none: No history yet.
+    log-done: "%s did it · %s"
+    log-done-for: "%s did it for %s · %s"
+    log-skipped: "%s skipped it · %s"
+    log-skipped-for: "%s skipped it for %s · %s"
+    log-passed: "%s passed it on · %s"
+    delete-confirm: Delete this chore and its history?
+    weekday-mon: Monday
+    weekday-tue: Tuesday
+    weekday-wed: Wednesday
+    weekday-thu: Thursday
+    weekday-fri: Friday
+    weekday-sat: Saturday
+    weekday-sun: Sunday
+    weekday-short-mon: Mon
+    weekday-short-tue: Tue
+    weekday-short-wed: Wed
+    weekday-short-thu: Thu
+    weekday-short-fri: Fri
+    weekday-short-sat: Sat
+    weekday-short-sun: Sun
+  chore-push:
+    due-title: "%s: your turn"
+    due-body: "%s, due %s"
+    nudge-title: "%s: still to do"
+    nudge-body: "%s is not done yet, it was due %s"
+    passed-body: "%s passed %s to you"
+    assigned-body: "%s gave you %s"
   ownership:
     delete-title: Delete household
     delete-description: "Nobody can change anything in it any more. It stays readable for %d days and an owner can restore it until then, after that it is gone for good with all its files."
@@ -530,6 +632,8 @@ en:
     money-description: A new expense you share and settlements paid to you.
     recurring: Recurring expense is due
     recurring-description: A recurring expense has reached its due date.
+    chores: Chores
+    chores-description: It is your turn for a chore, a reminder the day after, and when someone passes their turn to you.
     household: Household changes
     household-description: Someone joins or leaves, the owner changes, the household is deleted or restored.
   activity:
@@ -570,6 +674,11 @@ en:
     currency-changed: "%[1]s changed the currency to %[2]s"
     household-deleted: "%[1]s deleted the household"
     household-restored: "%[1]s restored the household"
+    chore-added: "%[1]s added the chore %[2]s"
+    chore-deleted: "%[1]s deleted the chore %[2]s"
+    chore-done: "%[1]s did the chore %[2]s"
+    chore-skipped: "%[1]s skipped the chore %[2]s"
+    chore-passed: "%[1]s passed the chore %[2]s on to %[3]s"
     expense-added-you: "You added the expense %[2]s"
     expense-edited-you: "You edited the expense %[2]s"
     expense-deleted-you: "You deleted the expense %[2]s"
@@ -602,6 +711,11 @@ en:
     currency-changed-you: "You changed the currency to %[2]s"
     household-deleted-you: "You deleted the household"
     household-restored-you: "You restored the household"
+    chore-added-you: "You added the chore %[2]s"
+    chore-deleted-you: "You deleted the chore %[2]s"
+    chore-done-you: "You did the chore %[2]s"
+    chore-skipped-you: "You skipped the chore %[2]s"
+    chore-passed-you: "You passed the chore %[2]s on to %[3]s"
   validation-errors:
     email:
       generic: Invalid email address

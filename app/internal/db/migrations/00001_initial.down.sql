@@ -3,6 +3,9 @@ ALTER TABLE http_sessions DROP COLUMN user_id;
 -- -----------------------------------------------------------------------------
 -- triggers go with their tables
 DROP TABLE activity,
+chore_log,
+chore_members,
+chores,
 recurring_expense_shares,
 recurring_expenses,
 notification_mutes,
@@ -26,6 +29,7 @@ households,
 users;
 -- -----------------------------------------------------------------------------
 DROP FUNCTION end_recurring_of_leaver(),
+chore_next_assignee(UUID, UUID, BOOLEAN),
 delete_unreferenced_file(),
 file_visible(UUID, UUID),
 notify_household_expense_share(),

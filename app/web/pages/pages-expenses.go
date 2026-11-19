@@ -74,10 +74,17 @@ func settlementLine(ctx context.Context, method *string, note string) string {
 const repeatNever = "never"
 
 var intervalKeys = map[string]locales.LK{
-	repeatNever:     locales.LK_RecurringNever,
 	g.IntervalWeek:  locales.LK_RecurringWeek,
 	g.IntervalMonth: locales.LK_RecurringMonth,
 	g.IntervalYear:  locales.LK_RecurringYear,
+}
+
+// intervalShortKeys label the repeat control, short so four fit side by side on a phone
+var intervalShortKeys = map[string]locales.LK{
+	repeatNever:     locales.LK_RecurringNeverShort,
+	g.IntervalWeek:  locales.LK_RecurringWeekShort,
+	g.IntervalMonth: locales.LK_RecurringMonthShort,
+	g.IntervalYear:  locales.LK_RecurringYearShort,
 }
 
 // expenseFrame is what the forms of [expenseForm] differ in

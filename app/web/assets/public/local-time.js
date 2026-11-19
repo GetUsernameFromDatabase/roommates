@@ -1,3 +1,4 @@
+// also fills input[data-browser-time-zone] with the browser's IANA time zone
 // shows <time data-local> in the viewer's time zone and language, the server only knows UTC,
 // without today's date and this year; data-today and data-yesterday ("today at %s") put the
 // time into a phrase on those days instead
@@ -5,6 +6,10 @@
 if (!window.localTimeLoaded) {
   window.localTimeLoaded = true;
   htmx.onLoad(function (root) {
+    // the create household form sends the browser's zone, the server keeps its default if it is no zone
+    root.querySelectorAll("input[data-browser-time-zone]").forEach(function (i) {
+      i.value = Intl.DateTimeFormat().resolvedOptions().timeZone || "";
+    });
     var lang = document.documentElement.lang || undefined;
     var now = new Date();
     var yesterday = new Date(now);

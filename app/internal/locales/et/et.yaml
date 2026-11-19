@@ -80,6 +80,11 @@ et:
     settings-title: Leibkond
     settings-currency: Valuuta
     settings-currency-locked: Kõik võlad peavad enne olema arveldatud
+    settings-time-zone: Ajavöönd
+    settings-time-zone-invalid: Vali ajavöönd nimekirjast
+    settings-reminder-hour: Meeldetuletuse kellaaeg
+    settings-reminder-hour-invalid: Vali kellaaeg nimekirjast
+    settings-reminder-hint: Kodutööde ja korduvate kulude meeldetuletused saadetakse sel ajal majapidamise ajavööndis.
   shopping:
     back: Kõik nimekirjad
     lists: Ostunimekirjad
@@ -352,6 +357,7 @@ et:
     more-waiting: Rohkem, makse ootab sinu kinnitust
     settings: Seaded
     households-add: Loo või liitu
+    chores: Kodutööd
   invite-page:
     title: Liitu leibkonnaga %s
     description: Sind on kutsutud selle leibkonnaga liituma.
@@ -479,10 +485,13 @@ et:
   recurring:
     title: Korduvad kulud
     repeat: Kordub
-    never: Ei kordu
     week: Iga nädal
     month: Iga kuu
     year: Iga aasta
+    never-short: Ei
+    week-short: Nädal
+    month-short: Kuu
+    year-short: Aasta
     next-due: Järgmine kord
     none: Korduvaid kulusid pole. Uue kulu juures saad valida, et see kordub.
     edit-title: Muuda korduvat kulu
@@ -495,6 +504,99 @@ et:
     stale: Seda kordust on juba lisatud või see jäeti vahele.
     push-title: Kulu on tähtajal leibkonnas %s
     push-body: "%s, %s. Lisa või jäta vahele kulude all."
+  chores:
+    title: Kodutööd
+    new: Uus kodutöö
+    create: Lisa kodutöö
+    empty: Kodutöid pole veel. Lisa esimene ja pane järjekord paika.
+    turn: "Kord: %s"
+    turn-you: Sinu kord
+    turn-none: Määramata
+    due-today: Täna
+    due-tomorrow: Homme
+    due-date: "Tähtaeg %s"
+    due-overdue: "Hilinenud, %s"
+    schedule-weekdays: "Nädalapäevad: %s"
+    schedule-days: "Iga %d päeva tagant"
+    schedule-day: Iga päev
+    schedule-weeks: "Iga %d nädala tagant"
+    schedule-week: Iga nädal
+    schedule-months: "Iga %d kuu tagant"
+    schedule-month: Iga kuu
+    done: Tehtud
+    skip: Jäta vahele
+    pass: Anna edasi
+    notice-done: "Tehtud. Järgmine: %s, %s."
+    notice-done-nobody: "Tehtud. Järgmine tähtaeg: %s."
+    notice-skipped: "Jäetud vahele. Järgmine: %s, %s."
+    notice-skipped-nobody: "Jäetud vahele. Järgmine tähtaeg: %s."
+    notice-passed: "Kord läks edasi: %s."
+    notice-assigned: "Kord on nüüd: %s."
+    notice-added: Kodutöö lisatud.
+    form-title: Pealkiri
+    title-invalid: "Pealkiri peab olema 1 kuni %d tähte pikk."
+    schedule: Ajakava
+    schedule-invalid: Kontrolli ajakava. Vali nädalapäevad või korduse samm.
+    schedule-weekdays-option: Nädalapäevadel
+    schedule-every-option: Korduvalt
+    every-before: Iga
+    every-count: Korduse samm
+    every-unit: Ühik
+    unit-day: päeva tagant
+    unit-week: nädala tagant
+    unit-month: kuu tagant
+    first-due: Esimene tähtaeg
+    first-due-invalid: See kuupäev ei sobi.
+    rotation: Järjekord
+    rotation-invalid: Vali, kuidas kord liigub.
+    rotation-fixed: Kindlas järjekorras
+    rotation-fixed-hint: Kord liigub ringi alati samas järjekorras.
+    rotation-least-recent: Kes kõige kauem pole teinud
+    rotation-least-recent-hint: Kord läheb sellele, kes pole seda tööd kõige kauem teinud.
+    rotation-manual: Käsitsi
+    rotation-manual-hint: Kord ei liigu ise, see on sellel, kelle sa määrad.
+    members: Osalejad
+    members-invalid: Vali vähemalt üks osaline.
+    assignee: Kelle kord
+    assignee-invalid: Vali, kelle kord on.
+    invalid: Kontrolli vormi välju.
+    rota: Järjekorra liikmed
+    current: Kord
+    last-done: "Tehtud %s"
+    never-done: Pole veel teinud
+    move-up: "Tõsta %s ettepoole"
+    move-down: "Tõsta %s tagapoole"
+    assign: Määra kord
+    assign-to: Kellele
+    history: Ajalugu
+    history-none: Ajalugu on veel tühi.
+    log-done: "%s tegi · %s"
+    log-done-for: "%s tegi, kord oli: %s · %s"
+    log-skipped: "%s jättis vahele · %s"
+    log-skipped-for: "%s jättis vahele, kord oli: %s · %s"
+    log-passed: "%s andis edasi · %s"
+    delete-confirm: Kustutad selle kodutöö koos ajalooga?
+    weekday-mon: Esmaspäev
+    weekday-tue: Teisipäev
+    weekday-wed: Kolmapäev
+    weekday-thu: Neljapäev
+    weekday-fri: Reede
+    weekday-sat: Laupäev
+    weekday-sun: Pühapäev
+    weekday-short-mon: E
+    weekday-short-tue: T
+    weekday-short-wed: K
+    weekday-short-thu: N
+    weekday-short-fri: R
+    weekday-short-sat: L
+    weekday-short-sun: P
+  chore-push:
+    due-title: "%s: sinu kord"
+    due-body: "%s, tähtaeg %s"
+    nudge-title: "%s: ootab veel tegemist"
+    nudge-body: "%s jäi tegemata, tähtaeg oli %s"
+    passed-body: "%s andis sulle üle: %s"
+    assigned-body: "%s määras sulle: %s"
   ownership:
     delete-title: Kustuta majapidamine
     delete-description: "Keegi ei saa selles enam midagi muuta. See jääb %d päevaks loetavaks ja omanik saab selle seni taastada, seejärel kaob see koos kõigi failidega jäädavalt."
@@ -530,6 +632,8 @@ et:
     money-description: Uus kulu, kus sul on osa, ja sulle tehtud arveldus.
     recurring: Korduv kulu on tähtajal
     recurring-description: Korduva kulu järgmine kuupäev on käes.
+    chores: Kodutööd
+    chores-description: Sinu kord teha kodutööd, meeldetuletus järgmisel päeval ja kui keegi annab oma korra sulle.
     household: Majapidamise muudatused
     household-description: Liitumine, lahkumine, omaniku vahetus, kustutamine ja taastamine.
   activity:
@@ -570,6 +674,11 @@ et:
     currency-changed: "%[1]s muutis valuutat: %[2]s"
     household-deleted: "%[1]s kustutas majapidamise"
     household-restored: "%[1]s taastas majapidamise"
+    chore-added: "%[1]s lisas kodutöö %[2]s"
+    chore-deleted: "%[1]s kustutas kodutöö %[2]s"
+    chore-done: "%[1]s tegi kodutöö %[2]s"
+    chore-skipped: "%[1]s jättis kodutöö %[2]s vahele"
+    chore-passed: "%[1]s andis kodutöö %[2]s edasi: %[3]s"
     expense-added-you: "Sa lisasid kulu %[2]s"
     expense-edited-you: "Sa muutsid kulu %[2]s"
     expense-deleted-you: "Sa kustutasid kulu %[2]s"
@@ -602,6 +711,11 @@ et:
     currency-changed-you: "Sa muutsid valuutat: %[2]s"
     household-deleted-you: "Sa kustutasid majapidamise"
     household-restored-you: "Sa taastasid majapidamise"
+    chore-added-you: "Sa lisasid kodutöö %[2]s"
+    chore-deleted-you: "Sa kustutasid kodutöö %[2]s"
+    chore-done-you: "Sa tegid kodutöö %[2]s"
+    chore-skipped-you: "Sa jätsid kodutöö %[2]s vahele"
+    chore-passed-you: "Sa andsid kodutöö %[2]s edasi: %[3]s"
   validation-errors:
     email:
       generic: Ebasobiv e-maili address

@@ -14,22 +14,46 @@ import (
 const getHousehold = `-- name: GetHousehold :one
 SELECT id,
   name,
-  currency
+  currency,
+  time_zone,
+  reminder_hour
 FROM households
 WHERE id = $1
 `
 
 type GetHouseholdRow struct {
-	ID       pgtype.UUID `json:"id"`
-	Name     string      `json:"name"`
-	Currency string      `json:"currency"`
+	ID           pgtype.UUID `json:"id"`
+	Name         string      `json:"name"`
+	Currency     string      `json:"currency"`
+	TimeZone     string      `json:"time_zone"`
+	ReminderHour int16       `json:"reminder_hour"`
 }
 
 func (q *Queries) GetHousehold(ctx context.Context, id pgtype.UUID) (GetHouseholdRow, error) {
 	row := q.db.QueryRow(ctx, getHousehold, id)
 	var i GetHouseholdRow
-	err := row.Scan(&i.ID, &i.Name, &i.Currency)
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.Currency,
+		&i.TimeZone,
+		&i.ReminderHour,
+	)
 	return i, err
+}
+
+const householdToday = `-- name: HouseholdToday :one
+SELECT (now() AT TIME ZONE time_zone)::date
+FROM households
+WHERE id = $1
+`
+
+// the household's local date, what "today" is for its due dates
+func (q *Queries) HouseholdToday(ctx context.Context, id pgtype.UUID) (pgtype.Date, error) {
+	row := q.db.QueryRow(ctx, householdToday, id)
+	var column_1 pgtype.Date
+	err := row.Scan(&column_1)
+	return column_1, err
 }
 
 const insertHousehold = `-- name: InsertHousehold :one
@@ -48,6 +72,25 @@ func (q *Queries) InsertHousehold(ctx context.Context, arg InsertHouseholdParams
 	var id pgtype.UUID
 	err := row.Scan(&id)
 	return id, err
+}
+
+const isTimeZone = `-- name: IsTimeZone :one
+SELECT EXISTS (
+    SELECT 1
+    FROM pg_catalog.pg_timezone_names
+    WHERE name = $1::text
+      AND (
+        name ~ '^(Africa|America|Antarctica|Asia|Atlantic|Australia|Europe|Indian|Pacific)/'
+        OR name = 'UTC'
+      )
+  )
+`
+
+func (q *Queries) IsTimeZone(ctx context.Context, name string) (bool, error) {
+	row := q.db.QueryRow(ctx, isTimeZone, name)
+	var exists bool
+	err := row.Scan(&exists)
+	return exists, err
 }
 
 const listHouseholdsOfUser = `-- name: ListHouseholdsOfUser :many
@@ -94,6 +137,35 @@ func (q *Queries) ListHouseholdsOfUser(ctx context.Context, userID pgtype.UUID) 
 	return items, nil
 }
 
+const listTimeZones = `-- name: ListTimeZones :many
+SELECT name::text
+FROM pg_catalog.pg_timezone_names
+WHERE name ~ '^(Africa|America|Antarctica|Asia|Atlantic|Australia|Europe|Indian|Pacific)/'
+  OR name = 'UTC'
+ORDER BY name
+`
+
+// the zones a household can pick: the IANA region names and UTC, no posix/ or Etc/ aliases
+func (q *Queries) ListTimeZones(ctx context.Context) ([]string, error) {
+	rows, err := q.db.Query(ctx, listTimeZones)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []string
+	for rows.Next() {
+		var name string
+		if err := rows.Scan(&name); err != nil {
+			return nil, err
+		}
+		items = append(items, name)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const lockHousehold = `-- name: LockHousehold :exec
 SELECT id
 FROM households
@@ -132,6 +204,22 @@ func (q *Queries) RestoreHousehold(ctx context.Context, id pgtype.UUID) error {
 	return err
 }
 
+const setHouseholdTimeZone = `-- name: SetHouseholdTimeZone :exec
+UPDATE households
+SET time_zone = $2
+WHERE id = $1
+`
+
+type SetHouseholdTimeZoneParams struct {
+	ID       pgtype.UUID `json:"id"`
+	TimeZone string      `json:"time_zone"`
+}
+
+func (q *Queries) SetHouseholdTimeZone(ctx context.Context, arg SetHouseholdTimeZoneParams) error {
+	_, err := q.db.Exec(ctx, setHouseholdTimeZone, arg.ID, arg.TimeZone)
+	return err
+}
+
 const softDeleteHousehold = `-- name: SoftDeleteHousehold :exec
 UPDATE households
 SET deleted_at = CURRENT_TIMESTAMP
@@ -148,18 +236,28 @@ func (q *Queries) SoftDeleteHousehold(ctx context.Context, id pgtype.UUID) error
 const updateHousehold = `-- name: UpdateHousehold :exec
 UPDATE households
 SET name = $1,
-  currency = $2
-WHERE id = $3
+  currency = $2,
+  time_zone = $3,
+  reminder_hour = $4
+WHERE id = $5
 `
 
 type UpdateHouseholdParams struct {
-	Name     string      `json:"name"`
-	Currency string      `json:"currency"`
-	ID       pgtype.UUID `json:"id"`
+	Name         string      `json:"name"`
+	Currency     string      `json:"currency"`
+	TimeZone     string      `json:"time_zone"`
+	ReminderHour int16       `json:"reminder_hour"`
+	ID           pgtype.UUID `json:"id"`
 }
 
 // the owners' settings, the caller checks that the currency may change
 func (q *Queries) UpdateHousehold(ctx context.Context, arg UpdateHouseholdParams) error {
-	_, err := q.db.Exec(ctx, updateHousehold, arg.Name, arg.Currency, arg.ID)
+	_, err := q.db.Exec(ctx, updateHousehold,
+		arg.Name,
+		arg.Currency,
+		arg.TimeZone,
+		arg.ReminderHour,
+		arg.ID,
+	)
 	return err
 }

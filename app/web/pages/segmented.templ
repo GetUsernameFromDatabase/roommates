@@ -1,0 +1,28 @@
+package pages
+
+import (
+	"roommates/internal/locales"
+	"roommates/web/components"
+)
+
+// segmentOption is one choice of a [segmented] control
+type segmentOption struct {
+	Value string
+	Label locales.LK
+}
+
+// segmented is radio choices drawn as one control, the caller wraps it in a fieldset with a legend;
+// the radios stay real inputs, so the form posts without JS and CSS can show the picked one's fields
+templ segmented(id, name, value string, options []segmentOption) {
+	<div class="grid auto-cols-fr grid-flow-col gap-1 rounded-lg bg-muted p-1">
+		for _, o := range options {
+			<label
+				for={ id + "-" + o.Value }
+				class="flex min-h-11 min-w-0 cursor-pointer items-center justify-center rounded-md px-1.5 text-center text-sm font-medium text-muted-foreground transition-colors hover:text-foreground has-checked:bg-background has-checked:text-foreground has-checked:shadow-sm has-focus-visible:ring-[3px] has-focus-visible:ring-ring/50 dark:has-checked:bg-input"
+			>
+				<input type="radio" class="sr-only" id={ id + "-" + o.Value } name={ name } value={ o.Value } checked?={ o.Value == value }/>
+				@components.T(o.Label)
+			</label>
+		}
+	</div>
+}

@@ -457,18 +457,17 @@ templ expenseForm(members []dbqueries.ListActiveMembersRow, f expenseFrame, in s
 			// the date is a hidden input behind a picker, there is no field to mark invalid
 			@expenseFieldError("date", errorField, errorMessage)
 			if len(f.Repeats) > 0 {
-				@field.Field() {
-					@field.Label(field.LabelProps{For: "expense-repeat-trigger"}) {
+				<fieldset class="flex min-w-0 flex-col gap-2">
+					<legend class="mb-2 text-sm font-medium">
 						@components.T(locales.LK_RecurringRepeat)
-					}
+					</legend>
 					{{
-						repeats := utils.Map(f.Repeats, func(r string) selectcomp.ItemData {
-							return selectcomp.ItemData{Value: r, Label: utils.T(ctx, intervalKeys[r])}
+						repeats := utils.Map(f.Repeats, func(r string) segmentOption {
+							return segmentOption{Value: r, Label: intervalShortKeys[r]}
 						})
 					}}
-					@optionSelect("expense-repeat", "repeat", utils.IfElse(f.Repeat == "", f.Repeats[0], f.Repeat),
-						utils.CN(tillFieldClass, "w-full data-[size=default]:h-11"), nil, repeats)
-				}
+					@segmented("expense-repeat", "repeat", utils.IfElse(f.Repeat == "", f.Repeats[0], f.Repeat), repeats)
+				</fieldset>
 			}
 			<fieldset class="space-y-2 disabled:opacity-60" disabled?={ lock != "" } { fieldAttrs("shares", templ.Attributes{})... }>
 				<legend class="text-sm font-medium">

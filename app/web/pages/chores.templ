@@ -1,0 +1,434 @@
+package pages
+
+import "roommates/web/components"
+import "roommates/web/components/badge"
+import "roommates/web/components/button"
+import "roommates/web/components/card"
+import "roommates/web/components/checkbox"
+import "roommates/web/components/field"
+import "roommates/web/components/icon"
+import "roommates/web/components/input"
+import "roommates/web/components/radiogroup"
+import "roommates/web/components/select"
+import "roommates/internal/db/dbqueries"
+import "roommates/internal/services"
+import "roommates/internal/events"
+import g "roommates/internal/config"
+import "roommates/internal/locales"
+import "roommates/internal/utils"
+import "strconv"
+
+// ChoresPage lists the household's chores soonest due first, with the form of a new one folded away
+//
+// the actions on a card swap in only #chores and the toast of what happened, the new chore form
+// is outside the live region so a flatmate's change does not clear what is typed
+templ ChoresPage(actor services.Membership, chores []services.Chore, members []dbqueries.ListActiveMembersRow, f ChoreForm, notice string) {
+	{{ title := utils.T(ctx, locales.LK_ChoresTitle) }}
+	@appShell(title, &HouseholdNav{HouseholdID: actor.HouseholdID, Section: SectionChores}) {
+		<header>
+			<h1 class="doorplate">{ title }</h1>
+		</header>
+		@choreNew(actor, members, f)
+		@liveRegion("chores", events.TopicChores) {
+			if len(chores) == 0 {
+				<p class="text-muted-foreground">
+					@components.T(locales.LK_ChoresEmpty)
+				</p>
+			} else {
+				<ul class="flex flex-col gap-3">
+					for _, c := range chores {
+						<li>
+							@choreCard(actor, c)
+						</li>
+					}
+				</ul>
+			}
+		}
+		<div id="chores-notice">
+			@toast(notice)
+		</div>
+	}
+}
+
+// choreNew is a fold with the form, open again after an error
+templ choreNew(actor services.Membership, members []dbqueries.ListActiveMembersRow, f ChoreForm) {
+	<details id="chore-new" class="group/new" open?={ f.Open }>
+		<summary class={ utils.CN(button.Variants(button.Props{Variant: button.VariantSecondary, Size: button.SizeLg}), "cursor-pointer list-none [&::-webkit-details-marker]:hidden") }>
+			@navIcon("plus", "size-4")
+			@components.T(locales.LK_ChoresNew)
+		</summary>
+		<div class="mt-3">
+			<form
+				id="chore-new-form"
+				action={ choreURL(actor.HouseholdID) }
+				method="post"
+				hx-post={ string(choreURL(actor.HouseholdID)) }
+				hx-target="#chore-new"
+				hx-select="#chore-new"
+				hx-select-oob="#chores, #chores-notice"
+				hx-swap="outerHTML"
+				class={ sheetClass + " flex flex-col gap-5" }
+			>
+				@choreFields(members, f, "chore-new")
+				<div class="flex items-center gap-3">
+					@button.Button(button.Props{Type: button.TypeSubmit, Size: button.SizeLg}) {
+						@components.T(locales.LK_ChoresCreate)
+					}
+				</div>
+			</form>
+		</div>
+	</details>
+}
+
+// choreCard is a chore with whose turn it is, when it is due and the buttons for this turn
+templ choreCard(actor services.Membership, c services.Chore) {
+	{{ due, overdue := choreDue(ctx, c) }}
+	{{ dueField := c.NextDue.Format(services.DateLayout) }}
+	@card.Card(card.Props{Class: "gap-3"}) {
+		@card.Content(card.ContentProps{Class: "flex flex-col gap-3"}) {
+			<div class="flex flex-col gap-1">
+				<a href={ choreURL(actor.HouseholdID, c.ID.String()) } class="min-h-6 font-heading text-lg font-semibold break-words underline-offset-4 hover:underline">{ c.Title }</a>
+				<p class="text-sm text-muted-foreground">{ choreSchedule(ctx, c) }</p>
+			</div>
+			<div class="flex flex-wrap items-center gap-x-3 gap-y-2">
+				<span class={ utils.CN("text-sm font-medium", utils.IfElse(c.AssigneeID == actor.UserID, "text-foreground", "text-muted-foreground")) }>{ choreTurn(ctx, actor, c) }</span>
+				@badge.Badge(badge.Props{Variant: utils.IfElse(overdue, badge.VariantDestructive, badge.VariantOutline)}) {
+					{ due }
+				}
+			</div>
+			<div class="flex flex-wrap gap-2">
+				@choreAction(actor, c, "done", dueField, locales.LK_ChoresDone, button.VariantDefault)
+				@choreAction(actor, c, "skip", dueField, locales.LK_ChoresSkip, button.VariantSecondary)
+				if choreCanPass(c) {
+					@choreAction(actor, c, "pass", dueField, locales.LK_ChoresPass, button.VariantOutline)
+				}
+			</div>
+		}
+	}
+}
+
+// choreAction is a button that posts the turn it was shown with, its due date and assignee, so an
+// action on a turn that already moved on does nothing
+templ choreAction(actor services.Membership, c services.Chore, action, due string, label locales.LK, variant button.Variant) {
+	<form action={ choreURL(actor.HouseholdID, c.ID.String(), action) } method="post" { choreSwapList(choreURL(actor.HouseholdID, c.ID.String(), action))... }>
+		<input type="hidden" name="due" value={ due }/>
+		<input type="hidden" name="assignee" value={ c.AssigneeID.String() }/>
+		@button.Button(button.Props{Type: button.TypeSubmit, Variant: variant, Class: "h-11 px-4"}) {
+			@components.T(label)
+		}
+	</form>
+}
+
+// ChorePage is the chore with its form, rota and the last entries of its history
+templ ChorePage(actor services.Membership, d services.ChoreDetail, members []dbqueries.ListActiveMembersRow, f ChoreForm, notice string) {
+	{{ c := d.Chore }}
+	@appShell(c.Title, &HouseholdNav{HouseholdID: actor.HouseholdID, Section: SectionChores}) {
+		@doorplateHeader(choreURL(actor.HouseholdID), utils.T(ctx, locales.LK_ChoresTitle), c.Title)
+		@choreEdit(actor, c, members, f)
+		@choreRota(actor, d)
+		<form
+			action={ choreURL(actor.HouseholdID, c.ID.String(), "delete") }
+			method="post"
+			hx-boost="true"
+			hx-confirm={ utils.T(ctx, locales.LK_ChoresDeleteConfirm) }
+		>
+			@deleteButton(locales.LK_CommonDelete)
+		</form>
+		<div id="chore-notice">
+			@toast(notice)
+		</div>
+	}
+}
+
+// choreEdit saves in place and says so next to the button
+templ choreEdit(actor services.Membership, c services.Chore, members []dbqueries.ListActiveMembersRow, f ChoreForm) {
+	<form
+		id="chore-edit"
+		action={ choreURL(actor.HouseholdID, c.ID.String()) }
+		method="post"
+		hx-post={ string(choreURL(actor.HouseholdID, c.ID.String())) }
+		hx-target="this"
+		hx-select="#chore-edit"
+		hx-swap="outerHTML"
+		class={ sheetClass + " flex flex-col gap-5" }
+	>
+		@choreFields(members, f, "chore-edit")
+		<div class="flex flex-wrap items-center gap-3">
+			@button.Button(button.Props{Type: button.TypeSubmit, Size: button.SizeLg}) {
+				@components.T(locales.LK_CommonSave)
+			}
+			<span role="status" class="text-sm text-muted-foreground">
+				if f.Saved {
+					@components.T(locales.LK_CommonSaved)
+				}
+			</span>
+		</div>
+	</form>
+}
+
+// choreRota is the order of the members, the turn, who to give it to and the history, it follows
+// the household's events and a button swaps only it
+templ choreRota(actor services.Membership, d services.ChoreDetail) {
+	{{ c := d.Chore }}
+	@liveRegion("chore-rota", events.TopicChores) {
+		<div class="flex flex-col gap-8">
+			<section aria-labelledby="chore-rota-title" class={ sheetClass + " flex flex-col gap-4" }>
+				<h2 id="chore-rota-title" class="text-lg font-semibold">
+					@components.T(locales.LK_ChoresRota)
+				</h2>
+				<ul class="divide-y divide-dashed">
+					for i, m := range c.Members {
+						<li class="flex items-center gap-2 py-1">
+							<div class="flex min-w-0 flex-1 flex-col">
+								<span class="flex flex-wrap items-center gap-2">
+									<span class="min-w-0 break-words">{ personName(ctx, actor, m.UserID, m.Name) }</span>
+									if m.UserID == c.AssigneeID {
+										@badge.Badge(badge.Props{Variant: badge.VariantDefault}) {
+											@components.T(locales.LK_ChoresCurrent)
+										}
+									}
+								</span>
+								<span class="text-xs text-muted-foreground">
+									if m.LastDone != nil {
+										{ utils.T(ctx, locales.LK_ChoresLastDone, utils.FormatDate(ctx, *m.LastDone)) }
+									} else {
+										@components.T(locales.LK_ChoresNeverDone)
+									}
+								</span>
+							</div>
+							// only a fixed rotation goes by the order
+							if c.Rotation == g.RotationFixed && len(c.Members) > 1 {
+								@choreMove(actor, c, m, "up", i == 0)
+								@choreMove(actor, c, m, "down", i == len(c.Members)-1)
+							}
+						</li>
+					}
+				</ul>
+				<form
+					action={ choreURL(actor.HouseholdID, c.ID.String(), "assign") }
+					method="post"
+					{ choreSwapRota(choreURL(actor.HouseholdID, c.ID.String(), "assign"))... }
+					class="flex flex-col gap-2"
+				>
+					@field.Field() {
+						@field.Label(field.LabelProps{For: "chore-assign-trigger"}) {
+							@components.T(locales.LK_ChoresAssignTo)
+						}
+						{{
+							items := utils.Map(c.Members, func(m services.ChoreMember) selectcomp.ItemData {
+								return selectcomp.ItemData{Value: m.UserID.String(), Label: personName(ctx, actor, m.UserID, m.Name)}
+							})
+						}}
+						@optionSelect("chore-assign", "user", c.AssigneeID.String(), "w-full data-[size=default]:h-11", nil, items)
+					}
+					<div>
+						@button.Button(button.Props{Type: button.TypeSubmit, Variant: button.VariantSecondary, Class: "h-11 px-4"}) {
+							@components.T(locales.LK_ChoresAssign)
+						}
+					</div>
+				</form>
+			</section>
+			<section aria-labelledby="chore-history-title" class={ sheetClass + " flex flex-col gap-3" }>
+				<h2 id="chore-history-title" class="text-lg font-semibold">
+					@components.T(locales.LK_ChoresHistory)
+				</h2>
+				if len(d.History) == 0 {
+					<p class="text-sm text-muted-foreground">
+						@components.T(locales.LK_ChoresHistoryNone)
+					</p>
+				} else {
+					<ul class="divide-y divide-dashed">
+						for _, e := range d.History {
+							<li class="py-2 text-sm break-words">{ choreLogLine(ctx, e) }</li>
+						}
+					</ul>
+				}
+			</section>
+		</div>
+	}
+}
+
+// choreMove moves a member one place in the rota, an icon button with the name as its label
+templ choreMove(actor services.Membership, c services.Chore, m services.ChoreMember, dir string, disabled bool) {
+	{{ action := choreURL(actor.HouseholdID, c.ID.String(), "members", m.UserID.String(), "move") }}
+	<form action={ action } method="post" { choreSwapRota(action)... }>
+		<input type="hidden" name="dir" value={ dir }/>
+		@button.Button(button.Props{
+			Type:     button.TypeSubmit,
+			Variant:  button.VariantGhost,
+			Size:     button.SizeIconLg,
+			Class:    "size-11",
+			Disabled: disabled,
+			Attributes: templ.Attributes{
+				"aria-label": utils.T(ctx, utils.IfElse(dir == "up", locales.LK_ChoresMoveUp, locales.LK_ChoresMoveDown), m.Name),
+			},
+		}) {
+			if dir == "up" {
+				@icon.ChevronUp(icon.Props{Attributes: templ.Attributes{"aria-hidden": "true"}})
+			} else {
+				@icon.ChevronDown(icon.Props{Attributes: templ.Attributes{"aria-hidden": "true"}})
+			}
+		}
+	</form>
+}
+
+// choreFields are the fields of the chore form, id is the prefix of their ids so the page has no
+// two alike
+//
+// only the fields of the picked schedule show, by CSS on the radio's state, the others are still
+// posted and the server ignores them
+templ choreFields(members []dbqueries.ListActiveMembersRow, f ChoreForm, id string) {
+	{{ in := f.Input }}
+	{{
+		// the error sits at its field, aria-invalid and aria-describedby point the field at it
+		fieldAttrs := func(name string, attrs templ.Attributes) templ.Attributes {
+			if f.Field == name && f.Message != "" {
+				attrs["aria-invalid"] = "true"
+				attrs["aria-describedby"] = id + "-" + name + "-error"
+			}
+			return attrs
+		}
+	}}
+	if f.Field == "" {
+		@formError(f.Message)
+	}
+	@field.Field() {
+		@field.Label(field.LabelProps{For: id + "-title"}) {
+			@components.T(locales.LK_ChoresFormTitle)
+		}
+		@input.Input(input.Props{
+			ID:       id + "-title",
+			Name:     "title",
+			Type:     "text",
+			Value:    in.Title,
+			Required: true,
+			Class:    "h-11",
+			Attributes: fieldAttrs(services.FieldChoreTitle, templ.Attributes{
+				"maxlength": services.MaxChoreTitleLength,
+			}),
+		})
+		@choreFieldError(id, services.FieldChoreTitle, f)
+	}
+	<fieldset class="group/sched flex min-w-0 flex-col gap-3" { fieldAttrs(services.FieldChoreSchedule, templ.Attributes{})... }>
+		<legend class="mb-1 text-sm font-medium">
+			@components.T(locales.LK_ChoresSchedule)
+		</legend>
+		@segmented(id+"-schedule", "schedule", utils.IfElse(in.Unit == g.ChoreUnitWeekdays, g.ChoreUnitWeekdays, choreEveryValue), choreScheduleOptions)
+		// Monday first, the values are time.Weekday; seven equal columns so the week fits on one row at 320px
+		<div class="hidden max-w-86 grid-cols-7 gap-1.5 group-has-[input[name=schedule][value=weekdays]:checked]/sched:grid">
+			for _, d := range choreWeek {
+				<label class="mx-auto flex aspect-square w-full max-w-11 cursor-pointer items-center justify-center rounded-full border text-sm font-medium transition-colors hover:bg-accent has-checked:border-primary has-checked:bg-primary has-checked:text-primary-foreground has-focus-visible:ring-[3px] has-focus-visible:ring-ring/50" title={ utils.T(ctx, choreWeekdayLong[d]) }>
+					<input
+						type="checkbox"
+						class="sr-only"
+						name="weekday"
+						value={ strconv.Itoa(int(d)) }
+						checked?={ choreWeekdayPicked(in, d) }
+						aria-label={ utils.T(ctx, choreWeekdayLong[d]) }
+					/>
+					<span aria-hidden="true">{ utils.T(ctx, choreWeekdayShort[d]) }</span>
+				</label>
+			}
+		</div>
+		// "Every [2] [days] ..." reads as one sentence, the unit select sits inside it
+		<div class="hidden flex-col gap-3 group-has-[input[name=schedule][value=every]:checked]/sched:flex">
+			<div class="flex flex-wrap items-center gap-2">
+				<span>
+					@components.T(locales.LK_ChoresEveryBefore)
+				</span>
+				@input.Input(input.Props{
+					ID:    id + "-every",
+					Name:  "every",
+					Type:  "number",
+					Value: choreEvery(in),
+					Class: "h-11 w-14 text-center",
+					Attributes: templ.Attributes{
+						"min":        "1",
+						"inputmode":  "numeric",
+						"aria-label": utils.T(ctx, locales.LK_ChoresEveryCount),
+					},
+				})
+				{{
+					units := utils.Map(g.ChoreEveryUnits, func(u string) selectcomp.ItemData {
+						return selectcomp.ItemData{Value: u, Label: utils.T(ctx, choreUnitKeys[u])}
+					})
+				}}
+				@optionSelect(id+"-unit", "unit", utils.IfElse(in.Unit == g.ChoreUnitWeekdays, g.ChoreUnitDay, in.Unit),
+					"w-auto gap-1 px-2.5 data-[size=default]:h-11", templ.Attributes{"aria-label": utils.T(ctx, locales.LK_ChoresEveryUnit)}, units)
+			</div>
+			// a weekdays chore starts on the next ticked day, so it has no first date to pick
+			@field.Field() {
+				@field.Label(field.LabelProps{For: id + "-first-due-popover-trigger"}) {
+					@components.T(locales.LK_ChoresFirstDue)
+				}
+				@datePicker(id+"-first-due", "first_due", in.FirstDue)
+				@choreFieldError(id, services.FieldChoreFirstDue, f)
+			}
+		</div>
+		@choreFieldError(id, services.FieldChoreSchedule, f)
+	</fieldset>
+	<fieldset class="flex min-w-0 flex-col gap-1" { fieldAttrs(services.FieldChoreRotation, templ.Attributes{})... }>
+		<legend class="mb-1 text-sm font-medium">
+			@components.T(locales.LK_ChoresRotation)
+		</legend>
+		@radiogroup.RadioGroup(radiogroup.Props{Name: "rotation", DefaultValue: in.Rotation, Class: "gap-0"}) {
+			for _, r := range g.Rotations {
+				@field.Field(field.Props{Orientation: field.OrientationHorizontal, Class: "min-h-11 items-start py-2"}) {
+					@radiogroup.Item(radiogroup.ItemProps{ID: id + "-rotation-" + r, Value: r, Class: "mt-0.5"})
+					@field.Label(field.LabelProps{For: id + "-rotation-" + r, Class: "flex-col items-start gap-0 text-base font-normal"}) {
+						<span>{ utils.T(ctx, choreRotationKeys[r][0]) }</span>
+						<span class="text-sm text-muted-foreground">{ utils.T(ctx, choreRotationKeys[r][1]) }</span>
+					}
+				}
+			}
+		}
+		@choreFieldError(id, services.FieldChoreRotation, f)
+	</fieldset>
+	<fieldset class="flex min-w-0 flex-col gap-1" { fieldAttrs(services.FieldChoreMembers, templ.Attributes{})... }>
+		<legend class="mb-1 text-sm font-medium">
+			@components.T(locales.LK_ChoresMembers)
+		</legend>
+		for _, m := range choreMemberOrder(in, members) {
+			<label class="flex min-h-11 min-w-0 items-center gap-3">
+				@checkbox.Checkbox(checkbox.Props{
+					Name:           "member",
+					Value:          m.UserID.String(),
+					DefaultChecked: choreMemberPicked(in, m.UserID),
+					Class:          "size-5",
+				})
+				<span class="break-words">{ m.Username }</span>
+			</label>
+		}
+		@choreFieldError(id, services.FieldChoreMembers, f)
+	</fieldset>
+	@field.Field() {
+		@field.Label(field.LabelProps{For: id + "-assignee-trigger"}) {
+			@components.T(locales.LK_ChoresAssignee)
+		}
+		{{
+			items := utils.Map(members, func(m dbqueries.ListActiveMembersRow) selectcomp.ItemData {
+				return selectcomp.ItemData{Value: m.UserID.String(), Label: m.Username}
+			})
+			// a manual chore may be nobody's, for the others the rota decides
+			if in.Rotation == g.RotationManual {
+				items = append(items, selectcomp.ItemData{Value: "none", Label: utils.T(ctx, locales.LK_ChoresTurnNone)})
+			}
+			assignee := utils.IfElse(in.Assignee.Valid, in.Assignee.String(), "none")
+			if !in.Assignee.Valid && in.Rotation != g.RotationManual && len(members) > 0 {
+				assignee = members[0].UserID.String()
+			}
+		}}
+		@optionSelect(id+"-assignee", "assignee", assignee, "w-full data-[size=default]:h-11", fieldAttrs(services.FieldChoreAssignee, templ.Attributes{}), items)
+		@choreFieldError(id, services.FieldChoreAssignee, f)
+	}
+}
+
+
+// choreFieldError is the error of a failed submit under its field, nothing for the other fields
+templ choreFieldError(id, name string, f ChoreForm) {
+	if f.Field == name && f.Message != "" {
+		<div id={ id + "-" + name + "-error" }>
+			@formError(f.Message)
+		</div>
+	}
+}

@@ -15,7 +15,35 @@ ORDER BY h.name;
 -- name: GetHousehold :one
 SELECT id,
   name,
-  currency
+  currency,
+  time_zone,
+  reminder_hour
+FROM households
+WHERE id = $1;
+-- the zones a household can pick: the IANA region names and UTC, no posix/ or Etc/ aliases
+-- name: ListTimeZones :many
+SELECT name::text
+FROM pg_catalog.pg_timezone_names
+WHERE name ~ '^(Africa|America|Antarctica|Asia|Atlantic|Australia|Europe|Indian|Pacific)/'
+  OR name = 'UTC'
+ORDER BY name;
+-- name: IsTimeZone :one
+SELECT EXISTS (
+    SELECT 1
+    FROM pg_catalog.pg_timezone_names
+    WHERE name = sqlc.arg(name)::text
+      AND (
+        name ~ '^(Africa|America|Antarctica|Asia|Atlantic|Australia|Europe|Indian|Pacific)/'
+        OR name = 'UTC'
+      )
+  );
+-- name: SetHouseholdTimeZone :exec
+UPDATE households
+SET time_zone = $2
+WHERE id = $1;
+-- the household's local date, what "today" is for its due dates
+-- name: HouseholdToday :one
+SELECT (now() AT TIME ZONE time_zone)::date
 FROM households
 WHERE id = $1;
 -- locks the household row so membership changes in it run one at a time
@@ -28,7 +56,9 @@ UPDATE;
 -- name: UpdateHousehold :exec
 UPDATE households
 SET name = sqlc.arg(name),
-  currency = sqlc.arg(currency)
+  currency = sqlc.arg(currency),
+  time_zone = sqlc.arg(time_zone),
+  reminder_hour = sqlc.arg(reminder_hour)
 WHERE id = sqlc.arg(id);
 -- a deleted household is read-only until PurgeDeletedHouseholds removes it
 -- name: SoftDeleteHousehold :exec

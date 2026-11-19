@@ -11,6 +11,8 @@ import (
 	"roommates/internal/sessions"
 	"roommates/internal/utils"
 	"roommates/web/pages"
+	"slices"
+	"strconv"
 	"strings"
 
 	"github.com/gin-gonic/gin"
@@ -321,10 +323,22 @@ func (h *DefaultHandler) UpdateHousehold(ctx *gin.Context) {
 		return
 	}
 	name := ctx.PostForm("name")
-	err = h.service.UpdateHousehold(ctx, actor, name, ctx.PostForm("currency"))
+	timeZone := ctx.PostForm("time_zone")
+	// a hour that is no number is out of range, the service rejects it
+	hour, convErr := strconv.Atoi(ctx.PostForm("reminder_hour"))
+	if convErr != nil {
+		hour = -1
+	}
+	err = h.service.UpdateHousehold(ctx, actor, name, ctx.PostForm("currency"), timeZone, hour)
 	show := func(status int, msg, info string) {
-		// keep what was typed
+		// keep what was typed, a zone or hour the selects cannot show stays as it was saved
 		before.Name = name
+		if hour >= 0 && hour < 24 {
+			before.ReminderHour = hour
+		}
+		if slices.Contains(before.TimeZones, timeZone) {
+			before.TimeZone = timeZone
+		}
 		RenderTemplStatus(ctx, status, pages.HouseholdSettingsSection(path, actor, before, msg, info))
 	}
 	var field services.FieldError
@@ -339,6 +353,10 @@ func (h *DefaultHandler) UpdateHousehold(ctx *gin.Context) {
 		RenderTemplStatus(ctx, http.StatusForbidden, pages.Error())
 	case errors.As(err, &field) && field.Field == services.FieldName:
 		show(http.StatusUnprocessableEntity, utils.T(ctx.Request.Context(), locales.LK_ValidationErrorsHouseholdNameLength, 1, services.MaxHouseholdNameLength), "")
+	case errors.As(err, &field) && field.Field == services.FieldTimeZone:
+		show(http.StatusUnprocessableEntity, utils.T(ctx.Request.Context(), locales.LK_HouseholdSettingsTimeZoneInvalid), "")
+	case errors.As(err, &field) && field.Field == services.FieldReminderHour:
+		show(http.StatusUnprocessableEntity, utils.T(ctx.Request.Context(), locales.LK_HouseholdSettingsReminderHourInvalid), "")
 	case errors.As(err, &field):
 		show(http.StatusUnprocessableEntity, utils.T(ctx.Request.Context(), locales.LK_HouseholdSettingsCurrencyLocked), "")
 	default:

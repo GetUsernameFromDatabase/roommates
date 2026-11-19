@@ -24,6 +24,8 @@ func notificationLabels(kind string) (title, description locales.LK) {
 		return locales.LK_NotificationsMoney, locales.LK_NotificationsMoneyDescription
 	case g.NotifyRecurring:
 		return locales.LK_NotificationsRecurring, locales.LK_NotificationsRecurringDescription
+	case g.NotifyChores:
+		return locales.LK_NotificationsChores, locales.LK_NotificationsChoresDescription
 	default:
 		return locales.LK_NotificationsHousehold, locales.LK_NotificationsHouseholdDescription
 	}
@@ -164,7 +166,7 @@ func notificationSection(m *services.Membership, settings []services.Notificatio
 			var templ_7745c5c3_Var6 string
 			templ_7745c5c3_Var6, templ_7745c5c3_Err = templruntime.NewAttributeExpression(householdURL(m.HouseholdID, "settings", "notifications")).ResolveURL(ctx)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/notifications.templ`, Line: 47, Col: 69}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/notifications.templ`, Line: 49, Col: 69}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var6)
 			if templ_7745c5c3_Err != nil {
@@ -177,7 +179,7 @@ func notificationSection(m *services.Membership, settings []services.Notificatio
 			var templ_7745c5c3_Var7 string
 			templ_7745c5c3_Var7, templ_7745c5c3_Err = templruntime.NewAttributeExpression(string(householdURL(m.HouseholdID, "settings", "notifications"))).Resolve(ctx)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/notifications.templ`, Line: 49, Col: 78}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/notifications.templ`, Line: 51, Col: 78}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var7)
 			if templ_7745c5c3_Err != nil {
@@ -190,7 +192,7 @@ func notificationSection(m *services.Membership, settings []services.Notificatio
 			var templ_7745c5c3_Var8 string
 			templ_7745c5c3_Var8, templ_7745c5c3_Err = templruntime.NewAttributeExpression(n.Kind).Resolve(ctx)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/notifications.templ`, Line: 54, Col: 51}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/notifications.templ`, Line: 56, Col: 51}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var8)
 			if templ_7745c5c3_Err != nil {

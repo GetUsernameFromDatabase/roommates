@@ -483,6 +483,9 @@ func (s *DefaultService) RunCleanup(ctx context.Context, interval time.Duration)
 		if err := s.NotifyRecurringDue(ctx); err != nil {
 			log.Error().Err(err).Msg("could not notify due recurring expenses")
 		}
+		if err := s.NotifyChoresDue(ctx); err != nil {
+			log.Error().Err(err).Msg("could not notify due chores")
+		}
 		select {
 		case <-ctx.Done():
 			return

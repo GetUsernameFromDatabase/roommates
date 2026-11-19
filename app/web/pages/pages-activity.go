@@ -45,6 +45,11 @@ var activityKeys = map[string]locales.LK{
 	g.ActCurrencyChanged:      locales.LK_ActivityCurrencyChanged,
 	g.ActHouseholdDeleted:     locales.LK_ActivityHouseholdDeleted,
 	g.ActHouseholdRestored:    locales.LK_ActivityHouseholdRestored,
+	g.ActChoreAdded:           locales.LK_ActivityChoreAdded,
+	g.ActChoreDeleted:         locales.LK_ActivityChoreDeleted,
+	g.ActChoreDone:            locales.LK_ActivityChoreDone,
+	g.ActChoreSkipped:         locales.LK_ActivityChoreSkipped,
+	g.ActChorePassed:          locales.LK_ActivityChorePassed,
 }
 
 // activityText is the sentence of a row, "Mari added the expense Rent · 650,00 €",
@@ -83,6 +88,8 @@ func activityLink(householdID pgtype.UUID, r services.ActivityRow) templ.SafeURL
 		return householdURL(householdID, "files", id)
 	case r.RecurringExists:
 		return householdURL(householdID, "recurring")
+	case r.ChoreExists:
+		return householdURL(householdID, "chores", id)
 	}
 	return ""
 }

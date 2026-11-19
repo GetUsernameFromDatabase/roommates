@@ -20,6 +20,7 @@ const (
 	SectionNotes    = "notes"
 	SectionFiles    = "files"
 	SectionChat     = "chat"
+	SectionChores   = "chores"
 	SectionPeople   = "people"
 	SectionActivity = "activity"
 	SectionSettings = "settings"
@@ -168,6 +169,7 @@ templ householdNav(nav HouseholdNav) {
 			@householdNavItem(householdURL(nav.HouseholdID, "expenses"), locales.LK_NavExpenses, "expenses", nav.Section == SectionExpenses, desktopOnly)
 			@householdNavItem(householdURL(nav.HouseholdID, "notes"), locales.LK_NavNotes, "notes", nav.Section == SectionNotes, "")
 			@householdNavItem(householdURL(nav.HouseholdID, "files"), locales.LK_NavFiles, "files", nav.Section == SectionFiles, desktopOnly)
+			@householdNavItem(householdURL(nav.HouseholdID, "chores"), locales.LK_NavChores, "chores", nav.Section == SectionChores, desktopOnly)
 			@householdNavItem(householdURL(nav.HouseholdID, "chat"), locales.LK_NavChat, "chat", nav.Section == SectionChat, "") {
 				// the chat page marks everything read
 				if nav.Section != SectionChat {
@@ -238,6 +240,7 @@ templ householdMenu(nav HouseholdNav) {
 		<ul class={ menuPanelClass + " right-0 w-60 origin-top-right" }>
 			@householdMenuItem(householdURL(nav.HouseholdID, "expenses"), locales.LK_NavExpenses, "expenses", nav.Section == SectionExpenses)
 			@householdMenuItem(householdURL(nav.HouseholdID, "files"), locales.LK_NavFiles, "files", nav.Section == SectionFiles)
+			@householdMenuItem(householdURL(nav.HouseholdID, "chores"), locales.LK_NavChores, "chores", nav.Section == SectionChores)
 			@householdMenuItem(householdURL(nav.HouseholdID, "people"), locales.LK_NavPeople, "people", nav.Section == SectionPeople)
 			@householdMenuItem(householdURL(nav.HouseholdID, "activity"), locales.LK_ActivityTitle, "activity", nav.Section == SectionActivity)
 			@householdMenuItem(householdURL(nav.HouseholdID, "settings"), locales.LK_NavSettings, "settings", nav.Section == SectionSettings)
@@ -282,6 +285,12 @@ templ navIcon(name, class string) {
 				<path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"></path>
 			case "chat":
 				<path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"></path>
+			case "chores":
+				<path d="m3 17 2 2 4-4"></path>
+				<path d="m3 7 2 2 4-4"></path>
+				<path d="M13 6h8"></path>
+				<path d="M13 12h8"></path>
+				<path d="M13 18h8"></path>
 			case "people":
 				<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
 				<circle cx="9" cy="7" r="4"></circle>
