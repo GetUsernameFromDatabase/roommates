@@ -32,6 +32,13 @@ const (
 	// POST the "avatar" file under [RouteSettings] (at /settings or a household's), or delete it
 	RouteAvatar       = "/avatar"
 	RouteAvatarDelete = "/avatar/delete"
+	// POST under [RouteSettings] queues a data export, GET [RouteSettings]+[RouteDataExport]+"/:id" downloads it
+	RouteDataExport = "/export"
+	// POST under [RouteSettings] deletes the account, password in current_password
+	RouteDeleteAccount = "/delete-account"
+	// GET the page shown after the account was deleted, signed out
+	RouteAccountDeleted = "/account-deleted"
+	ParamExportID       = "exportID"
 	// GET /users/:userID/avatar is a user's picture
 	RouteUsers = "/users"
 	// POST the JSON of a browser's PushSubscription
@@ -130,6 +137,12 @@ const (
 
 // HouseholdPurgeAfter is how long a deleted household stays restorable (read-only) before it is purged
 const HouseholdPurgeAfter = 30 * 24 * time.Hour
+
+// AccountEraseAfter is how long a deleted account can be restored by signing in before it is erased
+const AccountEraseAfter = 30 * 24 * time.Hour
+
+// DataExportValidFor is how long a built data export can be downloaded
+const DataExportValidFor = 7 * 24 * time.Hour
 
 // activity.grp values, the table CHECKs these
 const (

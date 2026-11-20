@@ -91,7 +91,7 @@ templ ChatPage(actor services.Membership, c services.Chat, older bool, search st
 						<input type="hidden" name="reply_to" value={ reply.ID.String() }/>
 						<div class="flex items-center gap-2 rounded-lg border-l-4 border-primary bg-muted py-1 pr-1 pl-3 text-sm">
 							<div class="min-w-0 flex-1">
-								<p class="font-medium">{ utils.T(ctx, locales.LK_ChatReplyingTo, reply.AuthorName) }</p>
+								<p class="font-medium">{ utils.T(ctx, locales.LK_ChatReplyingTo, utils.MemberName(ctx, reply.AuthorName)) }</p>
 								@replySnippet(reply.Body)
 							</div>
 							@button.Button(button.Props{
@@ -250,7 +250,7 @@ templ chatMessages(actor services.Membership, c services.Chat, older bool, searc
 					if starts {
 						@message.Header(message.HeaderProps{Class: "gap-2"}) {
 							if !own {
-								<span>{ m.AuthorName }</span>
+								<span>{ utils.MemberName(ctx, m.AuthorName) }</span>
 							}
 							<span class="font-normal">
 								@localTime(m.CreatedAt, nil)
@@ -259,7 +259,7 @@ templ chatMessages(actor services.Membership, c services.Chat, older bool, searc
 					}
 					if m.ReplyAuthorName != nil {
 						<a href={ templ.SafeURL("#message-" + m.ReplyToID.String()) } data-slot="message-reply" class={ utils.CN("max-w-[80%] rounded-lg bg-muted/60 px-3 py-1 text-xs text-muted-foreground border-primary/50", utils.IfElse(own, "border-r-4", "border-l-4")) }>
-							<span class="font-medium">{ *m.ReplyAuthorName }</span>
+							<span class="font-medium">{ utils.MemberName(ctx, *m.ReplyAuthorName) }</span>
 							@replySnippet(m.ReplyBody)
 						</a>
 					}

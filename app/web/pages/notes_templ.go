@@ -451,9 +451,9 @@ func HouseholdNotes(actor services.Membership, notes []dbqueries.ListNotesRow, q
 							return templ_7745c5c3_Err
 						}
 						var templ_7745c5c3_Var20 string
-						templ_7745c5c3_Var20, templ_7745c5c3_Err = templ.JoinStringErrs(utils.T(ctx, locales.LK_NotesEditedBy, n.EditedByName) + ", ")
+						templ_7745c5c3_Var20, templ_7745c5c3_Err = templ.JoinStringErrs(utils.T(ctx, locales.LK_NotesEditedBy, utils.MemberName(ctx, n.EditedByName)) + ", ")
 						if templ_7745c5c3_Err != nil {
-							return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/notes.templ`, Line: 107, Col: 73}
+							return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/notes.templ`, Line: 107, Col: 96}
 						}
 						_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var20))
 						if templ_7745c5c3_Err != nil {
@@ -550,9 +550,9 @@ func HouseholdNotes(actor services.Membership, notes []dbqueries.ListNotesRow, q
 							return templ_7745c5c3_Err
 						}
 						var templ_7745c5c3_Var25 string
-						templ_7745c5c3_Var25, templ_7745c5c3_Err = templ.JoinStringErrs(utils.T(ctx, locales.LK_NotesEditedBy, n.EditedByName) + ", ")
+						templ_7745c5c3_Var25, templ_7745c5c3_Err = templ.JoinStringErrs(utils.T(ctx, locales.LK_NotesEditedBy, utils.MemberName(ctx, n.EditedByName)) + ", ")
 						if templ_7745c5c3_Err != nil {
-							return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/notes.templ`, Line: 124, Col: 74}
+							return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/notes.templ`, Line: 124, Col: 97}
 						}
 						_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var25))
 						if templ_7745c5c3_Err != nil {
@@ -874,9 +874,9 @@ func NotePage(actor services.Membership, n services.Note, files []services.Attac
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var37 string
-				templ_7745c5c3_Var37, templ_7745c5c3_Err = templ.JoinStringErrs(utils.T(ctx, locales.LK_NotesEditedBy, n.EditedByName) + ", ")
+				templ_7745c5c3_Var37, templ_7745c5c3_Err = templ.JoinStringErrs(utils.T(ctx, locales.LK_NotesEditedBy, utils.MemberName(ctx, n.EditedByName)) + ", ")
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/notes.templ`, Line: 196, Col: 69}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/notes.templ`, Line: 196, Col: 92}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var37))
 				if templ_7745c5c3_Err != nil {

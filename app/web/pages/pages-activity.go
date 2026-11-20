@@ -61,13 +61,13 @@ func activityText(ctx context.Context, actor services.Membership, r services.Act
 	who, target := someone, someone
 	key := activityKeys[r.Kind]
 	if r.ActorName != nil {
-		who = *r.ActorName
+		who = utils.MemberName(ctx, *r.ActorName)
 		if r.ActorID == actor.UserID {
 			key += "-you"
 		}
 	}
 	if r.TargetName != nil {
-		target = *r.TargetName
+		target = utils.MemberName(ctx, *r.TargetName)
 	}
 	s := utils.T(ctx, key, who, r.Title, target)
 	if r.AmountCents != nil && r.Currency != nil {

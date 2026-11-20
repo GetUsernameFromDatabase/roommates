@@ -75,8 +75,10 @@ type ChoreLogEntry struct {
 	Kind         string // g.Chore{Done,Skipped,Passed}
 	UserName     string
 	AssigneeName string
-	Due          time.Time
-	At           time.Time
+	// someone did, skipped or passed another member's turn
+	ForOther bool
+	Due      time.Time
+	At       time.Time
 }
 
 type ChoreDetail struct {
@@ -326,7 +328,7 @@ func (s *DefaultService) GetChore(ctx context.Context, actor Membership, id pgty
 	return ChoreDetail{
 		Chore: chores[0],
 		History: utils.Map(log, func(l dbqueries.ListChoreLogRow) ChoreLogEntry {
-			return ChoreLogEntry{Kind: l.Kind, UserName: l.UserName, AssigneeName: l.AssigneeName, Due: l.Due.Time, At: l.CreatedAt.Time}
+			return ChoreLogEntry{Kind: l.Kind, UserName: l.UserName, AssigneeName: l.AssigneeName, ForOther: l.ForOther, Due: l.Due.Time, At: l.CreatedAt.Time}
 		}),
 	}, err
 }

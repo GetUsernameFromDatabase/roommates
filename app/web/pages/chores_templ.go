@@ -1692,9 +1692,9 @@ func choreFields(members []dbqueries.ListActiveMembersRow, f ChoreForm, id strin
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var65 string
-			templ_7745c5c3_Var65, templ_7745c5c3_Err = templ.JoinStringErrs(m.Username)
+			templ_7745c5c3_Var65, templ_7745c5c3_Err = templ.JoinStringErrs(utils.MemberName(ctx, m.Username))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/chores.templ`, Line: 343, Col: 42}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/chores.templ`, Line: 343, Col: 65}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var65))
 			if templ_7745c5c3_Err != nil {
@@ -1748,7 +1748,7 @@ func choreFields(members []dbqueries.ListActiveMembersRow, f ChoreForm, id strin
 				return templ_7745c5c3_Err
 			}
 			items := utils.Map(members, func(m dbqueries.ListActiveMembersRow) selectcomp.ItemData {
-				return selectcomp.ItemData{Value: m.UserID.String(), Label: m.Username}
+				return selectcomp.ItemData{Value: m.UserID.String(), Label: utils.MemberName(ctx, m.Username)}
 			})
 			// a manual chore may be nobody's, for the others the rota decides
 			if in.Rotation == g.RotationManual {

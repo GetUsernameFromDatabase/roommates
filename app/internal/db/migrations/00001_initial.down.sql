@@ -2,7 +2,8 @@
 ALTER TABLE http_sessions DROP COLUMN user_id;
 -- -----------------------------------------------------------------------------
 -- triggers go with their tables
-DROP TABLE activity,
+DROP TABLE data_exports,
+activity,
 chore_log,
 chore_members,
 chores,
@@ -39,4 +40,5 @@ file_visible(UUID, UUID),
 notify_household_expense_share(),
 notify_household(),
 queue_avatar_purge(),
+queue_export_purge(),
 queue_file_purge();

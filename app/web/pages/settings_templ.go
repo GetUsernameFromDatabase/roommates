@@ -33,8 +33,8 @@ type SettingsMember struct {
 // Settings is the user's picture and what is set per device, its appearance and notifications,
 // inside a household nav is set, path is where saving returns to and where the picture is posted under
 // pushKey is the VAPID public key, without it the notification switch stays hidden
-// member is nil outside a household
-func Settings(pushKey string, nav *HouseholdNav, path string, user dbqueries.GetUserRow, errorMessage string, payment services.PaymentDetails, member *SettingsMember) templ.Component {
+// member is nil outside a household, export is the user's newest data export
+func Settings(pushKey string, nav *HouseholdNav, path string, user dbqueries.GetUserRow, errorMessage string, payment services.PaymentDetails, member *SettingsMember, export services.DataExportStatus) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -91,6 +91,10 @@ func Settings(pushKey string, nav *HouseholdNav, path string, user dbqueries.Get
 				return templ_7745c5c3_Err
 			}
 			templ_7745c5c3_Err = AccountSection(path, user, "", "", "", "").Render(ctx, templ_7745c5c3_Buffer)
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = DataExportSection(path, export, "").Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -329,7 +333,7 @@ func avatarForm(path string, user dbqueries.GetUserRow, errorMessage string) tem
 		var templ_7745c5c3_Var10 string
 		templ_7745c5c3_Var10, templ_7745c5c3_Err = templruntime.NewAttributeExpression(templ.SafeURL(path + g.RouteAvatar)).ResolveURL(ctx)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/settings.templ`, Line: 83, Col: 52}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/settings.templ`, Line: 84, Col: 52}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var10)
 		if templ_7745c5c3_Err != nil {
@@ -463,7 +467,7 @@ func avatarForm(path string, user dbqueries.GetUserRow, errorMessage string) tem
 			var templ_7745c5c3_Var15 string
 			templ_7745c5c3_Var15, templ_7745c5c3_Err = templruntime.NewAttributeExpression(templ.SafeURL(path + g.RouteAvatarDelete)).ResolveURL(ctx)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/settings.templ`, Line: 107, Col: 59}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/settings.templ`, Line: 108, Col: 59}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var15)
 			if templ_7745c5c3_Err != nil {
@@ -476,7 +480,7 @@ func avatarForm(path string, user dbqueries.GetUserRow, errorMessage string) tem
 			var templ_7745c5c3_Var16 string
 			templ_7745c5c3_Var16, templ_7745c5c3_Err = templruntime.NewAttributeExpression(utils.T(ctx, locales.LK_AvatarRemoveConfirm)).Resolve(ctx)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/settings.templ`, Line: 107, Col: 149}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/settings.templ`, Line: 108, Col: 149}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var16)
 			if templ_7745c5c3_Err != nil {
@@ -561,7 +565,7 @@ func avatarCrop() templ.Component {
 			var templ_7745c5c3_Var20 string
 			templ_7745c5c3_Var20, templ_7745c5c3_Err = templruntime.NewAttributeExpression(assets.URL("avatar-crop.js")).ResolveURL(ctx)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/settings.templ`, Line: 122, Col: 44}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/settings.templ`, Line: 123, Col: 44}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var20)
 			if templ_7745c5c3_Err != nil {
@@ -584,7 +588,7 @@ func avatarCrop() templ.Component {
 		var templ_7745c5c3_Var21 string
 		templ_7745c5c3_Var21, templ_7745c5c3_Err = templruntime.NewAttributeExpression(utils.T(ctx, locales.LK_AvatarCropHint)).Resolve(ctx)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/settings.templ`, Line: 129, Col: 55}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/settings.templ`, Line: 130, Col: 55}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var21)
 		if templ_7745c5c3_Err != nil {
@@ -640,7 +644,7 @@ func pushSwitch(pushKey string) templ.Component {
 		var templ_7745c5c3_Var23 string
 		templ_7745c5c3_Var23, templ_7745c5c3_Err = templruntime.NewAttributeExpression(pushKey).Resolve(ctx)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/settings.templ`, Line: 153, Col: 26}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/settings.templ`, Line: 154, Col: 26}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var23)
 		if templ_7745c5c3_Err != nil {
@@ -653,7 +657,7 @@ func pushSwitch(pushKey string) templ.Component {
 		var templ_7745c5c3_Var24 string
 		templ_7745c5c3_Var24, templ_7745c5c3_Err = templruntime.NewAttributeExpression(utils.T(ctx, locales.LK_PushDenied)).Resolve(ctx)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/settings.templ`, Line: 154, Col: 51}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/settings.templ`, Line: 155, Col: 51}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var24)
 		if templ_7745c5c3_Err != nil {
@@ -666,7 +670,7 @@ func pushSwitch(pushKey string) templ.Component {
 		var templ_7745c5c3_Var25 string
 		templ_7745c5c3_Var25, templ_7745c5c3_Err = templruntime.NewAttributeExpression(utils.T(ctx, locales.LK_PushInstall)).Resolve(ctx)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/settings.templ`, Line: 155, Col: 53}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/settings.templ`, Line: 156, Col: 53}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var25)
 		if templ_7745c5c3_Err != nil {

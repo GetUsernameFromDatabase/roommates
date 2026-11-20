@@ -8,7 +8,9 @@ import (
 	"roommates/internal/locales"
 	"roommates/internal/mailer"
 	"roommates/internal/utils"
+	"time"
 
+	"github.com/invopop/ctxi18n"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 	"golang.org/x/crypto/bcrypt"
@@ -53,6 +55,184 @@ func (s *DefaultService) ChangePassword(ctx context.Context, userID pgtype.UUID,
 // SignOutEverywhere deletes every session of the user, this one too
 func (s *DefaultService) SignOutEverywhere(ctx context.Context, userID pgtype.UUID) error {
 	return s.db.DeleteUserSessions(ctx, userID)
+}
+
+// AccountDeleteBlocked names the households that stop [DefaultService.DeleteAccount]
+type AccountDeleteBlocked struct {
+	// shared households the user is the only owner of
+	LastOwner []string
+	// shared households where the user owes or is owed, or a settlement waits
+	Unsettled []string
+}
+
+func (e AccountDeleteBlocked) Error() string {
+	return "account delete blocked"
+}
+
+// DeleteAccount leaves the user's shared households, deletes the ones only they live in
+// (restorable, the membership stays), signs them out everywhere and marks the account to be
+// erased after [g.AccountEraseAfter], signing in before that restores it;
+// returns [g.ErrorInvalidCredential] or [AccountDeleteBlocked], then nothing changed
+//
+// ctx gives the language of the email
+func (s *DefaultService) DeleteAccount(ctx context.Context, userID pgtype.UUID, password string) error {
+	if err := s.checkPassword(ctx, userID, password); err != nil {
+		return err
+	}
+	user, err := s.db.GetUser(ctx, userID)
+	if err != nil {
+		return err
+	}
+	var left []Membership
+	err = s.inTx(ctx, func(q *dbqueries.Queries) error {
+		households, err := q.ListHouseholdsOfUser(ctx, userID)
+		if err != nil {
+			return err
+		}
+		var blocked AccountDeleteBlocked
+		for _, h := range households {
+			if err := q.LockHousehold(ctx, h.ID); err != nil {
+				return err
+			}
+			actor, err := q.GetActiveMembership(ctx, dbqueries.GetActiveMembershipParams{HouseholdID: h.ID, UserID: userID})
+			if errors.Is(err, pgx.ErrNoRows) {
+				continue // removed meanwhile
+			} else if err != nil {
+				return err
+			}
+			if actor.DeletedAt.Valid {
+				continue
+			}
+			counts, err := q.CountActiveMembers(ctx, h.ID)
+			if err != nil {
+				return err
+			}
+			if counts.Members == 1 {
+				// as DeleteHousehold, the membership stays so the household can still be restored
+				if err := q.DeleteInvitesOfHousehold(ctx, h.ID); err != nil {
+					return err
+				}
+				if err := q.SoftDeleteHousehold(ctx, h.ID); err != nil {
+					return err
+				}
+				if err := logActivity(ctx, q, actor, ActivityEntry{Kind: g.ActHouseholdDeleted, SubjectID: pgtype.UUID{}, TargetUserID: pgtype.UUID{}, Title: h.Name, AmountCents: nil, Currency: ""}); err != nil {
+					return err
+				}
+				continue
+			}
+			// keeps going after a blocked one so the page can name them all, the rollback undoes the rest
+			switch err := leaveTx(ctx, q, actor); {
+			case errors.Is(err, g.ErrorLastOwner):
+				blocked.LastOwner = append(blocked.LastOwner, h.Name)
+				// leaveTx stops before the balances, both are named so one try shows everything
+				switch err := checkSettled(ctx, q, h.ID, userID); {
+				case errors.Is(err, g.ErrorBalanceNotZero):
+					blocked.Unsettled = append(blocked.Unsettled, h.Name)
+				case err != nil:
+					return err
+				}
+			case errors.Is(err, g.ErrorBalanceNotZero):
+				blocked.Unsettled = append(blocked.Unsettled, h.Name)
+			case err != nil:
+				return err
+			default:
+				left = append(left, actor)
+			}
+		}
+		if len(blocked.LastOwner) > 0 || len(blocked.Unsettled) > 0 {
+			return blocked
+		}
+		if err := q.MarkAccountDeleted(ctx, userID); err != nil {
+			return err
+		}
+		if err := q.DeleteUserSessions(ctx, userID); err != nil {
+			return err
+		}
+		return q.DeletePushSubscriptionsOfUser(ctx, userID)
+	})
+	if err != nil {
+		return err
+	}
+	for _, actor := range left {
+		s.notifyLeft(ctx, actor)
+	}
+	s.sendAsync(mailer.Message{
+		To:      user.Email,
+		Subject: utils.T(ctx, locales.LK_MailAccountDeletedSubject),
+		Body:    utils.T(ctx, locales.LK_MailAccountDeletedBody, user.Username, utils.FormatDate(ctx, time.Now().Add(g.AccountEraseAfter))),
+	})
+	return nil
+}
+
+// RestoreAccount undoes [DefaultService.DeleteAccount], signing in calls it,
+// left households need a new invite, deleted ones are restored from home;
+// returns [g.ErrorInvalidCredential] when the account was erased meanwhile
+func (s *DefaultService) RestoreAccount(ctx context.Context, userID pgtype.UUID) error {
+	n, err := s.db.RestoreAccount(ctx, userID)
+	if err == nil && n == 0 {
+		return g.ErrorInvalidCredential
+	}
+	return err
+}
+
+// EraseDeletedAccounts erases the accounts deleted longer than [g.AccountEraseAfter] ago,
+// one transaction each, a failed one is logged and tried again next run
+func (s *DefaultService) EraseDeletedAccounts(ctx context.Context) error {
+	before := timestamptz(time.Now().Add(-g.AccountEraseAfter))
+	ids, err := s.db.ListAccountsToErase(ctx, before)
+	if err != nil {
+		return err
+	}
+	for _, id := range ids {
+		if err := s.eraseAccount(ctx, id, before); err != nil {
+			log.Error().Err(err).Str("user", id.String()).Msg("could not erase deleted account")
+		}
+	}
+	return nil
+}
+
+func (s *DefaultService) eraseAccount(ctx context.Context, userID pgtype.UUID, before pgtype.Timestamptz) error {
+	var user dbqueries.LockAccountToEraseRow
+	err := s.inTx(ctx, func(q *dbqueries.Queries) error {
+		var err error
+		if user, err = q.LockAccountToErase(ctx, dbqueries.LockAccountToEraseParams{ID: userID, DeletedBefore: before}); err != nil {
+			return err
+		}
+		steps := []func(context.Context, pgtype.UUID) error{
+			q.EndMembershipsOfUser,
+			q.DeletePrivateNotesOfUser,
+			q.DeleteAllEmailTokensOfUser,
+			q.DeleteDataExportsOfUser,
+			q.DeleteUserSessions,
+			q.DeletePushSubscriptionsOfUser,
+			q.EraseUser,
+		}
+		for _, step := range steps {
+			if err := step(ctx, userID); err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil // signed in meanwhile
+	} else if err != nil {
+		return err
+	}
+	lang := locales.Default.String()
+	if user.Language != nil {
+		lang = *user.Language
+	}
+	lctx, err := ctxi18n.WithLocale(ctx, lang)
+	if err != nil {
+		lctx, _ = ctxi18n.WithLocale(ctx, locales.Default.String())
+	}
+	s.sendAsync(mailer.Message{
+		To:      user.Email,
+		Subject: utils.T(lctx, locales.LK_MailAccountErasedSubject),
+		Body:    utils.T(lctx, locales.LK_MailAccountErasedBody, user.Username),
+	})
+	return nil
 }
 
 // SetUsername saves a validated username, usernames are not unique

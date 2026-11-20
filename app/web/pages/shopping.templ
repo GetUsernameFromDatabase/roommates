@@ -197,7 +197,7 @@ templ shoppingOpenItem(actor services.Membership, l services.ShoppingList, it db
 			@shoppingItemName(actor, l, it)
 			if it.ClaimedByName != nil {
 				<div class="text-sm text-muted-foreground">
-					{ utils.T(ctx, locales.LK_ShoppingBuyingBy, *it.ClaimedByName) }
+					{ utils.T(ctx, locales.LK_ShoppingBuyingBy, utils.MemberName(ctx, *it.ClaimedByName)) }
 				</div>
 			}
 		</div>
@@ -228,7 +228,7 @@ templ shoppingBoughtItem(actor services.Membership, l services.ShoppingList, it 
 			@shoppingItemName(actor, l, it)
 			if it.CheckedByName != nil {
 				<div class="text-xs">
-					{ utils.T(ctx, locales.LK_ShoppingBoughtBy, *it.CheckedByName) } ·
+					{ utils.T(ctx, locales.LK_ShoppingBoughtBy, utils.MemberName(ctx, *it.CheckedByName)) } ·
 					if it.ExpenseID.Valid {
 						<a href={ householdURL(actor.HouseholdID, "expenses", it.ExpenseID.String()) } class={ boughtLinkClass }>
 							@components.T(locales.LK_ShoppingSeeExpense)

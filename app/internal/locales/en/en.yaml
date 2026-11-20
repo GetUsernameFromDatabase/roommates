@@ -5,6 +5,7 @@ en:
     cancel: Cancel
     link-invalid: Link is invalid
     saved: Saved
+    former-member: Former member
     request-failed: Something went wrong. Check your connection and try again.
   app:
     title: Roommates
@@ -409,6 +410,24 @@ en:
       Hi %s,
 
       your Roommates email is now %s. If it was not you, contact us right away.
+    account-deleted-subject: Your account will be erased
+    account-deleted-body: |-
+      Hi %s,
+
+      your Roommates account will be erased on %s. Sign in before then to keep it.
+    account-erased-subject: Your Roommates account has been erased
+    account-erased-body: |-
+      Hi %s,
+
+      your Roommates account and personal data have been erased. What you shared in households stays there under "Former member".
+    data-export-subject: Your data is ready to download
+    data-export-body: |-
+      Hi %s,
+
+      your Roommates data export is ready. Download it until %s from this link (you need to be signed in):
+      %s
+
+      If you did not ask for an export, you can ignore this email.
   account:
     title: Account
     email-description: Currently %s. We send a confirmation link to the new address.
@@ -424,6 +443,27 @@ en:
     sign-out-everywhere: Sign out everywhere
     sign-out-everywhere-description: Signs you out on every device, this one too.
     sign-out-everywhere-confirm: Sign out on all devices, including this one?
+    delete-title: Delete account
+    delete-description: |-
+      Your account is erased 30 days after you delete it. Sign in before then to keep it. Old backups keep your data until they rotate out.
+      You leave your shared households at once and need a new invite to rejoin. Download your data first if you want a copy.
+    delete-submit: Delete account
+    delete-confirm: "Delete your account?\n\nYou leave your shared households now. Sign in within 30 days to keep the account."
+    delete-blocked-last-owner: "You are the only owner of: %s. Make someone else an owner first."
+    delete-blocked-unsettled: "You have an open balance or unconfirmed payment in: %s. Settle up first."
+    deleted-title: Account deleted
+    deleted-description: Your account will be erased in 30 days. Sign in before then to keep it.
+    restored-title: Account restored
+    restored-description: Welcome back. Households you left need a new invite to rejoin, deleted households you lived in alone can be restored from home.
+  data-export:
+    title: Your data
+    description: A ZIP of your account, your households and everything you added – expenses, settlements, messages, notes, shopping items, chores, events and the files you uploaded.
+    request: Email me a download link
+    requested: Requested.
+    pending: Preparing your export. We'll email you when it's ready.
+    ready-until: Ready until %s
+    download: Download
+    new: Make a new one
   confirm-email:
     done-title: Email changed
     done-description: Your new email address is confirmed.

@@ -274,7 +274,7 @@ func calendarWho(ctx context.Context, o services.Occurrence) string {
 	if len(o.Members) == 0 {
 		return utils.T(ctx, locales.LK_CalendarWholeHousehold)
 	}
-	names := utils.Map(o.Members, func(m services.EventMember) string { return m.Name })
+	names := utils.Map(o.Members, func(m services.EventMember) string { return utils.MemberName(ctx, m.Name) })
 	return strings.Join(names, ", ")
 }
 

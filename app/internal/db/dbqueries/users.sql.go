@@ -90,17 +90,19 @@ SELECT id,
   email,
   username,
   password,
-  language
+  language,
+  deleted_at
 FROM users
 WHERE email = $1
 `
 
 type GetUserCredentialsRow struct {
-	ID       pgtype.UUID `json:"id"`
-	Email    string      `json:"email"`
-	Username string      `json:"username"`
-	Password string      `json:"password"`
-	Language *string     `json:"language"`
+	ID        pgtype.UUID        `json:"id"`
+	Email     string             `json:"email"`
+	Username  string             `json:"username"`
+	Password  string             `json:"password"`
+	Language  *string            `json:"language"`
+	DeletedAt pgtype.Timestamptz `json:"deleted_at"`
 }
 
 func (q *Queries) GetUserCredentials(ctx context.Context, email string) (GetUserCredentialsRow, error) {
@@ -112,6 +114,7 @@ func (q *Queries) GetUserCredentials(ctx context.Context, email string) (GetUser
 		&i.Username,
 		&i.Password,
 		&i.Language,
+		&i.DeletedAt,
 	)
 	return i, err
 }

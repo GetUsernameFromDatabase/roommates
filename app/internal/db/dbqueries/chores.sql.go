@@ -237,6 +237,8 @@ const listChoreLog = `-- name: ListChoreLog :many
 SELECT l.kind,
   u.username AS user_name,
   COALESCE(a.username, '')::text AS assignee_name,
+  -- by id, an erased assignee's name is '' like no assignee
+  COALESCE(l.assignee_id <> l.user_id, FALSE)::boolean AS for_other,
   l.due,
   l.created_at
 FROM chore_log l
@@ -259,6 +261,7 @@ type ListChoreLogRow struct {
 	Kind         string             `json:"kind"`
 	UserName     string             `json:"user_name"`
 	AssigneeName string             `json:"assignee_name"`
+	ForOther     bool               `json:"for_other"`
 	Due          pgtype.Date        `json:"due"`
 	CreatedAt    pgtype.Timestamptz `json:"created_at"`
 }
@@ -276,6 +279,7 @@ func (q *Queries) ListChoreLog(ctx context.Context, arg ListChoreLogParams) ([]L
 			&i.Kind,
 			&i.UserName,
 			&i.AssigneeName,
+			&i.ForOther,
 			&i.Due,
 			&i.CreatedAt,
 		); err != nil {

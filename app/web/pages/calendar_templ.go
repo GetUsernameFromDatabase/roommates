@@ -641,9 +641,9 @@ func calendarItem(actor services.Membership, it services.CalendarItem) templ.Com
 			}
 			if it.AssigneeName != "" {
 				var templ_7745c5c3_Var26 string
-				templ_7745c5c3_Var26, templ_7745c5c3_Err = templ.JoinStringErrs(utils.T(ctx, locales.LK_ChoresTurn, it.AssigneeName))
+				templ_7745c5c3_Var26, templ_7745c5c3_Err = templ.JoinStringErrs(utils.T(ctx, locales.LK_ChoresTurn, utils.MemberName(ctx, it.AssigneeName)))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/calendar.templ`, Line: 148, Col: 61}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/calendar.templ`, Line: 148, Col: 84}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var26))
 				if templ_7745c5c3_Err != nil {
@@ -2935,9 +2935,9 @@ func eventFields(members []dbqueries.ListActiveMembersRow, f EventForm, id strin
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var118 string
-			templ_7745c5c3_Var118, templ_7745c5c3_Err = templ.JoinStringErrs(m.Username)
+			templ_7745c5c3_Var118, templ_7745c5c3_Err = templ.JoinStringErrs(utils.MemberName(ctx, m.Username))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/calendar.templ`, Line: 613, Col: 43}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/calendar.templ`, Line: 613, Col: 66}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var118))
 			if templ_7745c5c3_Err != nil {

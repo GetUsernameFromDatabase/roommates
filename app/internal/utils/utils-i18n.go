@@ -33,6 +33,14 @@ func N(ctx context.Context, key locales.LK, count int, i18nMap i18n.M, args ...a
 	return fmt.Sprintf(s, args...)
 }
 
+// MemberName is name as shown to others, an erased account's empty name is "Former member"
+func MemberName(ctx context.Context, name string) string {
+	if name == "" {
+		return T(ctx, locales.LK_CommonFormerMember)
+	}
+	return name
+}
+
 // unescapeJSON undoes the escaping ctxi18n leaves in texts: it loads YAML
 // through JSON and keeps the raw JSON string, so a newline comes out as `\n`
 // and "&" as `&` (i18n.Dict.UnmarshalJSON in ctxi18n v0.9.0)

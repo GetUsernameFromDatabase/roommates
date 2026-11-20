@@ -56,6 +56,17 @@ type ChoreMember struct {
 	Position    int32       `json:"position"`
 }
 
+type DataExport struct {
+	ID          pgtype.UUID        `json:"id"`
+	UserID      pgtype.UUID        `json:"user_id"`
+	ObjectKey   *string            `json:"object_key"`
+	SizeBytes   *int64             `json:"size_bytes"`
+	Lang        string             `json:"lang"`
+	CreatedAt   pgtype.Timestamptz `json:"created_at"`
+	AttemptedAt pgtype.Timestamptz `json:"attempted_at"`
+	ReadyAt     pgtype.Timestamptz `json:"ready_at"`
+}
+
 type EmailToken struct {
 	TokenHash []byte             `json:"token_hash"`
 	UserID    pgtype.UUID        `json:"user_id"`
@@ -318,4 +329,5 @@ type User struct {
 	Language       *string            `json:"language"`
 	PayeeName      *string            `json:"payee_name"`
 	PayeeIban      *string            `json:"payee_iban"`
+	DeletedAt      pgtype.Timestamptz `json:"deleted_at"`
 }

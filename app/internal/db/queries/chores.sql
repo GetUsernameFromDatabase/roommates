@@ -148,6 +148,8 @@ VALUES (
 SELECT l.kind,
   u.username AS user_name,
   COALESCE(a.username, '')::text AS assignee_name,
+  -- by id, an erased assignee's name is '' like no assignee
+  COALESCE(l.assignee_id <> l.user_id, FALSE)::boolean AS for_other,
   l.due,
   l.created_at
 FROM chore_log l

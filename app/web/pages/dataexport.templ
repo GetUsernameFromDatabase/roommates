@@ -1,0 +1,71 @@
+package pages
+
+import "roommates/web/components"
+import "roommates/web/components/button"
+import "roommates/internal/locales"
+import g "roommates/internal/config"
+import "roommates/internal/utils"
+import "roommates/internal/services"
+
+// DataExportSection asks for a ZIP of the user's data and downloads it when built,
+// path is the settings page the request is posted under, infoMessage confirms a request
+templ DataExportSection(path string, status services.DataExportStatus, infoMessage string) {
+	<section id="data-export" aria-labelledby="data-export-title" class={ sheetClass + " flex flex-col gap-4" }>
+		<div>
+			<h2 id="data-export-title" class="text-xl font-semibold">
+				@components.T(locales.LK_DataExportTitle)
+			</h2>
+			<p class="text-sm text-muted-foreground">
+				@components.T(locales.LK_DataExportDescription)
+			</p>
+		</div>
+		if status.Pending() {
+			<div class="flex flex-wrap items-center gap-3">
+				<p class="text-sm">
+					@components.T(locales.LK_DataExportPending)
+				</p>
+				@dataExportInfo(infoMessage)
+			</div>
+		} else {
+			if status.Ready() {
+				<p class="text-sm">
+					{ utils.T(ctx, locales.LK_DataExportReadyUntil, utils.FormatDate(ctx, status.ExpiresAt)) }
+				</p>
+			}
+			<form
+				action={ templ.SafeURL(path + g.RouteDataExport) }
+				method="post"
+				hx-post={ path + g.RouteDataExport }
+				hx-target="#data-export"
+				hx-swap="outerHTML"
+				hx-disabled-elt="find button"
+				class="flex flex-wrap items-center gap-3"
+			>
+				if status.Ready() {
+					// hx-boost off: a boosted link would swap the file into the page
+					@button.Button(button.Props{
+						Href:       g.RouteSettings + g.RouteDataExport + "/" + status.ID.String(),
+						Class:      "h-11",
+						Attributes: templ.Attributes{"hx-boost": "false", "download": ""},
+					}) {
+						@components.T(locales.LK_DataExportDownload)
+					}
+					@button.Button(button.Props{Type: button.TypeSubmit, Variant: button.VariantOutline, Class: "h-11"}) {
+						@components.T(locales.LK_DataExportNew)
+					}
+				} else {
+					@button.Button(button.Props{Type: button.TypeSubmit, Class: "h-11"}) {
+						@components.T(locales.LK_DataExportRequest)
+					}
+				}
+				@dataExportInfo(infoMessage)
+			</form>
+		}
+	</section>
+}
+
+templ dataExportInfo(infoMessage string) {
+	if infoMessage != "" {
+		<p role="status" class="text-sm font-medium text-muted-foreground">{ infoMessage }</p>
+	}
+}

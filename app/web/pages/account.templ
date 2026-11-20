@@ -14,6 +14,7 @@ const (
 	AccountAtEmail             = "email"
 	AccountAtPassword          = "password"
 	AccountAtSignOutEverywhere = "sign-out-everywhere"
+	AccountAtDeleteAccount     = "delete-account"
 )
 
 // AccountSection is how the user signs in, each form swaps the whole section with its outcome,
@@ -120,6 +121,31 @@ templ AccountSection(path string, user dbqueries.GetUserRow, errorAt, errorMessa
 				@button.Button(button.Props{Type: button.TypeSubmit, Variant: button.VariantOutline, Class: "h-11"}) {
 					@components.T(locales.LK_AccountSignOutEverywhere)
 				}
+			</form>
+			// accountForm plus the confirm, errors swap in place, success signs out to the deleted page
+			<form
+				action={ templ.SafeURL(path + "/" + AccountAtDeleteAccount) }
+				method="post"
+				hx-post={ path + "/" + AccountAtDeleteAccount }
+				hx-target="#account"
+				hx-swap="outerHTML"
+				hx-confirm={ utils.T(ctx, locales.LK_AccountDeleteConfirm) }
+				data-confirm-label={ utils.T(ctx, locales.LK_AccountDeleteSubmit) }
+				class="flex flex-col gap-4"
+			>
+				<div>
+					<h3 class="font-semibold text-destructive">
+						@components.T(locales.LK_AccountDeleteTitle)
+					</h3>
+					<p class="text-sm text-muted-foreground whitespace-pre-line">
+						@components.T(locales.LK_AccountDeleteDescription)
+					</p>
+				</div>
+				@currentPasswordField("account-delete-password")
+				@button.Button(button.Props{Type: button.TypeSubmit, Variant: button.VariantDestructive, Class: "h-11 self-start"}) {
+					@components.T(locales.LK_AccountDeleteSubmit)
+				}
+				@outcome(AccountAtDeleteAccount)
 			</form>
 		</div>
 	</section>

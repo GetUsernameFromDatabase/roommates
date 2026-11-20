@@ -277,39 +277,49 @@ func (s *DefaultService) notifyHousehold(ctx context.Context, actor Membership, 
 // Leave ends the actor's membership, see [g.ErrorLastOwner] and [g.ErrorBalanceNotZero]
 func (s *DefaultService) Leave(ctx context.Context, actor Membership) error {
 	err := s.inTx(ctx, func(q *dbqueries.Queries) error {
-		if err := q.LockHousehold(ctx, actor.HouseholdID); err != nil {
-			return err
-		}
-		counts, err := q.CountActiveMembers(ctx, actor.HouseholdID)
-		if err != nil {
-			return err
-		}
-		if actor.Role == g.RoleOwner && counts.Owners == 1 && counts.Members > 1 {
-			return g.ErrorLastOwner
-		}
-		if err := checkSettled(ctx, q, actor.HouseholdID, actor.UserID); err != nil {
-			return err
-		}
-		// an invite into an empty household would make a member nobody can manage
-		if counts.Members == 1 {
-			if err := q.DeleteInvitesOfHousehold(ctx, actor.HouseholdID); err != nil {
-				return err
-			}
-		}
-		if err := q.EndMembership(ctx, dbqueries.EndMembershipParams{
-			HouseholdID: actor.HouseholdID,
-			UserID:      actor.UserID,
-		}); err != nil {
-			return err
-		}
-		return logActivity(ctx, q, actor, ActivityEntry{Kind: g.ActMemberLeft, SubjectID: pgtype.UUID{}, TargetUserID: pgtype.UUID{}, Title: "", AmountCents: nil, Currency: ""})
+		return leaveTx(ctx, q, actor)
 	})
 	if err == nil {
-		s.notifyHousehold(ctx, actor, nil, "people", func(ctx context.Context, _ pgtype.UUID, actorName string) string {
-			return utils.T(ctx, locales.LK_OwnershipPushLeft, actorName)
-		})
+		s.notifyLeft(ctx, actor)
 	}
 	return err
+}
+
+// leaveTx is [DefaultService.Leave] inside q's transaction, without the push
+func leaveTx(ctx context.Context, q *dbqueries.Queries, actor Membership) error {
+	if err := q.LockHousehold(ctx, actor.HouseholdID); err != nil {
+		return err
+	}
+	counts, err := q.CountActiveMembers(ctx, actor.HouseholdID)
+	if err != nil {
+		return err
+	}
+	if actor.Role == g.RoleOwner && counts.Owners == 1 && counts.Members > 1 {
+		return g.ErrorLastOwner
+	}
+	if err := checkSettled(ctx, q, actor.HouseholdID, actor.UserID); err != nil {
+		return err
+	}
+	// an invite into an empty household would make a member nobody can manage
+	if counts.Members == 1 {
+		if err := q.DeleteInvitesOfHousehold(ctx, actor.HouseholdID); err != nil {
+			return err
+		}
+	}
+	if err := q.EndMembership(ctx, dbqueries.EndMembershipParams{
+		HouseholdID: actor.HouseholdID,
+		UserID:      actor.UserID,
+	}); err != nil {
+		return err
+	}
+	return logActivity(ctx, q, actor, ActivityEntry{Kind: g.ActMemberLeft, SubjectID: pgtype.UUID{}, TargetUserID: pgtype.UUID{}, Title: "", AmountCents: nil, Currency: ""})
+}
+
+// notifyLeft tells the other members that actor left
+func (s *DefaultService) notifyLeft(ctx context.Context, actor Membership) {
+	s.notifyHousehold(ctx, actor, nil, "people", func(ctx context.Context, _ pgtype.UUID, actorName string) string {
+		return utils.T(ctx, locales.LK_OwnershipPushLeft, actorName)
+	})
 }
 
 // ownerActsOnMember checks that actor is an owner and target an active

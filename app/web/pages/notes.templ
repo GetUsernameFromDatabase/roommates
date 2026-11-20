@@ -104,7 +104,7 @@ templ HouseholdNotes(actor services.Membership, notes []dbqueries.ListNotesRow, 
 										<span class="mt-1 line-clamp-3 text-sm break-words whitespace-pre-line">{ n.Excerpt }</span>
 									}
 									<span class="mt-auto pt-2 text-xs text-muted-foreground">
-										{ utils.T(ctx, locales.LK_NotesEditedBy, n.EditedByName) + ", " }
+										{ utils.T(ctx, locales.LK_NotesEditedBy, utils.MemberName(ctx, n.EditedByName)) + ", " }
 										@noteTime(n.EditedAt)
 										@notePrivate(n.Visibility)
 									</span>
@@ -121,7 +121,7 @@ templ HouseholdNotes(actor services.Membership, notes []dbqueries.ListNotesRow, 
 									<a href={ householdURL(actor.HouseholdID, "notes", n.ID.String()) } class="block min-h-12 py-2 hover:underline">
 										<span class="font-heading text-lg font-semibold break-words">{ n.Title }</span>
 										<span class="block text-xs text-muted-foreground">
-											{ utils.T(ctx, locales.LK_NotesEditedBy, n.EditedByName) + ", " }
+											{ utils.T(ctx, locales.LK_NotesEditedBy, utils.MemberName(ctx, n.EditedByName)) + ", " }
 											@noteTime(n.EditedAt)
 											@notePrivate(n.Visibility)
 										</span>
@@ -193,7 +193,7 @@ templ NotePage(actor services.Membership, n services.Note, files []services.Atta
 						}
 					</div>
 					<p class="mt-8 text-sm text-muted-foreground">
-						{ utils.T(ctx, locales.LK_NotesEditedBy, n.EditedByName) + ", " }
+						{ utils.T(ctx, locales.LK_NotesEditedBy, utils.MemberName(ctx, n.EditedByName)) + ", " }
 						@noteTime(n.EditedAt)
 						@notePrivate(n.Visibility)
 					</p>

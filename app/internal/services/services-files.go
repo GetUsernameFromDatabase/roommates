@@ -479,9 +479,16 @@ func (s *DefaultService) RunCleanup(ctx context.Context, interval time.Duration)
 	t := time.NewTicker(interval)
 	defer t.Stop()
 	for {
-		// before PurgeFiles, so a purged household's files go in the same run
+		// before PurgeFiles, so an erased avatar, a purged household's files and
+		// expired exports go in the same run
+		if err := s.EraseDeletedAccounts(ctx); err != nil {
+			log.Error().Err(err).Msg("could not erase deleted accounts")
+		}
 		if err := s.PurgeDeletedHouseholds(ctx); err != nil {
 			log.Error().Err(err).Msg("could not purge deleted households")
+		}
+		if err := s.PurgeExpiredExports(ctx); err != nil {
+			log.Error().Err(err).Msg("could not purge expired data exports")
 		}
 		if err := s.PurgeFiles(ctx); err != nil {
 			log.Error().Err(err).Msg("could not purge deleted files")
@@ -503,6 +510,10 @@ func (s *DefaultService) RunCleanup(ctx context.Context, interval time.Duration)
 		}
 		if err := s.db.PurgeEventReminders(ctx); err != nil {
 			log.Error().Err(err).Msg("could not purge event reminders")
+		}
+		// last, it can take a while
+		if err := s.BuildPendingExports(ctx); err != nil {
+			log.Error().Err(err).Msg("could not build a data export")
 		}
 		select {
 		case <-ctx.Done():

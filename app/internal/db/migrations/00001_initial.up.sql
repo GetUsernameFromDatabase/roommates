@@ -17,6 +17,10 @@ CREATE TABLE users (
   -- where to pay the user, shown only in households whose membership has show_payment_details on
   payee_name TEXT,
   payee_iban TEXT,
+  -- set when the user deletes the account, signing in before g.AccountEraseAfter clears it,
+  -- after that the cleanup erases the row: username '' (shown as "Former member"),
+  -- email <id>@erased.invalid, password '' and the personal fields NULL
+  deleted_at TIMESTAMP WITH TIME ZONE,
   CONSTRAINT chk_users_email_lowercase CHECK (email = lower(email))
 );
 -- if in the future switch is made from like ex% to %ex% then this index won't do
@@ -479,6 +483,23 @@ CREATE TABLE activity (
 CREATE INDEX idx_activity_household ON activity (household_id, created_at DESC);
 CREATE INDEX idx_activity_created ON activity (created_at);
 -- -----------------------------------------------------------------------------
+-- a ZIP of what a user wrote or took part in, built by the cleanup loop (object_key NULL
+-- and ready_at NULL until then) and downloadable by them for g.DataExportValidFor;
+-- lang is the language of its email; attempted_at is the last build try, a failing one
+-- goes to the back of the queue so it does not hold up the others
+CREATE TABLE data_exports (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES users (id) ON DELETE CASCADE,
+  object_key TEXT UNIQUE,
+  size_bytes BIGINT,
+  lang TEXT NOT NULL,
+  created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  attempted_at TIMESTAMP WITH TIME ZONE,
+  ready_at TIMESTAMP WITH TIME ZONE,
+  CHECK ((object_key IS NULL) = (ready_at IS NULL))
+);
+CREATE INDEX idx_data_exports_user_id ON data_exports (user_id);
+-- -----------------------------------------------------------------------------
 -- http_sessions belongs to the session store (pgstore), which creates it on start, after the
 -- migrations, so it is created here the same way, only user_id is ours: sessions.Login sets it,
 -- a password reset deletes the user's sessions by it
@@ -510,6 +531,12 @@ $$ LANGUAGE plpgsql;
 CREATE FUNCTION queue_avatar_purge() RETURNS TRIGGER AS $$ BEGIN
 INSERT INTO file_purges (object_key)
 VALUES (OLD.avatar_key) ON CONFLICT DO NOTHING;
+RETURN OLD;
+END;
+$$ LANGUAGE plpgsql;
+CREATE FUNCTION queue_export_purge() RETURNS TRIGGER AS $$ BEGIN
+INSERT INTO file_purges (object_key)
+VALUES (OLD.object_key) ON CONFLICT DO NOTHING;
 RETURN OLD;
 END;
 $$ LANGUAGE plpgsql;
@@ -686,6 +713,9 @@ UPDATE OF avatar_key ON users FOR EACH ROW
 CREATE TRIGGER queue_avatar_purge_delete
 AFTER DELETE ON users FOR EACH ROW
   WHEN (OLD.avatar_key IS NOT NULL) EXECUTE FUNCTION queue_avatar_purge();
+CREATE TRIGGER queue_export_purge
+AFTER DELETE ON data_exports FOR EACH ROW
+  WHEN (OLD.object_key IS NOT NULL) EXECUTE FUNCTION queue_export_purge();
 CREATE TRIGGER delete_unreferenced_file
 AFTER DELETE ON file_refs FOR EACH ROW EXECUTE FUNCTION delete_unreferenced_file();
 CREATE TRIGGER notify_shopping_lists

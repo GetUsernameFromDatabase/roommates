@@ -116,6 +116,7 @@ type SettleSlip struct {
 // the other's name when the actor is from, youTo when the actor is to, both takes both names
 func pairPhrase(ctx context.Context, actor services.Membership, fromID pgtype.UUID, fromName string,
 	toID pgtype.UUID, toName string, both, youFrom, youTo locales.LK) string {
+	fromName, toName = utils.MemberName(ctx, fromName), utils.MemberName(ctx, toName)
 	switch actor.UserID {
 	case fromID:
 		return utils.T(ctx, youFrom, toName)
@@ -131,7 +132,7 @@ func paidByLine(ctx context.Context, actor services.Membership, payerID pgtype.U
 	if payerID == actor.UserID {
 		return utils.T(ctx, locales.LK_ExpensesPaidByYou, formatDay(ctx, day))
 	}
-	return utils.T(ctx, locales.LK_ExpensesPaidBy, payerName, formatDay(ctx, day))
+	return utils.T(ctx, locales.LK_ExpensesPaidBy, utils.MemberName(ctx, payerName), formatDay(ctx, day))
 }
 
 // personName is name, or "You" for the actor
@@ -139,7 +140,7 @@ func personName(ctx context.Context, actor services.Membership, id pgtype.UUID, 
 	if id == actor.UserID {
 		return utils.T(ctx, locales.LK_ExpensesYou)
 	}
-	return name
+	return utils.MemberName(ctx, name)
 }
 
 // formatSignedMoney is [utils.FormatMoney] with a + or a minus sign

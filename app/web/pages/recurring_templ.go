@@ -272,9 +272,9 @@ func recurringLine(actor services.Membership, r services.RecurringRow) templ.Com
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var12 string
-			templ_7745c5c3_Var12, templ_7745c5c3_Err = templ.JoinStringErrs(utils.T(ctx, locales.LK_RecurringPaidBy, r.PayerName))
+			templ_7745c5c3_Var12, templ_7745c5c3_Err = templ.JoinStringErrs(utils.T(ctx, locales.LK_RecurringPaidBy, utils.MemberName(ctx, r.PayerName)))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/recurring.templ`, Line: 58, Col: 64}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/recurring.templ`, Line: 58, Col: 87}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var12))
 			if templ_7745c5c3_Err != nil {
@@ -345,9 +345,9 @@ func RecurringEditor(actor services.Membership, members []dbqueries.ListActiveMe
 				}
 			} else {
 				var templ_7745c5c3_Var15 string
-				templ_7745c5c3_Var15, templ_7745c5c3_Err = templ.JoinStringErrs(utils.T(ctx, locales.LK_RecurringPaidBy, r.PayerName))
+				templ_7745c5c3_Var15, templ_7745c5c3_Err = templ.JoinStringErrs(utils.T(ctx, locales.LK_RecurringPaidBy, utils.MemberName(ctx, r.PayerName)))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/recurring.templ`, Line: 80, Col: 59}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/recurring.templ`, Line: 80, Col: 82}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var15))
 				if templ_7745c5c3_Err != nil {

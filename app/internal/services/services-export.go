@@ -116,7 +116,7 @@ func expenseRows(ctx context.Context, format string, expenses []dbqueries.ListEx
 	}
 	first := func(e dbqueries.ListExportExpensesRow) []string {
 		return []string{
-			e.IncurredOn.Time.Format(DateLayout), csvText(e.Title), csvText(utils.T(ctx, locales.LK("expenses.category-"+e.Category))), csvText(e.PayerName),
+			e.IncurredOn.Time.Format(DateLayout), csvText(e.Title), csvText(utils.T(ctx, locales.LK("expenses.category-"+e.Category))), csvText(utils.MemberName(ctx, e.PayerName)),
 		}
 	}
 
@@ -130,7 +130,7 @@ func expenseRows(ctx context.Context, format string, expenses []dbqueries.ListEx
 					paid = t(locales.LK_ExportYes)
 				}
 				rows = append(rows, append(first(e), csvAmount(ctx, e.AmountCents), e.Currency,
-					csvText(sh.Username), csvAmount(ctx, sh.AmountCents), paid))
+					csvText(utils.MemberName(ctx, sh.Username)), csvAmount(ctx, sh.AmountCents), paid))
 			}
 		}
 		return rows
@@ -142,7 +142,7 @@ func expenseRows(ctx context.Context, format string, expenses []dbqueries.ListEx
 	for _, sh := range shares {
 		if !slices.Contains(columns, sh.UserID) {
 			columns = append(columns, sh.UserID)
-			header = append(header, csvText(sh.Username))
+			header = append(header, csvText(utils.MemberName(ctx, sh.Username)))
 		}
 	}
 	rows := [][]string{header}
@@ -208,7 +208,7 @@ func balanceRows(ctx context.Context, actor Membership, items []dbqueries.ListDe
 	}
 	rows := [][]string{{utils.T(ctx, who), utils.T(ctx, amount), utils.T(ctx, locales.LK_ExportCurrency)}}
 	for _, id := range ids {
-		rows = append(rows, []string{csvText(names[id]), csvAmount(ctx, net[id]), actor.Currency})
+		rows = append(rows, []string{csvText(utils.MemberName(ctx, names[id])), csvAmount(ctx, net[id]), actor.Currency})
 	}
 	return rows
 }

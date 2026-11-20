@@ -591,9 +591,9 @@ func deleteHousehold(path string, actor services.Membership, h services.Househol
 								return templ_7745c5c3_Err
 							}
 							var templ_7745c5c3_Var24 string
-							templ_7745c5c3_Var24, templ_7745c5c3_Err = templ.JoinStringErrs(utils.T(ctx, locales.LK_OwnershipDeleteDebt, d.FromName, d.ToName, utils.FormatMoney(ctx, d.Cents, h.Currency)))
+							templ_7745c5c3_Var24, templ_7745c5c3_Err = templ.JoinStringErrs(utils.T(ctx, locales.LK_OwnershipDeleteDebt, utils.MemberName(ctx, d.FromName), utils.MemberName(ctx, d.ToName), utils.FormatMoney(ctx, d.Cents, h.Currency)))
 							if templ_7745c5c3_Err != nil {
-								return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/household-settings.templ`, Line: 153, Col: 126}
+								return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/household-settings.templ`, Line: 153, Col: 172}
 							}
 							_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var24))
 							if templ_7745c5c3_Err != nil {

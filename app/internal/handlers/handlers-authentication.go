@@ -40,7 +40,13 @@ func (h *DefaultHandler) PageLogin(ctx *gin.Context) {
 		}
 
 		credsInDB, err := h.service.ShouldUserBeSignedIn(ctx, model.LoginRequest)
+		// signing in during the grace period keeps a deleted account
+		restored := err == nil && credsInDB.DeletedAt.Valid
+		if restored {
+			err = h.service.RestoreAccount(ctx, credsInDB.ID)
+		}
 		if err != nil {
+			// RestoreAccount's too: the account was erased since its password was checked
 			if errors.Is(err, g.ErrorInvalidCredential) {
 				model.Error = utils.T(
 					ctx.Request.Context(),
@@ -64,6 +70,11 @@ func (h *DefaultHandler) PageLogin(ctx *gin.Context) {
 			if lang := locales.Language(*credsInDB.Language); lang.IsValid() {
 				setLanguageCookie(ctx, lang)
 			}
+		}
+		if restored {
+			notice(ctx, http.StatusOK, locales.LK_AccountRestoredTitle,
+				locales.LK_AccountRestoredDescription, "/", locales.LK_VerifyEmailContinue)
+			return
 		}
 		reload(ctx, safeNextPath(model.Next))
 	}

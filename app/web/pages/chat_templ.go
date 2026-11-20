@@ -324,9 +324,9 @@ func ChatPage(actor services.Membership, c services.Chat, older bool, search str
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var16 string
-				templ_7745c5c3_Var16, templ_7745c5c3_Err = templ.JoinStringErrs(utils.T(ctx, locales.LK_ChatReplyingTo, reply.AuthorName))
+				templ_7745c5c3_Var16, templ_7745c5c3_Err = templ.JoinStringErrs(utils.T(ctx, locales.LK_ChatReplyingTo, utils.MemberName(ctx, reply.AuthorName)))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/chat.templ`, Line: 94, Col: 90}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/chat.templ`, Line: 94, Col: 113}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var16))
 				if templ_7745c5c3_Err != nil {
@@ -889,9 +889,9 @@ func chatMessages(actor services.Membership, c services.Chat, older bool, search
 									return templ_7745c5c3_Err
 								}
 								var templ_7745c5c3_Var38 string
-								templ_7745c5c3_Var38, templ_7745c5c3_Err = templ.JoinStringErrs(m.AuthorName)
+								templ_7745c5c3_Var38, templ_7745c5c3_Err = templ.JoinStringErrs(utils.MemberName(ctx, m.AuthorName))
 								if templ_7745c5c3_Err != nil {
-									return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/chat.templ`, Line: 253, Col: 28}
+									return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/chat.templ`, Line: 253, Col: 51}
 								}
 								_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var38))
 								if templ_7745c5c3_Err != nil {
@@ -980,9 +980,9 @@ func chatMessages(actor services.Membership, c services.Chat, older bool, search
 							return templ_7745c5c3_Err
 						}
 						var templ_7745c5c3_Var42 string
-						templ_7745c5c3_Var42, templ_7745c5c3_Err = templ.JoinStringErrs(*m.ReplyAuthorName)
+						templ_7745c5c3_Var42, templ_7745c5c3_Err = templ.JoinStringErrs(utils.MemberName(ctx, *m.ReplyAuthorName))
 						if templ_7745c5c3_Err != nil {
-							return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/chat.templ`, Line: 262, Col: 53}
+							return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/chat.templ`, Line: 262, Col: 76}
 						}
 						_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var42))
 						if templ_7745c5c3_Err != nil {

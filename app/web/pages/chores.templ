@@ -340,7 +340,7 @@ templ choreFields(members []dbqueries.ListActiveMembersRow, f ChoreForm, id stri
 					DefaultChecked: choreMemberPicked(in, m.UserID),
 					Class:          "size-5",
 				})
-				<span class="break-words">{ m.Username }</span>
+				<span class="break-words">{ utils.MemberName(ctx, m.Username) }</span>
 			</label>
 		}
 		@choreFieldError(id, services.FieldChoreMembers, f)
@@ -351,7 +351,7 @@ templ choreFields(members []dbqueries.ListActiveMembersRow, f ChoreForm, id stri
 		}
 		{{
 			items := utils.Map(members, func(m dbqueries.ListActiveMembersRow) selectcomp.ItemData {
-				return selectcomp.ItemData{Value: m.UserID.String(), Label: m.Username}
+				return selectcomp.ItemData{Value: m.UserID.String(), Label: utils.MemberName(ctx, m.Username)}
 			})
 			// a manual chore may be nobody's, for the others the rota decides
 			if in.Rotation == g.RotationManual {

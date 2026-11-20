@@ -79,6 +79,11 @@ func (h *DefaultHandler) renderSettings(ctx *gin.Context, status int, errorMessa
 		InternalError(ctx, err)
 		return
 	}
+	export, err := h.service.GetDataExportStatus(ctx, userID)
+	if err != nil {
+		InternalError(ctx, err)
+		return
+	}
 	var member *pages.SettingsMember
 	if nav != nil {
 		actor := membershipFromContext(ctx)
@@ -99,5 +104,5 @@ func (h *DefaultHandler) renderSettings(ctx *gin.Context, status int, errorMessa
 		}
 		member = &pages.SettingsMember{Actor: actor, Household: household, ShowPayment: show, Notifications: notifications}
 	}
-	RenderTemplStatus(ctx, status, pages.Settings(h.service.PushPublicKey(), nav, path, user, errorMessage, payment, member))
+	RenderTemplStatus(ctx, status, pages.Settings(h.service.PushPublicKey(), nav, path, user, errorMessage, payment, member, export))
 }

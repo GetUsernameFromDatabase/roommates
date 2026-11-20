@@ -5,6 +5,7 @@ et:
     cancel: Tühista
     link-invalid: Link on vigane
     saved: Salvestatud
+    former-member: Endine liige
     request-failed: Midagi läks valesti. Kontrolli ühendust ja proovi uuesti.
   app:
     title: Toakaaslased
@@ -409,6 +410,24 @@ et:
       Tere, %s!
 
       Sinu Toakaaslaste konto e-post on nüüd %s. Kui see polnud sina, võta meiega kohe ühendust.
+    account-deleted-subject: Sinu konto kustutatakse
+    account-deleted-body: |-
+      Tere, %s!
+
+      Sinu Toakaaslaste konto kustutatakse jäädavalt %s. Konto alles hoidmiseks logi enne seda sisse.
+    account-erased-subject: Sinu Toakaaslaste konto on kustutatud
+    account-erased-body: |-
+      Tere, %s!
+
+      Sinu Toakaaslaste konto ja isikuandmed on kustutatud. Leibkondades jagatu jääb sinna nime „Endine liige” all.
+    data-export-subject: Sinu andmed on allalaadimiseks valmis
+    data-export-body: |-
+      Tere, %s!
+
+      Sinu Toakaaslaste andmete eksport on valmis. Laadi see alla kuni %s, avades selle lingi (pead olema sisse logitud):
+      %s
+
+      Kui sa eksporti ei tellinud, võid selle kirja tähelepanuta jätta.
   account:
     title: Konto
     email-description: Praegu %s. Saadame uuele aadressile kinnituslingi.
@@ -424,6 +443,27 @@ et:
     sign-out-everywhere: Logi kõikjal välja
     sign-out-everywhere-description: Logib sind välja kõigis seadmetes, ka selles.
     sign-out-everywhere-confirm: Kas logida välja kõigis seadmetes, ka selles?
+    delete-title: Kustuta konto
+    delete-description: |-
+      Konto kustutatakse jäädavalt 30 päeva pärast. Kui logid enne seda sisse, jääb konto alles. Vanades varukoopiates püsivad andmed, kuni need asendatakse.
+      Jagatud leibkondadest lahkud kohe ja tagasi liitumiseks on vaja uut kutset. Kui soovid oma andmetest koopiat, laadi need enne alla.
+    delete-submit: Kustuta konto
+    delete-confirm: "Kustutada konto?\n\nLahkud kohe oma jagatud leibkondadest. Konto alles hoidmiseks logi 30 päeva jooksul sisse."
+    delete-blocked-last-owner: "Oled ainus omanik leibkondades: %s. Tee enne kellestki teisest omanik."
+    delete-blocked-unsettled: "Sul on tasumata arveid või kinnitamata makseid leibkondades: %s. Tee enne arved klaariks."
+    deleted-title: Konto kustutatud
+    deleted-description: Sinu konto kustutatakse jäädavalt 30 päeva pärast. Konto alles hoidmiseks logi enne seda sisse.
+    restored-title: Konto taastatud
+    restored-description: Tere tulemast tagasi! Leibkondadesse, kust lahkusid, on vaja uut kutset. Kustutatud leibkonnad, kus elasid üksi, saad taastada avalehelt.
+  data-export:
+    title: Sinu andmed
+    description: ZIP-fail sinu kontost, leibkondadest ja kõigest, mida oled lisanud – kulud, arveldused, sõnumid, märkmed, ostud, kodutööd, sündmused ja üleslaaditud failid.
+    request: Saada mulle allalaadimislink
+    requested: Tellitud.
+    pending: Valmistame eksporti ette. Saadame e-kirja, kui see on valmis.
+    ready-until: Valmis, saadaval kuni %s
+    download: Laadi alla
+    new: Tee uus
   confirm-email:
     done-title: E-post muudetud
     done-description: Sinu uus e-posti aadress on kinnitatud.

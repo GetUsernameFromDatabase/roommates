@@ -1500,9 +1500,9 @@ func fileRow(actor services.Membership, back, detach templ.SafeURL, lastRef, sha
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var64 string
-		templ_7745c5c3_Var64, templ_7745c5c3_Err = templ.JoinStringErrs(utils.T(ctx, locales.LK_FilesAddedBy, uploaderName, formatDate(ctx, createdAt), formatSize(ctx, size)))
+		templ_7745c5c3_Var64, templ_7745c5c3_Err = templ.JoinStringErrs(utils.T(ctx, locales.LK_FilesAddedBy, utils.MemberName(ctx, uploaderName), formatDate(ctx, createdAt), formatSize(ctx, size)))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/files.templ`, Line: 308, Col: 108}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/files.templ`, Line: 308, Col: 131}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var64))
 		if templ_7745c5c3_Err != nil {
@@ -1860,9 +1860,9 @@ func FilePage(actor services.Membership, f services.FileMeta, errorMessage strin
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var82 string
-			templ_7745c5c3_Var82, templ_7745c5c3_Err = templ.JoinStringErrs(utils.T(ctx, locales.LK_FilesAddedBy, f.UploaderName, formatDate(ctx, f.CreatedAt), formatSize(ctx, f.SizeBytes)))
+			templ_7745c5c3_Var82, templ_7745c5c3_Err = templ.JoinStringErrs(utils.T(ctx, locales.LK_FilesAddedBy, utils.MemberName(ctx, f.UploaderName), formatDate(ctx, f.CreatedAt), formatSize(ctx, f.SizeBytes)))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/files.templ`, Line: 384, Col: 118}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/files.templ`, Line: 384, Col: 141}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var82))
 			if templ_7745c5c3_Err != nil {

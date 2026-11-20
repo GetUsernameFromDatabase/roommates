@@ -55,7 +55,7 @@ templ recurringLine(actor services.Membership, r services.RecurringRow) {
 		if r.PayerID == actor.UserID {
 			<span>{ utils.T(ctx, locales.LK_RecurringPaidByYou) }</span>
 		} else {
-			<span>{ utils.T(ctx, locales.LK_RecurringPaidBy, r.PayerName) }</span>
+			<span>{ utils.T(ctx, locales.LK_RecurringPaidBy, utils.MemberName(ctx, r.PayerName)) }</span>
 		}
 	</span>
 }
@@ -77,7 +77,7 @@ templ RecurringEditor(actor services.Membership, members []dbqueries.ListActiveM
 			if r.PayerID == actor.UserID {
 				@components.T(locales.LK_RecurringPaidByYou)
 			} else {
-				{ utils.T(ctx, locales.LK_RecurringPaidBy, r.PayerName) }
+				{ utils.T(ctx, locales.LK_RecurringPaidBy, utils.MemberName(ctx, r.PayerName)) }
 			}
 		</p>
 		@expenseForm(members, f, in.ExpenseInput, errorMessage, errorField)

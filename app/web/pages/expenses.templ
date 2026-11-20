@@ -487,7 +487,7 @@ templ expenseForm(members []dbqueries.ListActiveMembersRow, f expenseFrame, in s
 									DefaultChecked: slices.Contains(in.Members, m.UserID),
 									Class:          "size-5",
 								})
-								<span class="break-words">{ m.Username }</span>
+								<span class="break-words">{ utils.MemberName(ctx, m.Username) }</span>
 							</label>
 							<span aria-hidden="true" class="till-leader"></span>
 							@input.Input(input.Props{
@@ -499,7 +499,7 @@ templ expenseForm(members []dbqueries.ListActiveMembersRow, f expenseFrame, in s
 								Attributes: templ.Attributes{
 									"inputmode":   "decimal",
 									"placeholder": "0,00",
-									"aria-label":  utils.T(ctx, locales.LK_ExpensesAmount) + ": " + m.Username,
+									"aria-label":  utils.T(ctx, locales.LK_ExpensesAmount) + ": " + utils.MemberName(ctx, m.Username),
 								},
 							})
 						</li>

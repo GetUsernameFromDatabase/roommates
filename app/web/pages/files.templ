@@ -305,7 +305,7 @@ templ fileRow(actor services.Membership, back, detach templ.SafeURL, lastRef, sh
 		<div class="min-w-0 flex-1">
 			<a href={ href } class="line-clamp-2 font-medium break-words hover:underline">{ name }</a>
 			<div class="text-xs text-muted-foreground">
-				{ utils.T(ctx, locales.LK_FilesAddedBy, uploaderName, formatDate(ctx, createdAt), formatSize(ctx, size)) }
+				{ utils.T(ctx, locales.LK_FilesAddedBy, utils.MemberName(ctx, uploaderName), formatDate(ctx, createdAt), formatSize(ctx, size)) }
 			</div>
 			{ children... }
 			if detach != "" {
@@ -381,7 +381,7 @@ templ FilePage(actor services.Membership, f services.FileMeta, errorMessage stri
 			@doorplateHeader(back, backText, f.Name)
 		}
 		<p class="-mt-6 text-xs text-muted-foreground">
-			{ utils.T(ctx, locales.LK_FilesAddedBy, f.UploaderName, formatDate(ctx, f.CreatedAt), formatSize(ctx, f.SizeBytes)) }
+			{ utils.T(ctx, locales.LK_FilesAddedBy, utils.MemberName(ctx, f.UploaderName), formatDate(ctx, f.CreatedAt), formatSize(ctx, f.SizeBytes)) }
 		</p>
 		@formError(errorMessage)
 		if services.ImageMimes[f.Mime] {

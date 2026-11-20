@@ -84,6 +84,7 @@ func initRoutes(r *gin.Engine, h *handlers.DefaultHandler, service *services.Def
 		open.POST(g.RouteLanguage, h.SetLanguage)
 		open.GET(g.RouteManifest, h.Manifest)
 		open.GET(g.RouteOffline, h.PageOffline)
+		open.GET(g.RouteAccountDeleted, h.PageAccountDeleted)
 	}
 
 	// --- --- ---
@@ -102,6 +103,7 @@ func initRoutes(r *gin.Engine, h *handlers.DefaultHandler, service *services.Def
 		priv.POST(g.RouteSettings+g.RouteAvatar, h.SetAvatar)
 		priv.POST(g.RouteSettings+g.RouteAvatarDelete, h.RemoveAvatar)
 		accountRoutes(priv.Group(g.RouteSettings), h, mwAuthLimit, mwEmailLimit)
+		priv.GET(g.RouteSettings+g.RouteDataExport+"/:"+g.ParamExportID, h.DownloadDataExport)
 		priv.GET(g.RouteUsers+"/:"+g.ParamUserID+"/avatar", h.DownloadAvatar)
 		priv.POST(g.RouteVerifyEmailResend, mwEmailLimit, h.ResendVerificationEmail)
 		priv.POST(g.RoutePushSubscribe, h.SubscribePush)
@@ -250,6 +252,10 @@ func accountRoutes(settings *gin.RouterGroup, h *handlers.DefaultHandler, mwAuth
 	settings.POST("/email", mwAuthLimit, mwEmailLimit, h.ChangeEmail)
 	settings.POST("/sign-out-everywhere", h.SignOutEverywhere)
 	settings.POST("/payment", h.SetPaymentDetails)
+	// bcrypt and a mail
+	settings.POST(g.RouteDeleteAccount, mwAuthLimit, mwEmailLimit, h.DeleteAccount)
+	// a mail when it is built
+	settings.POST(g.RouteDataExport, mwEmailLimit, h.RequestDataExport)
 }
 
 func registerAssets(r *gin.Engine) {

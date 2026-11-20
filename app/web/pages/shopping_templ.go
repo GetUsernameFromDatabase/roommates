@@ -750,9 +750,9 @@ func shoppingOpenItem(actor services.Membership, l services.ShoppingList, it dbq
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var26 string
-			templ_7745c5c3_Var26, templ_7745c5c3_Err = templ.JoinStringErrs(utils.T(ctx, locales.LK_ShoppingBuyingBy, *it.ClaimedByName))
+			templ_7745c5c3_Var26, templ_7745c5c3_Err = templ.JoinStringErrs(utils.T(ctx, locales.LK_ShoppingBuyingBy, utils.MemberName(ctx, *it.ClaimedByName)))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/shopping.templ`, Line: 200, Col: 67}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/shopping.templ`, Line: 200, Col: 90}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var26))
 			if templ_7745c5c3_Err != nil {
@@ -930,9 +930,9 @@ func shoppingBoughtItem(actor services.Membership, l services.ShoppingList, it d
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var34 string
-			templ_7745c5c3_Var34, templ_7745c5c3_Err = templ.JoinStringErrs(utils.T(ctx, locales.LK_ShoppingBoughtBy, *it.CheckedByName))
+			templ_7745c5c3_Var34, templ_7745c5c3_Err = templ.JoinStringErrs(utils.T(ctx, locales.LK_ShoppingBoughtBy, utils.MemberName(ctx, *it.CheckedByName)))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/shopping.templ`, Line: 231, Col: 67}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/shopping.templ`, Line: 231, Col: 90}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var34))
 			if templ_7745c5c3_Err != nil {

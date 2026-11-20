@@ -142,6 +142,43 @@ func (h *DefaultHandler) SignOutEverywhere(ctx *gin.Context) {
 	reload(ctx, g.RouteLogin)
 }
 
+// DeleteAccount deletes the account after the current password, signs out and shows when it is erased
+func (h *DefaultHandler) DeleteAccount(ctx *gin.Context) {
+	userID, err := sessionUserID(ctx)
+	if err != nil {
+		InternalError(ctx, err)
+		return
+	}
+	c := ctx.Request.Context()
+	// the request context carries the language of the email
+	err = h.service.DeleteAccount(c, userID, ctx.PostForm("current_password"))
+	var blocked services.AccountDeleteBlocked
+	if errors.As(err, &blocked) {
+		var lines []string
+		if len(blocked.LastOwner) > 0 {
+			lines = append(lines, utils.T(c, locales.LK_AccountDeleteBlockedLastOwner, strings.Join(blocked.LastOwner, ", ")))
+		}
+		if len(blocked.Unsettled) > 0 {
+			lines = append(lines, utils.T(c, locales.LK_AccountDeleteBlockedUnsettled, strings.Join(blocked.Unsettled, ", ")))
+		}
+		h.renderAccount(ctx, http.StatusUnprocessableEntity, pages.AccountAtDeleteAccount, strings.Join(lines, "\n"), "", "")
+		return
+	}
+	if err != nil {
+		h.accountError(ctx, pages.AccountAtDeleteAccount, err)
+		return
+	}
+	s := sessions.FromGinContext(ctx)
+	s.Logout()
+	reload(ctx, g.RouteAccountDeleted)
+}
+
+// PageAccountDeleted is where [DefaultHandler.DeleteAccount] ends, signed out
+func (h *DefaultHandler) PageAccountDeleted(ctx *gin.Context) {
+	notice(ctx, http.StatusOK, locales.LK_AccountDeletedTitle,
+		locales.LK_AccountDeletedDescription, g.RouteLogin, locales.LK_LoginPageSignIn)
+}
+
 // ConfirmEmailChange makes the email of the ?token= link the user's, signed in or not
 func (h *DefaultHandler) ConfirmEmailChange(ctx *gin.Context) {
 	err := h.service.ConfirmEmailChange(ctx.Request.Context(), ctx.Query("token"))

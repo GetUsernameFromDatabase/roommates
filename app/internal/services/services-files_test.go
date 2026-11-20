@@ -22,7 +22,7 @@ import (
 type fakeStore struct {
 	mu      sync.Mutex
 	objects map[string][]byte
-	failKey string // Delete of this key fails
+	failKey string // Get and Delete of this key fail
 }
 
 func newFakeStore() *fakeStore {
@@ -43,6 +43,9 @@ func (f *fakeStore) Put(_ context.Context, key string, body io.ReadSeeker, _ int
 func (f *fakeStore) Get(_ context.Context, key string) (io.ReadCloser, error) {
 	f.mu.Lock()
 	defer f.mu.Unlock()
+	if key == f.failKey {
+		return nil, errors.New("get failed")
+	}
 	return io.NopCloser(bytes.NewReader(f.objects[key])), nil
 }
 

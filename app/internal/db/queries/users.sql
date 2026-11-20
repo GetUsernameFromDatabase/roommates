@@ -3,7 +3,8 @@ SELECT id,
   email,
   username,
   password,
-  language
+  language,
+  deleted_at
 FROM users
 WHERE email = $1;
 -- name: InsertUser :one

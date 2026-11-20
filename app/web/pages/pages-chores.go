@@ -131,7 +131,7 @@ func choreTurn(ctx context.Context, actor services.Membership, c services.Chore)
 	case c.AssigneeID == actor.UserID:
 		return utils.T(ctx, locales.LK_ChoresTurnYou)
 	}
-	return utils.T(ctx, locales.LK_ChoresTurn, c.AssigneeName)
+	return utils.T(ctx, locales.LK_ChoresTurn, utils.MemberName(ctx, c.AssigneeName))
 }
 
 // choreCanPass says whether the turn can be handed on: not in a manual chore or a rota of one
@@ -141,21 +141,18 @@ func choreCanPass(c services.Chore) bool {
 
 // choreLogLine is "Mari did it · 12.11.", for another's turn "Mari did it for Jaan · 12.11."
 func choreLogLine(ctx context.Context, e services.ChoreLogEntry) string {
-	who := e.UserName
-	if who == "" {
-		who = utils.T(ctx, locales.LK_ActivitySomeone)
-	}
+	who := utils.MemberName(ctx, e.UserName)
 	date := utils.FormatDate(ctx, e.At)
-	forOther := e.AssigneeName != "" && e.AssigneeName != who
+	assignee := utils.MemberName(ctx, e.AssigneeName)
 	switch {
 	case e.Kind == g.ChorePassed:
 		return utils.T(ctx, locales.LK_ChoresLogPassed, who, date)
-	case e.Kind == g.ChoreSkipped && forOther:
-		return utils.T(ctx, locales.LK_ChoresLogSkippedFor, who, e.AssigneeName, date)
+	case e.Kind == g.ChoreSkipped && e.ForOther:
+		return utils.T(ctx, locales.LK_ChoresLogSkippedFor, who, assignee, date)
 	case e.Kind == g.ChoreSkipped:
 		return utils.T(ctx, locales.LK_ChoresLogSkipped, who, date)
-	case forOther:
-		return utils.T(ctx, locales.LK_ChoresLogDoneFor, who, e.AssigneeName, date)
+	case e.ForOther:
+		return utils.T(ctx, locales.LK_ChoresLogDoneFor, who, assignee, date)
 	}
 	return utils.T(ctx, locales.LK_ChoresLogDone, who, date)
 }
