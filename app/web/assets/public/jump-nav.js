@@ -84,6 +84,8 @@ if (!window.jumpNavLoaded) {
       // keyboard and screen reader users carry on from the section
       if (!s.hasAttribute("tabindex")) s.tabIndex = -1;
       s.focus({ preventScroll: true });
+      // at the bottom the page cannot scroll, no scroll event would mark the tapped link
+      queue();
     });
     addEventListener("scroll", queue, { passive: true });
     ["wheel", "touchstart"].forEach(function (type) {

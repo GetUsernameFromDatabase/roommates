@@ -455,6 +455,57 @@ func TestEventRights(t *testing.T) {
 	}
 }
 
+// a leaver's own events go, without members they would be the whole household's; a day of
+// their series edited alone for others stays as a one-off
+func TestEventOfLeaver(t *testing.T) {
+	s := newTestService(t)
+	ctx := t.Context()
+	ownerM, memberM, _ := newTestHousehold(t, s)
+	today, err := s.HouseholdToday(ctx, ownerM)
+	if err != nil {
+		t.Fatal(err)
+	}
+	theirs, shared := dailyEvent("Yoga", today), eventInput("Dinner", today)
+	theirs.Members, shared.Members = []pgtype.UUID{memberM.UserID}, []pgtype.UUID{ownerM.UserID, memberM.UserID}
+	yoga := mustCreateEvent(t, s, memberM, theirs)
+	edit := theirs
+	edit.Title, edit.StartDate, edit.Unit, edit.Members = "Yoga late", today.AddDate(0, 0, 1).Format(time.DateOnly), "", shared.Members
+	if err := s.UpdateEvent(ctx, memberM, yoga, today.AddDate(0, 0, 1), EventScopeThis, edit); err != nil {
+		t.Fatal(err)
+	}
+	dinner := mustCreateEvent(t, s, memberM, shared)
+	mustCreateEvent(t, s, memberM, eventInput("Party", today))
+	if err := s.Leave(ctx, memberM); err != nil {
+		t.Fatal(err)
+	}
+	wantCalendar(t, s, ownerM, today, "after leaving", "Dinner+Party", "Yoga late", "")
+	if d := mustOccurrence(t, s, ownerM, dinner, today); len(d.Members) != 1 || d.Members[0].UserID != ownerM.UserID {
+		t.Fatalf("shared event: got %+v", d.Members)
+	}
+}
+
+// a recurring expense not added yet waits on today, like an overdue chore
+func TestCalendarOverdueRecurring(t *testing.T) {
+	s := newTestService(t)
+	ctx := t.Context()
+	ownerM, _, _ := newTestHousehold(t, s)
+	today, err := s.HouseholdToday(ctx, ownerM)
+	if err != nil {
+		t.Fatal(err)
+	}
+	// weekly from two weeks ago, due a week ago
+	if _, err := s.CreateRecurring(ctx, ownerM, recurringInput("Rent", daysAgo(14), ownerM.UserID)); err != nil {
+		t.Fatal(err)
+	}
+	items, err := s.ListCalendar(ctx, ownerM, today, today.AddDate(0, 0, 1))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(items) != 1 || items[0].Kind != CalendarKindRecurring || !items[0].Date.Equal(today) || !items[0].Overdue {
+		t.Fatalf("got %+v, want Rent overdue on %v", items, today)
+	}
+}
+
 // without a day, an event opens on its first day left, links of the activity and files have none
 func TestEventFirstDayLeft(t *testing.T) {
 	s := newTestService(t)

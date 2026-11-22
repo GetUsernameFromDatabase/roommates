@@ -11,7 +11,6 @@ import (
 	"net/http"
 	g "roommates/internal/config"
 	"roommates/internal/logger"
-	"roommates/internal/validators"
 	"time"
 
 	"github.com/gin-contrib/sessions"
@@ -49,7 +48,7 @@ const KeyUserID = "user_id"
 //
 //exhaustruct:enforce
 type SessionInfo struct {
-	UserID string `validate:"required"`
+	UserID string
 }
 
 type Session struct {
@@ -69,21 +68,18 @@ func FromGinContext(ctx *gin.Context) Session {
 
 	sessionInfo := SessionInfo{UserID: str(KeyUserID)}
 
-	err := validators.Main.Struct(sessionInfo)
 	return Session{
 		Session:            s,
 		SessionInfo:        sessionInfo,
-		isSessionInfoValid: err == nil,
+		isSessionInfoValid: sessionInfo.UserID != "",
 	}
 }
 
 // Login stores sessionInfo under a new session id, so an id that existed
 // before signing in (possibly planted by someone else) never becomes authenticated
 func (s *Session) Login(sessionInfo SessionInfo) {
-	err := validators.Main.Struct(sessionInfo)
-	if err != nil {
-		validators.LogValidationErrors(log, err)
-		panic(err)
+	if sessionInfo.UserID == "" {
+		panic("session login without a user id")
 	}
 	s.regenerateID()
 	s.SessionInfo = sessionInfo

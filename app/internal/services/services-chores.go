@@ -416,6 +416,10 @@ func (s *DefaultService) UpdateChore(ctx context.Context, actor Membership, id p
 
 func (s *DefaultService) DeleteChore(ctx context.Context, actor Membership, id pgtype.UUID) error {
 	return s.inTx(ctx, func(q *dbqueries.Queries) error {
+		// the household is locked before the chore like a leaver does, see [cleanChore]
+		if err := q.LockHousehold(ctx, actor.HouseholdID); err != nil {
+			return err
+		}
 		c, err := lockChore(ctx, q, actor, id)
 		if err != nil {
 			return err

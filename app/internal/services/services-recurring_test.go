@@ -164,6 +164,20 @@ func TestRecurringChanges(t *testing.T) {
 	if gym = mustRecurring(t, s, ownerM, "Gym"); gym.Interval != g.IntervalMonth || gym.PayerID != memberM.UserID {
 		t.Fatalf("owner's edit: got %+v", gym)
 	}
+	// a new interval alone counts from the next due day, the old anchor is on the old step
+	if err := s.SkipRecurring(ctx, memberM, gym.ID, gym.NextDue); err != nil {
+		t.Fatal(err)
+	}
+	gym = mustRecurring(t, s, ownerM, "Gym")
+	next := gym.NextDue.Time
+	in = gym.Input()
+	in.Interval = g.IntervalYear
+	if err := s.UpdateRecurring(ctx, memberM, gym.ID, in); err != nil {
+		t.Fatal(err)
+	}
+	if gym = mustRecurring(t, s, ownerM, "Gym"); !gym.Anchor.Time.Equal(next) || !gym.NextDue.Time.Equal(next) {
+		t.Fatalf("new interval: got anchor %v next %v, want both %v", gym.Anchor, gym.NextDue, next)
+	}
 	// a new date starts it again from that day
 	if err := s.UpdateRecurring(ctx, ownerM, internet.ID, recurringInput("Internet", daysAgo(3), ownerM.UserID, memberM.UserID)); err != nil {
 		t.Fatal(err)

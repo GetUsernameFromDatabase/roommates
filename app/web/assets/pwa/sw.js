@@ -42,6 +42,14 @@ self.addEventListener("fetch", (event) => {
   );
 });
 
+// whether a window shows url: its query only counts when url has one (a calendar reminder's ?on=),
+// a page's own search (chat, expenses) still shows that page
+const shows = (w, url) => {
+  const a = new URL(w.url);
+  const b = new URL(url, self.location.origin);
+  return a.pathname === b.pathname && (!b.search || a.search === b.search);
+};
+
 // a message is {title, body, url, tag}, see internal/push
 self.addEventListener("push", (event) => {
   if (!event.data) {
@@ -53,9 +61,7 @@ self.addEventListener("push", (event) => {
       .matchAll({ type: "window", includeUncontrolled: true })
       .then((windows) => {
         // the page is open and live already, browsers allow skipping while it has focus
-        const seen = windows.some(
-          (w) => w.focused && new URL(w.url).pathname === msg.url,
-        );
+        const seen = windows.some((w) => w.focused && shows(w, msg.url));
         if (seen) {
           return;
         }
@@ -76,7 +82,7 @@ self.addEventListener("notificationclick", (event) => {
     self.clients
       .matchAll({ type: "window", includeUncontrolled: true })
       .then((windows) => {
-        const open = windows.find((w) => new URL(w.url).pathname === url);
+        const open = windows.find((w) => shows(w, url));
         return open ? open.focus() : self.clients.openWindow(url);
       }),
   );

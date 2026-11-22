@@ -203,8 +203,9 @@ func (s *DefaultService) UpdateRecurring(ctx context.Context, actor Membership, 
 		if err != nil {
 			return err
 		}
+		// a new interval counts from the next due day too, the old anchor is on the old step
 		anchor, next := r.Anchor, r.NextDue
-		if !p.IncurredOn.Time.Equal(r.NextDue.Time) {
+		if !p.IncurredOn.Time.Equal(r.NextDue.Time) || in.Interval != r.Interval {
 			anchor, next = p.IncurredOn, p.IncurredOn
 		}
 		if err := q.UpdateRecurring(ctx, dbqueries.UpdateRecurringParams{
@@ -240,6 +241,10 @@ func (s *DefaultService) UpdateRecurring(ctx context.Context, actor Membership, 
 // DeleteRecurring ends a schedule, the expenses it added stay, see [lockRecurringToChange]
 func (s *DefaultService) DeleteRecurring(ctx context.Context, actor Membership, id pgtype.UUID) error {
 	return s.inTx(ctx, func(q *dbqueries.Queries) error {
+		// the household is locked before the schedule like a leaver does, see [cleanChore]
+		if err := q.LockHousehold(ctx, actor.HouseholdID); err != nil {
+			return err
+		}
 		r, err := lockRecurringToChange(ctx, q, actor, id)
 		if err != nil {
 			return err

@@ -124,22 +124,27 @@ templ calendarAgendaMore(actor services.Membership, from, last time.Time) {
 // calendarItem is a line of a day, a link to the event, chore or recurring expense
 templ calendarItem(actor services.Membership, it services.CalendarItem) {
 	<a href={ calendarItemURL(actor.HouseholdID, it) } class="flex min-h-12 items-start gap-3 px-3 py-2.5 outline-none hover:bg-accent focus-visible:bg-accent focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset">
-		<span class="w-[5.5rem] shrink-0 pt-0.5 text-sm whitespace-nowrap text-muted-foreground tabular-nums">
-			switch it.Kind {
-				case services.CalendarKindChore:
-					@navIcon("chores", "size-4")
-				case services.CalendarKindRecurring:
-					@navIcon("expenses", "size-4")
-				default:
-					{ calendarItemTime(ctx, it) }
-			}
-		</span>
+		// each kind's mark as in a month cell, so every title starts in line
+		switch it.Kind {
+			case services.CalendarKindChore:
+				@navIcon("chores", "mt-1 size-4 shrink-0 text-muted-foreground")
+			case services.CalendarKindRecurring:
+				@navIcon("expenses", "mt-1 size-4 shrink-0 text-muted-foreground")
+			default:
+				<span class="mt-1 flex size-4 shrink-0 items-center justify-center">
+					<span class="size-2 rounded-full bg-primary"></span>
+				</span>
+		}
 		<span class="flex min-w-0 flex-1 flex-col gap-1">
 			<span class="font-medium break-words">{ it.Title }</span>
-			if it.Location != "" {
-				<span class="text-sm break-words text-muted-foreground">{ it.Location }</span>
-			}
 			switch it.Kind {
+				case services.CalendarKindEvent:
+					<span class="flex flex-wrap gap-x-3 gap-y-1 text-sm text-muted-foreground">
+						<span class="whitespace-nowrap tabular-nums">{ calendarItemTime(ctx, it) }</span>
+						if it.Location != "" {
+							<span class="min-w-0 break-words">{ it.Location }</span>
+						}
+					</span>
 				case services.CalendarKindChore:
 					<span class="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-muted-foreground">
 						@badge.Badge(badge.Props{Variant: badge.VariantOutline}) {
@@ -160,6 +165,11 @@ templ calendarItem(actor services.Membership, it services.CalendarItem) {
 							@components.T(locales.LK_CalendarKindRecurring)
 						}
 						<span class="tabular-nums">{ utils.FormatMoney(ctx, it.AmountCents, actor.Currency) }</span>
+						if it.Overdue {
+							@badge.Badge(badge.Props{Variant: badge.VariantDestructive}) {
+								@components.T(locales.LK_CalendarOverdue)
+							}
+						}
 					</span>
 			}
 		</span>

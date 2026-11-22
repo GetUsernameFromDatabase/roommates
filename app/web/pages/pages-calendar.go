@@ -223,8 +223,6 @@ func daysFrom(from, to time.Time) int {
 // event goes on "until 20:00"
 func calendarItemTime(ctx context.Context, it services.CalendarItem) string {
 	switch {
-	case it.Kind != services.CalendarKindEvent:
-		return ""
 	case it.AllDay:
 		return utils.T(ctx, locales.LK_CalendarAllDay)
 	case it.Clock != "" && it.EndClock != "":

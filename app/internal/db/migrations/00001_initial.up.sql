@@ -662,9 +662,35 @@ WHERE c.id = chore;
 $$ LANGUAGE sql STABLE;
 -- --- leavers ---
 -- a leaver's schedules, and their shares in the others' schedules, end with the membership;
--- their chore turns move on and they leave every rota and event
+-- their chore turns move on and they leave every rota and event, an event only for them goes,
+-- without members it would be the whole household's; an occurrence edited alone out of such a
+-- series stays as a one-off for its other members
 CREATE FUNCTION remove_leaver() RETURNS TRIGGER AS $$
+DECLARE gone UUID [];
 BEGIN
+  SELECT array_agg(e.id) INTO gone
+  FROM events e
+  WHERE e.household_id = NEW.household_id
+    AND EXISTS (
+      SELECT 1
+      FROM event_members m
+      WHERE m.event_id = e.id
+        AND m.user_id = NEW.user_id
+    )
+    AND NOT EXISTS (
+      SELECT 1
+      FROM event_members m
+      WHERE m.event_id = e.id
+        AND m.user_id <> NEW.user_id
+    );
+  UPDATE events
+  SET detached_from = NULL,
+    detached_on = NULL
+  WHERE household_id = NEW.household_id
+    AND detached_from = ANY(gone);
+  DELETE FROM events
+  WHERE household_id = NEW.household_id
+    AND id = ANY(gone);
   DELETE FROM event_members
   WHERE household_id = NEW.household_id
     AND user_id = NEW.user_id;

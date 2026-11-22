@@ -18,11 +18,32 @@
   document.addEventListener("visibilitychange", function () {
     if (document.visibilityState === "visible") resync();
   });
+  // an action of this tab that moves it to another page (its own delete) is answered before its
+  // live event comes back, so the page it leaves refetches what it just deleted and gets a 404
+  var leaving = false;
+  document.addEventListener("htmx:afterRequest", function (e) {
+    var xhr = e.detail.xhr;
+    if (xhr && (xhr.getResponseHeader("HX-Location") || xhr.getResponseHeader("HX-Redirect"))) leaving = true;
+  });
+  // the move is over once a page settles: the new one in <body>, or an error page in <main>; or
+  // once it could not be sent
+  document.addEventListener("htmx:afterSettle", function (e) {
+    if (e.detail.target === document.body || e.detail.target.tagName === "MAIN") leaving = false;
+  });
+  document.addEventListener("htmx:sendError", function () {
+    leaving = false;
+  });
   // a region whose page is gone (deleted, or the user was removed) gets the 404 page, which has no
   // copy of it and would swap in nothing, so its message fills the page's <main> instead
   document.addEventListener("htmx:beforeSwap", function (e) {
     var main = document.querySelector("main");
-    if (e.detail.xhr.status !== 404 || !main || !e.detail.requestConfig.elt.hasAttribute("data-live")) return;
+    var elt = e.detail.requestConfig.elt;
+    if (e.detail.xhr.status !== 404 || !main || !elt.hasAttribute("data-live")) return;
+    // the tab is moving on, or has moved on, from the page this region was on
+    if (leaving || !elt.isConnected) {
+      e.detail.shouldSwap = false;
+      return;
+    }
     e.detail.target = main;
     e.detail.selectOverride = "main > *";
     e.detail.swapOverride = "innerHTML";

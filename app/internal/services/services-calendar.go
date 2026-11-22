@@ -114,7 +114,7 @@ type CalendarItem struct {
 	On           time.Time
 	AssigneeName string
 	AmountCents  int64
-	// a chore due before today, shown on today
+	// a chore or recurring expense due before today, shown on today
 	Overdue bool
 }
 
@@ -610,8 +610,7 @@ func (s *DefaultService) householdLocation(ctx context.Context, householdID pgty
 
 // ListCalendar lists the household's events, chores and recurring expenses on the household local
 // days [from, to), at most [MaxCalendarDays], by day, all-day first and then by time: an event on
-// each day it covers, a chore on its due day or today when it is overdue, a recurring expense on
-// its next due day
+// each day it covers, a chore or recurring expense on its (next) due day or today when it is overdue
 func (s *DefaultService) ListCalendar(ctx context.Context, actor Membership, from, to time.Time) ([]CalendarItem, error) {
 	from, to = DateOnly(from), DateOnly(to)
 	if !from.Before(to) || daysBetween(from, to) > MaxCalendarDays {
@@ -669,10 +668,21 @@ func (s *DefaultService) ListCalendar(ctx context.Context, actor Membership, fro
 	if err != nil {
 		return nil, err
 	}
+	var today time.Time
+	if len(recurring) > 0 {
+		if today, err = s.HouseholdToday(ctx, actor); err != nil {
+			return nil, err
+		}
+	}
 	for _, r := range recurring {
-		if inWindow(r.NextDue.Time) {
-			it := item(CalendarKindRecurring, r.NextDue.Time, r.Title, r.ID)
-			it.AmountCents = r.AmountCents
+		// a draft not added yet waits on today, like an overdue chore
+		d, overdue := r.NextDue.Time, r.NextDue.Time.Before(today)
+		if overdue {
+			d = today
+		}
+		if inWindow(d) {
+			it := item(CalendarKindRecurring, d, r.Title, r.ID)
+			it.AmountCents, it.Overdue = r.AmountCents, overdue
 			items = append(items, it)
 		}
 	}
@@ -888,6 +898,10 @@ func (s *DefaultService) DeleteEvent(ctx context.Context, actor Membership, id p
 	}
 	on = DateOnly(on)
 	return s.inTx(ctx, func(q *dbqueries.Queries) error {
+		// the household is locked before the event like a leaver does, see [cleanChore]
+		if err := q.LockHousehold(ctx, actor.HouseholdID); err != nil {
+			return err
+		}
 		e, err := lockEventToChange(ctx, q, actor, id)
 		if err != nil {
 			return err
