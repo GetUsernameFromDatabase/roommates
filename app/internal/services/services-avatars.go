@@ -24,7 +24,7 @@ func (s *DefaultService) SetAvatar(ctx context.Context, userID pgtype.UUID, body
 	if size > MaxFileSize {
 		return g.ErrorFileTooLarge
 	}
-	head := make([]byte, 512)
+	head := make([]byte, sniffLength)
 	n, err := io.ReadFull(body, head)
 	if err != nil && err != io.ErrUnexpectedEOF {
 		return g.ErrorInvalidInput

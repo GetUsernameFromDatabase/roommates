@@ -20,6 +20,9 @@ import (
 // and decoding it would take all memory; a var so tests can lower it
 var maxPixels int64 = 24_000_000
 
+// jpegQuality of the thumbnails and avatars
+const jpegQuality = 80
+
 // decoding holds the whole bitmap in memory, so only two run at once
 var decoding = make(chan struct{}, 2)
 
@@ -61,7 +64,7 @@ func Thumbnail(r io.ReadSeeker, maxSide int) ([]byte, error) {
 
 	var buf bytes.Buffer
 	//exhaustruct:ignore
-	if err := jpeg.Encode(&buf, orient(dst, orientation), &jpeg.Options{Quality: 80}); err != nil {
+	if err := jpeg.Encode(&buf, orient(dst, orientation), &jpeg.Options{Quality: jpegQuality}); err != nil {
 		return nil, err
 	}
 	return buf.Bytes(), nil

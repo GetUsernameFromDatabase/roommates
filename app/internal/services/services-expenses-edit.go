@@ -5,6 +5,7 @@ import (
 	g "roommates/internal/config"
 	"roommates/internal/db/dbqueries"
 	"slices"
+	"time"
 
 	"github.com/jackc/pgx/v5/pgtype"
 )
@@ -32,7 +33,7 @@ func (e Expense) AmountLock(currency string) string {
 // EditInput fills the expense form with e as it is, see [Expense.CopyInput]
 func (e Expense) EditInput(order []pgtype.UUID) ExpenseInput {
 	in := e.CopyInput(order)
-	in.IncurredOn = e.Expense.IncurredOn.Time.Format(DateLayout)
+	in.IncurredOn = e.Expense.IncurredOn.Time.Format(time.DateOnly)
 	return in
 }
 

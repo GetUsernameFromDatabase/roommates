@@ -398,7 +398,7 @@ templ expenseForm(members []dbqueries.ListActiveMembersRow, f expenseFrame, in s
 			// the schedule draft this adds, see services.ExpenseInput
 			if in.RecurringID.Valid {
 				<input type="hidden" name="recurring" value={ in.RecurringID.String() }/>
-				<input type="hidden" name="recurring_due" value={ in.RecurringDue.Time.Format(services.DateLayout) }/>
+				<input type="hidden" name="recurring_due" value={ in.RecurringDue.Time.Format(time.DateOnly) }/>
 			}
 			if errorField == "" {
 				@formError(errorMessage)
@@ -623,13 +623,13 @@ const tillFieldClass = "h-11 rounded-none border-0 border-b-2 border-dotted bord
 
 var datePickerScript = templ.NewOnceHandle()
 
-// datePicker is a required day as the server's DateLayout, web/assets/public/date-picker.js
+// datePicker is a required day as [time.DateOnly], web/assets/public/date-picker.js
 // copies the calendar's pick to the hidden input, the calendar itself is portaled out of the form
 templ datePicker(id, name, value string) {
 	@datePickerScript.Once() {
 		<script src={ assets.URL("date-picker.js") }></script>
 	}
-	{{ day, _ := time.Parse(services.DateLayout, value) }}
+	{{ day, _ := time.Parse(time.DateOnly, value) }}
 	<input type="hidden" id={ id } name={ name } value={ value }/>
 	@popover.Popover(popover.Props{ID: id + "-popover"}) {
 		@button.Button(button.Props{

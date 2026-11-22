@@ -102,7 +102,7 @@ type Props struct {
 }
 
 func isoDate(t time.Time) string {
-	return t.Format("2006-01-02")
+	return t.Format(time.DateOnly)
 }
 
 // matcherJSON is a matcher with its dates as yyyy-MM-dd strings.

@@ -3,6 +3,7 @@ version: '2'
 linters:
   enable:
     - exhaustruct_v5
+    - modernize
   settings:
     exhaustruct_v5:
       allow-empty: true

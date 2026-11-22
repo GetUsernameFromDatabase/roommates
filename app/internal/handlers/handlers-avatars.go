@@ -20,7 +20,7 @@ func (h *DefaultHandler) SetAvatar(ctx *gin.Context) {
 		InternalError(ctx, err)
 		return
 	}
-	ctx.Request.Body = http.MaxBytesReader(ctx.Writer, ctx.Request.Body, services.MaxFileSize+1<<20)
+	ctx.Request.Body = http.MaxBytesReader(ctx.Writer, ctx.Request.Body, services.MaxUploadBody)
 	err = g.ErrorInvalidInput
 	var tooLarge *http.MaxBytesError
 	header, formErr := ctx.FormFile("avatar")
@@ -88,6 +88,6 @@ func (h *DefaultHandler) DownloadAvatar(ctx *gin.Context) {
 	}
 	defer body.Close() //nolint:errcheck // read only
 	ctx.DataFromReader(http.StatusOK, -1, "image/jpeg", body, map[string]string{
-		"Cache-Control": "private, max-age=31536000, immutable",
+		"Cache-Control": g.CachePrivateImmutable,
 	})
 }

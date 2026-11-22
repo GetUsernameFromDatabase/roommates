@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/rand"
 	"fmt"
+	"maps"
 	"regexp"
 	"slices"
 	"strings"
@@ -101,12 +102,12 @@ func twReorder(input, merged string) string {
 	}
 	ordered := make([]string, 0, len(survivors))
 	tokens := strings.Fields(input)
-	for i := len(tokens) - 1; i >= 0; i-- {
-		if remaining[tokens[i]] == 0 {
+	for _, tok := range slices.Backward(tokens) {
+		if remaining[tok] == 0 {
 			continue
 		}
-		remaining[tokens[i]]--
-		ordered = append(ordered, tokens[i])
+		remaining[tok]--
+		ordered = append(ordered, tok)
 	}
 	// Every survivor is one of the input tokens, verbatim. Should that ever
 	// stop holding, the merge result is still correct, only unordered.
@@ -167,8 +168,10 @@ func flattenClasses(values []any) []string {
 
 // Ptr returns a pointer to v. Useful for optional props whose zero value is
 // meaningful (e.g. togglegroup.Props{Spacing: utils.Ptr(0)}).
+//
+//go:fix inline
 func Ptr[T any](v T) *T {
-	return &v
+	return new(v)
 }
 
 // IfElse returns trueValue if condition is true, otherwise falseValue.
@@ -195,9 +198,7 @@ func Map[T, U any](s []T, f func(T) U) []U {
 func MergeAttributes(attrs ...templ.Attributes) templ.Attributes {
 	merged := templ.Attributes{}
 	for _, attr := range attrs {
-		for k, v := range attr {
-			merged[k] = v
-		}
+		maps.Copy(merged, attr)
 	}
 	return merged
 }

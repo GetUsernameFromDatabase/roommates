@@ -24,16 +24,22 @@ var (
 // pushPreviewLength is how much of a chat message a notification shows, the rest is in the chat
 const pushPreviewLength = 80
 
+// longest endpoint and key a subscription may have, a real one is far shorter
+const (
+	maxPushEndpoint = 2048
+	maxPushKey      = 256
+)
+
 func validPushSubscription(sub push.Subscription) bool {
 	u, err := url.Parse(sub.Endpoint)
-	if err != nil || len(sub.Endpoint) > 2048 || u.Scheme != "https" || u.User != nil || u.Port() != "" {
+	if err != nil || len(sub.Endpoint) > maxPushEndpoint || u.Scheme != "https" || u.User != nil || u.Port() != "" {
 		return false
 	}
 	host := u.Hostname()
 	if !slices.Contains(pushHosts, host) && !slices.ContainsFunc(pushHostSuffixes, func(s string) bool { return strings.HasSuffix(host, s) }) {
 		return false
 	}
-	return sub.Keys.P256dh != "" && sub.Keys.Auth != "" && len(sub.Keys.P256dh) <= 256 && len(sub.Keys.Auth) <= 256
+	return sub.Keys.P256dh != "" && sub.Keys.Auth != "" && len(sub.Keys.P256dh) <= maxPushKey && len(sub.Keys.Auth) <= maxPushKey
 }
 
 // PushPublicKey is the VAPID key browsers subscribe with, empty when pushes are not sent

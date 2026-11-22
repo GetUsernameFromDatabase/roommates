@@ -87,7 +87,7 @@ func choreInput(c services.Chore) services.ChoreInput {
 		Unit:     c.Unit,
 		Every:    c.Every,
 		Weekdays: c.Weekdays,
-		FirstDue: c.NextDue.Format(services.DateLayout),
+		FirstDue: c.NextDue.Format(time.DateOnly),
 		Members:  nil,
 		Assignee: c.AssigneeID,
 	}
@@ -124,7 +124,7 @@ func (h *DefaultHandler) renderChores(ctx *gin.Context, status int, notice strin
 			Unit:     g.ChoreUnitWeekdays,
 			Every:    1,
 			Weekdays: nil,
-			FirstDue: today.Format(services.DateLayout),
+			FirstDue: today.Format(time.DateOnly),
 			Members:  nil,
 			Assignee: pgtype.UUID{},
 		}
@@ -230,7 +230,7 @@ func (h *DefaultHandler) choreTurnAction(ctx *gin.Context,
 	}
 	actor := membershipFromContext(ctx)
 	var turn services.ChoreTurn
-	if day, err := time.Parse(services.DateLayout, ctx.PostForm("due")); err == nil {
+	if day, err := time.Parse(time.DateOnly, ctx.PostForm("due")); err == nil {
 		turn.Due = pgtype.Date{Time: day, InfinityModifier: pgtype.Finite, Valid: true}
 	}
 	// "" is nobody's turn, which stays an invalid UUID

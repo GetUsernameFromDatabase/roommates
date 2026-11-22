@@ -168,7 +168,7 @@ func expenseFromForm(ctx *gin.Context) services.ExpenseInput {
 		Title:      ctx.PostForm("title"),
 		Amount:     ctx.PostForm("amount"),
 		Category:   ctx.PostForm("category"),
-		IncurredOn: cmp.Or(strings.TrimSpace(ctx.PostForm("incurred_on")), time.Now().Format(services.DateLayout)),
+		IncurredOn: cmp.Or(strings.TrimSpace(ctx.PostForm("incurred_on")), time.Now().Format(time.DateOnly)),
 		Custom:     ctx.PostForm("split") == "custom",
 		Members:    nil,
 		Shares:     map[pgtype.UUID]string{},
@@ -185,7 +185,7 @@ func expenseFromForm(ctx *gin.Context) services.ExpenseInput {
 	// a bad due day is refused as stale, see [services.FieldRecurring]
 	if id, err := utils.ParseUUID(ctx.PostForm("recurring")); err == nil {
 		in.RecurringID = id
-		if due, err := time.Parse(services.DateLayout, ctx.PostForm("recurring_due")); err == nil {
+		if due, err := time.Parse(time.DateOnly, ctx.PostForm("recurring_due")); err == nil {
 			in.RecurringDue = pgtype.Date{Time: due, InfinityModifier: pgtype.Finite, Valid: true}
 		}
 	}

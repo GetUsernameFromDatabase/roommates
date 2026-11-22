@@ -1700,6 +1700,9 @@ func replySnippet(body string) templ.Component {
 // localTimeScript is local-time.js, a page with times loads it at page level, not in localTime
 var localTimeScript = templ.NewOnceHandle()
 
+// utcMinuteLayout is the UTC time shown until local-time.js replaces it
+const utcMinuteLayout = "2006-01-02 15:04"
+
 // localTime is shown in the viewer's time zone by local-time.js, the server only knows UTC,
 // without today's date and this year, attrs can hold its data-today and data-yesterday phrases
 func localTime(t pgtype.Timestamptz, attrs templ.Attributes) templ.Component {
@@ -1730,7 +1733,7 @@ func localTime(t pgtype.Timestamptz, attrs templ.Attributes) templ.Component {
 			var templ_7745c5c3_Var75 string
 			templ_7745c5c3_Var75, templ_7745c5c3_Err = templruntime.NewAttributeExpression(t.Time.UTC().Format(time.RFC3339)).Resolve(ctx)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/chat.templ`, Line: 428, Col: 51}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/chat.templ`, Line: 431, Col: 51}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var75)
 			if templ_7745c5c3_Err != nil {
@@ -1759,9 +1762,9 @@ func localTime(t pgtype.Timestamptz, attrs templ.Attributes) templ.Component {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var76 string
-		templ_7745c5c3_Var76, templ_7745c5c3_Err = templ.JoinStringErrs(t.Time.UTC().Format("2006-01-02 15:04"))
+		templ_7745c5c3_Var76, templ_7745c5c3_Err = templ.JoinStringErrs(t.Time.UTC().Format(utcMinuteLayout))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/chat.templ`, Line: 428, Col: 119}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/chat.templ`, Line: 431, Col: 116}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var76))
 		if templ_7745c5c3_Err != nil {

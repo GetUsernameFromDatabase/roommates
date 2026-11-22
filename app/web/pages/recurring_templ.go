@@ -18,6 +18,7 @@ import g "roommates/internal/config"
 import "roommates/internal/locales"
 import "roommates/internal/routes"
 import "roommates/internal/utils"
+import "time"
 
 // HouseholdRecurring lists every schedule of the household, the payer and owners open one to edit it
 func HouseholdRecurring(actor services.Membership, rows []services.RecurringRow) templ.Component {
@@ -101,7 +102,7 @@ func HouseholdRecurring(actor services.Membership, rows []services.RecurringRow)
 							var templ_7745c5c3_Var4 string
 							templ_7745c5c3_Var4, templ_7745c5c3_Err = templruntime.NewAttributeExpression(routes.URL(routes.RecurringExpense, actor.HouseholdID, r.ID)).ResolveURL(ctx)
 							if templ_7745c5c3_Err != nil {
-								return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/recurring.templ`, Line: 30, Col: 80}
+								return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/recurring.templ`, Line: 31, Col: 80}
 							}
 							_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var4)
 							if templ_7745c5c3_Err != nil {
@@ -187,7 +188,7 @@ func recurringLine(actor services.Membership, r services.RecurringRow) templ.Com
 		var templ_7745c5c3_Var6 string
 		templ_7745c5c3_Var6, templ_7745c5c3_Err = templ.JoinStringErrs(r.Title)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/recurring.templ`, Line: 50, Col: 72}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/recurring.templ`, Line: 51, Col: 72}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var6))
 		if templ_7745c5c3_Err != nil {
@@ -200,7 +201,7 @@ func recurringLine(actor services.Membership, r services.RecurringRow) templ.Com
 		var templ_7745c5c3_Var7 string
 		templ_7745c5c3_Var7, templ_7745c5c3_Err = templ.JoinStringErrs(utils.FormatMoney(ctx, r.AmountCents, actor.Currency))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/recurring.templ`, Line: 52, Col: 107}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/recurring.templ`, Line: 53, Col: 107}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var7))
 		if templ_7745c5c3_Err != nil {
@@ -213,7 +214,7 @@ func recurringLine(actor services.Membership, r services.RecurringRow) templ.Com
 		var templ_7745c5c3_Var8 string
 		templ_7745c5c3_Var8, templ_7745c5c3_Err = templ.JoinStringErrs(utils.T(ctx, intervalKeys[r.Interval]))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/recurring.templ`, Line: 55, Col: 48}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/recurring.templ`, Line: 56, Col: 48}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var8))
 		if templ_7745c5c3_Err != nil {
@@ -226,7 +227,7 @@ func recurringLine(actor services.Membership, r services.RecurringRow) templ.Com
 		var templ_7745c5c3_Var9 string
 		templ_7745c5c3_Var9, templ_7745c5c3_Err = templ.JoinStringErrs(utils.T(ctx, locales.LK_RecurringNextDue))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/recurring.templ`, Line: 55, Col: 97}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/recurring.templ`, Line: 56, Col: 97}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var9))
 		if templ_7745c5c3_Err != nil {
@@ -239,7 +240,7 @@ func recurringLine(actor services.Membership, r services.RecurringRow) templ.Com
 		var templ_7745c5c3_Var10 string
 		templ_7745c5c3_Var10, templ_7745c5c3_Err = templ.JoinStringErrs(formatDay(ctx, r.NextDue))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/recurring.templ`, Line: 55, Col: 128}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/recurring.templ`, Line: 56, Col: 128}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var10))
 		if templ_7745c5c3_Err != nil {
@@ -257,7 +258,7 @@ func recurringLine(actor services.Membership, r services.RecurringRow) templ.Com
 			var templ_7745c5c3_Var11 string
 			templ_7745c5c3_Var11, templ_7745c5c3_Err = templ.JoinStringErrs(utils.T(ctx, locales.LK_RecurringPaidByYou))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/recurring.templ`, Line: 57, Col: 54}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/recurring.templ`, Line: 58, Col: 54}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var11))
 			if templ_7745c5c3_Err != nil {
@@ -275,7 +276,7 @@ func recurringLine(actor services.Membership, r services.RecurringRow) templ.Com
 			var templ_7745c5c3_Var12 string
 			templ_7745c5c3_Var12, templ_7745c5c3_Err = templ.JoinStringErrs(utils.T(ctx, locales.LK_RecurringPaidBy, utils.MemberName(ctx, r.PayerName)))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/recurring.templ`, Line: 59, Col: 87}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/recurring.templ`, Line: 60, Col: 87}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var12))
 			if templ_7745c5c3_Err != nil {
@@ -347,7 +348,7 @@ func RecurringEditor(actor services.Membership, members []dbqueries.ListActiveMe
 				var templ_7745c5c3_Var15 string
 				templ_7745c5c3_Var15, templ_7745c5c3_Err = templ.JoinStringErrs(utils.T(ctx, locales.LK_RecurringPaidBy, utils.MemberName(ctx, r.PayerName)))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/recurring.templ`, Line: 80, Col: 82}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/recurring.templ`, Line: 81, Col: 82}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var15))
 				if templ_7745c5c3_Err != nil {
@@ -369,7 +370,7 @@ func RecurringEditor(actor services.Membership, members []dbqueries.ListActiveMe
 			var templ_7745c5c3_Var16 string
 			templ_7745c5c3_Var16, templ_7745c5c3_Err = templruntime.NewAttributeExpression(routes.URL(routes.RecurringExpenseDelete, actor.HouseholdID, r.ID)).ResolveURL(ctx)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/recurring.templ`, Line: 84, Col: 83}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/recurring.templ`, Line: 85, Col: 83}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var16)
 			if templ_7745c5c3_Err != nil {
@@ -382,7 +383,7 @@ func RecurringEditor(actor services.Membership, members []dbqueries.ListActiveMe
 			var templ_7745c5c3_Var17 string
 			templ_7745c5c3_Var17, templ_7745c5c3_Err = templruntime.NewAttributeExpression(utils.T(ctx, locales.LK_RecurringDeleteConfirm)).Resolve(ctx)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/recurring.templ`, Line: 84, Col: 176}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/recurring.templ`, Line: 85, Col: 176}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var17)
 			if templ_7745c5c3_Err != nil {
@@ -448,7 +449,7 @@ func recurringDue(actor services.Membership, due []services.RecurringRow) templ.
 			var templ_7745c5c3_Var19 string
 			templ_7745c5c3_Var19, templ_7745c5c3_Err = templ.JoinStringErrs(r.Title)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/recurring.templ`, Line: 101, Col: 57}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/recurring.templ`, Line: 102, Col: 57}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var19))
 			if templ_7745c5c3_Err != nil {
@@ -461,7 +462,7 @@ func recurringDue(actor services.Membership, due []services.RecurringRow) templ.
 			var templ_7745c5c3_Var20 string
 			templ_7745c5c3_Var20, templ_7745c5c3_Err = templ.JoinStringErrs(" · " + formatDay(ctx, r.NextDue) + " · ")
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/recurring.templ`, Line: 102, Col: 52}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/recurring.templ`, Line: 103, Col: 52}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var20))
 			if templ_7745c5c3_Err != nil {
@@ -474,7 +475,7 @@ func recurringDue(actor services.Membership, due []services.RecurringRow) templ.
 			var templ_7745c5c3_Var21 string
 			templ_7745c5c3_Var21, templ_7745c5c3_Err = templ.JoinStringErrs(utils.FormatMoney(ctx, r.AmountCents, actor.Currency))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/recurring.templ`, Line: 103, Col: 89}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/recurring.templ`, Line: 104, Col: 89}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var21))
 			if templ_7745c5c3_Err != nil {
@@ -513,7 +514,7 @@ func recurringDue(actor services.Membership, due []services.RecurringRow) templ.
 			var templ_7745c5c3_Var23 string
 			templ_7745c5c3_Var23, templ_7745c5c3_Err = templruntime.NewAttributeExpression(routes.URL(routes.RecurringExpenseSkip, actor.HouseholdID, r.ID)).ResolveURL(ctx)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/recurring.templ`, Line: 109, Col: 86}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/recurring.templ`, Line: 110, Col: 86}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var23)
 			if templ_7745c5c3_Err != nil {
@@ -524,9 +525,9 @@ func recurringDue(actor services.Membership, due []services.RecurringRow) templ.
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var24 string
-			templ_7745c5c3_Var24, templ_7745c5c3_Err = templruntime.NewAttributeExpression(r.NextDue.Time.Format(services.DateLayout)).Resolve(ctx)
+			templ_7745c5c3_Var24, templ_7745c5c3_Err = templruntime.NewAttributeExpression(r.NextDue.Time.Format(time.DateOnly)).Resolve(ctx)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/recurring.templ`, Line: 110, Col: 90}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/recurring.templ`, Line: 111, Col: 84}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var24)
 			if templ_7745c5c3_Err != nil {

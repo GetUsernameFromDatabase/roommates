@@ -1434,9 +1434,9 @@ func expenseForm(members []dbqueries.ListActiveMembersRow, f expenseFrame, in se
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var56 string
-			templ_7745c5c3_Var56, templ_7745c5c3_Err = templruntime.NewAttributeExpression(in.RecurringDue.Time.Format(services.DateLayout)).Resolve(ctx)
+			templ_7745c5c3_Var56, templ_7745c5c3_Err = templruntime.NewAttributeExpression(in.RecurringDue.Time.Format(time.DateOnly)).Resolve(ctx)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/expenses.templ`, Line: 401, Col: 102}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/expenses.templ`, Line: 401, Col: 96}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var56)
 			if templ_7745c5c3_Err != nil {
@@ -2340,7 +2340,7 @@ const tillFieldClass = "h-11 rounded-none border-0 border-b-2 border-dotted bord
 
 var datePickerScript = templ.NewOnceHandle()
 
-// datePicker is a required day as the server's DateLayout, web/assets/public/date-picker.js
+// datePicker is a required day as [time.DateOnly], web/assets/public/date-picker.js
 // copies the calendar's pick to the hidden input, the calendar itself is portaled out of the form
 func datePicker(id, name, value string) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
@@ -2394,7 +2394,7 @@ func datePicker(id, name, value string) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		day, _ := time.Parse(services.DateLayout, value)
+		day, _ := time.Parse(time.DateOnly, value)
 		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 166, "<input type=\"hidden\" id=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err

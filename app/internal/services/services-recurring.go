@@ -29,18 +29,16 @@ type RecurringRow struct {
 // Input fills the expense form from r, dated on its next due day, with its split
 func (r RecurringRow) Input() RecurringInput {
 	in := RecurringInput{
-		ExpenseInput: ExpenseInput{
-			Title:      r.Title,
-			Amount:     FormatCentsInput(r.AmountCents),
-			Category:   r.Category,
-			IncurredOn: r.NextDue.Time.Format(DateLayout),
-			Custom:     r.Custom,
-			Members:    nil,
-			Shares:     map[pgtype.UUID]string{},
-			ListID:     pgtype.UUID{},
-			ItemID:     pgtype.UUID{},
-		},
-		Interval: r.Interval,
+		Title:      r.Title,
+		Amount:     FormatCentsInput(r.AmountCents),
+		Category:   r.Category,
+		IncurredOn: r.NextDue.Time.Format(time.DateOnly),
+		Custom:     r.Custom,
+		Members:    nil,
+		Shares:     map[pgtype.UUID]string{},
+		ListID:     pgtype.UUID{},
+		ItemID:     pgtype.UUID{},
+		Interval:   r.Interval,
 	}
 	for _, sh := range r.Shares {
 		in.Members = append(in.Members, sh.UserID)

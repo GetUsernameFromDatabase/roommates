@@ -32,6 +32,6 @@ func sendCSV(ctx *gin.Context, name string, data []byte, err error) {
 		InternalError(ctx, err)
 		return
 	}
-	ctx.Header("Content-Disposition", `attachment; filename="`+name+"-"+time.Now().Format(services.DateLayout)+`.csv"`)
+	ctx.Header("Content-Disposition", `attachment; filename="`+name+"-"+time.Now().Format(time.DateOnly)+`.csv"`)
 	ctx.Data(http.StatusOK, "text/csv; charset=utf-8", data)
 }

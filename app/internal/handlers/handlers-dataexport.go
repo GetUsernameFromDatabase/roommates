@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"net/http"
+	"time"
 
 	"roommates/internal/locales"
 	"roommates/internal/routes"
@@ -56,7 +57,7 @@ func (h *DefaultHandler) DownloadDataExport(ctx *gin.Context) {
 	}
 	defer body.Close() //nolint:errcheck // read only
 	ctx.DataFromReader(http.StatusOK, size, "application/zip", body, map[string]string{
-		"Content-Disposition": `attachment; filename="roommates-export-` + readyAt.Format("2006-01-02") + `.zip"`,
+		"Content-Disposition": `attachment; filename="roommates-export-` + readyAt.Format(time.DateOnly) + `.zip"`,
 		"Cache-Control":       "private, no-store",
 	})
 }

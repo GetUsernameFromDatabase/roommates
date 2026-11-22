@@ -19,8 +19,14 @@ import (
 )
 
 const (
-	MaxFileSize       = 25 << 20
+	MaxFileSize = 25 << 20
+	// MaxUploadBody is the largest request body of an upload: a file and room for multipart headers and other fields
+	MaxUploadBody     = MaxFileSize + 1<<20
 	MaxFileNameLength = 200
+	// http.DetectContentType looks at the first 512 bytes only
+	sniffLength = 512
+	// files removed from storage per query when purging
+	purgeBatch = 100
 	// MaxReferablePicks is how many files the chat's picker shows, typing narrows them down
 	MaxReferablePicks = 20
 	// longest side of a thumbnail, sharp at 48px on a 3x screen
@@ -146,7 +152,7 @@ func (s *DefaultService) UploadFile(ctx context.Context, actor Membership, t Fil
 		return pgtype.UUID{}, err
 	}
 
-	head := make([]byte, 512)
+	head := make([]byte, sniffLength)
 	n, err := io.ReadFull(body, head)
 	if err != nil && err != io.ErrUnexpectedEOF {
 		return pgtype.UUID{}, err
@@ -457,7 +463,7 @@ func (s *DefaultService) PurgeFiles(ctx context.Context) error {
 	// failed keys stay queued for the next run at the front of the queue, skip past them
 	var failed int32
 	for {
-		keys, err := s.db.ListFilePurges(ctx, dbqueries.ListFilePurgesParams{Max: 100, Skip: failed})
+		keys, err := s.db.ListFilePurges(ctx, dbqueries.ListFilePurgesParams{Max: purgeBatch, Skip: failed})
 		if err != nil || len(keys) == 0 {
 			return err
 		}

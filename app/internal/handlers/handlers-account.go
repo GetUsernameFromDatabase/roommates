@@ -153,8 +153,7 @@ func (h *DefaultHandler) DeleteAccount(ctx *gin.Context) {
 	c := ctx.Request.Context()
 	// the request context carries the language of the email
 	err = h.service.DeleteAccount(c, userID, ctx.PostForm("current_password"))
-	var blocked services.AccountDeleteBlocked
-	if errors.As(err, &blocked) {
+	if blocked, ok := errors.AsType[services.AccountDeleteBlocked](err); ok {
 		var lines []string
 		if len(blocked.LastOwner) > 0 {
 			lines = append(lines, utils.T(c, locales.LK_AccountDeleteBlockedLastOwner, strings.Join(blocked.LastOwner, ", ")))

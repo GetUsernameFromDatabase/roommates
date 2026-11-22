@@ -114,7 +114,7 @@ func seedShopping(ctx context.Context, s *services.DefaultService, m services.Me
 // one share is paid, one unpaid, and Jaan's payment waits for Mari to confirm it
 func seedExpenses(ctx context.Context, s *services.DefaultService, mariM, jaanM services.Membership) {
 	members := []pgtype.UUID{mariM.UserID, jaanM.UserID}
-	today := time.Now().Format(services.DateLayout)
+	today := time.Now().Format(time.DateOnly)
 	split := func(title, amount, category string) services.ExpenseInput {
 		return services.ExpenseInput{
 			Title: title, Amount: amount, Category: category, IncurredOn: today, Members: members,

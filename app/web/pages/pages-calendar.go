@@ -45,7 +45,7 @@ type CalendarView struct {
 func eventURL(householdID, eventID pgtype.UUID, on time.Time) string {
 	u := routes.URL(routes.CalendarEvent, householdID, eventID)
 	if !on.IsZero() {
-		u += "?on=" + on.Format(services.DateLayout)
+		u += "?on=" + on.Format(time.DateOnly)
 	}
 	return u
 }
@@ -63,9 +63,9 @@ func calendarItemURL(householdID pgtype.UUID, it services.CalendarItem) string {
 
 // calendarMoreURL lists the agenda from day, last is the last day already shown, if any
 func calendarMoreURL(householdID pgtype.UUID, from, last time.Time) string {
-	u := routes.URL(routes.CalendarAgenda, householdID) + "?from=" + from.Format(services.DateLayout)
+	u := routes.URL(routes.CalendarAgenda, householdID) + "?from=" + from.Format(time.DateOnly)
 	if !last.IsZero() {
-		u += "&last=" + last.Format(services.DateLayout)
+		u += "&last=" + last.Format(time.DateOnly)
 	}
 	return u
 }
@@ -89,11 +89,11 @@ func calendarDays(items []services.CalendarItem) []calendarDay {
 	return days
 }
 
-// calendarByDay is the items of each day by its services.DateLayout
+// calendarByDay is the items of each day by its time.DateOnly
 func calendarByDay(items []services.CalendarItem) map[string][]services.CalendarItem {
 	days := map[string][]services.CalendarItem{}
 	for _, it := range items {
-		k := it.Date.Format(services.DateLayout)
+		k := it.Date.Format(time.DateOnly)
 		days[k] = append(days[k], it)
 	}
 	return days
@@ -167,11 +167,14 @@ func calendarWeeks(month time.Time) [][]time.Time {
 	return weeks
 }
 
+// MonthLayout is the ?month= of the calendar page, the handler parses the same
+const MonthLayout = "2006-01"
+
 // calendarMonthURL is the calendar on month, with day picked when it is set
 func calendarMonthURL(householdID pgtype.UUID, month, day time.Time) string {
-	u := routes.URL(routes.Calendar, householdID) + "?month=" + month.Format("2006-01")
+	u := routes.URL(routes.Calendar, householdID) + "?month=" + month.Format(MonthLayout)
 	if !day.IsZero() {
-		u += "&day=" + day.Format(services.DateLayout)
+		u += "&day=" + day.Format(time.DateOnly)
 	}
 	return u
 }
@@ -262,7 +265,7 @@ func calendarRepeat(ctx context.Context, in services.EventInput) string {
 	c.Unit, c.Every, c.Weekdays = in.Unit, in.Every, in.Weekdays
 	s := choreSchedule(ctx, c)
 	if in.RepeatUntil != "" {
-		if until, err := time.Parse(services.DateLayout, in.RepeatUntil); err == nil {
+		if until, err := time.Parse(time.DateOnly, in.RepeatUntil); err == nil {
 			s += ", " + utils.T(ctx, locales.LK_CalendarUntil, utils.FormatDate(ctx, until))
 		}
 	}

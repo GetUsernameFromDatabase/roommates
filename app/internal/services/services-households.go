@@ -623,6 +623,9 @@ func (s *DefaultService) GetHouseholdSettings(ctx context.Context, actor Members
 	return HouseholdSettings{Name: h.Name, Currency: h.Currency, TimeZone: h.TimeZone, TimeZones: zones, ReminderHour: int(h.ReminderHour), Settled: settled, Debts: debts}, err
 }
 
+// ValidReminderHour is whether h is an hour of the day
+func ValidReminderHour(h int) bool { return h >= 0 && h <= 23 }
+
 // UpdateHousehold lets an owner rename the household and change its currency, time zone and
 // reminder hour, returns [g.ErrorForbidden] for others, a [FieldError] for a bad field
 // and for a currency change while a debt is open, amounts would change their meaning
@@ -637,7 +640,7 @@ func (s *DefaultService) UpdateHousehold(ctx context.Context, actor Membership, 
 	if !slices.Contains(HouseholdCurrencies, currency) {
 		return FieldError{Field: FieldCurrency}
 	}
-	if reminderHour < 0 || reminderHour > 23 {
+	if !ValidReminderHour(reminderHour) {
 		return FieldError{Field: FieldReminderHour}
 	}
 	if ok, err := s.db.IsTimeZone(ctx, timeZone); err != nil {

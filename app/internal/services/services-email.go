@@ -77,7 +77,7 @@ var ErrorTooManyInvites = errors.New("too many invite emails")
 
 // inviteEmails caps invite emails per account, the per-IP limit alone is dodged by changing IP
 var inviteEmails = userLimit{
-	mu: sync.Mutex{}, limit: 10, window: time.Hour, windowEnd: time.Time{}, counts: map[pgtype.UUID]int{},
+	mu: sync.Mutex{}, limit: g.InviteEmailLimit, window: g.InviteEmailWindow, windowEnd: time.Time{}, counts: map[pgtype.UUID]int{},
 }
 
 // userLimit allows each user at most limit calls per window

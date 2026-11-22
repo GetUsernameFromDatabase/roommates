@@ -190,3 +190,41 @@ const (
 	// services.Membership set by middleware.NewHouseholdMember
 	GinKeyMembership = "membership"
 )
+
+// Cache-Control values: content-addressed files never change under their URL, a private one
+// (a user's own upload) must stay out of shared caches
+const (
+	CacheImmutable        = "public, max-age=31536000, immutable"
+	CachePrivateImmutable = "private, max-age=31536000, immutable"
+	CachePrivateDay       = "private, max-age=86400"
+)
+
+// HSTSValue is the Strict-Transport-Security header, a year
+const HSTSValue = "max-age=31536000"
+
+// Rate limits per client IP, each a count per window
+const (
+	// each attempt costs a bcrypt hash (~250ms): login, register, new password
+	AuthRateLimit = 10
+	// each sends an email, so mailboxes cannot be flooded
+	EmailRateLimit = 10
+	// invite codes are short enough to be worth guessing
+	InviteRateLimit = 20
+	// RateLimitWindow is the window of the per-IP limits above
+	RateLimitWindow = time.Minute
+)
+
+// Invite emails per account, the per-IP limit alone is dodged by changing IP
+const (
+	InviteEmailLimit  = 10
+	InviteEmailWindow = time.Hour
+)
+
+// HTTP server timeouts; there is no write timeout, it would cut the SSE streams
+const (
+	ReadHeaderTimeout = 10 * time.Second
+	// ReadTimeout leaves room for slow uploads
+	ReadTimeout     = 5 * time.Minute
+	IdleTimeout     = 120 * time.Second
+	ShutdownTimeout = 10 * time.Second
+)

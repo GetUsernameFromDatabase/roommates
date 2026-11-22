@@ -108,7 +108,7 @@ func (h *DefaultHandler) SkipRecurring(ctx *gin.Context) {
 	}
 	actor := membershipFromContext(ctx)
 	var due pgtype.Date
-	if day, err := time.Parse(services.DateLayout, ctx.PostForm("due")); err == nil {
+	if day, err := time.Parse(time.DateOnly, ctx.PostForm("due")); err == nil {
 		due = pgtype.Date{Time: day, InfinityModifier: pgtype.Finite, Valid: true}
 	}
 	if err := h.service.SkipRecurring(ctx, actor, recurringID, due); err != nil && !errors.Is(err, g.ErrorInvalidInput) {

@@ -95,7 +95,7 @@ func (s *DefaultService) PostMessage(ctx context.Context, actor Membership, body
 	if err != nil {
 		var pgErr *pgconn.PgError
 		// the foreign key keeps replies in the household, the answered message may also just be deleted
-		if replyTo.Valid && errors.As(err, &pgErr) && pgErr.Code == "23503" {
+		if replyTo.Valid && errors.As(err, &pgErr) && pgErr.Code == pgForeignKeyViolation {
 			return g.ErrorNotFound
 		}
 		return err

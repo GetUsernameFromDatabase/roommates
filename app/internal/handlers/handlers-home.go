@@ -20,7 +20,7 @@ func (h *DefaultHandler) PageHome(ctx *gin.Context) {
 	}
 
 	//exhaustruct:ignore
-	model := models.Household{ModelBase: models.ModelBase{Initial: true}}
+	model := models.Household{Initial: true}
 	if ctx.Request.Method == http.MethodPost {
 		_ = ctx.ShouldBind(&model)
 		if isValid, _ := model.IsValid(); isValid {

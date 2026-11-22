@@ -42,13 +42,10 @@ func limitBody(max int64) gin.HandlerFunc {
 func initRoutes(r *gin.Engine, h *handlers.DefaultHandler, service *services.DefaultService) {
 	mwI18n := middleware.NewInternationalization()
 	// separate counters per kind, flatmates on one Wi-Fi share an IP
-	// each attempt costs a bcrypt hash (~250ms): login, register, new password
-	mwAuthLimit := middleware.NewRateLimit(10, time.Minute)
-	// each sends an email, so mailboxes cannot be flooded
-	mwEmailLimit := middleware.NewRateLimit(10, time.Minute)
-	// invite codes are short enough to be worth guessing
-	mwInviteLimit := middleware.NewRateLimit(20, time.Minute)
-	r.Use(limitBody(services.MaxFileSize + 1<<20))
+	mwAuthLimit := middleware.NewRateLimit(g.AuthRateLimit, g.RateLimitWindow)
+	mwEmailLimit := middleware.NewRateLimit(g.EmailRateLimit, g.RateLimitWindow)
+	mwInviteLimit := middleware.NewRateLimit(g.InviteRateLimit, g.RateLimitWindow)
+	r.Use(limitBody(services.MaxUploadBody))
 	r.Use(middleware.NewSecurityHeader())
 	r.Use(middleware.NewCrossOriginProtection())
 	// before every page, error pages too, so all of them render in the chosen theme
@@ -279,7 +276,7 @@ func registerAssets(r *gin.Engine) {
 		c.Header("ETag", `"`+routes.JSHash+`"`)
 		// pages load [routes.JSURL], sw.js the plain path, which must be checked for changes
 		if c.Query("v") == routes.JSHash {
-			c.Header("Cache-Control", "public, max-age=31536000, immutable")
+			c.Header("Cache-Control", g.CacheImmutable)
 		} else {
 			c.Header("Cache-Control", "no-cache")
 		}
@@ -301,7 +298,7 @@ func cacheHeaders(c *gin.Context, name string) {
 	}
 	c.Header("ETag", `"`+hash+`"`)
 	if c.Query("v") == hash || strings.HasPrefix(name, "public/js/") {
-		c.Header("Cache-Control", "public, max-age=31536000, immutable")
+		c.Header("Cache-Control", g.CacheImmutable)
 	} else {
 		c.Header("Cache-Control", "no-cache")
 	}

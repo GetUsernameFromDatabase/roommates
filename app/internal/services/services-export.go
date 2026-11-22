@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"slices"
 	"strings"
+	"time"
 
 	g "roommates/internal/config"
 	"roommates/internal/db/dbqueries"
@@ -116,7 +117,7 @@ func expenseRows(ctx context.Context, format string, expenses []dbqueries.ListEx
 	}
 	first := func(e dbqueries.ListExportExpensesRow) []string {
 		return []string{
-			e.IncurredOn.Time.Format(DateLayout), csvText(e.Title), csvText(utils.T(ctx, locales.LK("expenses.category-"+e.Category))), csvText(utils.MemberName(ctx, e.PayerName)),
+			e.IncurredOn.Time.Format(time.DateOnly), csvText(e.Title), csvText(utils.T(ctx, locales.LK("expenses.category-"+e.Category))), csvText(utils.MemberName(ctx, e.PayerName)),
 		}
 	}
 

@@ -7,6 +7,8 @@ et:
     saved: Salvestatud
     former-member: Endine liige
     request-failed: Midagi läks valesti. Kontrolli ühendust ja proovi uuesti.
+    close: Sulge
+    too-many-requests: Liiga palju päringuid, proovi hiljem uuesti.
   app:
     title: Toakaaslased
   welcome-back: Tere tulemast koju

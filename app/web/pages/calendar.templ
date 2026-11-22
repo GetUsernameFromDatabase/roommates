@@ -202,7 +202,7 @@ templ calendarMonth(actor services.Membership, v CalendarView) {
 					<tr>
 						for i, day := range week {
 							<td class={ "p-0 align-top", templ.KV("border-t", w > 0), templ.KV("border-l", i > 0) }>
-								@calendarCell(actor, v, day, byDay[day.Format(services.DateLayout)])
+								@calendarCell(actor, v, day, byDay[day.Format(time.DateOnly)])
 							</td>
 						}
 					</tr>
@@ -211,7 +211,7 @@ templ calendarMonth(actor services.Membership, v CalendarView) {
 		</table>
 		<section id="cal-day" class="flex flex-col gap-3">
 			<h3 class="text-lg font-semibold">{ calendarDayHeading(ctx, v.Day, v.Today) }</h3>
-			if items := byDay[v.Day.Format(services.DateLayout)]; len(items) == 0 {
+			if items := byDay[v.Day.Format(time.DateOnly)]; len(items) == 0 {
 				<p class="text-muted-foreground">
 					@components.T(locales.LK_CalendarDayEmpty)
 				</p>
@@ -249,7 +249,7 @@ templ calendarCell(actor services.Membership, v CalendarView, day time.Time, ite
 		picked := day.Equal(v.Day)
 	}}
 	<a
-		id={ "cal-" + day.Format(services.DateLayout) }
+		id={ "cal-" + day.Format(time.DateOnly) }
 		href={ url }
 		if picked {
 			aria-current="true"
@@ -432,7 +432,7 @@ templ eventEdit(actor services.Membership, d services.EventDetail, members []dbq
 
 // eventDelete asks first, for a series in a dialog that also asks which events go
 templ eventDelete(actor services.Membership, d services.EventDetail) {
-	{{ action := routes.URL(routes.CalendarEventDelete, actor.HouseholdID, d.EventID) + "?on=" + d.On.Format(services.DateLayout) }}
+	{{ action := routes.URL(routes.CalendarEventDelete, actor.HouseholdID, d.EventID) + "?on=" + d.On.Format(time.DateOnly) }}
 	if d.Repeats && !d.Detached {
 		<div>
 			@alertdialog.AlertDialog(alertdialog.Props{ID: "delete-event", Open: nil, DefaultOpen: false}) {

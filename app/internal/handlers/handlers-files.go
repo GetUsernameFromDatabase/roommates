@@ -20,7 +20,7 @@ import (
 // uploadFile passes the "file" form field to the service, the body is cut off a little
 // above [services.MaxFileSize] so a huge upload is not read to the end
 func (h *DefaultHandler) uploadFile(ctx *gin.Context, actor services.Membership, t services.FileTarget) error {
-	ctx.Request.Body = http.MaxBytesReader(ctx.Writer, ctx.Request.Body, services.MaxFileSize+1<<20)
+	ctx.Request.Body = http.MaxBytesReader(ctx.Writer, ctx.Request.Body, services.MaxUploadBody)
 	header, err := ctx.FormFile("file")
 	var tooLarge *http.MaxBytesError
 	switch {
@@ -347,7 +347,7 @@ func (h *DefaultHandler) serveFile(ctx *gin.Context, thumb bool) {
 		// encodes names that are not ASCII as RFC 2231
 		"Content-Disposition": cmp.Or(mime.FormatMediaType(disposition, map[string]string{"filename": f.Name}), disposition),
 		// the contents never change, its id would, the name can: the Download link has it in the address
-		"Cache-Control": "private, max-age=86400",
+		"Cache-Control": g.CachePrivateDay,
 	})
 }
 

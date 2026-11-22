@@ -9,6 +9,7 @@ import g "roommates/internal/config"
 import "roommates/internal/locales"
 import "roommates/internal/routes"
 import "roommates/internal/utils"
+import "time"
 
 // HouseholdRecurring lists every schedule of the household, the payer and owners open one to edit it
 templ HouseholdRecurring(actor services.Membership, rows []services.RecurringRow) {
@@ -107,7 +108,7 @@ templ recurringDue(actor services.Membership, due []services.RecurringRow) {
 								@components.T(locales.LK_RecurringAdd)
 							}
 							<form action={ routes.URL(routes.RecurringExpenseSkip, actor.HouseholdID, r.ID) } method="post" hx-boost="true">
-								<input type="hidden" name="due" value={ r.NextDue.Time.Format(services.DateLayout) }/>
+								<input type="hidden" name="due" value={ r.NextDue.Time.Format(time.DateOnly) }/>
 								@button.Button(button.Props{Type: button.TypeSubmit, Variant: button.VariantGhost, Class: "h-11 px-3"}) {
 									@components.T(locales.LK_RecurringSkip)
 								}

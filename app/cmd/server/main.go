@@ -11,7 +11,6 @@ import (
 	"roommates/internal/locales"
 	"roommates/internal/logger"
 	"syscall"
-	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -43,9 +42,9 @@ func main() {
 	server := &http.Server{
 		Addr:              serverAddr,
 		Handler:           r,
-		ReadHeaderTimeout: 10 * time.Second,
-		ReadTimeout:       5 * time.Minute,
-		IdleTimeout:       120 * time.Second,
+		ReadHeaderTimeout: g.ReadHeaderTimeout,
+		ReadTimeout:       g.ReadTimeout,
+		IdleTimeout:       g.IdleTimeout,
 	}
 	serveErr := make(chan error, 1)
 	go func() {
@@ -62,7 +61,7 @@ func main() {
 	}
 
 	log.Info().Msg("shutting down")
-	shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), g.ShutdownTimeout)
 	defer cancel()
 	if err := server.Shutdown(shutdownCtx); err != nil {
 		log.Error().Err(err).Msg("http server did not shut down cleanly")

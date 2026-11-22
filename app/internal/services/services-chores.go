@@ -25,7 +25,7 @@ type ChoreInput struct {
 	Every int
 	// with [g.ChoreUnitWeekdays]
 	Weekdays []time.Weekday
-	// [DateLayout], the first due date of an Every chore, a weekdays chore starts on the next ticked day
+	// [time.DateOnly], the first due date of an Every chore, a weekdays chore starts on the next ticked day
 	FirstDue string
 	// the rota, in order
 	Members []pgtype.UUID
@@ -195,7 +195,7 @@ func (in ChoreInput) clean(today, current pgtype.Date, active []dbqueries.ListAc
 		}
 		every, unit := int16(in.Every), in.Unit
 		f.every, f.unit = &every, &unit
-		d, err := time.Parse(DateLayout, strings.TrimSpace(in.FirstDue))
+		d, err := time.Parse(time.DateOnly, strings.TrimSpace(in.FirstDue))
 		isCurrent := current.Valid && d.Equal(current.Time)
 		if err != nil || (d.Before(today.Time) && !isCurrent) {
 			return f, FieldError{Field: FieldChoreFirstDue}

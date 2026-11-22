@@ -928,7 +928,7 @@ func calendarMonth(actor services.Membership, v CalendarView) templ.Component {
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = calendarCell(actor, v, day, byDay[day.Format(services.DateLayout)]).Render(ctx, templ_7745c5c3_Buffer)
+				templ_7745c5c3_Err = calendarCell(actor, v, day, byDay[day.Format(time.DateOnly)]).Render(ctx, templ_7745c5c3_Buffer)
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -959,7 +959,7 @@ func calendarMonth(actor services.Membership, v CalendarView) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		if items := byDay[v.Day.Format(services.DateLayout)]; len(items) == 0 {
+		if items := byDay[v.Day.Format(time.DateOnly)]; len(items) == 0 {
 			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 57, "<p class=\"text-muted-foreground\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
@@ -1136,9 +1136,9 @@ func calendarCell(actor services.Membership, v CalendarView, day time.Time, item
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var47 string
-			templ_7745c5c3_Var47, templ_7745c5c3_Err = templruntime.NewAttributeExpression("cal-" + day.Format(services.DateLayout)).Resolve(ctx)
+			templ_7745c5c3_Var47, templ_7745c5c3_Err = templruntime.NewAttributeExpression("cal-" + day.Format(time.DateOnly)).Resolve(ctx)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/calendar.templ`, Line: 252, Col: 47}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/calendar.templ`, Line: 252, Col: 41}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var47)
 			if templ_7745c5c3_Err != nil {
@@ -2153,7 +2153,7 @@ func eventDelete(actor services.Membership, d services.EventDetail) templ.Compon
 		}
 		ctx = templ.InitializeContext(ctx)
 		ctx = templ.ClearChildren(ctx)
-		action := routes.URL(routes.CalendarEventDelete, actor.HouseholdID, d.EventID) + "?on=" + d.On.Format(services.DateLayout)
+		action := routes.URL(routes.CalendarEventDelete, actor.HouseholdID, d.EventID) + "?on=" + d.On.Format(time.DateOnly)
 		if d.Repeats && !d.Detached {
 			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 145, "<div>")
 			if templ_7745c5c3_Err != nil {

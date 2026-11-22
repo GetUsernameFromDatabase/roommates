@@ -23,12 +23,9 @@ import (
 // calendarAgendaDays is how many days the phone's agenda shows, and what "load more" adds
 const calendarAgendaDays = 30
 
-// monthLayout is the ?month= of the calendar page
-const monthLayout = "2006-01"
-
 // calendarDayPath is the calendar on the month of day with day picked
 func calendarDayPath(householdID pgtype.UUID, day time.Time) string {
-	return routes.URL(routes.Calendar, householdID) + "?month=" + day.Format(monthLayout) + "&day=" + day.Format(services.DateLayout)
+	return routes.URL(routes.Calendar, householdID) + "?month=" + day.Format(pages.MonthLayout) + "&day=" + day.Format(time.DateOnly)
 }
 
 // eventFromContext is the :eventID of the request, or shows the not found page and returns false
@@ -44,7 +41,7 @@ func eventFromContext(ctx *gin.Context) (pgtype.UUID, bool) {
 
 // eventOn is the ?on= day of the request, zero for none or a bad one: the event's first
 func eventOn(ctx *gin.Context) time.Time {
-	on, err := time.Parse(services.DateLayout, ctx.Query("on"))
+	on, err := time.Parse(time.DateOnly, ctx.Query("on"))
 	if err != nil {
 		return time.Time{}
 	}
@@ -125,7 +122,7 @@ func eventInputFromForm(ctx *gin.Context) services.EventInput {
 
 // newEventInput is the new event form: today, timed, not repeating
 func newEventInput(today time.Time) services.EventInput {
-	day := today.Format(services.DateLayout)
+	day := today.Format(time.DateOnly)
 	return services.EventInput{
 		Title:       "",
 		Location:    "",
@@ -160,7 +157,7 @@ func (h *DefaultHandler) renderCalendar(ctx *gin.Context, status int, notice str
 		return
 	}
 	month := time.Date(today.Year(), today.Month(), 1, 0, 0, 0, 0, time.UTC)
-	if m, err := time.Parse(monthLayout, ctx.Query("month")); err == nil {
+	if m, err := time.Parse(pages.MonthLayout,ctx.Query("month")); err == nil {
 		month = m
 	}
 	next := month.AddDate(0, 1, 0)
@@ -168,7 +165,7 @@ func (h *DefaultHandler) renderCalendar(ctx *gin.Context, status int, notice str
 	if !today.Before(month) && today.Before(next) {
 		day = today
 	}
-	if d, err := time.Parse(services.DateLayout, ctx.Query("day")); err == nil && !d.Before(month) && d.Before(next) {
+	if d, err := time.Parse(time.DateOnly, ctx.Query("day")); err == nil && !d.Before(month) && d.Before(next) {
 		day = d
 	}
 	from, to := pages.CalendarGrid(month)
@@ -211,7 +208,7 @@ func (h *DefaultHandler) CalendarAgenda(ctx *gin.Context) {
 		return
 	}
 	today = services.DateOnly(today)
-	from, err := time.Parse(services.DateLayout, ctx.Query("from"))
+	from, err := time.Parse(time.DateOnly, ctx.Query("from"))
 	if err != nil || from.Before(today) {
 		from = today
 	}
@@ -221,7 +218,7 @@ func (h *DefaultHandler) CalendarAgenda(ctx *gin.Context) {
 		return
 	}
 	// the last day already shown, its month is not named again
-	last, _ := time.Parse(services.DateLayout, ctx.Query("last"))
+	last, _ := time.Parse(time.DateOnly, ctx.Query("last"))
 	RenderTempl(ctx, pages.CalendarMore(actor, today, from.AddDate(0, 0, calendarAgendaDays), last, items))
 }
 
@@ -293,7 +290,7 @@ func (h *DefaultHandler) UpdateEvent(ctx *gin.Context) {
 	err = h.service.UpdateEvent(ctx, actor, id, d.On, scope, in)
 	switch {
 	case err == nil:
-		moved, perr := time.Parse(services.DateLayout, in.StartDate)
+		moved, perr := time.Parse(time.DateOnly, in.StartDate)
 		if perr != nil {
 			moved = d.On
 		}
@@ -344,9 +341,9 @@ func (h *DefaultHandler) UploadEventFile(ctx *gin.Context) {
 	}
 	var on time.Time
 	if u, err := url.Parse(ctx.Request.Referer()); err == nil && u.Path == back {
-		if d, err := time.Parse(services.DateLayout, u.Query().Get("on")); err == nil {
+		if d, err := time.Parse(time.DateOnly, u.Query().Get("on")); err == nil {
 			on = d
-			back += "?on=" + d.Format(services.DateLayout)
+			back += "?on=" + d.Format(time.DateOnly)
 		}
 	}
 	h.handleUpload(ctx, t, back, func(status int, errorMessage string) {

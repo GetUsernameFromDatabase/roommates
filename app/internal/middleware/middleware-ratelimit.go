@@ -2,6 +2,8 @@ package middleware
 
 import (
 	"net/http"
+	"roommates/internal/locales"
+	"roommates/internal/utils"
 	"sync"
 	"time"
 
@@ -31,7 +33,7 @@ func NewRateLimit(limit int, window time.Duration) gin.HandlerFunc {
 		mu.Unlock()
 
 		if over {
-			c.String(http.StatusTooManyRequests, "too many requests, try again later")
+			c.String(http.StatusTooManyRequests, utils.T(c.Request.Context(), locales.LK_CommonTooManyRequests))
 			c.Abort()
 			return
 		}

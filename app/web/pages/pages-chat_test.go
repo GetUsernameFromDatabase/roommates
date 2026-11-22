@@ -1,7 +1,6 @@
 package pages
 
 import (
-	"roommates/internal/db/dbqueries"
 	"roommates/internal/services"
 	"testing"
 	"time"
@@ -13,7 +12,7 @@ func TestChatRuns(t *testing.T) {
 	mari, jaan := pgtype.UUID{Bytes: [16]byte{1}, Valid: true}, pgtype.UUID{Bytes: [16]byte{2}, Valid: true}
 	at := time.Date(2026, 10, 29, 14, 0, 0, 0, time.UTC)
 	msg := func(author pgtype.UUID, minutes int) services.Message {
-		return services.Message{ListMessagesRow: dbqueries.ListMessagesRow{
+		return services.Message{
 			ID:              pgtype.UUID{},
 			AuthorName:      "",
 			AuthorAvatarKey: nil,
@@ -23,7 +22,9 @@ func TestChatRuns(t *testing.T) {
 			ReplyBody:       "",
 			AuthorID:        author,
 			CreatedAt:       pgtype.Timestamptz{Time: at.Add(time.Duration(minutes) * time.Minute), InfinityModifier: pgtype.Finite, Valid: true},
-		}, Files: nil, LastFiles: 0}
+			Files:           nil,
+			LastFiles:       0,
+		}
 	}
 	// newest first: jaan 14:20, mari 14:10, mari 14:06, mari 14:00
 	ms := []services.Message{msg(jaan, 20), msg(mari, 10), msg(mari, 6), msg(mari, 0)}

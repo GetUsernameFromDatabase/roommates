@@ -20,17 +20,21 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+// firstOccurrenceHorizon is how far past the start to look for an event's first occurrence,
+// it covers the longest step, 12 months
+const firstOccurrenceHorizon = 400
+
 // EventInput is the event form
 type EventInput struct {
 	Title    string
 	Location string
 	Notes    string
-	// [DateLayout], a weekdays series starts on the first ticked day from it
+	// [time.DateOnly], a weekdays series starts on the first ticked day from it
 	StartDate string
 	AllDay    bool
 	// "15:04", not for all-day
 	StartTime string
-	// [DateLayout], empty for the start date
+	// [time.DateOnly], empty for the start date
 	EndDate string
 	// "15:04", optional for a timed event, without it the event ends on its start date
 	EndTime string
@@ -40,7 +44,7 @@ type EventInput struct {
 	Every int
 	// with [g.ChoreUnitWeekdays]
 	Weekdays []time.Weekday
-	// [DateLayout], empty to repeat forever
+	// [time.DateOnly], empty to repeat forever
 	RepeatUntil string
 	// minutes before the start, one of [g.RemindTimed] or for all-day [g.RemindAllDay], nil for none
 	Remind *int
@@ -53,7 +57,7 @@ type EventMember struct {
 	Name   string
 }
 
-// Occurrence is one occurrence of an event, dates are household local dates as [DateLayout] parses them
+// Occurrence is one occurrence of an event, dates are household local dates as [time.DateOnly] parses them
 type Occurrence struct {
 	EventID pgtype.UUID
 	// the day it starts and the day it ends
@@ -267,7 +271,7 @@ func (f *eventFields) settle() error {
 }
 
 func parseDate(s string) (time.Time, error) {
-	return time.Parse(DateLayout, strings.TrimSpace(s))
+	return time.Parse(time.DateOnly, strings.TrimSpace(s))
 }
 
 func parseClock(s string) (pgtype.Time, error) {
@@ -290,7 +294,7 @@ func wallClock(day time.Time, t pgtype.Time, loc *time.Location) time.Time {
 	return time.Date(day.Year(), day.Month(), day.Day(), m/60, m%60, 0, 0, loc)
 }
 
-// DateOnly is t's calendar date as [DateLayout] parses it, keys of the skip sets compare with ==
+// DateOnly is t's calendar date as [time.DateOnly] parses it, keys of the skip sets compare with ==
 func DateOnly(t time.Time) time.Time {
 	y, m, d := t.Date()
 	return time.Date(y, m, d, 0, 0, 0, 0, time.UTC)
@@ -409,10 +413,10 @@ func inputOf(e dbqueries.Event, on time.Time, members []EventMember) EventInput 
 		Title:       e.Title,
 		Location:    e.Location,
 		Notes:       e.Notes,
-		StartDate:   on.Format(DateLayout),
+		StartDate:   on.Format(time.DateOnly),
 		AllDay:      !e.StartTime.Valid,
 		StartTime:   clockOf(e.StartTime),
-		EndDate:     on.AddDate(0, 0, eventSpan(e)).Format(DateLayout),
+		EndDate:     on.AddDate(0, 0, eventSpan(e)).Format(time.DateOnly),
 		EndTime:     clockOf(e.EndTime),
 		Unit:        "",
 		Every:       0,
@@ -428,7 +432,7 @@ func inputOf(e dbqueries.Event, on time.Time, members []EventMember) EventInput 
 		in.Unit, in.Every = *e.EveryUnit, int(*e.Every)
 	}
 	if e.RepeatUntil.Valid {
-		in.RepeatUntil = e.RepeatUntil.Time.Format(DateLayout)
+		in.RepeatUntil = e.RepeatUntil.Time.Format(time.DateOnly)
 	}
 	if e.RemindMinutes != nil {
 		r := int(*e.RemindMinutes)
@@ -641,12 +645,12 @@ func (s *DefaultService) GetOccurrence(ctx context.Context, actor Membership, id
 		return EventDetail{}, noRowsAs(err, g.ErrorNotFound)
 	}
 	if on.IsZero() {
-		// the first day may be cancelled or edited alone; 400 days cover the longest step, 12 months
+		// the first day may be cancelled or edited alone
 		skips, err := eventSkips(ctx, s.db, []pgtype.UUID{e.HouseholdID}, []pgtype.UUID{e.ID})
 		if err != nil {
 			return EventDetail{}, err
 		}
-		days := occurrences(e, skips[e.ID], e.StartDate.Time, e.StartDate.Time.AddDate(0, 0, 400))
+		days := occurrences(e, skips[e.ID], e.StartDate.Time, e.StartDate.Time.AddDate(0, 0, firstOccurrenceHorizon))
 		if len(days) == 0 {
 			return EventDetail{}, g.ErrorNotFound
 		}
@@ -947,8 +951,8 @@ func (s *DefaultService) pushEventReminder(ctx context.Context, e dbqueries.Even
 		return push.Message{
 			Title: utils.T(ctx, locales.LK_CalendarPushTitle, household),
 			Body:  utils.T(ctx, locales.LK_CalendarPushBody, e.Title, when),
-			URL:   routes.URL(routes.CalendarEvent, e.HouseholdID, e.ID) + "?on=" + on.Format(DateLayout),
-			Tag:   "event-" + e.ID.String() + "-" + on.Format(DateLayout),
+			URL:   routes.URL(routes.CalendarEvent, e.HouseholdID, e.ID) + "?on=" + on.Format(time.DateOnly),
+			Tag:   "event-" + e.ID.String() + "-" + on.Format(time.DateOnly),
 		}
 	})
 	return nil

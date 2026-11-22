@@ -65,7 +65,7 @@ func (h *DefaultHandler) renderChat(ctx *gin.Context, status int, before, replyT
 // htmx requests get the chat itself so the composer is cleared without a reload
 func (h *DefaultHandler) PostMessage(ctx *gin.Context) {
 	actor := membershipFromContext(ctx)
-	ctx.Request.Body = http.MaxBytesReader(ctx.Writer, ctx.Request.Body, services.MaxFileSize+1<<20)
+	ctx.Request.Body = http.MaxBytesReader(ctx.Writer, ctx.Request.Body, services.MaxUploadBody)
 	replyTo, err := optionalUUID(ctx.PostForm("reply_to"))
 	if err == nil {
 		err = h.postMessage(ctx, actor, replyTo)

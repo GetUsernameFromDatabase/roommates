@@ -325,7 +325,7 @@ func (h *DefaultHandler) UpdateHousehold(ctx *gin.Context) {
 	show := func(status int, msg, info string) {
 		// keep what was typed, a zone or hour the selects cannot show stays as it was saved
 		before.Name = name
-		if hour >= 0 && hour < 24 {
+		if services.ValidReminderHour(hour) {
 			before.ReminderHour = hour
 		}
 		if slices.Contains(before.TimeZones, timeZone) {

@@ -6,6 +6,7 @@ import (
 
 	"roommates/web/components/button"
 	"roommates/web/components/icon"
+	"roommates/internal/locales"
 	"roommates/internal/utils"
 )
 
@@ -226,7 +227,7 @@ templ Content(props ...ContentProps) {
 					},
 				}) {
 					@icon.X()
-					<span class="sr-only">Close</span>
+					<span class="sr-only">{ utils.T(ctx, locales.LK_CommonClose) }</span>
 				}
 			}
 		</div>

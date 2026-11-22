@@ -21,6 +21,14 @@ import (
 
 var log = logger.Main.With().Str("package", "push").Logger()
 
+const (
+	// webpush-go pads every message to this size, messages stay under 1 KB;
+	// Mozilla limits the body to 4096 bytes once base64 encoded (about 3 KB)
+	recordSize = 2048
+	// how much of a push service's rejection reason is read
+	maxReasonBytes = 1024
+)
+
 // ErrGone means the subscription cannot be used anymore and can be deleted
 var ErrGone = errors.New("push subscription gone")
 
@@ -110,11 +118,9 @@ func (p *WebPusher) Send(ctx context.Context, sub Subscription, msg Message) err
 		VAPIDPublicKey:  p.publicKey,
 		VAPIDPrivateKey: p.privateKey,
 		// a phone that is off for a day misses it, by then the app shows it anyway
-		TTL:     int((24 * time.Hour).Seconds()),
-		Urgency: webpush.UrgencyNormal,
-		// Mozilla limits the body to 4096 bytes once base64 encoded (about 3 KB),
-		// webpush-go pads every message to RecordSize, messages stay under 1 KB
-		RecordSize:      2048,
+		TTL:             int((24 * time.Hour).Seconds()),
+		Urgency:         webpush.UrgencyNormal,
+		RecordSize:      recordSize,
 		Topic:           "",
 		VapidExpiration: time.Time{},
 	})
@@ -122,7 +128,7 @@ func (p *WebPusher) Send(ctx context.Context, sub Subscription, msg Message) err
 		return err
 	}
 	// push services explain a rejection in the body
-	reason, _ := io.ReadAll(io.LimitReader(res.Body, 1024))
+	reason, _ := io.ReadAll(io.LimitReader(res.Body, maxReasonBytes))
 	_ = res.Body.Close()
 	switch {
 	// these never work again for this subscription, e.g. 403 after the VAPID keys changed,

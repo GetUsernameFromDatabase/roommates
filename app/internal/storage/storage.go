@@ -61,8 +61,7 @@ func New(ctx context.Context) *S3Store {
 func (s *S3Store) ensureBucket(ctx context.Context) error {
 	//exhaustruct:ignore
 	_, err := s.client.HeadBucket(ctx, &s3.HeadBucketInput{Bucket: &s.bucket})
-	var notFound *types.NotFound
-	if !errors.As(err, &notFound) {
+	if _, ok := errors.AsType[*types.NotFound](err); !ok {
 		return err
 	}
 	//exhaustruct:ignore

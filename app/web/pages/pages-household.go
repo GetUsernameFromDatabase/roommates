@@ -23,10 +23,13 @@ func sseTrigger(topics []string) string {
 	return "sse:" + strings.Join(topics, ", sse:") + ", live-resync from:body"
 }
 
+// maxUnreadShown is the count the nav badge shows in full
+const maxUnreadShown = 99
+
 // unreadLabel caps the count so the nav keeps its width
 func unreadLabel(n int64) string {
-	if n > 99 {
-		return "99+"
+	if n > maxUnreadShown {
+		return strconv.Itoa(maxUnreadShown) + "+"
 	}
 	return strconv.FormatInt(n, 10)
 }

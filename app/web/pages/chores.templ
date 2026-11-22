@@ -17,6 +17,7 @@ import g "roommates/internal/config"
 import "roommates/internal/locales"
 import "roommates/internal/routes"
 import "roommates/internal/utils"
+import "time"
 
 // ChoresPage lists the household's chores soonest due first, with the form of a new one folded away
 //
@@ -83,7 +84,7 @@ templ choreNew(actor services.Membership, members []dbqueries.ListActiveMembersR
 // choreCard is a chore with whose turn it is, when it is due and the buttons for this turn
 templ choreCard(actor services.Membership, c services.Chore) {
 	{{ due, overdue := choreDue(ctx, c) }}
-	{{ dueField := c.NextDue.Format(services.DateLayout) }}
+	{{ dueField := c.NextDue.Format(time.DateOnly) }}
 	@card.Card(card.Props{Class: "gap-3"}) {
 		@card.Content(card.ContentProps{Class: "flex flex-col gap-3"}) {
 			<div class="flex flex-col gap-1">

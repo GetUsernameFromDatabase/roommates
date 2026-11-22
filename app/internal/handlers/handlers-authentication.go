@@ -27,8 +27,8 @@ func (h *DefaultHandler) PageLogin(ctx *gin.Context) {
 	case http.MethodGet:
 		//exhaustruct:ignore
 		render(models.Login{
-			ModelBase: models.ModelBase{Initial: true},
-			Next:      ctx.Query(g.QueryNext),
+			Initial: true,
+			Next:    ctx.Query(g.QueryNext),
 		})
 	case http.MethodPost:
 		var model models.Login
@@ -91,10 +91,10 @@ func (h *DefaultHandler) PageRegister(ctx *gin.Context) {
 	switch method {
 	case http.MethodGet:
 		//exhaustruct:ignore
-		render(models.Register{Login: models.Login{
-			ModelBase: models.ModelBase{Initial: true},
-			Next:      ctx.Query(g.QueryNext),
-		}})
+		render(models.Register{
+			Initial: true,
+			Next:    ctx.Query(g.QueryNext),
+		})
 	case http.MethodPost:
 		var model models.Register
 		_ = ctx.ShouldBind(&model)

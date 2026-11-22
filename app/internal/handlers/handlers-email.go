@@ -67,7 +67,7 @@ func (h *DefaultHandler) ResendVerificationEmail(ctx *gin.Context) {
 // PageForgotPassword sends a reset link, the answer is the same whether the account exists or not
 func (h *DefaultHandler) PageForgotPassword(ctx *gin.Context) {
 	//exhaustruct:ignore
-	model := models.EmailForm{ModelBase: models.ModelBase{Initial: true}}
+	model := models.EmailForm{Initial: true}
 	if ctx.Request.Method != http.MethodPost {
 		RenderTempl(ctx, pages.ForgotPassword(model))
 		return
@@ -106,8 +106,8 @@ func (h *DefaultHandler) PageResetPassword(ctx *gin.Context) {
 		}
 		//exhaustruct:ignore
 		RenderTempl(ctx, pages.ResetPassword(models.ResetPassword{
-			ModelBase: models.ModelBase{Initial: true},
-			Token:     token,
+			Initial: true,
+			Token:   token,
 		}))
 		return
 	}

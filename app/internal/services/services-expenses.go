@@ -23,7 +23,6 @@ const (
 	MaxExpenseTitleLength = 100
 	// 10 000 000.00 in the household currency
 	MaxAmountCents = 1_000_000_000
-	DateLayout     = "2006-01-02"
 )
 
 var amountPattern = regexp.MustCompile(`^(\d{1,10})(?:[.,](\d{1,2}))?$`)
@@ -115,7 +114,7 @@ func (e FieldError) Unwrap() error { return g.ErrorInvalidInput }
 // errors as [ExpenseInput.clean]
 func (in ExpenseInput) cleanDetails() (string, pgtype.Date, error) {
 	title, okTitle := trimToLength(in.Title, 1, MaxExpenseTitleLength)
-	date, errDate := time.Parse(DateLayout, strings.TrimSpace(in.IncurredOn))
+	date, errDate := time.Parse(time.DateOnly, strings.TrimSpace(in.IncurredOn))
 	switch {
 	case !okTitle:
 		return "", pgtype.Date{}, FieldError{Field: FieldTitle}

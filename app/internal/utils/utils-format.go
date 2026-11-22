@@ -9,7 +9,10 @@ import (
 	"golang.org/x/text/number"
 )
 
-// dateLayouts is the short date of each language, Estonian (and any other) 19.11.2026
+// defaultDateLayout is the short date of Estonian and any other language, 19.11.2026
+const defaultDateLayout = "02.01.2006"
+
+// dateLayouts is the short date of each language that differs from [defaultDateLayout]
 var dateLayouts = map[string]string{"en": "2 Jan 2006"}
 
 // FormatDate is the calendar date of t in the request language, "19.11.2026" or "19 Nov 2026"
@@ -17,7 +20,7 @@ func FormatDate(ctx context.Context, t time.Time) string {
 	if layout, ok := dateLayouts[GetLocaleString(ctx)]; ok {
 		return t.Format(layout)
 	}
-	return t.Format("02.01.2006")
+	return t.Format(defaultDateLayout)
 }
 
 func printer(ctx context.Context) *message.Printer {

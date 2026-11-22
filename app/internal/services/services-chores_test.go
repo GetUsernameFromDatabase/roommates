@@ -36,7 +36,7 @@ func TestChoreNextDue(t *testing.T) {
 		{"monthly from the 31st", choreNextDue(every(1), unit(g.ChoreUnitMonth), nil, day(17), time.Date(2027, 1, 31, 0, 0, 0, 0, time.UTC)), time.Date(2027, 2, 28, 0, 0, 0, 0, time.UTC)},
 	} {
 		if !tc.got.Equal(tc.want) {
-			t.Errorf("%s: got %s, want %s", tc.name, tc.got.Format(DateLayout), tc.want.Format(DateLayout))
+			t.Errorf("%s: got %s, want %s", tc.name, tc.got.Format(time.DateOnly), tc.want.Format(time.DateOnly))
 		}
 	}
 	if got := weekdaysOf(monThu | weekdayBit(time.Sunday)); !slices.Equal(got, []time.Weekday{time.Monday, time.Thursday, time.Sunday}) {
@@ -57,7 +57,7 @@ func TestChoreClean(t *testing.T) {
 	}
 	in := ok()
 	in.Unit, in.Weekdays = g.ChoreUnitWeekdays, []time.Weekday{time.Monday}
-	if f, err := in.clean(today, pgtype.Date{}, active); err != nil || f.every != nil || *f.weekdays != 1 || f.due.Format(DateLayout) != "2026-11-23" {
+	if f, err := in.clean(today, pgtype.Date{}, active); err != nil || f.every != nil || *f.weekdays != 1 || f.due.Format(time.DateOnly) != "2026-11-23" {
 		t.Fatalf("weekdays: got %+v %v", f, err)
 	}
 	// the current due date may stay even when it is past
@@ -145,7 +145,7 @@ func wantTurn(t *testing.T, s *DefaultService, actor Membership, id, assignee pg
 	t.Helper()
 	c := mustChore(t, s, actor, id).Chore
 	if c.AssigneeID != assignee || !c.NextDue.Equal(c.Today.AddDate(0, 0, inDays)) {
-		t.Fatalf("%s: got turn of %v due %s (today %s), want %v in %d days", step, c.AssigneeID, c.NextDue.Format(DateLayout), c.Today.Format(DateLayout), assignee, inDays)
+		t.Fatalf("%s: got turn of %v due %s (today %s), want %v in %d days", step, c.AssigneeID, c.NextDue.Format(time.DateOnly), c.Today.Format(time.DateOnly), assignee, inDays)
 	}
 	return c
 }

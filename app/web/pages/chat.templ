@@ -422,8 +422,11 @@ templ replySnippet(body string) {
 // localTimeScript is local-time.js, a page with times loads it at page level, not in localTime
 var localTimeScript = templ.NewOnceHandle()
 
+// utcMinuteLayout is the UTC time shown until local-time.js replaces it
+const utcMinuteLayout = "2006-01-02 15:04"
+
 // localTime is shown in the viewer's time zone by local-time.js, the server only knows UTC,
 // without today's date and this year, attrs can hold its data-today and data-yesterday phrases
 templ localTime(t pgtype.Timestamptz, attrs templ.Attributes) {
-	<time datetime={ t.Time.UTC().Format(time.RFC3339) } data-local { attrs... }>{ t.Time.UTC().Format("2006-01-02 15:04") } UTC</time>
+	<time datetime={ t.Time.UTC().Format(time.RFC3339) } data-local { attrs... }>{ t.Time.UTC().Format(utcMinuteLayout) } UTC</time>
 }

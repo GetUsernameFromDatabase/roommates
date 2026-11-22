@@ -16,7 +16,7 @@ import (
 )
 
 func calDay(s string) time.Time {
-	d, err := time.Parse(DateLayout, s)
+	d, err := time.Parse(time.DateOnly, s)
 	if err != nil {
 		panic(err)
 	}
@@ -92,7 +92,7 @@ func TestEventOccurrences(t *testing.T) {
 		}
 		var got []string
 		for _, d := range occurrences(tc.e, skip, calDay(tc.from), calDay(tc.to)) {
-			got = append(got, d.Format(DateLayout))
+			got = append(got, d.Format(time.DateOnly))
 		}
 		if !slices.Equal(got, tc.want) {
 			t.Errorf("%s: got %v, want %v", tc.name, got, tc.want)
@@ -214,7 +214,7 @@ func TestEventClean(t *testing.T) {
 }
 
 func eventInput(title string, start time.Time) EventInput {
-	return EventInput{Title: title, Location: "", Notes: "", StartDate: start.Format(DateLayout), AllDay: true, StartTime: "", EndDate: "", EndTime: "",
+	return EventInput{Title: title, Location: "", Notes: "", StartDate: start.Format(time.DateOnly), AllDay: true, StartTime: "", EndDate: "", EndTime: "",
 		Unit: "", Every: 0, Weekdays: nil, RepeatUntil: "", Remind: nil, Members: nil}
 }
 
@@ -303,7 +303,7 @@ func TestEventScopes(t *testing.T) {
 
 	// this: a one-off on the day with the series' creator, members and files
 	edit := in
-	edit.Title, edit.StartDate = "Yoga late", day(1).Format(DateLayout)
+	edit.Title, edit.StartDate = "Yoga late", day(1).Format(time.DateOnly)
 	if err := s.UpdateEvent(ctx, ownerM, id, day(1), EventScopeThis, edit); err != nil {
 		t.Fatal(err)
 	}
@@ -328,7 +328,7 @@ func TestEventScopes(t *testing.T) {
 
 	// following with the same rule and day: a new series, the cancelled day stays cancelled
 	edit = in
-	edit.Title, edit.StartDate = "Pilates", day(3).Format(DateLayout)
+	edit.Title, edit.StartDate = "Pilates", day(3).Format(time.DateOnly)
 	if err := s.UpdateEvent(ctx, ownerM, id, day(3), EventScopeFollowing, edit); err != nil {
 		t.Fatal(err)
 	}
@@ -337,13 +337,13 @@ func TestEventScopes(t *testing.T) {
 	if d := mustOccurrence(t, s, ownerM, pilates, day(3)); pilates == id || len(d.Files) != 1 || !d.Repeats || d.Input.RepeatUntil != "" {
 		t.Fatalf("following: got %+v", d)
 	}
-	if d := mustOccurrence(t, s, ownerM, id, day(0)); d.Input.RepeatUntil != day(2).Format(DateLayout) {
+	if d := mustOccurrence(t, s, ownerM, id, day(0)); d.Input.RepeatUntil != day(2).Format(time.DateOnly) {
 		t.Fatalf("ended series: got %+v", d.Input)
 	}
 
 	// all with a new rule drops the series' cancelled and alone-edited days
 	edit = in
-	edit.Every, edit.RepeatUntil = 2, day(2).Format(DateLayout)
+	edit.Every, edit.RepeatUntil = 2, day(2).Format(time.DateOnly)
 	if err := s.UpdateEvent(ctx, ownerM, id, day(0), EventScopeAll, edit); err != nil {
 		t.Fatal(err)
 	}
@@ -352,7 +352,7 @@ func TestEventScopes(t *testing.T) {
 	wantErr(t, "dropped one-off", err, g.ErrorNotFound)
 
 	// all from a later occurrence moves the whole series by as many days
-	edit.StartDate, edit.RepeatUntil = day(3).Format(DateLayout), day(3).Format(DateLayout)
+	edit.StartDate, edit.RepeatUntil = day(3).Format(time.DateOnly), day(3).Format(time.DateOnly)
 	if err := s.UpdateEvent(ctx, ownerM, id, day(2), EventScopeAll, edit); err != nil {
 		t.Fatal(err)
 	}
@@ -398,7 +398,7 @@ func TestEventRights(t *testing.T) {
 
 	// an owner edits anyone's, the copy is still the creator's
 	edit := in
-	edit.Title, edit.StartDate = "Party later", today.AddDate(0, 0, 1).Format(DateLayout)
+	edit.Title, edit.StartDate = "Party later", today.AddDate(0, 0, 1).Format(time.DateOnly)
 	if err := s.UpdateEvent(ctx, ownerM, id, today.AddDate(0, 0, 1), EventScopeThis, edit); err != nil {
 		t.Fatal(err)
 	}
@@ -506,7 +506,7 @@ func TestNotifyCalendarDue(t *testing.T) {
 	dentist := timed("Dentist", "10:00", g.RemindHour)
 	notify("too early", at(8, 59), 0)
 	got := notify("due", at(9, 1), 1)
-	on := tomorrow.Format(DateLayout)
+	on := tomorrow.Format(time.DateOnly)
 	if got[0].msg.URL != routes.URL(routes.CalendarEvent, ownerM.HouseholdID, dentist)+"?on="+on || got[0].msg.Tag != "event-"+dentist.String()+"-"+on {
 		t.Fatalf("push: got %+v", got[0].msg)
 	}

@@ -12,7 +12,7 @@ import (
 
 func TestNextDue(t *testing.T) {
 	day := func(s string) time.Time {
-		d, err := time.Parse(DateLayout, s)
+		d, err := time.Parse(time.DateOnly, s)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -33,30 +33,28 @@ func TestNextDue(t *testing.T) {
 		{"2026-01-01", g.IntervalWeek, "2026-01-20", "2026-01-22"},
 	} {
 		got := nextDue(day(tc.anchor), tc.interval, day(tc.after))
-		if got.Format(DateLayout) != tc.want {
-			t.Errorf("%s %s after %s: got %s, want %s", tc.anchor, tc.interval, tc.after, got.Format(DateLayout), tc.want)
+		if got.Format(time.DateOnly) != tc.want {
+			t.Errorf("%s %s after %s: got %s, want %s", tc.anchor, tc.interval, tc.after, got.Format(time.DateOnly), tc.want)
 		}
 	}
 }
 
 func daysAgo(n int) string {
-	return time.Now().AddDate(0, 0, -n).Format(DateLayout)
+	return time.Now().AddDate(0, 0, -n).Format(time.DateOnly)
 }
 
 func recurringInput(title, date string, members ...pgtype.UUID) RecurringInput {
 	return RecurringInput{
-		ExpenseInput: ExpenseInput{
-			Title:      title,
-			Amount:     "10",
-			Category:   "rent",
-			IncurredOn: date,
-			Custom:     false,
-			Members:    members,
-			Shares:     nil,
-			ListID:     pgtype.UUID{},
-			ItemID:     pgtype.UUID{},
-		},
-		Interval: g.IntervalWeek,
+		Title:      title,
+		Amount:     "10",
+		Category:   "rent",
+		IncurredOn: date,
+		Custom:     false,
+		Members:    members,
+		Shares:     nil,
+		ListID:     pgtype.UUID{},
+		ItemID:     pgtype.UUID{},
+		Interval:   g.IntervalWeek,
 	}
 }
 
@@ -97,7 +95,7 @@ func TestRecurringDrafts(t *testing.T) {
 		t.Fatal(err)
 	}
 	r := mustRecurring(t, s, ownerM, "Rent")
-	if r.Anchor.Time.Format(DateLayout) != daysAgo(14) || r.NextDue.Time.Format(DateLayout) != daysAgo(7) || len(r.Shares) != 2 {
+	if r.Anchor.Time.Format(time.DateOnly) != daysAgo(14) || r.NextDue.Time.Format(time.DateOnly) != daysAgo(7) || len(r.Shares) != 2 {
 		t.Fatalf("schedule: got %+v", r)
 	}
 	if _, err := s.GetRecurring(ctx, strangerM, r.ID); !errors.Is(err, g.ErrorNotFound) {
@@ -121,7 +119,7 @@ func TestRecurringDrafts(t *testing.T) {
 	_, err := s.CreateExpense(ctx, ownerM, draft)
 	wantField(t, "second add", err, FieldRecurring)
 	r = mustRecurring(t, s, ownerM, "Rent")
-	if r.NextDue.Time.Format(DateLayout) != daysAgo(0) {
+	if r.NextDue.Time.Format(time.DateOnly) != daysAgo(0) {
 		t.Fatalf("after add: next due %v", r.NextDue)
 	}
 
@@ -171,7 +169,7 @@ func TestRecurringChanges(t *testing.T) {
 		t.Fatal(err)
 	}
 	internet = mustRecurring(t, s, ownerM, "Internet")
-	if internet.Anchor.Time.Format(DateLayout) != daysAgo(3) || internet.NextDue.Time.Format(DateLayout) != daysAgo(3) || len(internet.Shares) != 2 {
+	if internet.Anchor.Time.Format(time.DateOnly) != daysAgo(3) || internet.NextDue.Time.Format(time.DateOnly) != daysAgo(3) || len(internet.Shares) != 2 {
 		t.Fatalf("new date: got %+v", internet)
 	}
 

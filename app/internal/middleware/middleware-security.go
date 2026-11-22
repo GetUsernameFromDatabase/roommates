@@ -38,7 +38,7 @@ func NewSecurityHeader() gin.HandlerFunc {
 		// https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/X-XSS-Protection
 		c.Header("X-XSS-Protection", "0")
 		if hsts {
-			c.Header("Strict-Transport-Security", "max-age=31536000")
+			c.Header("Strict-Transport-Security", g.HSTSValue)
 		}
 		c.Header("Referrer-Policy", "strict-origin")
 		c.Header("X-Content-Type-Options", "nosniff")
