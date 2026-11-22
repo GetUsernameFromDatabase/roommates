@@ -339,7 +339,8 @@ VALUES (
       WHERE id = $1
     )
   )
-RETURNING id
+RETURNING id,
+  currency
 `
 
 type InsertExpenseParams struct {
@@ -351,8 +352,14 @@ type InsertExpenseParams struct {
 	IncurredOn  pgtype.Date `json:"incurred_on"`
 }
 
-// in the household currency, read here so the caller's household lock covers it
-func (q *Queries) InsertExpense(ctx context.Context, arg InsertExpenseParams) (pgtype.UUID, error) {
+type InsertExpenseRow struct {
+	ID       pgtype.UUID `json:"id"`
+	Currency string      `json:"currency"`
+}
+
+// in the household currency, read here so the caller's household lock covers it,
+// returned so the activity log and pushes show the one the expense got
+func (q *Queries) InsertExpense(ctx context.Context, arg InsertExpenseParams) (InsertExpenseRow, error) {
 	row := q.db.QueryRow(ctx, insertExpense,
 		arg.HouseholdID,
 		arg.PayerID,
@@ -361,9 +368,9 @@ func (q *Queries) InsertExpense(ctx context.Context, arg InsertExpenseParams) (p
 		arg.AmountCents,
 		arg.IncurredOn,
 	)
-	var id pgtype.UUID
-	err := row.Scan(&id)
-	return id, err
+	var i InsertExpenseRow
+	err := row.Scan(&i.ID, &i.Currency)
+	return i, err
 }
 
 const insertExpenseShare = `-- name: InsertExpenseShare :exec
@@ -388,7 +395,7 @@ func (q *Queries) InsertExpenseShare(ctx context.Context, arg InsertExpenseShare
 	return err
 }
 
-const insertSettlement = `-- name: InsertSettlement :exec
+const insertSettlement = `-- name: InsertSettlement :one
 INSERT INTO settlements (
     household_id,
     from_user,
@@ -411,6 +418,7 @@ VALUES (
       WHERE id = $1
     )
   )
+RETURNING currency
 `
 
 type InsertSettlementParams struct {
@@ -423,9 +431,10 @@ type InsertSettlementParams struct {
 }
 
 // settlements
-// in the household currency, read here so the caller's household lock covers it
-func (q *Queries) InsertSettlement(ctx context.Context, arg InsertSettlementParams) error {
-	_, err := q.db.Exec(ctx, insertSettlement,
+// in the household currency, read here so the caller's household lock covers it,
+// returned so the activity log and push show the one the settlement got
+func (q *Queries) InsertSettlement(ctx context.Context, arg InsertSettlementParams) (string, error) {
+	row := q.db.QueryRow(ctx, insertSettlement,
 		arg.HouseholdID,
 		arg.FromUser,
 		arg.ToUser,
@@ -433,7 +442,9 @@ func (q *Queries) InsertSettlement(ctx context.Context, arg InsertSettlementPara
 		arg.Method,
 		arg.Note,
 	)
-	return err
+	var currency string
+	err := row.Scan(&currency)
+	return currency, err
 }
 
 const insertSettlementShare = `-- name: InsertSettlementShare :exec

@@ -226,8 +226,14 @@ func (s *DefaultService) UpdateRecurring(ctx context.Context, actor Membership, 
 		if err := insertRecurringShares(ctx, q, id, actor.HouseholdID, in.Custom, shares); err != nil {
 			return err
 		}
+		// a schedule has no currency of its own, its drafts get the household's; read under the
+		// lock, actor.Currency is from before it and a currency change can have committed since
+		h, err := q.GetHousehold(ctx, actor.HouseholdID)
+		if err != nil {
+			return err
+		}
 		cents := p.AmountCents
-		return logActivity(ctx, q, actor, ActivityEntry{Kind: g.ActRecurringEdited, SubjectID: id, TargetUserID: pgtype.UUID{}, Title: p.Title, AmountCents: &cents, Currency: actor.Currency})
+		return logActivity(ctx, q, actor, ActivityEntry{Kind: g.ActRecurringEdited, SubjectID: id, TargetUserID: pgtype.UUID{}, Title: p.Title, AmountCents: &cents, Currency: h.Currency})
 	})
 }
 

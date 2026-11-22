@@ -40,21 +40,16 @@ var sessionOptions = sessions.Options{
 // set by [NewPostgreSessionStoreHandler], same db as the session store
 var sessionDB *sql.DB
 
-const (
-	KeyUserID   = "user_id"
-	KeyUsername = "username"
-	KeyEmail    = "email"
-)
+const KeyUserID = "user_id"
 
 // -----------------------------------------------------------------------------
 
-// SessionInfo values all [Session] should have
+// SessionInfo values all [Session] should have; the username and email are read from the
+// database, a copy here would go stale on the user's other devices when they change
 //
 //exhaustruct:enforce
 type SessionInfo struct {
-	UserID   string `validate:"required"`
-	Email    string `validate:"required"`
-	Username string `validate:"required"`
+	UserID string `validate:"required"`
 }
 
 type Session struct {
@@ -72,11 +67,7 @@ func FromGinContext(ctx *gin.Context) Session {
 	s := sessions.Default(ctx)
 	str := func(key string) string { v, _ := s.Get(key).(string); return v }
 
-	sessionInfo := SessionInfo{
-		UserID:   str(KeyUserID),
-		Email:    str(KeyEmail),
-		Username: str(KeyUsername),
-	}
+	sessionInfo := SessionInfo{UserID: str(KeyUserID)}
 
 	err := validators.Main.Struct(sessionInfo)
 	return Session{
@@ -97,13 +88,7 @@ func (s *Session) Login(sessionInfo SessionInfo) {
 	s.regenerateID()
 	s.SessionInfo = sessionInfo
 	s.isSessionInfoValid = true
-
-	// I don't like this; forces a check that all
-	// fields from [SessionInfo] get used
-	var _ = SessionInfo{"", "", ""}
 	s.Session.Set(KeyUserID, sessionInfo.UserID)
-	s.Session.Set(KeyUsername, sessionInfo.Username)
-	s.Session.Set(KeyEmail, sessionInfo.Email)
 	s.Save()
 	// the row is found by user when a password reset signs the user out everywhere
 	gs := s.Session.(gorillaSessionGetter).Session()
@@ -149,7 +134,7 @@ func (s *Session) Logout() {
 	expired.MaxAge = -1
 	s.Session.Options(expired)
 	s.Save()
-	s.SessionInfo = SessionInfo{"", "", ""}
+	s.SessionInfo = SessionInfo{UserID: ""}
 	s.isSessionInfoValid = false
 }
 

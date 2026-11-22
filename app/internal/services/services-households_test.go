@@ -467,6 +467,8 @@ func TestTransferOwnershipAndStepDown(t *testing.T) {
 	if formerOwner.Role != g.RoleMember || newOwner.Role != g.RoleOwner {
 		t.Fatalf("roles after transfer: former %s, new %s", formerOwner.Role, newOwner.Role)
 	}
+	// a request of the owner's that ran at the same time (a double submit) loaded the role before the transfer
+	wantErr(t, "stale owner promotes itself back", s.PromoteMember(ctx, ownerM, ownerM.UserID), g.ErrorForbidden)
 	wantErr(t, "member steps down", s.StepDown(ctx, formerOwner), g.ErrorForbidden)
 	wantErr(t, "new only owner steps down", s.StepDown(ctx, newOwner), g.ErrorLastOwner)
 

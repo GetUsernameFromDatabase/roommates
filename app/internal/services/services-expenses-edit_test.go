@@ -192,8 +192,9 @@ func TestEditExpenseRefused(t *testing.T) {
 	if err := edit(ownerM, id, map[pgtype.UUID]string{memberM.UserID: "12"}, "12"); !errors.As(err, &fe) || fe.Field != FieldAmount {
 		t.Fatalf("amount of an old currency expense: %v", err)
 	}
-	// the disabled amount is not sent, the rest still changes
-	if err := s.UpdateExpense(ctx, ownerM, id, ExpenseInput{Title: "Renamed", Amount: "", Category: "rent", IncurredOn: "2026-10-02",
+	// the disabled amount is not sent, the rest still changes; a request now loads the household in USD
+	ownerNow := mustMembership(t, s, ownerM.HouseholdID, ownerM.UserID)
+	if err := s.UpdateExpense(ctx, ownerNow, id, ExpenseInput{Title: "Renamed", Amount: "", Category: "rent", IncurredOn: "2026-10-02",
 		Custom: false, Members: nil, Shares: nil, ListID: pgtype.UUID{}, ItemID: pgtype.UUID{}}); err != nil {
 		t.Fatal(err)
 	}
@@ -201,6 +202,11 @@ func TestEditExpenseRefused(t *testing.T) {
 	if err != nil || e.Expense.Title != "Renamed" || e.Expense.AmountCents != 1000 || e.Expense.Currency == "USD" ||
 		e.AmountLock("USD") != AmountLockCurrency {
 		t.Fatalf("after editing an old currency expense = %+v, %v", e, err)
+	}
+	// the history shows the edit in the expense's own currency, not the household's new one
+	rows, err := s.ListActivity(ctx, ownerNow, pgtype.Timestamptz{})
+	if err != nil || len(rows) == 0 || rows[0].Kind != g.ActExpenseEdited || rows[0].Currency == nil || *rows[0].Currency != e.Expense.Currency {
+		t.Fatalf("newest activity %+v, %v", rows[:min(len(rows), 1)], err)
 	}
 }
 

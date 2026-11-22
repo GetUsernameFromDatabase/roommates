@@ -83,7 +83,7 @@ func (s *DefaultService) UpdateExpense(ctx context.Context, actor Membership, ex
 			if err := q.UpdateExpense(ctx, p); err != nil {
 				return err
 			}
-			return logExpenseEdit(ctx, q, actor, p)
+			return logExpenseEdit(ctx, q, actor, p, ex.Currency)
 		}
 		members, err := q.ListActiveMembers(ctx, actor.HouseholdID)
 		if err != nil {
@@ -100,13 +100,14 @@ func (s *DefaultService) UpdateExpense(ctx context.Context, actor Membership, ex
 		if err := editShares(ctx, q, actor.HouseholdID, expenseID, actor.UserID, ex.Currency, old, shares); err != nil {
 			return err
 		}
-		return logExpenseEdit(ctx, q, actor, p)
+		return logExpenseEdit(ctx, q, actor, p, ex.Currency)
 	})
 }
 
-func logExpenseEdit(ctx context.Context, q *dbqueries.Queries, actor Membership, p dbqueries.UpdateExpenseParams) error {
+// logExpenseEdit logs p in currency, the expense's own, which an older expense keeps after the household's changes
+func logExpenseEdit(ctx context.Context, q *dbqueries.Queries, actor Membership, p dbqueries.UpdateExpenseParams, currency string) error {
 	cents := p.AmountCents
-	return logActivity(ctx, q, actor, ActivityEntry{Kind: g.ActExpenseEdited, SubjectID: p.ID, TargetUserID: pgtype.UUID{}, Title: p.Title, AmountCents: &cents, Currency: actor.Currency})
+	return logActivity(ctx, q, actor, ActivityEntry{Kind: g.ActExpenseEdited, SubjectID: p.ID, TargetUserID: pgtype.UUID{}, Title: p.Title, AmountCents: &cents, Currency: currency})
 }
 
 // editShares turns the locked old shares of an expense into shares, see [DefaultService.UpdateExpense]

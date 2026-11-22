@@ -213,7 +213,7 @@ func (s *DefaultService) CreateRecurring(ctx context.Context, actor Membership, 
 
 // createExpense starts a schedule when interval is not ""
 func (s *DefaultService) createExpense(ctx context.Context, actor Membership, in ExpenseInput, interval string) (pgtype.UUID, error) {
-	var expenseID pgtype.UUID
+	var inserted dbqueries.InsertExpenseRow
 	var p dbqueries.InsertExpenseParams
 	var shares []expenseShare
 	err := s.inTx(ctx, func(q *dbqueries.Queries) error {
@@ -241,21 +241,21 @@ func (s *DefaultService) createExpense(ctx context.Context, actor Membership, in
 				return err
 			}
 		}
-		if expenseID, err = q.InsertExpense(ctx, p); err != nil {
+		if inserted, err = q.InsertExpense(ctx, p); err != nil {
 			return err
 		}
 		cents := p.AmountCents
-		if err := logActivity(ctx, q, actor, ActivityEntry{Kind: g.ActExpenseAdded, SubjectID: expenseID, TargetUserID: pgtype.UUID{}, Title: p.Title, AmountCents: &cents, Currency: actor.Currency}); err != nil {
+		if err := logActivity(ctx, q, actor, ActivityEntry{Kind: g.ActExpenseAdded, SubjectID: inserted.ID, TargetUserID: pgtype.UUID{}, Title: p.Title, AmountCents: &cents, Currency: inserted.Currency}); err != nil {
 			return err
 		}
 		if recurringID.Valid {
-			if err := logActivity(ctx, q, actor, ActivityEntry{Kind: g.ActRecurringAdded, SubjectID: recurringID, TargetUserID: pgtype.UUID{}, Title: p.Title, AmountCents: &cents, Currency: actor.Currency}); err != nil {
+			if err := logActivity(ctx, q, actor, ActivityEntry{Kind: g.ActRecurringAdded, SubjectID: recurringID, TargetUserID: pgtype.UUID{}, Title: p.Title, AmountCents: &cents, Currency: inserted.Currency}); err != nil {
 				return err
 			}
 		}
 		for _, sh := range shares {
 			if err := q.InsertExpenseShare(ctx, dbqueries.InsertExpenseShareParams{
-				ExpenseID:   expenseID,
+				ExpenseID:   inserted.ID,
 				HouseholdID: actor.HouseholdID,
 				UserID:      sh.userID,
 				AmountCents: sh.cents,
@@ -267,14 +267,14 @@ func (s *DefaultService) createExpense(ctx context.Context, actor Membership, in
 			return nil
 		}
 		return q.LinkShoppingItems(ctx, dbqueries.LinkShoppingItemsParams{
-			ExpenseID:   expenseID,
+			ExpenseID:   inserted.ID,
 			HouseholdID: actor.HouseholdID,
 			ListID:      in.ListID,
 			ItemID:      in.ItemID,
 		})
 	})
 	if err != nil {
-		return expenseID, err
+		return inserted.ID, err
 	}
 	owed := map[pgtype.UUID]int64{}
 	ids := make([]pgtype.UUID, 0, len(shares))
@@ -287,12 +287,12 @@ func (s *DefaultService) createExpense(ctx context.Context, actor Membership, in
 	s.notifyAsync(ctx, actor, g.NotifyMoney, ids, func(ctx context.Context, userID pgtype.UUID, payer, household string) push.Message {
 		return push.Message{
 			Title: utils.T(ctx, locales.LK_PushExpenseTitle, household),
-			Body:  utils.T(ctx, locales.LK_PushExpenseBody, payer, p.Title, utils.FormatMoney(ctx, owed[userID], actor.Currency)),
-			URL:   routes.URL(routes.Expense, actor.HouseholdID, expenseID),
-			Tag:   "expense-" + expenseID.String(),
+			Body:  utils.T(ctx, locales.LK_PushExpenseBody, payer, p.Title, utils.FormatMoney(ctx, owed[userID], inserted.Currency)),
+			URL:   routes.URL(routes.Expense, actor.HouseholdID, inserted.ID),
+			Tag:   "expense-" + inserted.ID.String(),
 		}
 	})
-	return expenseID, nil
+	return inserted.ID, nil
 }
 
 // ListMembers returns the active members, who an expense can be split between
@@ -782,6 +782,7 @@ func (s *DefaultService) CreateSettlement(ctx context.Context, actor Membership,
 	if !ok {
 		return FieldError{Field: FieldNote}
 	}
+	var currency string
 	err = s.inTx(ctx, func(q *dbqueries.Queries) error {
 		// a currency change waits for the settlement or the settlement sees the new currency
 		if err := q.LockHousehold(ctx, actor.HouseholdID); err != nil {
@@ -793,7 +794,8 @@ func (s *DefaultService) CreateSettlement(ctx context.Context, actor Membership,
 		}); err != nil {
 			return noRowsAs(err, g.ErrorInvalidInput)
 		}
-		if err := q.InsertSettlement(ctx, dbqueries.InsertSettlementParams{
+		var err error
+		if currency, err = q.InsertSettlement(ctx, dbqueries.InsertSettlementParams{
 			HouseholdID: actor.HouseholdID,
 			FromUser:    actor.UserID,
 			ToUser:      toUserID,
@@ -803,7 +805,7 @@ func (s *DefaultService) CreateSettlement(ctx context.Context, actor Membership,
 		}); err != nil {
 			return err
 		}
-		return logActivity(ctx, q, actor, ActivityEntry{Kind: g.ActSettlementRequested, SubjectID: pgtype.UUID{}, TargetUserID: toUserID, Title: "", AmountCents: &cents, Currency: actor.Currency})
+		return logActivity(ctx, q, actor, ActivityEntry{Kind: g.ActSettlementRequested, SubjectID: pgtype.UUID{}, TargetUserID: toUserID, Title: "", AmountCents: &cents, Currency: currency})
 	})
 	if err != nil {
 		return err
@@ -811,7 +813,7 @@ func (s *DefaultService) CreateSettlement(ctx context.Context, actor Membership,
 	s.notifyAsync(ctx, actor, g.NotifyMoney, []pgtype.UUID{toUserID}, func(ctx context.Context, _ pgtype.UUID, from, household string) push.Message {
 		return push.Message{
 			Title: utils.T(ctx, locales.LK_PushSettlementTitle, from),
-			Body:  utils.T(ctx, locales.LK_PushSettlementBody, utils.FormatMoney(ctx, cents, actor.Currency), household),
+			Body:  utils.T(ctx, locales.LK_PushSettlementBody, utils.FormatMoney(ctx, cents, currency), household),
 			URL:   routes.URL(routes.Expenses, actor.HouseholdID),
 			Tag:   "settlement-" + actor.HouseholdID.String() + "-" + actor.UserID.String(),
 		}

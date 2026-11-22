@@ -332,6 +332,18 @@ func ownerActsOnMember(ctx context.Context, q *dbqueries.Queries, actor Membersh
 	if err := q.LockHousehold(ctx, actor.HouseholdID); err != nil {
 		return err
 	}
+	// again under the lock, a transfer or step down of the actor's that ran at the same time
+	// (a double submit) can have ended it since the request loaded it
+	self, err := q.GetActiveMembership(ctx, dbqueries.GetActiveMembershipParams{
+		HouseholdID: actor.HouseholdID,
+		UserID:      actor.UserID,
+	})
+	if err != nil {
+		return noRowsAs(err, g.ErrorForbidden)
+	}
+	if self.Role != g.RoleOwner {
+		return g.ErrorForbidden
+	}
 	target, err := q.GetActiveMembership(ctx, dbqueries.GetActiveMembershipParams{
 		HouseholdID: actor.HouseholdID,
 		UserID:      targetID,

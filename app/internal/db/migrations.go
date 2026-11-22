@@ -86,6 +86,11 @@ func MigrateToLatest(db *pgxpool.Pool) {
 
 	// the version is read inside the lock, another process may have just migrated
 	m := NewMigrations(db)
+	// an older build after an upgrade has no down file to go back with, see deploy/README.md
+	if m.currentVersion > m.maxVersion {
+		log.Fatal().Int("database", m.currentVersion).Int("build", m.maxVersion).
+			Msg("the database is newer than this build: run the newer build, or restore the dump made before the upgrade")
+	}
 	m.MigrateTo(m.maxVersion)
 }
 

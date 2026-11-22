@@ -1,4 +1,5 @@
--- in the household currency, read here so the caller's household lock covers it
+-- in the household currency, read here so the caller's household lock covers it,
+-- returned so the activity log and pushes show the one the expense got
 -- name: InsertExpense :one
 INSERT INTO expenses (
     household_id,
@@ -22,7 +23,8 @@ VALUES (
       WHERE id = $1
     )
   )
-RETURNING id;
+RETURNING id,
+  currency;
 -- locks the expense while its payer edits it, with the household currency to compare
 -- name: GetExpenseToEdit :one
 SELECT e.payer_id,
@@ -304,8 +306,9 @@ WHERE sqlc.narg(user_id)::uuid IS NULL
   OR sqlc.narg(user_id)::uuid IN (f.from_user, f.to_user)
 ORDER BY f.on_date;
 -- settlements
--- in the household currency, read here so the caller's household lock covers it
--- name: InsertSettlement :exec
+-- in the household currency, read here so the caller's household lock covers it,
+-- returned so the activity log and push show the one the settlement got
+-- name: InsertSettlement :one
 INSERT INTO settlements (
     household_id,
     from_user,
@@ -327,7 +330,8 @@ VALUES (
       FROM households
       WHERE id = $1
     )
-  );
+  )
+RETURNING currency;
 -- a confirmed payment for what an expense edit takes off a share the payer had marked
 -- paid outside the app, it is money from_user gave and the edit cannot take back
 -- name: InsertEditSettlement :exec

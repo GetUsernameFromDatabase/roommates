@@ -8,7 +8,6 @@ import (
 	"roommates/internal/locales"
 	"roommates/internal/models"
 	"roommates/internal/routes"
-	"roommates/internal/services"
 	"roommates/internal/sessions"
 	"roommates/internal/utils"
 	"roommates/web/pages"
@@ -61,11 +60,7 @@ func (h *DefaultHandler) PageLogin(ctx *gin.Context) {
 		}
 
 		s := sessions.FromGinContext(ctx)
-		s.Login(sessions.SessionInfo{
-			UserID:   credsInDB.ID.String(),
-			Email:    credsInDB.Email,
-			Username: credsInDB.Username,
-		})
+		s.Login(sessions.SessionInfo{UserID: credsInDB.ID.String()})
 		// the language picked on another device follows the account
 		if credsInDB.Language != nil {
 			if lang := locales.Language(*credsInDB.Language); lang.IsValid() {
@@ -131,11 +126,7 @@ func (h *DefaultHandler) PageRegister(ctx *gin.Context) {
 		}
 
 		s := sessions.FromGinContext(ctx)
-		s.Login(sessions.SessionInfo{
-			UserID:   userID.String(),
-			Email:    services.NormalizeEmail(model.Email),
-			Username: model.Username,
-		})
+		s.Login(sessions.SessionInfo{UserID: userID.String()})
 		reload(ctx, safeNextPath(model.Next))
 	}
 }

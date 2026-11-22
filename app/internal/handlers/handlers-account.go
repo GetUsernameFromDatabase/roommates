@@ -74,9 +74,6 @@ func (h *DefaultHandler) ChangeUsername(ctx *gin.Context) {
 		InternalError(ctx, err)
 		return
 	}
-	s := sessions.FromGinContext(ctx)
-	s.Session.Set(sessions.KeyUsername, model.Username)
-	s.Save()
 	h.renderAccount(ctx, http.StatusOK, "", "", routes.AccountUsername,
 		utils.T(ctx.Request.Context(), locales.LK_CommonSaved))
 }
