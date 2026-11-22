@@ -9,6 +9,7 @@ import (
 	"context"
 	"database/sql"
 	"embed"
+	"errors"
 	"fmt"
 	"path/filepath"
 	"regexp"
@@ -18,7 +19,6 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/pkg/errors"
 )
 
 type migrationFiles struct {

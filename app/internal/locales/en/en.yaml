@@ -615,6 +615,7 @@ en:
     notes-invalid: "Notes can be up to %d characters."
     start-invalid: Pick a start day and, for a timed event, a time like 18:30.
     end-invalid: The end must be after the start. An end on another day needs an end time.
+    length-invalid: A repeating event must end before its next repeat starts.
     until-invalid: The last day must be on or after the start.
     remind-invalid: Pick a reminder from the list.
     members-invalid: Pick members of this household.

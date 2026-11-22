@@ -70,17 +70,34 @@ func (s *DefaultService) PostMessage(ctx context.Context, actor Membership, body
 	if (body == "" && len(files)+len(refs) == 0) || len(files)+len(refs) > MaxMessageFiles || utf8.RuneCountInString(body) > MaxMessageLength {
 		return g.ErrorInvalidInput
 	}
-	var messageID pgtype.UUID
+	// the contents first, so the message and its files appear together or not at all
+	stored := make([]storedFile, 0, len(files))
+	for _, file := range files {
+		f, err := s.storeUpload(ctx, actor, file)
+		if err != nil {
+			s.discardStored(ctx, stored...)
+			return err
+		}
+		stored = append(stored, f)
+	}
 	err := s.inTx(ctx, func(q *dbqueries.Queries) error {
-		var err error
-		messageID, err = q.InsertMessage(ctx, dbqueries.InsertMessageParams{
+		messageID, err := q.InsertMessage(ctx, dbqueries.InsertMessageParams{
 			HouseholdID: actor.HouseholdID,
 			AuthorID:    actor.UserID,
 			Body:        body,
 			ReplyToID:   replyTo,
 		})
-		if err != nil || len(refs) == 0 {
+		if err != nil {
 			return err
+		}
+		t := FileTarget{NoteID: pgtype.UUID{}, ListID: pgtype.UUID{}, ShoppingItemID: pgtype.UUID{}, ExpenseID: pgtype.UUID{}, MessageID: messageID, EventID: pgtype.UUID{}}
+		for _, f := range stored {
+			if _, err := insertStoredFile(ctx, q, actor, t, f); err != nil {
+				return err
+			}
+		}
+		if len(refs) == 0 {
+			return nil
 		}
 		n, err := q.InsertMessageFileRefs(ctx, dbqueries.InsertMessageFileRefsParams{
 			MessageID:   messageID,
@@ -93,23 +110,13 @@ func (s *DefaultService) PostMessage(ctx context.Context, actor Membership, body
 		return err
 	})
 	if err != nil {
+		s.discardStored(ctx, stored...)
 		var pgErr *pgconn.PgError
 		// the foreign key keeps replies in the household, the answered message may also just be deleted
 		if replyTo.Valid && errors.As(err, &pgErr) && pgErr.Code == pgForeignKeyViolation {
 			return g.ErrorNotFound
 		}
 		return err
-	}
-	for _, file := range files {
-		t := FileTarget{NoteID: pgtype.UUID{}, ListID: pgtype.UUID{}, ShoppingItemID: pgtype.UUID{}, ExpenseID: pgtype.UUID{}, MessageID: messageID, EventID: pgtype.UUID{}}
-		if _, err := s.UploadFile(ctx, actor, t, file.Name, file.Body, file.Size); err != nil {
-			// the form shows the text again, sending it twice would duplicate it,
-			// the files already stored go with the message
-			if errDelete := s.DeleteMessage(context.WithoutCancel(ctx), actor, messageID); errDelete != nil {
-				log.Error().Err(errDelete).Msg("could not delete message of a failed upload")
-			}
-			return err
-		}
 	}
 	s.notifyChat(ctx, actor, body)
 	return nil

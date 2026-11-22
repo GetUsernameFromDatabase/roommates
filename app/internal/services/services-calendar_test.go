@@ -98,6 +98,10 @@ func TestEventOccurrences(t *testing.T) {
 			t.Errorf("%s: got %v, want %v", tc.name, got, tc.want)
 		}
 	}
+	// a duration would stop at about 292 years
+	if start := calDay("0001-01-01"); daysBetween(start, start.AddDate(0, 0, 800_000)) != 800_000 {
+		t.Errorf("days from year 1: got %d", daysBetween(start, start.AddDate(0, 0, 800_000)))
+	}
 }
 
 func TestEventTimes(t *testing.T) {
@@ -178,6 +182,45 @@ func TestEventClean(t *testing.T) {
 	}
 	if !errors.Is(err, FieldError{Field: FieldEventRepeatUntil}) {
 		t.Fatalf("until before the start: got %v", err)
+	}
+	// an occurrence ends before the next starts, the 18th is a Wednesday
+	for _, tc := range []struct {
+		name    string
+		allDay  bool
+		unit    string
+		every   int
+		days    []time.Weekday
+		end     string
+		endTime string
+		ok      bool
+	}{
+		{"daily over midnight", false, g.ChoreUnitDay, 1, nil, "2026-11-19", "01:00", true},
+		{"daily to the next start", false, g.ChoreUnitDay, 1, nil, "2026-11-19", "19:00", true},
+		{"daily past the next start", false, g.ChoreUnitDay, 1, nil, "2026-11-19", "19:01", false},
+		{"all-day daily for two days", true, g.ChoreUnitDay, 1, nil, "2026-11-19", "", false},
+		{"all-day every 2 days for two days", true, g.ChoreUnitDay, 2, nil, "2026-11-19", "", true},
+		{"all-day weekly for 8 days", true, g.ChoreUnitWeek, 1, nil, "2026-11-25", "", false},
+		{"all-day monthly for 28 days", true, g.ChoreUnitMonth, 1, nil, "2026-12-15", "", true},
+		{"all-day monthly for 29 days", true, g.ChoreUnitMonth, 1, nil, "2026-12-16", "", false},
+		{"Wednesday and Friday for two days", true, g.ChoreUnitWeekdays, 0, []time.Weekday{time.Wednesday, time.Friday}, "2026-11-19", "", true},
+		{"Wednesday and Thursday for two days", true, g.ChoreUnitWeekdays, 0, []time.Weekday{time.Wednesday, time.Thursday}, "2026-11-19", "", false},
+		// moved to Saturday the 21st, Saturday to Monday is the shortest gap
+		{"Saturday and Monday for two days", true, g.ChoreUnitWeekdays, 0, []time.Weekday{time.Saturday, time.Monday}, "2026-11-19", "", true},
+		{"Saturday and Monday for three days", true, g.ChoreUnitWeekdays, 0, []time.Weekday{time.Saturday, time.Monday}, "2026-11-20", "", false},
+		{"a hundred years daily", true, g.ChoreUnitDay, 1, nil, "2126-11-18", "", false},
+	} {
+		in := ok()
+		in.Unit, in.Every, in.Weekdays, in.EndDate, in.EndTime, in.RepeatUntil = tc.unit, tc.every, tc.days, tc.end, tc.endTime, ""
+		if tc.allDay {
+			in.AllDay, in.Remind = true, nil
+		}
+		f, err := in.clean(active)
+		if err == nil {
+			err = f.settle()
+		}
+		if tc.ok && err != nil || !tc.ok && !errors.Is(err, FieldError{Field: FieldEventLength}) {
+			t.Errorf("%s: got %v", tc.name, err)
+		}
 	}
 	seven, fifteen := 7, g.Remind15Min
 	for _, tc := range []struct {

@@ -59,13 +59,17 @@ func eventFormError(ctx *gin.Context, err error) (message, field string) {
 		services.FieldEventNotes:       utils.T(c, locales.LK_CalendarNotesInvalid, services.MaxEventNotesLength),
 		services.FieldEventStart:       utils.T(c, locales.LK_CalendarStartInvalid),
 		services.FieldEventEnd:         utils.T(c, locales.LK_CalendarEndInvalid),
+		services.FieldEventLength:      utils.T(c, locales.LK_CalendarLengthInvalid),
 		services.FieldEventSchedule:    utils.T(c, locales.LK_ChoresScheduleInvalid),
 		services.FieldEventRepeatUntil: utils.T(c, locales.LK_CalendarUntilInvalid),
 		services.FieldEventRemind:      utils.T(c, locales.LK_CalendarRemindInvalid),
 		services.FieldEventMembers:     utils.T(c, locales.LK_CalendarMembersInvalid),
 	}[fe.Field]
-	if message == "" {
+	switch {
+	case message == "":
 		return utils.T(c, locales.LK_CalendarInvalid), ""
+	case fe.Field == services.FieldEventLength:
+		return message, services.FieldEventEnd
 	}
 	return message, fe.Field
 }

@@ -135,17 +135,20 @@ const (
 	// MaxCalendarDays is the longest window [DefaultService.ListCalendar] lists
 	MaxCalendarDays = 92
 	// a reminder later than this, after downtime, is dropped
-	remindLate  = 15 * time.Minute
-	clockLayout = "15:04"
+	remindLate    = 15 * time.Minute
+	clockLayout   = "15:04"
+	minutesPerDay = 24 * 60
 )
 
 // what a [FieldError] of [DefaultService.CreateEvent] and [DefaultService.UpdateEvent] names
 const (
-	FieldEventTitle       = "title"
-	FieldEventLocation    = "location"
-	FieldEventNotes       = "notes"
-	FieldEventStart       = "start"
-	FieldEventEnd         = "end"
+	FieldEventTitle    = "title"
+	FieldEventLocation = "location"
+	FieldEventNotes    = "notes"
+	FieldEventStart    = "start"
+	FieldEventEnd      = "end"
+	// a repeating event that lasts past its next occurrence, shown at the end
+	FieldEventLength      = "length"
 	FieldEventSchedule    = "schedule"
 	FieldEventRepeatUntil = "repeat_until"
 	FieldEventRemind      = "remind"
@@ -257,7 +260,8 @@ func (in EventInput) clean(active []dbqueries.ListActiveMembersRow) (eventFields
 }
 
 // settle moves a weekdays series to its first ticked day, the end with it, and checks that
-// it repeats until that day or later; call it once the start is final
+// it repeats until that day or later and that an occurrence ends before the next one starts,
+// overlapping ones would all be listed on every day they cover; call it once the start is final
 func (f *eventFields) settle() error {
 	if f.weekdays != nil {
 		first := nextWeekday(f.start, *f.weekdays)
@@ -267,7 +271,51 @@ func (f *eventFields) settle() error {
 	if f.until.Valid && f.until.Time.Before(f.start) {
 		return FieldError{Field: FieldEventRepeatUntil}
 	}
+	if f.repeats() && f.minutes() > f.stepDays()*minutesPerDay {
+		return FieldError{Field: FieldEventLength}
+	}
 	return nil
+}
+
+// minutes is how long an occurrence of f lasts, an all-day one to the end of its last day
+func (f eventFields) minutes() int {
+	m := daysBetween(f.start, f.end) * minutesPerDay
+	if !f.startTime.Valid {
+		return m + minutesPerDay
+	}
+	if f.endTime.Valid {
+		m += int((f.endTime.Microseconds - f.startTime.Microseconds) / int64(time.Minute/time.Microsecond))
+	}
+	return m
+}
+
+// stepDays is the fewest days from one occurrence of a repeating f to the next,
+// a month counts as its shortest, 28 days
+func (f eventFields) stepDays() int {
+	if f.weekdays != nil {
+		// the shortest gap from a ticked weekday to the next, round the week
+		gap := 7
+		for d := range 7 {
+			if *f.weekdays&(1<<d) == 0 {
+				continue
+			}
+			for n := 1; n < gap; n++ {
+				if *f.weekdays&(1<<((d+n)%7)) != 0 {
+					gap = n
+					break
+				}
+			}
+		}
+		return gap
+	}
+	n := int(*f.every)
+	switch *f.unit {
+	case g.ChoreUnitWeek:
+		return 7 * n
+	case g.ChoreUnitMonth:
+		return 28 * n
+	}
+	return n
 }
 
 func parseDate(s string) (time.Time, error) {
@@ -300,9 +348,10 @@ func DateOnly(t time.Time) time.Time {
 	return time.Date(y, m, d, 0, 0, 0, 0, time.UTC)
 }
 
-// daysBetween counts the days from a to b, both from [DateOnly] or the database
+// daysBetween counts the days from a to b, both from [DateOnly] or the database;
+// in seconds, as [time.Time.Sub] stops at about 292 years
 func daysBetween(a, b time.Time) int {
-	return int(b.Sub(a) / (24 * time.Hour))
+	return int((b.Unix() - a.Unix()) / int64(24*time.Hour/time.Second))
 }
 
 func eventRepeats(e dbqueries.Event) bool { return e.Every != nil || e.Weekdays != nil }

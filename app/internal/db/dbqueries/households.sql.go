@@ -102,7 +102,8 @@ FROM households h
   JOIN memberships m ON m.household_id = h.id
 WHERE m.user_id = $1
   AND m.left_at IS NULL
-ORDER BY h.name
+ORDER BY h.name,
+  h.id
 `
 
 type ListHouseholdsOfUserRow struct {
@@ -112,6 +113,7 @@ type ListHouseholdsOfUserRow struct {
 	DeletedAt pgtype.Timestamptz `json:"deleted_at"`
 }
 
+// the id breaks name ties, so account deletes lock shared households in the same order
 func (q *Queries) ListHouseholdsOfUser(ctx context.Context, userID pgtype.UUID) ([]ListHouseholdsOfUserRow, error) {
 	rows, err := q.db.Query(ctx, listHouseholdsOfUser, userID)
 	if err != nil {

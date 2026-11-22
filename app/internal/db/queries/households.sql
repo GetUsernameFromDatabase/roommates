@@ -2,6 +2,7 @@
 INSERT INTO households (name, created_by)
 VALUES ($1, $2)
 RETURNING id;
+-- the id breaks name ties, so account deletes lock shared households in the same order
 -- name: ListHouseholdsOfUser :many
 SELECT h.id,
   h.name,
@@ -11,7 +12,8 @@ FROM households h
   JOIN memberships m ON m.household_id = h.id
 WHERE m.user_id = $1
   AND m.left_at IS NULL
-ORDER BY h.name;
+ORDER BY h.name,
+  h.id;
 -- name: GetHousehold :one
 SELECT id,
   name,

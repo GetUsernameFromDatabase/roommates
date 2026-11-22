@@ -141,12 +141,17 @@ func TestChat(t *testing.T) {
 	if err := s.PostMessage(ctx, ownerM, "", none, photos, nil); err != nil {
 		t.Fatal(err)
 	}
-	// a failed upload takes its message with it
+	// a failed upload sends no message, and the files stored before it are deleted again
 	tooLarge := []Upload{
 		{Name: "ok.txt", Body: strings.NewReader("x"), Size: 1},
 		{Name: "big.bin", Body: bytes.NewReader([]byte("x")), Size: MaxFileSize + 1},
 	}
+	store := s.store.(*fakeStore)
+	objects := len(store.objects)
 	wantErr(t, "too large file", s.PostMessage(ctx, ownerM, "big one", none, tooLarge, nil), g.ErrorFileTooLarge)
+	if len(store.objects) != objects {
+		t.Fatalf("a failed message left %d objects", len(store.objects)-objects)
+	}
 	wantErr(t, "too many files", s.PostMessage(ctx, ownerM, "", none, make([]Upload, MaxMessageFiles+1), nil), g.ErrorInvalidInput)
 
 	c, err := s.ListChat(ctx, ownerM, none)

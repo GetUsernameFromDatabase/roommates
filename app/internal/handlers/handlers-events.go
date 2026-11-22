@@ -3,6 +3,7 @@ package handlers
 import (
 	"io"
 	"roommates/internal/events"
+	"roommates/internal/sessions"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -14,9 +15,10 @@ const eventsPing = 25 * time.Second
 // Events streams the topics of the household's changes as server-sent events,
 // the data is always "1" since an event without data is not dispatched by browsers
 //
-// the stream ends when the user leaves or is removed from the household
+// the stream ends when the user leaves or is removed from the household, or the session ends
 func (h *DefaultHandler) Events(ctx *gin.Context) {
 	actor := membershipFromContext(ctx)
+	session := sessions.FromGinContext(ctx)
 	topics, cancel := h.hub.Subscribe(actor.HouseholdID)
 	defer cancel()
 
@@ -37,6 +39,10 @@ func (h *DefaultHandler) Events(ctx *gin.Context) {
 		case <-ping.C:
 			// a removed member gets no more events, TopicPeople alone cannot be relied on to end the stream
 			if _, err := h.service.GetMembership(ctx, actor.HouseholdID, actor.UserID); err != nil {
+				return false
+			}
+			// signed out everywhere or by a password reset, a stolen session stops hearing of changes
+			if stored, err := session.Stored(ctx); err != nil || !stored {
 				return false
 			}
 			_, err := io.WriteString(w, ": ping\n\n")

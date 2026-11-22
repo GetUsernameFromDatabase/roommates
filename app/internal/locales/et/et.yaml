@@ -615,6 +615,7 @@ et:
     notes-invalid: "Märkused võivad olla kuni %d tähte pikad."
     start-invalid: Vali alguskuupäev ja ajaga sündmusel kellaaeg kujul 18:30.
     end-invalid: Lõpp peab olema pärast algust. Teisel päeval lõppeval sündmusel on vaja lõpuaega.
+    length-invalid: Korduv sündmus peab lõppema enne, kui järgmine kordus algab.
     until-invalid: Viimane päev peab olema algusega samal või hilisemal kuupäeval.
     remind-invalid: Vali meeldetuletus nimekirjast.
     members-invalid: Vali selle leibkonna liikmed.

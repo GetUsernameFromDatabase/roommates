@@ -141,111 +141,137 @@ func (s *DefaultService) checkFileTarget(ctx context.Context, actor Membership, 
 // returns [g.ErrorFileTooLarge] above [MaxFileSize], [g.ErrorInvalidInput] for an empty file or a bad name
 func (s *DefaultService) UploadFile(ctx context.Context, actor Membership, t FileTarget,
 	name string, body io.ReadSeeker, size int64) (pgtype.UUID, error) {
-	if size > MaxFileSize {
-		return pgtype.UUID{}, g.ErrorFileTooLarge
-	}
-	name, err := cleanFileName(name)
-	if err != nil || size <= 0 {
-		return pgtype.UUID{}, g.ErrorInvalidInput
-	}
 	if err := s.checkFileTarget(ctx, actor, t); err != nil {
 		return pgtype.UUID{}, err
 	}
-
-	head := make([]byte, sniffLength)
-	n, err := io.ReadFull(body, head)
-	if err != nil && err != io.ErrUnexpectedEOF {
+	f, err := s.storeUpload(ctx, actor, Upload{Name: name, Body: body, Size: size})
+	if err != nil {
 		return pgtype.UUID{}, err
 	}
+	var fileID pgtype.UUID
+	err = s.inTx(ctx, func(q *dbqueries.Queries) error {
+		fileID, err = insertStoredFile(ctx, q, actor, t, f)
+		return err
+	})
+	if err != nil {
+		s.discardStored(ctx, f)
+	}
+	return fileID, err
+}
+
+// storedFile is an upload whose contents are in the store but which has no row yet
+type storedFile struct {
+	name, mime, key string
+	thumbKey        *string
+	size            int64
+}
+
+// storeUpload checks u and puts its contents and thumbnail in the store, errors as
+// [DefaultService.UploadFile]; without a row nothing would purge them, so a caller that
+// does not insert it calls [DefaultService.discardStored]
+func (s *DefaultService) storeUpload(ctx context.Context, actor Membership, u Upload) (storedFile, error) {
+	if u.Size > MaxFileSize {
+		return storedFile{}, g.ErrorFileTooLarge
+	}
+	name, err := cleanFileName(u.Name)
+	if err != nil || u.Size <= 0 {
+		return storedFile{}, g.ErrorInvalidInput
+	}
+
+	head := make([]byte, sniffLength)
+	n, err := io.ReadFull(u.Body, head)
+	if err != nil && err != io.ErrUnexpectedEOF {
+		return storedFile{}, err
+	}
 	mime := http.DetectContentType(head[:n])
-	if _, err := body.Seek(0, io.SeekStart); err != nil {
-		return pgtype.UUID{}, err
+	if _, err := u.Body.Seek(0, io.SeekStart); err != nil {
+		return storedFile{}, err
 	}
 
 	var thumb []byte
 	if ImageMimes[mime] {
 		// a broken image is still uploaded, only without a thumbnail
-		if thumb, err = images.Thumbnail(body, thumbnailSide); err != nil {
+		if thumb, err = images.Thumbnail(u.Body, thumbnailSide); err != nil {
 			log.Warn().Err(err).Str("mime", mime).Msg("could not make a thumbnail")
 		}
-		if _, err := body.Seek(0, io.SeekStart); err != nil {
-			return pgtype.UUID{}, err
+		if _, err := u.Body.Seek(0, io.SeekStart); err != nil {
+			return storedFile{}, err
 		}
 	}
 
-	key := "households/" + actor.HouseholdID.String() + "/" + rand.Text()
-	stored := []string{}
-	// the row is missing, so nothing would ever purge the objects
-	deleteStored := func() {
-		for _, k := range stored {
+	f := storedFile{name: name, mime: mime, key: "households/" + actor.HouseholdID.String() + "/" + rand.Text(), thumbKey: nil, size: u.Size}
+	if err := s.store.Put(ctx, f.key, u.Body, f.size, mime); err != nil {
+		return storedFile{}, err
+	}
+	if thumb != nil {
+		k := f.key + "-thumb"
+		if err := s.store.Put(ctx, k, bytes.NewReader(thumb), int64(len(thumb)), "image/jpeg"); err != nil {
+			s.discardStored(ctx, f)
+			return storedFile{}, err
+		}
+		f.thumbKey = &k
+	}
+	return f, nil
+}
+
+// discardStored deletes the objects of files whose rows were not inserted
+func (s *DefaultService) discardStored(ctx context.Context, files ...storedFile) {
+	for _, f := range files {
+		keys := []string{f.key}
+		if f.thumbKey != nil {
+			keys = append(keys, *f.thumbKey)
+		}
+		for _, k := range keys {
 			if err := s.store.Delete(context.WithoutCancel(ctx), k); err != nil {
 				log.Error().Err(err).Str("key", k).Msg("could not delete object of a failed upload")
 			}
 		}
 	}
-	if err := s.store.Put(ctx, key, body, size, mime); err != nil {
-		return pgtype.UUID{}, err
-	}
-	stored = append(stored, key)
-	var thumbKey *string
-	if thumb != nil {
-		k := key + "-thumb"
-		if err := s.store.Put(ctx, k, bytes.NewReader(thumb), int64(len(thumb)), "image/jpeg"); err != nil {
-			deleteStored()
-			return pgtype.UUID{}, err
-		}
-		stored = append(stored, k)
-		thumbKey = &k
-	}
+}
+
+// insertStoredFile adds the row of f attached to t, which the caller has checked
+func insertStoredFile(ctx context.Context, q *dbqueries.Queries, actor Membership, t FileTarget, f storedFile) (pgtype.UUID, error) {
 	// a file on nothing is kept, without a reference nothing else would hold it
 	kept := !t.NoteID.Valid && !t.ShoppingItemID.Valid && !t.ExpenseID.Valid && !t.MessageID.Valid && !t.EventID.Valid
-	var fileID pgtype.UUID
-	err = s.inTx(ctx, func(q *dbqueries.Queries) error {
-		var err error
-		fileID, err = q.InsertFile(ctx, dbqueries.InsertFileParams{
-			HouseholdID: actor.HouseholdID,
-			UploaderID:  actor.UserID,
-			ObjectKey:   key,
-			ThumbKey:    thumbKey,
-			Name:        name,
-			Mime:        mime,
-			SizeBytes:   size,
-			Kept:        kept,
-		})
-		if err != nil {
-			return err
-		}
-		if !kept {
-			if err := q.InsertFileRef(ctx, dbqueries.InsertFileRefParams{
-				FileID:         fileID,
-				HouseholdID:    actor.HouseholdID,
-				NoteID:         t.NoteID,
-				ShoppingItemID: t.ShoppingItemID,
-				ExpenseID:      t.ExpenseID,
-				MessageID:      t.MessageID,
-				EventID:        t.EventID,
-			}); err != nil {
-				return err
-			}
-		}
-		// chat files are chat's business, a private note's files are for its author
-		if t.MessageID.Valid {
-			return nil
-		}
-		visibility := g.NoteVisibilityHousehold
-		if t.NoteID.Valid {
-			n, err := q.GetNote(ctx, dbqueries.GetNoteParams{ID: t.NoteID, HouseholdID: actor.HouseholdID, UserID: actor.UserID})
-			if err != nil {
-				return noRowsAs(err, g.ErrorNotFound)
-			}
-			visibility = n.Visibility
-		}
-		return logNote(ctx, q, actor, g.ActFileUploaded, fileID, name, visibility)
+	fileID, err := q.InsertFile(ctx, dbqueries.InsertFileParams{
+		HouseholdID: actor.HouseholdID,
+		UploaderID:  actor.UserID,
+		ObjectKey:   f.key,
+		ThumbKey:    f.thumbKey,
+		Name:        f.name,
+		Mime:        f.mime,
+		SizeBytes:   f.size,
+		Kept:        kept,
 	})
 	if err != nil {
-		deleteStored()
+		return fileID, err
 	}
-	return fileID, err
+	if !kept {
+		if err := q.InsertFileRef(ctx, dbqueries.InsertFileRefParams{
+			FileID:         fileID,
+			HouseholdID:    actor.HouseholdID,
+			NoteID:         t.NoteID,
+			ShoppingItemID: t.ShoppingItemID,
+			ExpenseID:      t.ExpenseID,
+			MessageID:      t.MessageID,
+			EventID:        t.EventID,
+		}); err != nil {
+			return fileID, err
+		}
+	}
+	// chat files are chat's business, a private note's files are for its author
+	if t.MessageID.Valid {
+		return fileID, nil
+	}
+	visibility := g.NoteVisibilityHousehold
+	if t.NoteID.Valid {
+		n, err := q.GetNote(ctx, dbqueries.GetNoteParams{ID: t.NoteID, HouseholdID: actor.HouseholdID, UserID: actor.UserID})
+		if err != nil {
+			return fileID, noRowsAs(err, g.ErrorNotFound)
+		}
+		visibility = n.Visibility
+	}
+	return fileID, logNote(ctx, q, actor, g.ActFileUploaded, fileID, f.name, visibility)
 }
 
 // ListFiles returns the household's files that match filter, except those on others' private notes

@@ -5,7 +5,9 @@ package sessions
 //lint:file-ignore ST1003 goal is to ignore underscore issues
 
 import (
+	"context"
 	"database/sql"
+	"fmt"
 	"net/http"
 	g "roommates/internal/config"
 	"roommates/internal/logger"
@@ -105,9 +107,23 @@ func (s *Session) Login(sessionInfo SessionInfo) {
 	s.Save()
 	// the row is found by user when a password reset signs the user out everywhere
 	gs := s.Session.(gorillaSessionGetter).Session()
-	if _, err := sessionDB.Exec("UPDATE http_sessions SET user_id = $1 WHERE key = $2", sessionInfo.UserID, gs.ID); err != nil {
+	res, err := sessionDB.Exec("UPDATE http_sessions SET user_id = $1 WHERE key = $2", sessionInfo.UserID, gs.ID)
+	if err != nil {
 		panic(err)
 	}
+	// a session without user_id would outlive a password reset
+	if n, err := res.RowsAffected(); err != nil || n != 1 {
+		panic(fmt.Sprintf("session row not tagged with its user: %d rows, %v", n, err))
+	}
+}
+
+// Stored reports whether the session is still in the store, sign-out everywhere, a password
+// reset and deleting the account remove it; for requests that outlive their check, like streams
+func (s *Session) Stored(ctx context.Context) (bool, error) {
+	gs := s.Session.(gorillaSessionGetter).Session()
+	var ok bool
+	err := sessionDB.QueryRowContext(ctx, "SELECT EXISTS (SELECT 1 FROM http_sessions WHERE key = $1 AND expires_on > now())", gs.ID).Scan(&ok)
+	return ok, err
 }
 
 // Save is wrapper of [sessions.Session.Save] | [sessions.Session].Save

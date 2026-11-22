@@ -2514,7 +2514,7 @@ func datePicker(id, name, value string) templ.Component {
 					Mode:         calendar.ModeSingle,
 					Selected:     day,
 					DefaultMonth: day,
-					Required:     utils.Ptr(true),
+					Required:     new(true),
 					Locale:       utils.GetLocaleString(ctx),
 					Attributes: templ.Attributes{
 						"data-date-input":     id,

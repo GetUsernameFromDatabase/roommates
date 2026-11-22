@@ -160,6 +160,7 @@ const (
 	LK_CalendarInvalid                      LK = "calendar.invalid"
 	LK_CalendarKindChore                    LK = "calendar.kind-chore"
 	LK_CalendarKindRecurring                LK = "calendar.kind-recurring"
+	LK_CalendarLengthInvalid                LK = "calendar.length-invalid"
 	LK_CalendarLocationInvalid              LK = "calendar.location-invalid"
 	LK_CalendarMembers                      LK = "calendar.members"
 	LK_CalendarMembersHint                  LK = "calendar.members-hint"
