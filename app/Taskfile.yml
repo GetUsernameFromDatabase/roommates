@@ -14,7 +14,7 @@ vars:
   TAILWIND_OUTPUT: './web/assets/public/output.css'
   # the only pin: deploy/app/Dockerfile downloads this version via 'task tailwind-version'
   # (bump its TAILWIND_SHA256_* with it)
-  TAILWIND_VERSION: '4.3.3'
+  TAILWIND_VERSION: '4.3.5'
 
 tasks:
   templ:

@@ -194,7 +194,7 @@ func LanguageForm(id, next string, compact bool) templ.Component {
 					return nil
 				})
 				templ_7745c5c3_Err = selectcomp.Trigger(selectcomp.TriggerProps{
-					Class:      "rounded-full px-3 data-[size=default]:h-11 [&_[data-language-name]]:sr-only",
+					Class:      "rounded-full px-3 data-[size=default]:h-11 **:data-language-name:sr-only",
 					Attributes: templ.Attributes{"aria-label": utils.T(ctx, locales.LK_LanguageTitle)},
 				}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var10), templ_7745c5c3_Buffer)
 				if templ_7745c5c3_Err != nil {

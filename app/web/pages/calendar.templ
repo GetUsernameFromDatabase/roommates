@@ -136,13 +136,13 @@ templ calendarItem(actor services.Membership, it services.CalendarItem) {
 				</span>
 		}
 		<span class="flex min-w-0 flex-1 flex-col gap-1">
-			<span class="font-medium break-words">{ it.Title }</span>
+			<span class="font-medium wrap-break-word">{ it.Title }</span>
 			switch it.Kind {
 				case services.CalendarKindEvent:
 					<span class="flex flex-wrap gap-x-3 gap-y-1 text-sm text-muted-foreground">
 						<span class="whitespace-nowrap tabular-nums">{ calendarItemTime(ctx, it) }</span>
 						if it.Location != "" {
-							<span class="min-w-0 break-words">{ it.Location }</span>
+							<span class="min-w-0 wrap-break-word">{ it.Location }</span>
 						}
 					</span>
 				case services.CalendarKindChore:
@@ -354,7 +354,7 @@ templ EventPage(actor services.Membership, d services.EventDetail, members []dbq
 				<ul class="divide-y">
 					for _, file := range d.Files {
 						<li>
-							<a href={ routes.URL(routes.File, actor.HouseholdID, file.ID) } class="flex min-h-11 items-center font-medium break-words hover:underline">{ file.Name }</a>
+							<a href={ routes.URL(routes.File, actor.HouseholdID, file.ID) } class="flex min-h-11 items-center font-medium wrap-break-word hover:underline">{ file.Name }</a>
 						</li>
 					}
 				</ul>
@@ -370,32 +370,32 @@ templ eventSummary(d services.EventDetail) {
 			<dt class="text-muted-foreground">
 				@components.T(locales.LK_CalendarWhen)
 			</dt>
-			<dd class="min-w-0 break-words">{ calendarWhen(ctx, d.Occurrence) }</dd>
+			<dd class="min-w-0 wrap-break-word">{ calendarWhen(ctx, d.Occurrence) }</dd>
 			if repeat := calendarRepeat(ctx, d.Input); repeat != "" {
 				<dt class="text-muted-foreground">
 					@components.T(locales.LK_CalendarRepeats)
 				</dt>
-				<dd class="min-w-0 break-words">{ repeat }</dd>
+				<dd class="min-w-0 wrap-break-word">{ repeat }</dd>
 			}
 			if d.Location != "" {
 				<dt class="text-muted-foreground">
 					@components.T(locales.LK_CalendarFormLocation)
 				</dt>
-				<dd class="min-w-0 break-words">{ d.Location }</dd>
+				<dd class="min-w-0 wrap-break-word">{ d.Location }</dd>
 			}
 			if d.Input.Remind != nil {
 				<dt class="text-muted-foreground">
 					@components.T(locales.LK_CalendarRemind)
 				</dt>
-				<dd class="min-w-0 break-words">{ calendarRemindLabel(ctx, d.AllDay, *d.Input.Remind) }</dd>
+				<dd class="min-w-0 wrap-break-word">{ calendarRemindLabel(ctx, d.AllDay, *d.Input.Remind) }</dd>
 			}
 			<dt class="text-muted-foreground">
 				@components.T(locales.LK_CalendarMembers)
 			</dt>
-			<dd class="min-w-0 break-words">{ calendarWho(ctx, d.Occurrence) }</dd>
+			<dd class="min-w-0 wrap-break-word">{ calendarWho(ctx, d.Occurrence) }</dd>
 		</dl>
 		if d.Notes != "" {
-			<p class="break-words whitespace-pre-line">{ d.Notes }</p>
+			<p class="wrap-break-word whitespace-pre-line">{ d.Notes }</p>
 		}
 	</section>
 }
@@ -616,7 +616,7 @@ templ eventFields(members []dbqueries.ListActiveMembersRow, f EventForm, id stri
 						DefaultChecked: slices.Contains(in.Members, m.UserID),
 						Class:          "size-5",
 					})
-					<span class="break-words">{ utils.MemberName(ctx, m.Username) }</span>
+					<span class="wrap-break-word">{ utils.MemberName(ctx, m.Username) }</span>
 				</label>
 			}
 			@eventFieldError(id, services.FieldEventMembers, f)

@@ -401,14 +401,14 @@ func HouseholdNotes(actor services.Membership, notes []dbqueries.ListNotesRow, q
 						if templ_7745c5c3_Err != nil {
 							return templ_7745c5c3_Err
 						}
-						templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 29, "\" class=\"font-heading text-lg leading-tight font-semibold break-words\">")
+						templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 29, "\" class=\"font-heading text-lg leading-tight font-semibold wrap-break-word\">")
 						if templ_7745c5c3_Err != nil {
 							return templ_7745c5c3_Err
 						}
 						var templ_7745c5c3_Var18 string
 						templ_7745c5c3_Var18, templ_7745c5c3_Err = templ.JoinStringErrs(n.Title)
 						if templ_7745c5c3_Err != nil {
-							return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/notes.templ`, Line: 93, Col: 124}
+							return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/notes.templ`, Line: 93, Col: 128}
 						}
 						_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var18))
 						if templ_7745c5c3_Err != nil {
@@ -419,14 +419,14 @@ func HouseholdNotes(actor services.Membership, notes []dbqueries.ListNotesRow, q
 							return templ_7745c5c3_Err
 						}
 						if n.Excerpt != "" {
-							templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 31, "<span class=\"mt-1 line-clamp-3 text-sm break-words whitespace-pre-line\">")
+							templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 31, "<span class=\"mt-1 line-clamp-3 text-sm wrap-break-word whitespace-pre-line\">")
 							if templ_7745c5c3_Err != nil {
 								return templ_7745c5c3_Err
 							}
 							var templ_7745c5c3_Var19 string
 							templ_7745c5c3_Var19, templ_7745c5c3_Err = templ.JoinStringErrs(n.Excerpt)
 							if templ_7745c5c3_Err != nil {
-								return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/notes.templ`, Line: 95, Col: 93}
+								return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/notes.templ`, Line: 95, Col: 97}
 							}
 							_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var19))
 							if templ_7745c5c3_Err != nil {
@@ -523,14 +523,14 @@ func HouseholdNotes(actor services.Membership, notes []dbqueries.ListNotesRow, q
 						if templ_7745c5c3_Err != nil {
 							return templ_7745c5c3_Err
 						}
-						templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 40, "\" class=\"block min-h-12 py-2 hover:underline\"><span class=\"font-heading text-lg font-semibold break-words\">")
+						templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 40, "\" class=\"block min-h-12 py-2 hover:underline\"><span class=\"font-heading text-lg font-semibold wrap-break-word\">")
 						if templ_7745c5c3_Err != nil {
 							return templ_7745c5c3_Err
 						}
 						var templ_7745c5c3_Var24 string
 						templ_7745c5c3_Var24, templ_7745c5c3_Err = templ.JoinStringErrs(n.Title)
 						if templ_7745c5c3_Err != nil {
-							return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/notes.templ`, Line: 113, Col: 80}
+							return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/notes.templ`, Line: 113, Col: 84}
 						}
 						_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var24))
 						if templ_7745c5c3_Err != nil {
@@ -1195,7 +1195,7 @@ func NoteEditor(actor services.Membership, f NoteForm) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 80, "</div><div class=\"note-board space-y-4\"><div id=\"note-tools\" hidden class=\"sticky top-0 z-10 -mx-1 -mt-2 flex flex-wrap items-center gap-2 rounded-lg bg-secondary px-1 py-1 max-lg:top-[3.25rem]\"><div role=\"toolbar\" aria-controls=\"note-editor\" class=\"flex min-w-0 grow items-center gap-0.5 overflow-x-auto [scrollbar-width:none]\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 80, "</div><div class=\"note-board space-y-4\"><div id=\"note-tools\" hidden class=\"sticky top-0 z-10 -mx-1 -mt-2 flex flex-wrap items-center gap-2 rounded-lg bg-secondary px-1 py-1 max-lg:top-13\"><div role=\"toolbar\" aria-controls=\"note-editor\" class=\"flex min-w-0 grow items-center gap-0.5 overflow-x-auto scrollbar-none\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}

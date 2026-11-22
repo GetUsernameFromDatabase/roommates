@@ -14,8 +14,8 @@ RUN go install github.com/sqlc-dev/sqlc/cmd/sqlc@v1.31.1
 
 # version pinned as TAILWIND_VERSION in app/Taskfile.yml; these hashes come from that
 # release's sha256sums.txt, update them together
-ARG TAILWIND_SHA256_X64=dc61b3ac6b8c9ca874c0cc4c57b2409791a64c5540404ca5f5367360babc313a
-ARG TAILWIND_SHA256_ARM64=55fd0b241214eff3de1e8ee4f22796662f2d2e7a49bcfca7477cfd0bac398195
+ARG TAILWIND_SHA256_X64=e47695cee3f0d90623a91f3939b08bdee610eb5ad99340adff9d4145b284d6cc
+ARG TAILWIND_SHA256_ARM64=ffcd0d21dbd7c605dc12743ff0c0b47debc963c86b399674084c1c8f2c96ecad
 ARG TARGETARCH
 RUN v="$(task --silent tailwind-version)" \
   && case "$TARGETARCH" in \

@@ -23,7 +23,7 @@ templ jumpNav(links ...jumpLink) {
 			aria-label={ utils.T(ctx, locales.LK_NavOnPage) }
 			class="sticky top-0 z-10 -mx-4 -my-4 bg-background px-4 py-1 sm:-mx-10 sm:px-10 [body:has(>header)_&]:max-lg:top-14"
 		>
-			<ul class="relative flex gap-2 overflow-x-auto py-1 [scrollbar-width:none]">
+			<ul class="relative flex gap-2 overflow-x-auto py-1 scrollbar-none">
 				for _, l := range links {
 					<li class="shrink-0">
 						<a
@@ -31,7 +31,7 @@ templ jumpNav(links ...jumpLink) {
 							class={ button.Variants(button.Props{
 								Variant: button.VariantSecondary,
 								Size:    button.SizeLg,
-								Class:   "rounded-full px-3.5 aria-[current=true]:bg-primary aria-[current=true]:text-primary-foreground",
+								Class:   "rounded-full px-3.5 aria-current:bg-primary aria-current:text-primary-foreground",
 							}) }
 						>
 							@components.T(l.Label)

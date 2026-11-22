@@ -37,7 +37,7 @@ templ ActivityPage(actor services.Membership, rows []services.ActivityRow, hasMo
 					<ul id="activity-list" class="divide-y divide-border">
 						for _, r := range rows {
 							<li class="flex flex-col gap-0.5 py-3 sm:flex-row sm:items-baseline sm:justify-between sm:gap-4">
-								<p class="min-w-0 text-sm break-words">
+								<p class="min-w-0 text-sm wrap-break-word">
 									if link := activityLink(actor.HouseholdID, r); link != "" {
 										<a href={ link } class="underline-offset-4 hover:underline">{ activityText(ctx, actor, r) }</a>
 									} else {

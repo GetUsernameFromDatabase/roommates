@@ -245,7 +245,7 @@ templ fileRow(actor services.Membership, back, detach string, lastRef, shared bo
 			</a>
 		}
 		<div class="min-w-0 flex-1">
-			<a href={ href } class="line-clamp-2 font-medium break-words hover:underline">{ name }</a>
+			<a href={ href } class="line-clamp-2 font-medium wrap-break-word hover:underline">{ name }</a>
 			<div class="text-xs text-muted-foreground">
 				{ utils.T(ctx, locales.LK_FilesAddedBy, utils.MemberName(ctx, uploaderName), formatDate(ctx, createdAt), formatSize(ctx, size)) }
 			</div>
@@ -411,7 +411,7 @@ templ ShoppingItemPage(actor services.Membership, listID pgtype.UUID, it service
 					@components.T(locales.LK_ShoppingItemExpense)
 				</h2>
 				<a href={ expenseURL } class="flex min-h-11 items-center justify-between gap-3 hover:underline">
-					<span class="min-w-0 font-medium break-words">{ expense.Expense.Title }</span>
+					<span class="min-w-0 font-medium wrap-break-word">{ expense.Expense.Title }</span>
 					<span class="shrink-0 font-semibold tabular-nums">{ utils.FormatMoney(ctx, expense.Expense.AmountCents, actor.Currency) }</span>
 				</a>
 				if len(expense.Files) > 0 {

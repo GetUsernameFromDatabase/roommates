@@ -1299,7 +1299,7 @@ func shoppingItemName(actor services.Membership, l services.ShoppingList, it dbq
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			var templ_7745c5c3_Var53 = []any{utils.CN("item-strike text-lg break-words underline-offset-4 hover:underline pointer-coarse:inline-block pointer-coarse:py-2", utils.IfElse(it.CheckedAt.Valid, "is-struck", ""))}
+			var templ_7745c5c3_Var53 = []any{utils.CN("item-strike text-lg wrap-break-word underline-offset-4 hover:underline pointer-coarse:inline-block pointer-coarse:py-2", utils.IfElse(it.CheckedAt.Valid, "is-struck", ""))}
 			templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_ElementWriter, templ_7745c5c3_Var53...)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
@@ -1396,14 +1396,14 @@ func shoppingItemName(actor services.Membership, l services.ShoppingList, it dbq
 			}
 		}
 		if it.Description != "" {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 102, "<p class=\"line-clamp-2 text-sm break-words text-muted-foreground\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 102, "<p class=\"line-clamp-2 text-sm wrap-break-word text-muted-foreground\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var59 string
 			templ_7745c5c3_Var59, templ_7745c5c3_Err = templ.JoinStringErrs(it.Description)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/shopping.templ`, Line: 287, Col: 84}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/shopping.templ`, Line: 287, Col: 88}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var59))
 			if templ_7745c5c3_Err != nil {

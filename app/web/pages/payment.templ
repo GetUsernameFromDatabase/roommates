@@ -114,7 +114,7 @@ templ PaymentSwitch(path string, show bool, hasDetails bool) {
 templ payeeDetails(d services.PaymentDetails) {
 	<div class="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-secondary p-3 text-sm">
 		<div class="min-w-0">
-			<p class="font-medium break-words">{ d.Name }</p>
+			<p class="font-medium wrap-break-word">{ d.Name }</p>
 			<p class="font-mono break-all text-muted-foreground">{ models.FormatIBAN(d.IBAN) }</p>
 		</div>
 		@copyButton(d.IBAN, locales.LK_PaymentCopyIban)

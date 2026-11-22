@@ -1478,7 +1478,7 @@ func chatMessages(actor services.Membership, c services.Chat, older bool, search
 						}
 						return nil
 					})
-					templ_7745c5c3_Err = message.Footer(message.FooterProps{Class: utils.CN(chatControlsClass, utils.IfElse(own, "pointer-coarse:end-2", "pointer-coarse:start-10"))}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var58), templ_7745c5c3_Buffer)
+					templ_7745c5c3_Err = message.Footer(message.FooterProps{Class: utils.CN(chatControlsClass, utils.IfElse(own, "pointer-coarse:inset-e-2", "pointer-coarse:inset-s-10"))}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var58), templ_7745c5c3_Buffer)
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}

@@ -270,7 +270,7 @@ templ shoppingItemName(actor services.Membership, l services.ShoppingList, it db
 	<a
 		id={ "item-name-" + itemID }
 		href={ routes.URL(routes.ShoppingItem, actor.HouseholdID, l.List.ID, itemID) }
-		class={ utils.CN("item-strike text-lg break-words underline-offset-4 hover:underline pointer-coarse:inline-block pointer-coarse:py-2",utils.IfElse(it.CheckedAt.Valid, "is-struck", "")) }
+		class={ utils.CN("item-strike text-lg wrap-break-word underline-offset-4 hover:underline pointer-coarse:inline-block pointer-coarse:py-2",utils.IfElse(it.CheckedAt.Valid, "is-struck", "")) }
 	>
 		{ it.Text }
 	</a>
@@ -284,6 +284,6 @@ templ shoppingItemName(actor services.Membership, l services.ShoppingList, it db
 		</span>
 	}
 	if it.Description != "" {
-		<p class="line-clamp-2 text-sm break-words text-muted-foreground">{ it.Description }</p>
+		<p class="line-clamp-2 text-sm wrap-break-word text-muted-foreground">{ it.Description }</p>
 	}
 }

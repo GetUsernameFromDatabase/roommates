@@ -405,14 +405,14 @@ func choreCard(actor services.Membership, c services.Chore) templ.Component {
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 26, "\" class=\"min-h-6 font-heading text-lg font-semibold break-words underline-offset-4 hover:underline\">")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 26, "\" class=\"min-h-6 font-heading text-lg font-semibold wrap-break-word underline-offset-4 hover:underline\">")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var17 string
 				templ_7745c5c3_Var17, templ_7745c5c3_Err = templ.JoinStringErrs(c.Title)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/chores.templ`, Line: 91, Col: 173}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/chores.templ`, Line: 91, Col: 177}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var17))
 				if templ_7745c5c3_Err != nil {
@@ -984,14 +984,14 @@ func choreRota(actor services.Membership, d services.ChoreDetail) templ.Componen
 				return templ_7745c5c3_Err
 			}
 			for i, m := range c.Members {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 59, "<li class=\"flex items-center gap-2 py-1\"><div class=\"flex min-w-0 flex-1 flex-col\"><span class=\"flex flex-wrap items-center gap-2\"><span class=\"min-w-0 break-words\">")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 59, "<li class=\"flex items-center gap-2 py-1\"><div class=\"flex min-w-0 flex-1 flex-col\"><span class=\"flex flex-wrap items-center gap-2\"><span class=\"min-w-0 wrap-break-word\">")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var43 string
 				templ_7745c5c3_Var43, templ_7745c5c3_Err = templ.JoinStringErrs(personName(ctx, actor, m.UserID, m.Name))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/chores.templ`, Line: 186, Col: 85}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/chores.templ`, Line: 186, Col: 89}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var43))
 				if templ_7745c5c3_Err != nil {
@@ -1255,14 +1255,14 @@ func choreRota(actor services.Membership, d services.ChoreDetail) templ.Componen
 					return templ_7745c5c3_Err
 				}
 				for _, e := range d.History {
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 78, "<li class=\"py-2 text-sm break-words\">")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 78, "<li class=\"py-2 text-sm wrap-break-word\">")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
 					var templ_7745c5c3_Var52 string
 					templ_7745c5c3_Var52, templ_7745c5c3_Err = templ.JoinStringErrs(choreLogLine(ctx, e))
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/chores.templ`, Line: 244, Col: 66}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/chores.templ`, Line: 244, Col: 70}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var52))
 					if templ_7745c5c3_Err != nil {
@@ -1690,14 +1690,14 @@ func choreFields(members []dbqueries.ListActiveMembersRow, f ChoreForm, id strin
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 98, "<span class=\"break-words\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 98, "<span class=\"wrap-break-word\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var65 string
 			templ_7745c5c3_Var65, templ_7745c5c3_Err = templ.JoinStringErrs(utils.MemberName(ctx, m.Username))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/chores.templ`, Line: 346, Col: 65}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/chores.templ`, Line: 346, Col: 69}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var65))
 			if templ_7745c5c3_Err != nil {

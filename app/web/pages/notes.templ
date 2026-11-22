@@ -90,9 +90,9 @@ templ HouseholdNotes(actor services.Membership, notes []dbqueries.ListNotesRow, 
 									aria-labelledby={ "slip-" + n.ID.String() }
 								>
 									@notePin()
-									<span id={ "slip-" + n.ID.String() } class="font-heading text-lg leading-tight font-semibold break-words">{ n.Title }</span>
+									<span id={ "slip-" + n.ID.String() } class="font-heading text-lg leading-tight font-semibold wrap-break-word">{ n.Title }</span>
 									if n.Excerpt != "" {
-										<span class="mt-1 line-clamp-3 text-sm break-words whitespace-pre-line">{ n.Excerpt }</span>
+										<span class="mt-1 line-clamp-3 text-sm wrap-break-word whitespace-pre-line">{ n.Excerpt }</span>
 									}
 									<span class="mt-auto pt-2 text-xs text-muted-foreground">
 										{ utils.T(ctx, locales.LK_NotesEditedBy, utils.MemberName(ctx, n.EditedByName)) + ", " }
@@ -110,7 +110,7 @@ templ HouseholdNotes(actor services.Membership, notes []dbqueries.ListNotesRow, 
 							for _, n := range notes[split:] {
 								<li>
 									<a href={ routes.URL(routes.Note, actor.HouseholdID, n.ID) } class="block min-h-12 py-2 hover:underline">
-										<span class="font-heading text-lg font-semibold break-words">{ n.Title }</span>
+										<span class="font-heading text-lg font-semibold wrap-break-word">{ n.Title }</span>
 										<span class="block text-xs text-muted-foreground">
 											{ utils.T(ctx, locales.LK_NotesEditedBy, utils.MemberName(ctx, n.EditedByName)) + ", " }
 											@noteTime(n.EditedAt)
@@ -266,8 +266,8 @@ templ NoteEditor(actor services.Membership, f NoteForm) {
 				// the words set what is typed next or the line the cursor is on, the bubble at a
 				// selection changes the selected text
 				// the switch wraps to its own row when the buttons would not all fit beside it
-				<div id="note-tools" hidden class="sticky top-0 z-10 -mx-1 -mt-2 flex flex-wrap items-center gap-2 rounded-lg bg-secondary px-1 py-1 max-lg:top-[3.25rem]">
-					<div role="toolbar" aria-controls="note-editor" class="flex min-w-0 grow items-center gap-0.5 overflow-x-auto [scrollbar-width:none]">
+				<div id="note-tools" hidden class="sticky top-0 z-10 -mx-1 -mt-2 flex flex-wrap items-center gap-2 rounded-lg bg-secondary px-1 py-1 max-lg:top-13">
+					<div role="toolbar" aria-controls="note-editor" class="flex min-w-0 grow items-center gap-0.5 overflow-x-auto scrollbar-none">
 						@noteToolButton("bold", "", "bold", locales.LK_NotesBold)
 						@noteToolButton("italic", "", "italic", locales.LK_NotesItalic)
 						@noteToolButton("link", "", "link", locales.LK_NotesLink)

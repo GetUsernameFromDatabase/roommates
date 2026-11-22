@@ -33,7 +33,7 @@ templ LanguageForm(id, next string, compact bool) {
 				if compact {
 					// the name stays for screen readers
 					@selectcomp.Trigger(selectcomp.TriggerProps{
-						Class:      "rounded-full px-3 data-[size=default]:h-11 [&_[data-language-name]]:sr-only",
+						Class:      "rounded-full px-3 data-[size=default]:h-11 **:data-language-name:sr-only",
 						Attributes: templ.Attributes{"aria-label": utils.T(ctx, locales.LK_LanguageTitle)},
 					}) {
 						@selectcomp.Value()

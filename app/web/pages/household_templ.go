@@ -412,14 +412,14 @@ func HouseholdPeople(actor services.Membership, o services.HouseholdOverview, in
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 30, "<div class=\"min-w-0 flex-1\"><div class=\"flex flex-wrap items-center gap-x-2\"><span class=\"font-heading text-xl leading-tight font-semibold break-words\">")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 30, "<div class=\"min-w-0 flex-1\"><div class=\"flex flex-wrap items-center gap-x-2\"><span class=\"font-heading text-xl leading-tight font-semibold wrap-break-word\">")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
 					var templ_7745c5c3_Var14 string
 					templ_7745c5c3_Var14, templ_7745c5c3_Err = templ.JoinStringErrs(utils.MemberName(ctx, m.Username))
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/household.templ`, Line: 118, Col: 119}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/household.templ`, Line: 118, Col: 123}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var14))
 					if templ_7745c5c3_Err != nil {
@@ -1348,7 +1348,7 @@ func copyButton(value string, label locales.LK) templ.Component {
 			Type:    button.TypeButton,
 			Variant: button.VariantOutline,
 			Size:    button.SizeSm,
-			Class:   "shrink-0 [.no-clipboard_&]:hidden",
+			Class:   "shrink-0 in-[.no-clipboard]:hidden",
 			Attributes: templ.Attributes{
 				"data-copy":   value,
 				"data-copied": utils.T(ctx, locales.LK_HouseholdCopied),

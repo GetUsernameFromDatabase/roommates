@@ -308,7 +308,7 @@ templ chatMessages(actor services.Membership, c services.Chat, older bool, searc
 						// with a mouse: icons beside the bubble with a tooltip, shown on hover or keyboard focus;
 						// on touch screens: a labelled pill over the message, shown by a long press (data-open, chat-hold.js);
 						// transparent rather than hidden so nothing moves and screen readers always reach them
-						@message.Footer(message.FooterProps{Class: utils.CN(chatControlsClass, utils.IfElse(own, "pointer-coarse:end-2", "pointer-coarse:start-10"))}) {
+						@message.Footer(message.FooterProps{Class: utils.CN(chatControlsClass, utils.IfElse(own, "pointer-coarse:inset-e-2", "pointer-coarse:inset-s-10"))}) {
 							@tooltip.Tooltip() {
 								@button.Button(button.Props{
 									Href:       routes.URL(routes.Chat, actor.HouseholdID) + "?reply=" + routes.ShortUUID(m.ID),

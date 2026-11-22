@@ -86,7 +86,7 @@ func jumpNav(links ...jumpLink) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "\" class=\"sticky top-0 z-10 -mx-4 -my-4 bg-background px-4 py-1 sm:-mx-10 sm:px-10 [body:has(>header)_&]:max-lg:top-14\"><ul class=\"relative flex gap-2 overflow-x-auto py-1 [scrollbar-width:none]\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "\" class=\"sticky top-0 z-10 -mx-4 -my-4 bg-background px-4 py-1 sm:-mx-10 sm:px-10 [body:has(>header)_&]:max-lg:top-14\"><ul class=\"relative flex gap-2 overflow-x-auto py-1 scrollbar-none\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -119,7 +119,7 @@ func jumpNav(links ...jumpLink) templ.Component {
 					var templ_7745c5c3_Var6 = []any{button.Variants(button.Props{
 						Variant: button.VariantSecondary,
 						Size:    button.SizeLg,
-						Class:   "rounded-full px-3.5 aria-[current=true]:bg-primary aria-[current=true]:text-primary-foreground",
+						Class:   "rounded-full px-3.5 aria-current:bg-primary aria-current:text-primary-foreground",
 					})}
 					templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_ElementWriter, templ_7745c5c3_Var6...)
 					if templ_7745c5c3_Err != nil {

@@ -445,7 +445,7 @@ templ formError(message string) {
 	if message != "" {
 		<p role="alert" class="flex items-start gap-2 text-sm font-medium text-destructive">
 			@navIcon("alert", "mt-px size-4 shrink-0")
-			<span class="min-w-0 break-words">{ message }</span>
+			<span class="min-w-0 wrap-break-word">{ message }</span>
 		</p>
 	}
 }
@@ -459,7 +459,7 @@ templ toast(message string) {
 		// alert, not status: it arrives with the page, and only an alert is read out when inserted already filled
 		<div role="alert" class={ toastClass }>
 			@navIcon("check", "size-4 shrink-0")
-			<span class="min-w-0 break-words">{ message }</span>
+			<span class="min-w-0 wrap-break-word">{ message }</span>
 		</div>
 	}
 }

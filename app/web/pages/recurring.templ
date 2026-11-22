@@ -48,7 +48,7 @@ templ HouseholdRecurring(actor services.Membership, rows []services.RecurringRow
 
 templ recurringLine(actor services.Membership, r services.RecurringRow) {
 	<span class="till-line">
-		<span class="min-w-0 font-heading font-semibold break-words">{ r.Title }</span>
+		<span class="min-w-0 font-heading font-semibold wrap-break-word">{ r.Title }</span>
 		<span aria-hidden="true" class="till-leader"></span>
 		<span class="shrink-0 font-semibold tabular-nums">{ utils.FormatMoney(ctx, r.AmountCents, actor.Currency) }</span>
 	</span>
@@ -98,7 +98,7 @@ templ recurringDue(actor services.Membership, due []services.RecurringRow) {
 			for _, r := range due {
 				<li class="till-slip">
 					<div class="till-paper flex flex-wrap items-center gap-x-3 gap-y-2">
-						<p class="min-w-0 flex-1 break-words">
+						<p class="min-w-0 flex-1 wrap-break-word">
 							<span class="font-heading font-semibold">{ r.Title }</span>
 							{ " · " + formatDay(ctx, r.NextDue) + " · " }
 							<span class="tabular-nums">{ utils.FormatMoney(ctx, r.AmountCents, actor.Currency) }</span>

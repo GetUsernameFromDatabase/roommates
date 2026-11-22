@@ -75,7 +75,7 @@
     toast.setAttribute("role", "alert");
     toast.className = document.body.dataset.toastClass;
     var span = document.createElement("span");
-    span.className = "min-w-0 break-words";
+    span.className = "min-w-0 wrap-break-word";
     span.textContent = text;
     toast.appendChild(span);
     document.body.appendChild(toast);

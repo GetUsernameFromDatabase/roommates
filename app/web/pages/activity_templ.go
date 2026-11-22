@@ -175,7 +175,7 @@ func ActivityPage(actor services.Membership, rows []services.ActivityRow, hasMor
 						return templ_7745c5c3_Err
 					}
 					for _, r := range rows {
-						templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 12, "<li class=\"flex flex-col gap-0.5 py-3 sm:flex-row sm:items-baseline sm:justify-between sm:gap-4\"><p class=\"min-w-0 text-sm break-words\">")
+						templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 12, "<li class=\"flex flex-col gap-0.5 py-3 sm:flex-row sm:items-baseline sm:justify-between sm:gap-4\"><p class=\"min-w-0 text-sm wrap-break-word\">")
 						if templ_7745c5c3_Err != nil {
 							return templ_7745c5c3_Err
 						}

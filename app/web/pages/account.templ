@@ -45,7 +45,7 @@ templ AccountSection(path string, user dbqueries.GetUserRow, errorAt, errorMessa
 					<h3 class="font-semibold">
 						@components.T(locales.LK_Email)
 					</h3>
-					<p class="text-sm text-muted-foreground break-words">{ utils.T(ctx, locales.LK_AccountEmailDescription, user.Email) }</p>
+					<p class="text-sm text-muted-foreground wrap-break-word">{ utils.T(ctx, locales.LK_AccountEmailDescription, user.Email) }</p>
 				</div>
 				@field.Field() {
 					@field.Label(field.LabelProps{For: "account-email"}) {
@@ -193,7 +193,7 @@ templ accountOutcome(isError bool, errorMessage string, isInfo bool, infoMessage
 		// alert, not status: only an alert is read out when inserted already filled
 		<p role="alert" class="flex items-start gap-2 text-sm font-medium">
 			@navIcon("check", "mt-px size-4 shrink-0")
-			<span class="min-w-0 break-words">{ infoMessage }</span>
+			<span class="min-w-0 wrap-break-word">{ infoMessage }</span>
 		</p>
 	}
 }

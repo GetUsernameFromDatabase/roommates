@@ -181,14 +181,14 @@ func recurringLine(actor services.Membership, r services.RecurringRow) templ.Com
 		}
 		ctx = templ.InitializeContext(ctx)
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 14, "<span class=\"till-line\"><span class=\"min-w-0 font-heading font-semibold break-words\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 14, "<span class=\"till-line\"><span class=\"min-w-0 font-heading font-semibold wrap-break-word\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var6 string
 		templ_7745c5c3_Var6, templ_7745c5c3_Err = templ.JoinStringErrs(r.Title)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/recurring.templ`, Line: 51, Col: 72}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/recurring.templ`, Line: 51, Col: 76}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var6))
 		if templ_7745c5c3_Err != nil {
@@ -442,7 +442,7 @@ func recurringDue(actor services.Membership, due []services.RecurringRow) templ.
 			return templ_7745c5c3_Err
 		}
 		for _, r := range due {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 33, "<li class=\"till-slip\"><div class=\"till-paper flex flex-wrap items-center gap-x-3 gap-y-2\"><p class=\"min-w-0 flex-1 break-words\"><span class=\"font-heading font-semibold\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 33, "<li class=\"till-slip\"><div class=\"till-paper flex flex-wrap items-center gap-x-3 gap-y-2\"><p class=\"min-w-0 flex-1 wrap-break-word\"><span class=\"font-heading font-semibold\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
