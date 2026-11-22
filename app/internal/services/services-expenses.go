@@ -256,6 +256,7 @@ func (s *DefaultService) createExpense(ctx context.Context, actor Membership, in
 		for _, sh := range shares {
 			if err := q.InsertExpenseShare(ctx, dbqueries.InsertExpenseShareParams{
 				ExpenseID:   expenseID,
+				HouseholdID: actor.HouseholdID,
 				UserID:      sh.userID,
 				AmountCents: sh.cents,
 			}); err != nil {

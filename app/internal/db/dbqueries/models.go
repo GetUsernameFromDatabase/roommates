@@ -133,6 +133,7 @@ type ExpenseCategory struct {
 
 type ExpenseShare struct {
 	ExpenseID   pgtype.UUID        `json:"expense_id"`
+	HouseholdID pgtype.UUID        `json:"household_id"`
 	UserID      pgtype.UUID        `json:"user_id"`
 	AmountCents int64              `json:"amount_cents"`
 	PaidAt      pgtype.Timestamptz `json:"paid_at"`

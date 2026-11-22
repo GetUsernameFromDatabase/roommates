@@ -81,8 +81,8 @@ WHERE e.id = s.expense_id
   AND s.user_id = sqlc.arg(user_id)
   AND e.household_id = sqlc.arg(household_id);
 -- name: InsertExpenseShare :exec
-INSERT INTO expense_shares (expense_id, user_id, amount_cents)
-VALUES ($1, $2, $3);
+INSERT INTO expense_shares (expense_id, household_id, user_id, amount_cents)
+VALUES ($1, $2, $3, $4);
 -- name: HouseholdHasExpenses :one
 SELECT EXISTS (
     SELECT 1

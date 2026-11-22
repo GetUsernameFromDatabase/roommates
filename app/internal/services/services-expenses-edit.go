@@ -176,6 +176,7 @@ func editShares(ctx context.Context, q *dbqueries.Queries, householdID, expenseI
 		}
 		if err := q.InsertExpenseShare(ctx, dbqueries.InsertExpenseShareParams{
 			ExpenseID:   expenseID,
+			HouseholdID: householdID,
 			UserID:      sh.userID,
 			AmountCents: sh.cents,
 		}); err != nil {

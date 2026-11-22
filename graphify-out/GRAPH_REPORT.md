@@ -1,7 +1,7 @@
 # Graph Report - roommates  (2026-11-22)
 
 ## Corpus Check
-- 361 files · ~426,316 words
+- 361 files · ~426,549 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 73 file(s) not represented in the graph (top: .templ 53, (none) 9, .css 5)
 
@@ -11,7 +11,7 @@
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `b3b69307`
+- Built from commit: `2f337501`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 

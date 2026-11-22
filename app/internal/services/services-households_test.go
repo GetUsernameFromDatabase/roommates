@@ -555,6 +555,21 @@ func TestPurgeDeletedHouseholds(t *testing.T) {
 		oldM.HouseholdID, time.Now().Add(-g.HouseholdPurgeAfter-time.Hour)); err != nil {
 		t.Fatal(err)
 	}
+	// rows two cascade steps down that name a member (a share, a rota) must not block the purge
+	if _, err := s.pool.Exec(ctx, `
+		WITH e AS (
+			INSERT INTO expenses (household_id, payer_id, category, title, amount_cents, currency, incurred_on)
+			VALUES ($1, $2, 'other', 'Rent', 100, 'EUR', CURRENT_DATE) RETURNING id
+		), sh AS (
+			INSERT INTO expense_shares (expense_id, household_id, user_id, amount_cents) SELECT id, $1, $2, 100 FROM e
+		), c AS (
+			INSERT INTO chores (household_id, title, rotation, weekdays, next_due, assignee_id, created_by)
+			VALUES ($1, 'Bins', 'fixed', 1, CURRENT_DATE, $2, $2) RETURNING id
+		)
+		INSERT INTO chore_members (chore_id, household_id, user_id, position) SELECT id, $1, $2, 0 FROM c`,
+		oldM.HouseholdID, oldM.UserID); err != nil {
+		t.Fatal(err)
+	}
 
 	if err := s.PurgeDeletedHouseholds(ctx); err != nil {
 		t.Fatal(err)

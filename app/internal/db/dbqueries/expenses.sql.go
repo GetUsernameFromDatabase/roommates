@@ -367,18 +367,24 @@ func (q *Queries) InsertExpense(ctx context.Context, arg InsertExpenseParams) (p
 }
 
 const insertExpenseShare = `-- name: InsertExpenseShare :exec
-INSERT INTO expense_shares (expense_id, user_id, amount_cents)
-VALUES ($1, $2, $3)
+INSERT INTO expense_shares (expense_id, household_id, user_id, amount_cents)
+VALUES ($1, $2, $3, $4)
 `
 
 type InsertExpenseShareParams struct {
 	ExpenseID   pgtype.UUID `json:"expense_id"`
+	HouseholdID pgtype.UUID `json:"household_id"`
 	UserID      pgtype.UUID `json:"user_id"`
 	AmountCents int64       `json:"amount_cents"`
 }
 
 func (q *Queries) InsertExpenseShare(ctx context.Context, arg InsertExpenseShareParams) error {
-	_, err := q.db.Exec(ctx, insertExpenseShare, arg.ExpenseID, arg.UserID, arg.AmountCents)
+	_, err := q.db.Exec(ctx, insertExpenseShare,
+		arg.ExpenseID,
+		arg.HouseholdID,
+		arg.UserID,
+		arg.AmountCents,
+	)
 	return err
 }
 
