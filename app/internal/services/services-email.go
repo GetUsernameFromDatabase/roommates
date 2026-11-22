@@ -9,6 +9,7 @@ import (
 	"roommates/internal/db/dbqueries"
 	"roommates/internal/locales"
 	"roommates/internal/mailer"
+	"roommates/internal/routes"
 	"roommates/internal/utils"
 	"sync"
 	"time"
@@ -131,7 +132,7 @@ func (s *DefaultService) SendVerificationEmail(ctx context.Context, userID pgtyp
 	if err != nil {
 		return err
 	}
-	link := g.GetAppBaseURL() + g.RouteVerifyEmail + "?token=" + token
+	link := g.GetAppBaseURL() + routes.VerifyEmail + "?token=" + token
 	s.sendAsync(mailer.Message{
 		To:      user.Email,
 		Subject: utils.T(ctx, locales.LK_MailVerifySubject),
@@ -174,7 +175,7 @@ func (s *DefaultService) RequestPasswordReset(ctx context.Context, email string)
 	if err != nil {
 		return err
 	}
-	link := g.GetAppBaseURL() + g.RouteResetPassword + "?token=" + token
+	link := g.GetAppBaseURL() + routes.ResetPassword + "?token=" + token
 	s.sendAsync(mailer.Message{
 		To:      user.Email,
 		Subject: utils.T(ctx, locales.LK_MailResetSubject),
@@ -245,7 +246,7 @@ func (s *DefaultService) SendInviteEmail(ctx context.Context, actor Membership, 
 	if err != nil {
 		return err
 	}
-	link := g.GetAppBaseURL() + g.RouteInvite + "?code=" + code
+	link := g.GetAppBaseURL() + routes.Invite + "?code=" + code
 	s.sendAsync(mailer.Message{
 		To:      NormalizeEmail(email),
 		Subject: utils.T(ctx, locales.LK_MailInviteSubject, inviter.Username, household.Name),

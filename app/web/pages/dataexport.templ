@@ -3,7 +3,7 @@ package pages
 import "roommates/web/components"
 import "roommates/web/components/button"
 import "roommates/internal/locales"
-import g "roommates/internal/config"
+import "roommates/internal/routes"
 import "roommates/internal/utils"
 import "roommates/internal/services"
 
@@ -33,9 +33,9 @@ templ DataExportSection(path string, status services.DataExportStatus, infoMessa
 				</p>
 			}
 			<form
-				action={ templ.SafeURL(path + g.RouteDataExport) }
+				action={ path + routes.AccountDataExport }
 				method="post"
-				hx-post={ path + g.RouteDataExport }
+				hx-post={ path + routes.AccountDataExport }
 				hx-target="#data-export"
 				hx-swap="outerHTML"
 				hx-disabled-elt="find button"
@@ -44,7 +44,7 @@ templ DataExportSection(path string, status services.DataExportStatus, infoMessa
 				if status.Ready() {
 					// hx-boost off: a boosted link would swap the file into the page
 					@button.Button(button.Props{
-						Href:       g.RouteSettings + g.RouteDataExport + "/" + status.ID.String(),
+						Href:       routes.URL(routes.DataExportDownload, status.ID),
 						Class:      "h-11",
 						Attributes: templ.Attributes{"hx-boost": "false", "download": ""},
 					}) {

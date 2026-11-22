@@ -11,6 +11,7 @@ import "roommates/internal/services"
 import "roommates/internal/events"
 import g "roommates/internal/config"
 import "roommates/internal/locales"
+import "roommates/internal/routes"
 import "roommates/internal/utils"
 import "github.com/invopop/ctxi18n/i18n"
 import "github.com/jackc/pgx/v5/pgtype"
@@ -47,7 +48,7 @@ templ HouseholdFiles(actor services.Membership, files []dbqueries.ListFilesRow, 
 		</header>
 		<section class={ utils.CN(sheetClass, "space-y-4") }>
 			@formError(errorMessage)
-			@fileUploadForm(householdURL(actor.HouseholdID, "files"))
+			@fileUploadForm(routes.URL(routes.Files, actor.HouseholdID))
 			@fileFilters(actor, filter)
 			@liveRegion("files", events.TopicFiles) {
 				if len(files) == 0 {
@@ -57,25 +58,25 @@ templ HouseholdFiles(actor services.Membership, files []dbqueries.ListFilesRow, 
 				} else {
 					<ul class="divide-y">
 						for _, f := range files {
-							@fileRow(actor, householdURL(actor.HouseholdID, "files"), "", false, false, f.RefCount, f.ID, f.Name, f.HasThumb, f.SizeBytes, f.UploaderID, f.UploaderName, f.CreatedAt) {
+							@fileRow(actor, routes.URL(routes.Files, actor.HouseholdID), "", false, false, f.RefCount, f.ID, f.Name, f.HasThumb, f.SizeBytes, f.UploaderID, f.UploaderName, f.CreatedAt) {
 								if f.NoteTitle != nil {
-									<a href={ householdURL(actor.HouseholdID, "notes", f.NoteID.String()) } class={ fileContextClass }>
+									<a href={ routes.URL(routes.Note, actor.HouseholdID, f.NoteID) } class={ fileContextClass }>
 										{ utils.T(ctx, locales.LK_FilesOnNote, *f.NoteTitle) }
 									</a>
 								} else if f.ItemText != nil {
-									<a href={ householdURL(actor.HouseholdID, "lists", f.ItemListID.String(), "items", f.ShoppingItemID.String()) } class={ fileContextClass }>
+									<a href={ routes.URL(routes.ShoppingItem, actor.HouseholdID, f.ItemListID, f.ShoppingItemID) } class={ fileContextClass }>
 										{ utils.T(ctx, locales.LK_FilesOnItem, *f.ItemText) }
 									</a>
 								} else if f.ExpenseTitle != nil {
-									<a href={ householdURL(actor.HouseholdID, "expenses", f.ExpenseID.String()) } class={ fileContextClass }>
+									<a href={ routes.URL(routes.Expense, actor.HouseholdID, f.ExpenseID) } class={ fileContextClass }>
 										{ utils.T(ctx, locales.LK_FilesOnExpense, *f.ExpenseTitle) }
 									</a>
 								} else if f.EventTitle != nil {
-									<a href={ householdURL(actor.HouseholdID, "calendar", "events", f.EventID.String()) } class={ fileContextClass }>
+									<a href={ routes.URL(routes.CalendarEvent, actor.HouseholdID, f.EventID) } class={ fileContextClass }>
 										{ utils.T(ctx, locales.LK_FilesOnEvent, *f.EventTitle) }
 									</a>
 								} else if f.MessageID.Valid {
-									<a href={ householdURL(actor.HouseholdID, "chat") } class={ fileContextClass }>
+									<a href={ routes.URL(routes.Chat, actor.HouseholdID) } class={ fileContextClass }>
 										@components.T(locales.LK_FilesOnMessage)
 									</a>
 								}
@@ -129,12 +130,12 @@ const fileContextClass = "block text-xs text-muted-foreground underline-offset-4
 // fileFilters swaps in the matching files while typing and keeps the filter in the address,
 // the live region then refetches the same filter; it stays out of the region, a refetch would clear what is typed
 templ fileFilters(actor services.Membership, filter services.FileFilter) {
-	{{ filesURL := householdURL(actor.HouseholdID, "files") }}
+	{{ filesURL := routes.URL(routes.Files, actor.HouseholdID) }}
 	<form
 		role="search"
 		action={ filesURL }
 		method="get"
-		hx-get={ string(filesURL) }
+		hx-get={ filesURL }
 		hx-trigger="input delay:300ms, change from:input[name=type], change from:input[name=place]"
 		hx-target="#files"
 		hx-select="#files"
@@ -168,14 +169,14 @@ templ fileFilterSelect(id, name, value string, label, all locales.LK, options []
 
 // attachedFiles are the files of a note, shopping item or expense on page back, with a form to add
 // one and a picker of existing ones, hint says what belongs here if anything
-templ attachedFiles(actor services.Membership, back templ.SafeURL, files []services.AttachedFile, hint locales.LK, errorMessage string) {
+templ attachedFiles(actor services.Membership, back string, files []services.AttachedFile, hint locales.LK, errorMessage string) {
 	<section class={ utils.CN(sheetClass, "space-y-3") } aria-labelledby="attachments-title">
 		@attachedFilesContent(actor, back, files, hint, errorMessage, false)
 	</section>
 }
 
 // attachedFilesTill is [attachedFiles] as a till slip, the receipts stapled to it
-templ attachedFilesTill(actor services.Membership, back templ.SafeURL, files []services.AttachedFile, hint locales.LK, errorMessage string) {
+templ attachedFilesTill(actor services.Membership, back string, files []services.AttachedFile, hint locales.LK, errorMessage string) {
 	<section class="till-slip" aria-labelledby="attachments-title">
 		<div class="till-paper space-y-3">
 			@attachedFilesContent(actor, back, files, hint, errorMessage, true)
@@ -184,7 +185,7 @@ templ attachedFilesTill(actor services.Membership, back templ.SafeURL, files []s
 }
 
 // attachedFilesContent goes on a sheet, or on till paper with till
-templ attachedFilesContent(actor services.Membership, back templ.SafeURL, files []services.AttachedFile, hint locales.LK, errorMessage string, till bool) {
+templ attachedFilesContent(actor services.Membership, back string, files []services.AttachedFile, hint locales.LK, errorMessage string, till bool) {
 	<h2 id="attachments-title" class="text-xl font-semibold">
 		@components.T(locales.LK_FilesAttachments)
 	</h2>
@@ -197,24 +198,24 @@ templ attachedFilesContent(actor services.Membership, back templ.SafeURL, files 
 		if len(files) > 0 {
 			<ul class={ "divide-y", templ.KV("divide-dashed", till) }>
 				for _, f := range files {
-					@fileRow(actor, back, back+"/files/detach", f.LastRef, f.Shared, 0, f.ID, f.Name, f.HasThumb, f.SizeBytes, f.UploaderID, f.UploaderName, f.CreatedAt)
+					@fileRow(actor, back, back+routes.FileRefDetach, f.LastRef, f.Shared, 0, f.ID, f.Name, f.HasThumb, f.SizeBytes, f.UploaderID, f.UploaderName, f.CreatedAt)
 				}
 			</ul>
 		}
 	}
 	@formError(errorMessage)
 	<div class={ "flex flex-wrap items-start gap-2", templ.KV("till-perforation", till) }>
-		@fileUploadForm(back + "/files")
+		@fileUploadForm(back + routes.FileRefUpload)
 		@attachFilePicker(back)
 	</div>
 }
 
 // attachFilePicker lets the page at back show a file that already exists, the list is fetched
 // the first time it opens, after that it follows the search box
-templ attachFilePicker(back templ.SafeURL) {
+templ attachFilePicker(back string) {
 	{{
 		picks := templ.Attributes{
-			"hx-get":    string(back + "/files/picks"),
+			"hx-get":    back + routes.FileRefPicks,
 			"hx-target": "#attach-file-picks",
 			"hx-select": "#attach-file-picks",
 			"hx-swap":   "outerHTML",
@@ -247,8 +248,8 @@ templ attachFilePicker(back templ.SafeURL) {
 }
 
 // AttachFilePicks is the list of [attachFilePicker], the page reloads after a pick like after an upload
-templ AttachFilePicks(actor services.Membership, back templ.SafeURL, files []dbqueries.ListFilesRow) {
-	<form id="attach-file-picks" action={ back + "/files/attach" } method="post" class="max-h-60 overflow-y-auto">
+templ AttachFilePicks(actor services.Membership, back string, files []dbqueries.ListFilesRow) {
+	<form id="attach-file-picks" action={ back + routes.FileRefAttach } method="post" class="max-h-60 overflow-y-auto">
 		if len(files) == 0 {
 			<p class="p-2 text-sm text-muted-foreground">
 				@components.T(locales.LK_ChatReferenceNone)
@@ -271,7 +272,7 @@ const filePickClass = "flex min-h-11 w-full items-center gap-2 rounded-lg px-2 t
 // filePickContent is a row of a list of existing files to pick from
 templ filePickContent(actor services.Membership, f dbqueries.ListFilesRow) {
 	if f.HasThumb {
-		<img src={ string(householdURL(actor.HouseholdID, "files", f.ID.String())) + "/thumb" } alt="" loading="lazy" class="size-8 shrink-0 rounded object-cover"/>
+		<img src={ routes.URL(routes.FileThumb, actor.HouseholdID, f.ID) } alt="" loading="lazy" class="size-8 shrink-0 rounded object-cover"/>
 	}
 	<span class="min-w-0 flex-1 truncate">{ f.Name }</span>
 	<span class="shrink-0 text-xs text-muted-foreground">{ formatSize(ctx, f.SizeBytes) }</span>
@@ -279,7 +280,7 @@ templ filePickContent(actor services.Membership, f dbqueries.ListFilesRow) {
 
 // fileUploadForm is a plain form, not boosted, the page reloads after an upload;
 // file-upload.js submits it when a file is picked
-templ fileUploadForm(action templ.SafeURL) {
+templ fileUploadForm(action string) {
 	<form action={ action } method="post" enctype="multipart/form-data">
 		<label class={ utils.CN(button.Variants(button.Props{Size: button.SizeLg}), "h-11 cursor-pointer has-focus-visible:ring-3 has-focus-visible:ring-ring/50 inert:opacity-50") }>
 			<input type="file" name="file" required data-upload-on-pick class="sr-only"/>
@@ -293,13 +294,13 @@ templ fileUploadForm(action templ.SafeURL) {
 // there instead, lastRef warns that this deletes it and if shared the dialog offers to keep it,
 // keeping a file of a private note would show it to everyone, refs is how many places a delete
 // takes it from
-templ fileRow(actor services.Membership, back, detach templ.SafeURL, lastRef, shared bool, refs int64, id pgtype.UUID, name string, hasThumb bool, size int64,
+templ fileRow(actor services.Membership, back, detach string, lastRef, shared bool, refs int64, id pgtype.UUID, name string, hasThumb bool, size int64,
 	uploaderID pgtype.UUID, uploaderName string, createdAt pgtype.Timestamptz) {
-	{{ href := householdURL(actor.HouseholdID, "files", id.String()) }}
+	{{ href := routes.URL(routes.File, actor.HouseholdID, id) }}
 	<li class={ "flex min-h-14 gap-3 py-2", utils.IfElse(detach != "", "items-start", "items-center") }>
 		if hasThumb {
 			<a href={ href } class="file-thumb shrink-0" tabindex="-1" aria-hidden="true">
-				<img src={ string(href) + "/thumb" } alt="" loading="lazy" class="size-12 rounded-lg object-cover ring-1 ring-foreground/10"/>
+				<img src={ routes.URL(routes.FileThumb, actor.HouseholdID, id) } alt="" loading="lazy" class="size-12 rounded-lg object-cover ring-1 ring-foreground/10"/>
 			</a>
 		}
 		<div class="min-w-0 flex-1">
@@ -323,11 +324,11 @@ templ fileRow(actor services.Membership, back, detach templ.SafeURL, lastRef, sh
 					}
 				>
 					<input type="hidden" name="file_id" value={ id.String() }/>
-					<input type="hidden" name={ g.QueryNext } value={ string(back) }/>
+					<input type="hidden" name={ g.QueryNext } value={ back }/>
 					@button.Button(button.Props{
 						Type:    button.TypeSubmit,
 						Variant: button.VariantGhost,
-						Class:   utils.CN("h-11 px-3", utils.IfElse(lastRef, "text-destructive", "")),
+						Class:   utils.CN("h-11 px-3",utils.IfElse(lastRef, "text-destructive", "")),
 					}) {
 						@components.T(locales.LK_FilesDetach)
 					}
@@ -335,8 +336,8 @@ templ fileRow(actor services.Membership, back, detach templ.SafeURL, lastRef, sh
 			}
 		</div>
 		if detach == "" && (uploaderID == actor.UserID || actor.Role == g.RoleOwner) {
-			<form action={ href + "/delete" } method="post" hx-boost="true" hx-confirm={ deleteFileConfirm(ctx, name, refs) }>
-				<input type="hidden" name={ g.QueryNext } value={ string(back) }/>
+			<form action={ routes.URL(routes.FileDelete, actor.HouseholdID, id) } method="post" hx-boost="true" hx-confirm={ deleteFileConfirm(ctx, name, refs) }>
+				<input type="hidden" name={ g.QueryNext } value={ back }/>
 				@button.Button(button.Props{
 					Type:    button.TypeSubmit,
 					Variant: button.VariantGhost,
@@ -353,27 +354,27 @@ templ fileRow(actor services.Membership, back, detach templ.SafeURL, lastRef, sh
 // file in a new tab, with a way back to where it is attached, errorMessage is the outcome of a rename;
 // the raw file at /raw has no way back
 templ FilePage(actor services.Membership, f services.FileMeta, errorMessage string) {
-	{{ fileURL := householdURL(actor.HouseholdID, "files", f.ID.String()) }}
-	{{ back, backText, section := householdURL(actor.HouseholdID, "files"), utils.T(ctx, locales.LK_FilesAll), SectionFiles }}
+	{{ fileURL := routes.URL(routes.File, actor.HouseholdID, f.ID) }}
+	{{ back, backText, section := routes.URL(routes.Files, actor.HouseholdID), utils.T(ctx, locales.LK_FilesAll), SectionFiles }}
 	if f.NoteTitle != nil {
-		{{ back, backText, section = householdURL(actor.HouseholdID, "notes", f.NoteID.String()), utils.T(ctx, locales.LK_FilesOnNote, *f.NoteTitle), SectionNotes }}
+		{{ back, backText, section = routes.URL(routes.Note, actor.HouseholdID, f.NoteID), utils.T(ctx, locales.LK_FilesOnNote, *f.NoteTitle), SectionNotes }}
 	} else if f.ItemText != nil {
-		{{ back = householdURL(actor.HouseholdID, "lists", f.ItemListID.String(), "items", f.ShoppingItemID.String()) }}
+		{{ back = routes.URL(routes.ShoppingItem, actor.HouseholdID, f.ItemListID, f.ShoppingItemID) }}
 		{{ backText, section = utils.T(ctx, locales.LK_FilesOnItem, *f.ItemText), SectionShopping }}
 	} else if f.ExpenseTitle != nil {
-		{{ back = householdURL(actor.HouseholdID, "expenses", f.ExpenseID.String()) }}
+		{{ back = routes.URL(routes.Expense, actor.HouseholdID, f.ExpenseID) }}
 		{{ backText, section = utils.T(ctx, locales.LK_FilesOnExpense, *f.ExpenseTitle), SectionExpenses }}
 	} else if f.EventTitle != nil {
-		{{ back = householdURL(actor.HouseholdID, "calendar", "events", f.EventID.String()) }}
+		{{ back = routes.URL(routes.CalendarEvent, actor.HouseholdID, f.EventID) }}
 		{{ backText, section = utils.T(ctx, locales.LK_FilesOnEvent, *f.EventTitle), SectionCalendar }}
 	} else if f.MessageID.Valid {
-		{{ back, backText, section =householdURL(actor.HouseholdID, "chat"), utils.T(ctx, locales.LK_FilesOnMessage), SectionChat }}
+		{{ back, backText, section = routes.URL(routes.Chat, actor.HouseholdID), utils.T(ctx, locales.LK_FilesOnMessage), SectionChat }}
 	}
 	@appShell(f.Name, &HouseholdNav{HouseholdID: actor.HouseholdID, Section: section}) {
 		if f.UploaderID == actor.UserID {
 			// the extension stays
 			{{ stem, ext := services.SplitFileName(f.Name) }}
-			@nameHeader(back, backText, fileURL+"/name", stem,
+			@nameHeader(back, backText, routes.URL(routes.FileName, actor.HouseholdID, f.ID), stem,
 				services.MaxFileNameLength-utf8.RuneCountInString(ext), utils.T(ctx, locales.LK_FilesRename)) {
 				<span class="shrink-0">{ ext }</span>
 			}
@@ -386,14 +387,14 @@ templ FilePage(actor services.Membership, f services.FileMeta, errorMessage stri
 		@formError(errorMessage)
 		if services.ImageMimes[f.Mime] {
 			// the rem are what else is on the page, with the phone's header and nav
-			<a href={ fileURL + "/raw" } target="_blank" rel="noopener" class="mx-auto block w-fit max-w-full cursor-zoom-in">
-				<img src={ string(fileURL) + "/raw" } alt={ f.Name } class="max-h-[max(12rem,calc(100dvh-26rem))] max-w-full rounded-2xl object-contain ring-1 ring-foreground/10 lg:max-h-[max(12rem,calc(100dvh-20rem))]"/>
+			<a href={ routes.URL(routes.FileRaw, actor.HouseholdID, f.ID) } target="_blank" rel="noopener" class="mx-auto block w-fit max-w-full cursor-zoom-in">
+				<img src={ routes.URL(routes.FileRaw, actor.HouseholdID, f.ID) } alt={ f.Name } class="max-h-[max(12rem,calc(100dvh-26rem))] max-w-full rounded-2xl object-contain ring-1 ring-foreground/10 lg:max-h-[max(12rem,calc(100dvh-20rem))]"/>
 			</a>
 		}
 		<div class="flex flex-wrap gap-2">
 			@button.Button(button.Props{
 				// its own address, the image's cached response has the name from before a rename
-				Href:       string(fileURL) + "/raw?name=" + url.QueryEscape(f.Name),
+				Href:       routes.URL(routes.FileRaw, actor.HouseholdID, f.ID) + "?name=" + url.QueryEscape(f.Name),
 				Size:       button.SizeLg,
 				Attributes: templ.Attributes{"download": f.Name},
 			}) {
@@ -401,8 +402,8 @@ templ FilePage(actor services.Membership, f services.FileMeta, errorMessage stri
 			}
 			// only its last reference could take it away, and keeping must not show a private note's file to everyone
 			if !f.Kept && f.RefCount == 1 && f.Shared {
-				<form action={ fileURL + "/keep" } method="post" hx-boost="true">
-					<input type="hidden" name={ g.QueryNext } value={ string(fileURL) }/>
+				<form action={ routes.URL(routes.FileKeep, actor.HouseholdID, f.ID) } method="post" hx-boost="true">
+					<input type="hidden" name={ g.QueryNext } value={ fileURL }/>
 					@button.Button(button.Props{Type: button.TypeSubmit, Variant: button.VariantOutline, Size: button.SizeLg}) {
 						@components.T(locales.LK_FilesKeep)
 					}
@@ -410,13 +411,13 @@ templ FilePage(actor services.Membership, f services.FileMeta, errorMessage stri
 			}
 			if f.UploaderID == actor.UserID || actor.Role == g.RoleOwner {
 				<form
-					action={ fileURL + "/delete" }
+					action={ routes.URL(routes.FileDelete, actor.HouseholdID, f.ID) }
 					method="post"
 					hx-boost="true"
 					hx-confirm={ deleteFileConfirm(ctx, f.Name, f.RefCount) }
 					class="ml-auto"
 				>
-					<input type="hidden" name={ g.QueryNext } value={ string(back) }/>
+					<input type="hidden" name={ g.QueryNext } value={ back }/>
 					@deleteButton(locales.LK_CommonDelete)
 				</form>
 			}
@@ -427,10 +428,10 @@ templ FilePage(actor services.Membership, f services.FileMeta, errorMessage stri
 // ShoppingItemPage is one item of a list with its description and files, a photo of the right product say,
 // and the expense it was bought under with the receipt, expense is nil until there is one
 templ ShoppingItemPage(actor services.Membership, listID pgtype.UUID, it services.ShoppingItem, expense *services.Expense, files []services.AttachedFile, errorMessage string) {
-	{{ itemURL := householdURL(actor.HouseholdID, "lists", listID.String(), "items", it.ID.String()) }}
+	{{ itemURL := routes.URL(routes.ShoppingItem, actor.HouseholdID, listID, it.ID) }}
 	@appShell(it.Text, &HouseholdNav{HouseholdID: actor.HouseholdID, Section: SectionShopping}) {
 		// the text and the quantity are edited in place like a list's name
-		@nameHeader(householdURL(actor.HouseholdID, "lists", listID.String()), utils.T(ctx, locales.LK_ShoppingItemBack), templ.SafeURL(itemURL+"/text"),
+		@nameHeader(routes.URL(routes.ShoppingList, actor.HouseholdID, listID), utils.T(ctx, locales.LK_ShoppingItemBack), routes.URL(routes.ShoppingItemText, actor.HouseholdID, listID, it.ID),
 			it.Text, services.MaxShoppingItemTextLength, utils.T(ctx, locales.LK_ShoppingItem)) {
 			@input.Input(input.Props{
 				Name:  "qty",
@@ -444,7 +445,7 @@ templ ShoppingItemPage(actor services.Membership, listID pgtype.UUID, it service
 				},
 			})
 		}
-		<form action={ itemURL + "/description" } method="post" class={ utils.CN(sheetClass, "space-y-3") }>
+		<form action={ routes.URL(routes.ShoppingItemDescription, actor.HouseholdID, listID, it.ID) } method="post" class={ utils.CN(sheetClass, "space-y-3") }>
 			<label for="item-description" class="block font-heading text-xl font-semibold tracking-tight">
 				@components.T(locales.LK_ShoppingDescription)
 			</label>
@@ -463,7 +464,7 @@ templ ShoppingItemPage(actor services.Membership, listID pgtype.UUID, it service
 		</form>
 		@attachedFiles(actor, itemURL, files, locales.LK_ShoppingItemFilesHint, errorMessage)
 		if expense != nil {
-			{{ expenseURL := householdURL(actor.HouseholdID, "expenses", expense.Expense.ID.String()) }}
+			{{ expenseURL := routes.URL(routes.Expense, actor.HouseholdID, expense.Expense.ID) }}
 			<section class={ utils.CN(sheetClass, "space-y-3") } aria-labelledby="item-expense-title">
 				<h2 id="item-expense-title" class="text-xl font-semibold">
 					@components.T(locales.LK_ShoppingItemExpense)
@@ -475,7 +476,7 @@ templ ShoppingItemPage(actor services.Membership, listID pgtype.UUID, it service
 				if len(expense.Files) > 0 {
 					<ul class="divide-y border-t">
 						for _, f := range expense.Files {
-							@fileRow(actor, itemURL, expenseURL+"/files/detach", f.LastRef, f.Shared, 0, f.ID, f.Name, f.HasThumb, f.SizeBytes, f.UploaderID, f.UploaderName, f.CreatedAt)
+							@fileRow(actor, itemURL, expenseURL+routes.FileRefDetach, f.LastRef, f.Shared, 0, f.ID, f.Name, f.HasThumb, f.SizeBytes, f.UploaderID, f.UploaderName, f.CreatedAt)
 						}
 					</ul>
 				}
@@ -483,7 +484,7 @@ templ ShoppingItemPage(actor services.Membership, listID pgtype.UUID, it service
 		}
 		if it.CreatedBy == actor.UserID {
 			<form
-				action={ householdURL(actor.HouseholdID, "lists", listID.String(), "items", it.ID.String(), "delete") }
+				action={ routes.URL(routes.ShoppingItemDelete, actor.HouseholdID, listID, it.ID) }
 				method="post"
 				hx-boost="true"
 				hx-confirm={ deleteConfirm(ctx, utils.T(ctx, locales.LK_ShoppingDeleteItemConfirm, it.Text), lastRefs(files)) }

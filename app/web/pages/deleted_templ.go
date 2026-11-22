@@ -13,6 +13,7 @@ import "roommates/web/components"
 import "roommates/web/components/alert"
 import "roommates/web/components/button"
 import "roommates/internal/locales"
+import "roommates/internal/routes"
 import "roommates/internal/services"
 import "roommates/internal/utils"
 import g "roommates/internal/config"
@@ -65,7 +66,7 @@ func DeletedBanner(m services.Membership) templ.Component {
 					var templ_7745c5c3_Var4 string
 					templ_7745c5c3_Var4, templ_7745c5c3_Err = templ.JoinStringErrs(utils.T(ctx, locales.LK_OwnershipDeletedBanner, utils.FormatDate(ctx, services.PurgeDate(m.DeletedAt))))
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/deleted.templ`, Line: 18, Col: 109}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/deleted.templ`, Line: 19, Col: 109}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var4))
 					if templ_7745c5c3_Err != nil {
@@ -117,9 +118,9 @@ func restoreForm(householdID pgtype.UUID) templ.Component {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var6 string
-		templ_7745c5c3_Var6, templ_7745c5c3_Err = templruntime.NewAttributeExpression(templ.SafeURL(g.RouteHouseholds + "/" + householdID.String() + "/restore")).ResolveURL(ctx)
+		templ_7745c5c3_Var6, templ_7745c5c3_Err = templruntime.NewAttributeExpression(routes.URL(routes.HouseholdRestore, householdID)).ResolveURL(ctx)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/deleted.templ`, Line: 29, Col: 90}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/deleted.templ`, Line: 30, Col: 64}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var6)
 		if templ_7745c5c3_Err != nil {

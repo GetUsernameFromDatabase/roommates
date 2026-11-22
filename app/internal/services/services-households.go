@@ -9,6 +9,7 @@ import (
 	"roommates/internal/db/dbqueries"
 	"roommates/internal/locales"
 	"roommates/internal/push"
+	"roommates/internal/routes"
 	"roommates/internal/utils"
 	"slices"
 	"strings"
@@ -243,7 +244,7 @@ func (s *DefaultService) JoinWithInvite(ctx context.Context, code string, userID
 	}
 	// an existing member joined nobody new
 	if joined.UserID.Valid {
-		s.notifyHousehold(ctx, joined, nil, "people", func(ctx context.Context, _ pgtype.UUID, actorName string) string {
+		s.notifyHousehold(ctx, joined, nil, routes.HouseholdPeople, func(ctx context.Context, _ pgtype.UUID, actorName string) string {
 			return utils.T(ctx, locales.LK_OwnershipPushJoined, actorName)
 		})
 	}
@@ -251,8 +252,8 @@ func (s *DefaultService) JoinWithInvite(ctx context.Context, code string, userID
 }
 
 // notifyHousehold sends a [g.NotifyHousehold] push about a change made by actor to userIDs,
-// or to the other members when nil, the notification opens the household page at path
-func (s *DefaultService) notifyHousehold(ctx context.Context, actor Membership, userIDs []pgtype.UUID, path string,
+// or to the other members when nil, the notification opens the household page at the route
+func (s *DefaultService) notifyHousehold(ctx context.Context, actor Membership, userIDs []pgtype.UUID, route string,
 	body func(ctx context.Context, userID pgtype.UUID, actorName string) string) {
 	if userIDs == nil {
 		var err error
@@ -266,7 +267,7 @@ func (s *DefaultService) notifyHousehold(ctx context.Context, actor Membership, 
 		return push.Message{
 			Title: household,
 			Body:  body(ctx, userID, actorName),
-			URL:   householdPath(actor.HouseholdID, path),
+			URL:   routes.URL(route, actor.HouseholdID),
 			Tag:   "household-" + actor.HouseholdID.String(),
 		}
 	})
@@ -317,7 +318,7 @@ func leaveTx(ctx context.Context, q *dbqueries.Queries, actor Membership) error 
 
 // notifyLeft tells the other members that actor left
 func (s *DefaultService) notifyLeft(ctx context.Context, actor Membership) {
-	s.notifyHousehold(ctx, actor, nil, "people", func(ctx context.Context, _ pgtype.UUID, actorName string) string {
+	s.notifyHousehold(ctx, actor, nil, routes.HouseholdPeople, func(ctx context.Context, _ pgtype.UUID, actorName string) string {
 		return utils.T(ctx, locales.LK_OwnershipPushLeft, actorName)
 	})
 }
@@ -380,7 +381,7 @@ func (s *DefaultService) RemoveMember(ctx context.Context, actor Membership, tar
 		log.Error().Err(err).Msg("could not list members for household push")
 		return nil
 	}
-	s.notifyHousehold(ctx, actor, ids, "people", func(ctx context.Context, _ pgtype.UUID, actorName string) string {
+	s.notifyHousehold(ctx, actor, ids, routes.HouseholdPeople, func(ctx context.Context, _ pgtype.UUID, actorName string) string {
 		return utils.T(ctx, locales.LK_OwnershipPushRemoved, actorName, target.Username)
 	})
 	// the removed member cannot open the household any more, so theirs links home
@@ -429,7 +430,7 @@ func (s *DefaultService) PromoteMember(ctx context.Context, actor Membership, ta
 }
 
 func (s *DefaultService) notifyMadeOwner(ctx context.Context, actor Membership, targetID pgtype.UUID) {
-	s.notifyHousehold(ctx, actor, []pgtype.UUID{targetID}, "people", func(ctx context.Context, _ pgtype.UUID, actorName string) string {
+	s.notifyHousehold(ctx, actor, []pgtype.UUID{targetID}, routes.HouseholdPeople, func(ctx context.Context, _ pgtype.UUID, actorName string) string {
 		return utils.T(ctx, locales.LK_OwnershipPushOwner, actorName)
 	})
 }
@@ -524,7 +525,7 @@ func (s *DefaultService) DeleteHousehold(ctx context.Context, actor Membership, 
 	})
 	if err == nil {
 		purge := time.Now().Add(g.HouseholdPurgeAfter)
-		s.notifyHousehold(ctx, actor, nil, "", func(ctx context.Context, _ pgtype.UUID, actorName string) string {
+		s.notifyHousehold(ctx, actor, nil, routes.Household, func(ctx context.Context, _ pgtype.UUID, actorName string) string {
 			return utils.T(ctx, locales.LK_OwnershipPushDeleted, actorName, utils.FormatDate(ctx, purge))
 		})
 	}
@@ -559,7 +560,7 @@ func (s *DefaultService) RestoreHousehold(ctx context.Context, userID, household
 		return logActivity(ctx, q, actor, ActivityEntry{Kind: g.ActHouseholdRestored, SubjectID: pgtype.UUID{}, TargetUserID: pgtype.UUID{}, Title: "", AmountCents: nil, Currency: ""})
 	})
 	if err == nil && actor.DeletedAt.Valid {
-		s.notifyHousehold(ctx, actor, nil, "", func(ctx context.Context, _ pgtype.UUID, actorName string) string {
+		s.notifyHousehold(ctx, actor, nil, routes.Household, func(ctx context.Context, _ pgtype.UUID, actorName string) string {
 			return utils.T(ctx, locales.LK_OwnershipPushRestored, actorName)
 		})
 	}

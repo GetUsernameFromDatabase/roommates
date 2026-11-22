@@ -72,10 +72,6 @@ var choreRotationKeys = map[string][2]locales.LK{
 	g.RotationManual:      {locales.LK_ChoresRotationManual, locales.LK_ChoresRotationManualHint},
 }
 
-func choreURL(householdID pgtype.UUID, parts ...string) templ.SafeURL {
-	return householdURL(householdID, append([]string{"chores"}, parts...)...)
-}
-
 // choreDay is the calendar day of t, so a due date and the household's today compare by day
 func choreDay(t time.Time) time.Time {
 	return time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, time.UTC)
@@ -177,9 +173,9 @@ func choreMemberOrder(in services.ChoreInput, members []dbqueries.ListActiveMemb
 }
 
 // choreSwapList is what an action on a card swaps: the list, and the toast outside it
-func choreSwapList(action templ.SafeURL) templ.Attributes {
+func choreSwapList(action string) templ.Attributes {
 	return templ.Attributes{
-		"hx-post":         string(action),
+		"hx-post":         action,
 		"hx-target":       "#chores",
 		"hx-select":       "#chores",
 		"hx-select-oob":   "#chores-notice",
@@ -190,9 +186,9 @@ func choreSwapList(action templ.SafeURL) templ.Attributes {
 
 // choreSwapRota is [choreSwapList] for the rota of the chore page, the edit form comes along
 // so its members' order and assignee match and a later save does not undo the change
-func choreSwapRota(action templ.SafeURL) templ.Attributes {
+func choreSwapRota(action string) templ.Attributes {
 	return templ.Attributes{
-		"hx-post":         string(action),
+		"hx-post":         action,
 		"hx-target":       "#chore-rota",
 		"hx-select":       "#chore-rota",
 		"hx-select-oob":   "#chore-notice, #chore-edit",

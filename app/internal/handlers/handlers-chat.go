@@ -6,6 +6,7 @@ import (
 	"net/http"
 	g "roommates/internal/config"
 	"roommates/internal/locales"
+	"roommates/internal/routes"
 	"roommates/internal/services"
 	"roommates/internal/utils"
 	"roommates/web/pages"
@@ -13,10 +14,6 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5/pgtype"
 )
-
-func chatPath(householdID pgtype.UUID) string {
-	return householdPath(householdID) + "/chat"
-}
 
 // PageChat shows the newest messages, or with ?before=<message id> the ones older than it,
 // ?reply=<message id> answers that message
@@ -79,10 +76,10 @@ func (h *DefaultHandler) PostMessage(ctx *gin.Context) {
 	switch {
 	case err == nil && IsRequestHTMX(ctx):
 		// a ?reply= left in the address bar would answer the same message again after a reload
-		ctx.Header(g.HHK_HXReplaceURL.String(), chatPath(actor.HouseholdID))
+		ctx.Header(g.HHK_HXReplaceURL.String(), routes.URL(routes.Chat, actor.HouseholdID))
 		h.renderChat(ctx, http.StatusOK, pgtype.UUID{}, pgtype.UUID{}, "", "")
 	case err == nil:
-		Redirect(ctx, chatPath(actor.HouseholdID))
+		Redirect(ctx, routes.URL(routes.Chat, actor.HouseholdID))
 	case errors.Is(err, g.ErrorFileTooLarge):
 		h.renderChat(ctx, http.StatusRequestEntityTooLarge, pgtype.UUID{}, replyTo, body,
 			utils.T(c, locales.LK_ChatFilesTooLarge, services.MaxFileSize>>20))
@@ -142,7 +139,7 @@ func (h *DefaultHandler) ChatFilePicks(ctx *gin.Context) {
 }
 
 func (h *DefaultHandler) DeleteMessage(ctx *gin.Context) {
-	messageID, err := utils.ParseUUID(ctx.Param(g.ParamMessageID))
+	messageID, err := utils.ParseUUID(ctx.Param(routes.ParamMessageID))
 	if err != nil {
 		RenderTemplStatus(ctx, http.StatusNotFound, pages.NotFound())
 		return
@@ -154,7 +151,7 @@ func (h *DefaultHandler) DeleteMessage(ctx *gin.Context) {
 		// the form swaps only the messages out of it, a message already gone (another tab) is no error
 		h.renderChat(ctx, http.StatusOK, pgtype.UUID{}, pgtype.UUID{}, "", "")
 	case err == nil:
-		Redirect(ctx, chatPath(actor.HouseholdID))
+		Redirect(ctx, routes.URL(routes.Chat, actor.HouseholdID))
 	case errors.Is(err, g.ErrorNotFound):
 		RenderTemplStatus(ctx, http.StatusNotFound, pages.NotFound())
 	default:

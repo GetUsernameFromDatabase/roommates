@@ -13,6 +13,7 @@ import "roommates/internal/services"
 import "roommates/internal/events"
 import g "roommates/internal/config"
 import "roommates/internal/locales"
+import "roommates/internal/routes"
 import "roommates/internal/utils"
 import "github.com/jackc/pgx/v5/pgtype"
 import "strings"
@@ -38,17 +39,17 @@ templ HouseholdNotes(actor services.Membership, notes []dbqueries.ListNotesRow, 
 			<h1 class="doorplate">
 				@components.T(locales.LK_NavNotes)
 			</h1>
-			@button.Button(button.Props{Href: string(householdURL(actor.HouseholdID, "notes", "new")), Size: button.SizeLg, Class: "h-10 shrink-0"}) {
+			@button.Button(button.Props{Href: routes.URL(routes.NoteNew, actor.HouseholdID), Size: button.SizeLg, Class: "h-10 shrink-0"}) {
 				@components.T(locales.LK_NotesNew)
 			}
 		</header>
-		{{ notesURL := householdURL(actor.HouseholdID, "notes") }}
+		{{ notesURL := routes.URL(routes.Notes, actor.HouseholdID) }}
 		// the live region refetches the page's own URL, so it keeps the search of hx-replace-url
 		<form
 			role="search"
 			action={ notesURL }
 			method="get"
-			hx-get={ string(notesURL) }
+			hx-get={ notesURL }
 			hx-trigger="input delay:300ms"
 			hx-target="#notes"
 			hx-select="#notes"
@@ -94,7 +95,7 @@ templ HouseholdNotes(actor services.Membership, notes []dbqueries.ListNotesRow, 
 						for _, n := range notes[:split] {
 							<li>
 								<a
-									href={ householdURL(actor.HouseholdID, "notes", n.ID.String()) }
+									href={ routes.URL(routes.Note, actor.HouseholdID, n.ID) }
 									class={ "note-slip", templ.KV("note-fold", n.Visibility == g.NoteVisibilityPrivate) }
 									aria-labelledby={ "slip-" + n.ID.String() }
 								>
@@ -118,7 +119,7 @@ templ HouseholdNotes(actor services.Membership, notes []dbqueries.ListNotesRow, 
 						<ul class="divide-y">
 							for _, n := range notes[split:] {
 								<li>
-									<a href={ householdURL(actor.HouseholdID, "notes", n.ID.String()) } class="block min-h-12 py-2 hover:underline">
+									<a href={ routes.URL(routes.Note, actor.HouseholdID, n.ID) } class="block min-h-12 py-2 hover:underline">
 										<span class="font-heading text-lg font-semibold break-words">{ n.Title }</span>
 										<span class="block text-xs text-muted-foreground">
 											{ utils.T(ctx, locales.LK_NotesEditedBy, utils.MemberName(ctx, n.EditedByName)) + ", " }
@@ -166,12 +167,11 @@ templ notePrivate(visibility string) {
 //
 // the note is a sheet on the board with its title written on it, under its pin when pinned
 templ NotePage(actor services.Membership, n services.Note, files []services.AttachedFile, uploadError string) {
-	{{ noteURL := householdURL(actor.HouseholdID, "notes", n.ID.String()) }}
 	@appShell(n.Title, &HouseholdNav{HouseholdID: actor.HouseholdID, Section: SectionNotes}) {
 		@localTimeScript.Once() {
 			<script src={ assets.URL("local-time.js") }></script>
 		}
-		@backLink(householdURL(actor.HouseholdID, "notes"), utils.T(ctx, locales.LK_NotesBack))
+		@backLink(routes.URL(routes.Notes, actor.HouseholdID), utils.T(ctx, locales.LK_NotesBack))
 		// a flatmate's edit, pin or unpin shows up here with the buttons that go with it
 		@liveRegion("note", events.TopicNotes) {
 			<div class="note-board -mt-4 space-y-4">
@@ -199,10 +199,10 @@ templ NotePage(actor services.Membership, n services.Note, files []services.Atta
 					</p>
 				</article>
 				<div class="flex flex-wrap gap-2">
-					@button.Button(button.Props{Href: string(noteURL) + "/edit", Size: button.SizeLg}) {
+					@button.Button(button.Props{Href: routes.URL(routes.NoteEdit, actor.HouseholdID, n.ID), Size: button.SizeLg}) {
 						@components.T(locales.LK_NotesEdit)
 					}
-					<form action={ noteURL + "/pin" } method="post" hx-boost="true">
+					<form action={ routes.URL(routes.NotePin, actor.HouseholdID, n.ID) } method="post" hx-boost="true">
 						<input type="hidden" name="pinned" value={ utils.IfElse(n.Pinned, "0", "1") }/>
 						@button.Button(button.Props{Type: button.TypeSubmit, Variant: button.VariantOutline, Size: button.SizeLg, Class: "bg-card"}) {
 							if n.Pinned {
@@ -215,7 +215,7 @@ templ NotePage(actor services.Membership, n services.Note, files []services.Atta
 					// an owner deletes a shared note too, never a private one
 					if n.AuthorID == actor.UserID || (actor.Role == g.RoleOwner && n.Visibility == g.NoteVisibilityHousehold) {
 						<form
-							action={ noteURL + "/delete" }
+							action={ routes.URL(routes.NoteDelete, actor.HouseholdID, n.ID) }
 							method="post"
 							hx-boost="true"
 							hx-confirm={ deleteConfirm(ctx, utils.T(ctx, locales.LK_NotesDeleteConfirm), lastRefs(files)) }
@@ -227,7 +227,7 @@ templ NotePage(actor services.Membership, n services.Note, files []services.Atta
 				</div>
 			</div>
 		}
-		@attachedFiles(actor, noteURL, files, "", uploadError)
+		@attachedFiles(actor, routes.URL(routes.Note, actor.HouseholdID, n.ID), files, "", uploadError)
 	}
 }
 
@@ -235,11 +235,11 @@ var noteEditorScript = templ.NewOnceHandle()
 
 // NoteEditor creates a note, or edits one when f.NoteID is set
 templ NoteEditor(actor services.Membership, f NoteForm) {
-	{{ notesURL := householdURL(actor.HouseholdID, "notes") }}
+	{{ notesURL := routes.URL(routes.Notes, actor.HouseholdID) }}
 	{{ action, cancel := notesURL, notesURL }}
 	if f.NoteID.Valid {
-		{{ cancel = householdURL(actor.HouseholdID, "notes", f.NoteID.String()) }}
-		{{ action = cancel + "/edit" }}
+		{{ cancel = routes.URL(routes.Note, actor.HouseholdID, f.NoteID) }}
+		{{ action = routes.URL(routes.NoteEdit, actor.HouseholdID, f.NoteID) }}
 	}
 	@appShell(utils.IfElse(f.Input.Title != "", f.Input.Title, utils.T(ctx, locales.LK_NotesNew)), &HouseholdNav{HouseholdID: actor.HouseholdID, Section: SectionNotes}) {
 		@noteEditorScript.Once() {
@@ -309,7 +309,7 @@ templ NoteEditor(actor services.Membership, f NoteForm) {
 						role="textbox"
 						aria-multiline="true"
 						aria-label={ utils.T(ctx, locales.LK_NotesBody) }
-						data-render={ string(householdURL(actor.HouseholdID, "notes", "render")) }
+						data-render={ routes.URL(routes.NoteRender, actor.HouseholdID) }
 						class="note-body -mx-2 min-h-64 max-w-[65ch] rounded-lg px-2 py-1 leading-relaxed outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
 					>
 						@noteHTML(f.Input.BodyMD)

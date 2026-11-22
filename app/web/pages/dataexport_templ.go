@@ -12,7 +12,7 @@ import templruntime "github.com/a-h/templ/runtime"
 import "roommates/web/components"
 import "roommates/web/components/button"
 import "roommates/internal/locales"
-import g "roommates/internal/config"
+import "roommates/internal/routes"
 import "roommates/internal/utils"
 import "roommates/internal/services"
 
@@ -137,9 +137,9 @@ func DataExportSection(path string, status services.DataExportStatus, infoMessag
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var5 string
-			templ_7745c5c3_Var5, templ_7745c5c3_Err = templruntime.NewAttributeExpression(templ.SafeURL(path + g.RouteDataExport)).ResolveURL(ctx)
+			templ_7745c5c3_Var5, templ_7745c5c3_Err = templruntime.NewAttributeExpression(path + routes.AccountDataExport).ResolveURL(ctx)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/dataexport.templ`, Line: 36, Col: 52}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/dataexport.templ`, Line: 36, Col: 44}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var5)
 			if templ_7745c5c3_Err != nil {
@@ -150,9 +150,9 @@ func DataExportSection(path string, status services.DataExportStatus, infoMessag
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var6 string
-			templ_7745c5c3_Var6, templ_7745c5c3_Err = templruntime.NewAttributeExpression(path + g.RouteDataExport).Resolve(ctx)
+			templ_7745c5c3_Var6, templ_7745c5c3_Err = templruntime.NewAttributeExpression(path + routes.AccountDataExport).Resolve(ctx)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/dataexport.templ`, Line: 38, Col: 38}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/dataexport.templ`, Line: 38, Col: 45}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var6)
 			if templ_7745c5c3_Err != nil {
@@ -186,7 +186,7 @@ func DataExportSection(path string, status services.DataExportStatus, infoMessag
 					return nil
 				})
 				templ_7745c5c3_Err = button.Button(button.Props{
-					Href:       g.RouteSettings + g.RouteDataExport + "/" + status.ID.String(),
+					Href:       routes.URL(routes.DataExportDownload, status.ID),
 					Class:      "h-11",
 					Attributes: templ.Attributes{"hx-boost": "false", "download": ""},
 				}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var7), templ_7745c5c3_Buffer)

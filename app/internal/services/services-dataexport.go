@@ -16,6 +16,7 @@ import (
 	"roommates/internal/db/dbqueries"
 	"roommates/internal/locales"
 	"roommates/internal/mailer"
+	"roommates/internal/routes"
 	"roommates/internal/utils"
 
 	"github.com/invopop/ctxi18n"
@@ -144,7 +145,7 @@ func (s *DefaultService) BuildPendingExports(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	link := g.GetAppBaseURL() + g.RouteSettings + g.RouteDataExport + "/" + row.ID.String()
+	link := g.GetAppBaseURL() + routes.URL(routes.DataExportDownload, row.ID)
 	s.sendAsync(mailer.Message{
 		To:      user.Email,
 		Subject: utils.T(lctx, locales.LK_MailDataExportSubject),

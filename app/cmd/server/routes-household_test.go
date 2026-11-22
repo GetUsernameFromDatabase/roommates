@@ -15,6 +15,7 @@ import (
 	"roommates/internal/locales"
 	"roommates/internal/mailer"
 	"roommates/internal/push"
+	"roommates/internal/routes"
 	"roommates/internal/services"
 	"roommates/internal/sessions"
 	"roommates/web/renderer"
@@ -73,7 +74,7 @@ func newRouteTest(t *testing.T) (r *gin.Engine, service *services.DefaultService
 			t.Fatal(err)
 		}
 		form := url.Values{"email": {email}, "password": {password}}
-		w := send(r, http.MethodPost, g.RouteLogin, strings.NewReader(form.Encode()), nil)
+		w := send(r, http.MethodPost, routes.Login, strings.NewReader(form.Encode()), nil)
 		if len(w.Result().Cookies()) == 0 {
 			t.Fatalf("login of %s set no session cookie, status %d", email, w.Code)
 		}
@@ -94,12 +95,12 @@ func TestHouseholdRoutesHideFromStrangers(t *testing.T) {
 	}
 	household := householdID.String()
 
-	if w := send(r, http.MethodGet, g.RouteHousehold+"/"+household, nil, memberCookies); w.Code == http.StatusNotFound {
+	if w := send(r, http.MethodGet, routes.URL(routes.Household, household), nil, memberCookies); w.Code == http.StatusNotFound {
 		t.Fatalf("member got 404 on their household home: the test would pass with everything broken")
 	}
 
 	param := regexp.MustCompile(`:\w+`)
-	prefix := g.RouteHousehold + "/:" + g.ParamHouseholdID
+	prefix := routes.Household
 	covered := 0
 	for _, route := range r.Routes() {
 		if !strings.HasPrefix(route.Path, prefix) {
@@ -107,7 +108,7 @@ func TestHouseholdRoutesHideFromStrangers(t *testing.T) {
 		}
 		covered++
 		path := param.ReplaceAllStringFunc(route.Path, func(p string) string {
-			if p == ":"+g.ParamHouseholdID {
+			if p == ":"+routes.ParamHouseholdID {
 				return household
 			}
 			return randomUUID(t)
@@ -138,13 +139,13 @@ func TestDeletedHouseholdIsReadOnly(t *testing.T) {
 	if err := service.DeleteHousehold(t.Context(), m, "Flat"); err != nil {
 		t.Fatal(err)
 	}
-	base := g.RouteHousehold + "/" + householdID.String()
+	base := routes.URL(routes.Household, householdID)
 
 	if w := send(r, http.MethodGet, base, nil, cookies); w.Code != http.StatusOK {
 		t.Errorf("GET of a deleted household got %d, want 200", w.Code)
 	}
 	form := url.Values{"name": {"Groceries"}}
-	if w := send(r, http.MethodPost, base+"/lists", strings.NewReader(form.Encode()), cookies); w.Code != http.StatusForbidden {
+	if w := send(r, http.MethodPost, routes.URL(routes.ShoppingLists, householdID), strings.NewReader(form.Encode()), cookies); w.Code != http.StatusForbidden {
 		t.Errorf("POST into a deleted household got %d, want 403", w.Code)
 	}
 	lists, err := service.GetHouseholdOverview(t.Context(), m)
@@ -153,7 +154,7 @@ func TestDeletedHouseholdIsReadOnly(t *testing.T) {
 	}
 	// the user's own settings on that page still save
 	form = url.Values{"username": {"renamed"}}
-	if w := send(r, http.MethodPost, base+"/settings/username", strings.NewReader(form.Encode()), cookies); w.Code == http.StatusForbidden {
+	if w := send(r, http.MethodPost, routes.URL(routes.HouseholdSettings, householdID)+routes.AccountUsername, strings.NewReader(form.Encode()), cookies); w.Code == http.StatusForbidden {
 		t.Errorf("username change in a deleted household was refused")
 	}
 }

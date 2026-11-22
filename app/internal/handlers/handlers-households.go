@@ -7,6 +7,7 @@ import (
 	g "roommates/internal/config"
 	"roommates/internal/locales"
 	"roommates/internal/models"
+	"roommates/internal/routes"
 	"roommates/internal/services"
 	"roommates/internal/sessions"
 	"roommates/internal/utils"
@@ -22,15 +23,6 @@ import (
 // membershipFromContext panics if [middleware.NewHouseholdMember] did not run on the route
 func membershipFromContext(ctx *gin.Context) services.Membership {
 	return ctx.MustGet(g.GinKeyMembership).(services.Membership)
-}
-
-// householdPath is the shopping section, the first page of a household
-func householdPath(id pgtype.UUID) string {
-	return g.RouteHousehold + "/" + id.String()
-}
-
-func peoplePath(id pgtype.UUID) string {
-	return householdPath(id) + "/people"
 }
 
 func sessionUserID(ctx *gin.Context) (pgtype.UUID, error) {
@@ -66,7 +58,7 @@ func (h *DefaultHandler) PageInvite(ctx *gin.Context) {
 		InternalError(ctx, err)
 		return
 	}
-	Redirect(ctx, householdPath(householdID))
+	Redirect(ctx, routes.URL(routes.Household, householdID))
 }
 
 // set after [DefaultHandler.SendInviteEmail], so a refresh does not resend
@@ -110,10 +102,10 @@ func (h *DefaultHandler) renderPeople(ctx *gin.Context, status int, infoMessage,
 	}
 	// an action answers htmx with the page itself, at the people address and where it was scrolled
 	if ctx.Request.Method == http.MethodPost && IsRequestHTMX(ctx) {
-		ctx.Header(g.HHK_HXReplaceURL.String(), peoplePath(actor.HouseholdID))
+		ctx.Header(g.HHK_HXReplaceURL.String(), routes.URL(routes.HouseholdPeople, actor.HouseholdID))
 		stayInPlace(ctx)
 	}
-	inviteURL := g.GetAppBaseURL() + g.RouteInvite + "?code="
+	inviteURL := g.GetAppBaseURL() + routes.Invite + "?code="
 	// a failed invite email keeps the typed address, a sent one clears the field
 	inviteEmail := ""
 	if at == pages.PeopleAtInviteEmail {
@@ -132,7 +124,7 @@ func (h *DefaultHandler) householdAction(ctx *gin.Context, at string, action fun
 	case err == nil && IsRequestHTMX(ctx):
 		h.renderPeople(ctx, http.StatusOK, "", "", "")
 	case err == nil:
-		Redirect(ctx, peoplePath(actor.HouseholdID))
+		Redirect(ctx, routes.URL(routes.HouseholdPeople, actor.HouseholdID))
 	case errors.Is(err, g.ErrorLastOwner):
 		h.renderPeople(ctx, http.StatusConflict, "", at,
 			utils.T(ctx.Request.Context(), locales.LK_HouseholdLastOwner))
@@ -195,30 +187,30 @@ func (h *DefaultHandler) SendInviteEmail(ctx *gin.Context) {
 			utils.T(ctx.Request.Context(), locales.LK_HouseholdInviteEmailSent, model.Email), "", "")
 		return
 	}
-	Redirect(ctx, peoplePath(actor.HouseholdID)+"?"+url.Values{queryInvited: {model.Email}}.Encode())
+	Redirect(ctx, routes.URL(routes.HouseholdPeople, actor.HouseholdID)+"?"+url.Values{queryInvited: {model.Email}}.Encode())
 }
 
 func (h *DefaultHandler) DeleteInvite(ctx *gin.Context) {
-	h.householdTargetAction(ctx, g.ParamInviteID, pages.PeopleAtInvites, func(actor services.Membership, inviteID pgtype.UUID) error {
+	h.householdTargetAction(ctx, routes.ParamInviteID, pages.PeopleAtInvites, func(actor services.Membership, inviteID pgtype.UUID) error {
 		return h.service.DeleteInvite(ctx, actor, inviteID)
 	})
 }
 
 func (h *DefaultHandler) RemoveMember(ctx *gin.Context) {
-	h.householdTargetAction(ctx, g.ParamUserID, pages.PeopleAtMembers, func(actor services.Membership, userID pgtype.UUID) error {
+	h.householdTargetAction(ctx, routes.ParamUserID, pages.PeopleAtMembers, func(actor services.Membership, userID pgtype.UUID) error {
 		return h.service.RemoveMember(ctx, actor, userID)
 	})
 }
 
 func (h *DefaultHandler) PromoteMember(ctx *gin.Context) {
-	h.householdTargetAction(ctx, g.ParamUserID, pages.PeopleAtMembers, func(actor services.Membership, userID pgtype.UUID) error {
+	h.householdTargetAction(ctx, routes.ParamUserID, pages.PeopleAtMembers, func(actor services.Membership, userID pgtype.UUID) error {
 		return h.service.PromoteMember(ctx, actor, userID)
 	})
 }
 
 // TransferOwnership makes a member an owner and the actor a member, the page then shows the new role
 func (h *DefaultHandler) TransferOwnership(ctx *gin.Context) {
-	h.householdTargetAction(ctx, g.ParamUserID, pages.PeopleAtMembers, func(actor services.Membership, userID pgtype.UUID) error {
+	h.householdTargetAction(ctx, routes.ParamUserID, pages.PeopleAtMembers, func(actor services.Membership, userID pgtype.UUID) error {
 		return h.reloadActor(ctx, actor, h.service.TransferOwnership(ctx, actor, userID))
 	})
 }
@@ -252,7 +244,7 @@ func (h *DefaultHandler) DeleteHousehold(ctx *gin.Context) {
 	var field services.FieldError
 	switch {
 	case err == nil:
-		stay(ctx, householdPath(actor.HouseholdID)+"/settings")
+		stay(ctx, routes.URL(routes.HouseholdSettings, actor.HouseholdID))
 	case errors.As(err, &field):
 		if IsRequestHTMX(ctx) {
 			ctx.Header(g.HHK_HXRetarget.String(), "#household-delete-error")
@@ -275,7 +267,7 @@ func (h *DefaultHandler) RestoreHousehold(ctx *gin.Context) {
 		InternalError(ctx, err)
 		return
 	}
-	householdID, err := utils.ParseUUID(ctx.Param(g.ParamHouseholdID))
+	householdID, err := utils.ParseUUID(ctx.Param(routes.ParamHouseholdID))
 	if err != nil {
 		err = g.ErrorNotFound
 	} else {
@@ -284,8 +276,8 @@ func (h *DefaultHandler) RestoreHousehold(ctx *gin.Context) {
 	switch {
 	case err == nil:
 		// the household page the banner is on, or home
-		next := "/"
-		if u, err := url.Parse(ctx.GetHeader("HX-Current-URL")); err == nil && strings.HasPrefix(u.Path, householdPath(householdID)) {
+		next := routes.Home
+		if u, err := url.Parse(ctx.GetHeader("HX-Current-URL")); err == nil && strings.HasPrefix(u.Path, routes.URL(routes.Household, householdID)) {
 			next = u.RequestURI()
 		}
 		stay(ctx, next)
@@ -305,7 +297,7 @@ func (h *DefaultHandler) LeaveHousehold(ctx *gin.Context) {
 	actor := membershipFromContext(ctx)
 	err := h.service.Leave(ctx, actor)
 	if err == nil {
-		Redirect(ctx, "/")
+		Redirect(ctx, routes.Home)
 		return
 	}
 	// the errors are mapped as in any other people action
@@ -316,7 +308,7 @@ func (h *DefaultHandler) LeaveHousehold(ctx *gin.Context) {
 // as the name is in the household switcher, there the new name in the field is the outcome
 func (h *DefaultHandler) UpdateHousehold(ctx *gin.Context) {
 	actor := membershipFromContext(ctx)
-	path := householdPath(actor.HouseholdID) + "/settings"
+	path := routes.URL(routes.HouseholdSettings, actor.HouseholdID)
 	before, err := h.service.GetHouseholdSettings(ctx, actor)
 	if err != nil {
 		InternalError(ctx, err)
@@ -339,7 +331,7 @@ func (h *DefaultHandler) UpdateHousehold(ctx *gin.Context) {
 		if slices.Contains(before.TimeZones, timeZone) {
 			before.TimeZone = timeZone
 		}
-		RenderTemplStatus(ctx, status, pages.HouseholdSettingsSection(path, actor, before, msg, info))
+		RenderTemplStatus(ctx, status, pages.HouseholdSettingsSection(actor, before, msg, info))
 	}
 	var field services.FieldError
 	switch {

@@ -5,6 +5,7 @@ import (
 	"net/http/httptest"
 	"net/url"
 	g "roommates/internal/config"
+	"roommates/internal/routes"
 	"strings"
 	"testing"
 
@@ -20,12 +21,12 @@ func TestSetAppearance(t *testing.T) {
 	}{
 		// a reload here would lose a picture being cropped
 		{"htmx stays on the page", true, http.StatusNoContent, ""},
-		{"plain form goes back to next", false, http.StatusSeeOther, "/settings"},
+		{"plain form goes back to next", false, http.StatusSeeOther, routes.Settings},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			form := url.Values{"theme": {"plain"}, "mode": {"dark"}, g.QueryNext: {"/settings"}}
-			req := httptest.NewRequest(http.MethodPost, g.RouteAppearance, strings.NewReader(form.Encode()))
+			form := url.Values{"theme": {"plain"}, "mode": {"dark"}, g.QueryNext: {routes.Settings}}
+			req := httptest.NewRequest(http.MethodPost, routes.Appearance, strings.NewReader(form.Encode()))
 			req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 			if c.htmx {
 				req.Header.Set(g.HHK_HXRequest.String(), "true")

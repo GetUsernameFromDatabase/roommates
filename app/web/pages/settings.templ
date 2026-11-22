@@ -7,8 +7,8 @@ import "roommates/web/components/button"
 import "roommates/web/components/input"
 import "roommates/web/components/switch"
 import "roommates/internal/locales"
-import g "roommates/internal/config"
 import "roommates/internal/db/dbqueries"
+import "roommates/internal/routes"
 import "roommates/internal/utils"
 import "roommates/internal/services"
 
@@ -46,7 +46,7 @@ templ Settings(pushKey string, nav *HouseholdNav, path string, user dbqueries.Ge
 		@DataExportSection(path, export, "")
 		if member != nil {
 			@PaymentSection(path, payment, &member.ShowPayment, "", "")
-			@HouseholdSettingsSection(path, member.Actor, member.Household, "", "")
+			@HouseholdSettingsSection(member.Actor, member.Household, "", "")
 			@NotificationSection(&member.Actor, member.Notifications)
 		} else {
 			@PaymentSection(path, payment, nil, "", "")
@@ -86,7 +86,7 @@ templ avatarForm(path string, user dbqueries.GetUserRow, errorMessage string) {
 				</p>
 			</div>
 		</div>
-		<form action={ templ.SafeURL(path + g.RouteAvatar) } method="post" enctype="multipart/form-data" hx-boost="true" class="relative flex flex-col items-start gap-4">
+		<form action={ path + routes.AccountAvatar } method="post" enctype="multipart/form-data" hx-boost="true" class="relative flex flex-col items-start gap-4">
 			@input.Input(input.Props{
 				ID:       "avatar",
 				Name:     "avatar",
@@ -110,7 +110,7 @@ templ avatarForm(path string, user dbqueries.GetUserRow, errorMessage string) {
 			@formError(errorMessage)
 		</form>
 		if user.AvatarKey != nil {
-			<form action={ templ.SafeURL(path + g.RouteAvatarDelete) } method="post" hx-boost="true" hx-confirm={ utils.T(ctx, locales.LK_AvatarRemoveConfirm) } class="-mt-1 group-has-[input[type=file]:valid]/avatar:hidden">
+			<form action={ path + routes.AccountAvatarDelete } method="post" hx-boost="true" hx-confirm={ utils.T(ctx, locales.LK_AvatarRemoveConfirm) } class="-mt-1 group-has-[input[type=file]:valid]/avatar:hidden">
 				@button.Button(button.Props{Type: button.TypeSubmit, Variant: button.VariantLink, Class: "h-11 px-0 text-destructive"}) {
 					@components.T(locales.LK_AvatarRemove)
 				}

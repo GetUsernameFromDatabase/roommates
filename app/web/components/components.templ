@@ -2,6 +2,7 @@ package components
 
 import "roommates/web/assets"
 import "roommates/internal/locales"
+import "roommates/internal/routes"
 import "roommates/internal/utils"
 
 // wraps component with html tag
@@ -42,14 +43,15 @@ templ HeaderComponent(title string) {
 				<meta name="theme-color" media="(prefers-color-scheme: dark)" content={ dark }/>
 		}
 		if a.Theme == "home" {
-			<link rel="preload" href="/assets/fonts/atkinson-hyperlegible-next-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin/>
-			<link rel="preload" href="/assets/fonts/bricolage-grotesque-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin/>
+			// without ?v=, the URL output.css asks for
+			<link rel="preload" href={ routes.Assets + "/fonts/atkinson-hyperlegible-next-latin-wght-normal.woff2" } as="font" type="font/woff2" crossorigin/>
+			<link rel="preload" href={ routes.Assets + "/fonts/bricolage-grotesque-latin-wght-normal.woff2" } as="font" type="font/woff2" crossorigin/>
 		}
 		<link rel="stylesheet" href={ assets.URL("output.css") }/>
 		// installable app, see web/assets/pwa
-		<link rel="manifest" href="/manifest.webmanifest"/>
-		<link rel="icon" href="/icons/favicon.svg" type="image/svg+xml"/>
-		<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png"/>
+		<link rel="manifest" href={ routes.Manifest }/>
+		<link rel="icon" href={ routes.Icons + "/favicon.svg" } type="image/svg+xml"/>
+		<link rel="apple-touch-icon" href={ routes.Icons + "/apple-touch-icon.png" }/>
 		// by default htmx does not swap 4xx/5xx responses, which would leave
 		// a submitted form without feedback, so error pages are swapped in too
 		// allowEval is off as the CSP blocks eval anyway
@@ -64,6 +66,7 @@ templ HeaderComponent(title string) {
 		<script src={ assets.URL("lib/sse.min.js") }></script>
 		<script src={ assets.URL("live-resync.js") }></script>
 		// a page or component renders its own scripts, with a templ.OnceHandle
+		<script src={ routes.JSURL }></script>
 		<script src={ assets.URL("push.js") }></script>
 		<script src={ assets.URL("menus.js") }></script>
 		<script src={ assets.URL("file-upload.js") }></script>

@@ -6,8 +6,8 @@ import "roommates/web/components/field"
 import "roommates/web/components/input"
 import "roommates/web/components/button"
 import "roommates/internal/models"
-import g "roommates/internal/config"
 import "roommates/internal/locales"
+import "roommates/internal/routes"
 import "roommates/internal/utils"
 
 templ Register(m models.Register) {
@@ -21,7 +21,7 @@ templ Register(m models.Register) {
 		<p class="mt-6 text-sm text-muted-foreground">
 			@components.T(locales.LK_RegistrationPageAlreadyHaveAccount)
 			<a
-				href={ withNext(g.RouteLogin, m.Next) }
+				href={ withNext(routes.Login, m.Next) }
 				class="font-medium text-foreground underline-offset-4 hover:underline ml-1"
 			>
 				@components.T(locales.LK_LoginPageSignIn)
@@ -37,7 +37,7 @@ templ RegisterForm(m models.Register) {
 		passwordValidations := m.ValidatePassword()
 		passwordMatchValidations := m.ValidatePasswordMatch()
 	}}
-	<form action={ g.RouteRegister } method="post" hx-boost="true" class="space-y-5">
+	<form action={ routes.Register } method="post" hx-boost="true" class="space-y-5">
 		<input type="hidden" name="next" value={ m.Next }/>
 		@field.Group() {
 			<!-- Email -->

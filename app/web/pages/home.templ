@@ -9,6 +9,7 @@ import "roommates/internal/db/dbqueries"
 import "roommates/internal/models"
 import g "roommates/internal/config"
 import "roommates/internal/locales"
+import "roommates/internal/routes"
 import "roommates/internal/utils"
 import "roommates/internal/services"
 
@@ -27,9 +28,9 @@ templ Home(username string, emailValidated bool, households []dbqueries.ListHous
 					</p>
 				}
 			</div>
-			<form action={ g.RouteLogout } method="post" data-push-logout class="flex gap-2">
+			<form action={ routes.Logout } method="post" data-push-logout class="flex gap-2">
 				@button.Button(button.Props{
-					Href:    g.RouteSettings,
+					Href:    routes.Settings,
 					Variant: button.VariantGhost,
 					Size:    button.SizeSm,
 				}) {
@@ -49,7 +50,7 @@ templ Home(username string, emailValidated bool, households []dbqueries.ListHous
 			<ul class="door-row">
 				for _, h := range households {
 					<li>
-						@frontDoor(householdURL(h.ID)) {
+						@frontDoor(routes.URL(routes.Household, h.ID)) {
 							{ h.Name }
 						}
 						<span class="text-sm text-muted-foreground">{ RoleName(ctx, h.Role) }</span>
@@ -91,7 +92,7 @@ templ Home(username string, emailValidated bool, households []dbqueries.ListHous
 
 templ CreateHouseholdForm(m models.Household) {
 	{{ nameValidations := m.ValidateName() }}
-	<form action={ g.RouteHouseholds } method="post" hx-boost="true" class="space-y-4">
+	<form action={ routes.Households } method="post" hx-boost="true" class="space-y-4">
 		@localTimeScript.Once() {
 			<script src={ assets.URL("local-time.js") }></script>
 		}
@@ -123,7 +124,7 @@ templ CreateHouseholdForm(m models.Household) {
 
 // JoinForm sends the typed code to the invite page
 templ JoinForm(code string) {
-	<form action={ g.RouteInvite } method="get" class="flex items-end gap-2">
+	<form action={ routes.Invite } method="get" class="flex items-end gap-2">
 		@field.Field(field.Props{Class: "flex-1"}) {
 			@field.Label(field.LabelProps{For: "code"}) {
 				@components.T(locales.LK_InvitePageCode)

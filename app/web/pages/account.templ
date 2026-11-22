@@ -5,20 +5,12 @@ import "roommates/web/components/button"
 import "roommates/web/components/field"
 import "roommates/web/components/input"
 import "roommates/internal/locales"
+import "roommates/internal/routes"
 import "roommates/internal/db/dbqueries"
 import "roommates/internal/utils"
 
-// the forms of [AccountSection], also the last part of their action under the settings path
-const (
-	AccountAtUsername          = "username"
-	AccountAtEmail             = "email"
-	AccountAtPassword          = "password"
-	AccountAtSignOutEverywhere = "sign-out-everywhere"
-	AccountAtDeleteAccount     = "delete-account"
-)
-
 // AccountSection is how the user signs in, each form swaps the whole section with its outcome,
-// errorAt and infoAt (an AccountAt*) name the form errorMessage and infoMessage belong to
+// errorAt and infoAt (the routes.Account* the form posts to) name the form errorMessage and infoMessage belong to
 templ AccountSection(path string, user dbqueries.GetUserRow, errorAt, errorMessage, infoAt, infoMessage string) {
 	{{
 		outcome := func(at string) templ.Component {
@@ -30,7 +22,7 @@ templ AccountSection(path string, user dbqueries.GetUserRow, errorAt, errorMessa
 			@components.T(locales.LK_AccountTitle)
 		</h2>
 		<div class="flex flex-col divide-y *:py-5 *:first:pt-0 *:last:pb-0">
-			@accountForm(path, AccountAtUsername) {
+			@accountForm(path, routes.AccountUsername) {
 				@field.Field() {
 					@field.Label(field.LabelProps{For: "account-username"}) {
 						@components.T(locales.LK_UsernameTitle)
@@ -46,9 +38,9 @@ templ AccountSection(path string, user dbqueries.GetUserRow, errorAt, errorMessa
 					})
 				}
 				@accountSubmit(locales.LK_CommonSave)
-				@outcome(AccountAtUsername)
+				@outcome(routes.AccountUsername)
 			}
-			@accountForm(path, AccountAtEmail) {
+			@accountForm(path, routes.AccountEmail) {
 				<div>
 					<h3 class="font-semibold">
 						@components.T(locales.LK_Email)
@@ -71,9 +63,9 @@ templ AccountSection(path string, user dbqueries.GetUserRow, errorAt, errorMessa
 				}
 				@currentPasswordField("account-email-password")
 				@accountSubmit(locales.LK_AccountEmailSubmit)
-				@outcome(AccountAtEmail)
+				@outcome(routes.AccountEmail)
 			}
-			@accountForm(path, AccountAtPassword) {
+			@accountForm(path, routes.AccountPassword) {
 				<h3 class="font-semibold">
 					@components.T(locales.LK_PasswordTitle)
 				</h3>
@@ -103,11 +95,11 @@ templ AccountSection(path string, user dbqueries.GetUserRow, errorAt, errorMessa
 					})
 				}
 				@accountSubmit(locales.LK_AccountPasswordSubmit)
-				@outcome(AccountAtPassword)
+				@outcome(routes.AccountPassword)
 			}
 			// signs this device out too, so a full reload to the login page, not a swap
 			<form
-				action={ templ.SafeURL(path + "/" + AccountAtSignOutEverywhere) }
+				action={ path + routes.AccountSignOutEverywhere }
 				method="post"
 				hx-boost="true"
 				hx-confirm={ utils.T(ctx, locales.LK_AccountSignOutEverywhereConfirm) }
@@ -124,9 +116,9 @@ templ AccountSection(path string, user dbqueries.GetUserRow, errorAt, errorMessa
 			</form>
 			// accountForm plus the confirm, errors swap in place, success signs out to the deleted page
 			<form
-				action={ templ.SafeURL(path + "/" + AccountAtDeleteAccount) }
+				action={ path + routes.AccountDelete }
 				method="post"
-				hx-post={ path + "/" + AccountAtDeleteAccount }
+				hx-post={ path + routes.AccountDelete }
 				hx-target="#account"
 				hx-swap="outerHTML"
 				hx-confirm={ utils.T(ctx, locales.LK_AccountDeleteConfirm) }
@@ -145,18 +137,18 @@ templ AccountSection(path string, user dbqueries.GetUserRow, errorAt, errorMessa
 				@button.Button(button.Props{Type: button.TypeSubmit, Variant: button.VariantDestructive, Class: "h-11 self-start"}) {
 					@components.T(locales.LK_AccountDeleteSubmit)
 				}
-				@outcome(AccountAtDeleteAccount)
+				@outcome(routes.AccountDelete)
 			</form>
 		</div>
 	</section>
 }
 
-// accountForm posts to path/at and swaps [AccountSection] with the answer
-templ accountForm(path, at string) {
+// accountForm posts to path + route (a routes.Account*) and swaps [AccountSection] with the answer
+templ accountForm(path, route string) {
 	<form
-		action={ templ.SafeURL(path + "/" + at) }
+		action={ path + route }
 		method="post"
-		hx-post={ path + "/" + at }
+		hx-post={ path + route }
 		hx-target="#account"
 		hx-swap="outerHTML"
 		class="flex flex-col gap-4"

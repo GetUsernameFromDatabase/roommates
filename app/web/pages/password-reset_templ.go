@@ -16,8 +16,8 @@ import "roommates/web/components/input"
 import "roommates/web/components/inputgroup"
 import "roommates/web/components/button"
 import "roommates/internal/models"
-import g "roommates/internal/config"
 import "roommates/internal/locales"
+import "roommates/internal/routes"
 import "roommates/internal/utils"
 
 // authCard is the layout of the sign in pages: the front door of the home on its
@@ -146,7 +146,7 @@ func authCard(title, description string) templ.Component {
 
 // frontDoor is a door of the home with children on its plate, it swings ajar on
 // hover and open while a form posts, see .front-door in globals.css
-func frontDoor(href templ.SafeURL) templ.Component {
+func frontDoor(href string) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -377,7 +377,7 @@ func ForgotPassword(m models.EmailForm) templ.Component {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var16 string
-			templ_7745c5c3_Var16, templ_7745c5c3_Err = templruntime.NewAttributeExpression(g.RouteForgotPassword).ResolveURL(ctx)
+			templ_7745c5c3_Var16, templ_7745c5c3_Err = templruntime.NewAttributeExpression(routes.ForgotPassword).ResolveURL(ctx)
 			if templ_7745c5c3_Err != nil {
 				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/password-reset.templ`, Line: 119, Col: 38}
 			}
@@ -476,7 +476,7 @@ func ForgotPassword(m models.EmailForm) templ.Component {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var20 string
-			templ_7745c5c3_Var20, templ_7745c5c3_Err = templruntime.NewAttributeExpression(g.RouteLogin).ResolveURL(ctx)
+			templ_7745c5c3_Var20, templ_7745c5c3_Err = templruntime.NewAttributeExpression(routes.Login).ResolveURL(ctx)
 			if templ_7745c5c3_Err != nil {
 				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/password-reset.templ`, Line: 144, Col: 25}
 			}
@@ -542,7 +542,7 @@ func ResetPassword(m models.ResetPassword) templ.Component {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var23 string
-			templ_7745c5c3_Var23, templ_7745c5c3_Err = templruntime.NewAttributeExpression(g.RouteResetPassword).ResolveURL(ctx)
+			templ_7745c5c3_Var23, templ_7745c5c3_Err = templruntime.NewAttributeExpression(routes.ResetPassword).ResolveURL(ctx)
 			if templ_7745c5c3_Err != nil {
 				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/password-reset.templ`, Line: 157, Col: 37}
 			}
@@ -749,7 +749,7 @@ func VerifyEmailBanner(emailValidated bool) templ.Component {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var31 string
-			templ_7745c5c3_Var31, templ_7745c5c3_Err = templruntime.NewAttributeExpression(g.RouteVerifyEmailResend).ResolveURL(ctx)
+			templ_7745c5c3_Var31, templ_7745c5c3_Err = templruntime.NewAttributeExpression(routes.VerifyEmailResend).ResolveURL(ctx)
 			if templ_7745c5c3_Err != nil {
 				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/password-reset.templ`, Line: 206, Col: 42}
 			}
@@ -762,7 +762,7 @@ func VerifyEmailBanner(emailValidated bool) templ.Component {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var32 string
-			templ_7745c5c3_Var32, templ_7745c5c3_Err = templruntime.NewAttributeExpression(g.RouteVerifyEmailResend).Resolve(ctx)
+			templ_7745c5c3_Var32, templ_7745c5c3_Err = templruntime.NewAttributeExpression(routes.VerifyEmailResend).Resolve(ctx)
 			if templ_7745c5c3_Err != nil {
 				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/password-reset.templ`, Line: 206, Col: 93}
 			}

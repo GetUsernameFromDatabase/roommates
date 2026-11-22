@@ -20,14 +20,15 @@ import "roommates/web/components/field"
 import "roommates/web/components/input"
 import "roommates/web/components/select"
 import "roommates/internal/locales"
+import "roommates/internal/routes"
 import "roommates/internal/services"
 import "roommates/internal/utils"
 import g "roommates/internal/config"
 
-// HouseholdSettingsSection is the household's name and currency, path is the settings page, owners post to
-// path + "/household" and only this section is swapped, members see them read-only
+// HouseholdSettingsSection is the household's name and currency, owners post to
+// routes.HouseholdUpdate and only this section is swapped, members see them read-only
 // the currency is locked while a debt is open, errorMessage and infoMessage show by the save button
-func HouseholdSettingsSection(path string, actor services.Membership, h services.HouseholdSettings, errorMessage, infoMessage string) templ.Component {
+func HouseholdSettingsSection(actor services.Membership, h services.HouseholdSettings, errorMessage, infoMessage string) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -99,9 +100,9 @@ func HouseholdSettingsSection(path string, actor services.Membership, h services
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var4 string
-			templ_7745c5c3_Var4, templ_7745c5c3_Err = templruntime.NewAttributeExpression(templ.SafeURL(path + "/household")).ResolveURL(ctx)
+			templ_7745c5c3_Var4, templ_7745c5c3_Err = templruntime.NewAttributeExpression(routes.URL(routes.HouseholdUpdate, actor.HouseholdID)).ResolveURL(ctx)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/household-settings.templ`, Line: 29, Col: 47}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/household-settings.templ`, Line: 30, Col: 66}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var4)
 			if templ_7745c5c3_Err != nil {
@@ -112,9 +113,9 @@ func HouseholdSettingsSection(path string, actor services.Membership, h services
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var5 string
-			templ_7745c5c3_Var5, templ_7745c5c3_Err = templruntime.NewAttributeExpression(path + "/household").Resolve(ctx)
+			templ_7745c5c3_Var5, templ_7745c5c3_Err = templruntime.NewAttributeExpression(routes.URL(routes.HouseholdUpdate, actor.HouseholdID)).Resolve(ctx)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/household-settings.templ`, Line: 31, Col: 33}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/household-settings.templ`, Line: 32, Col: 67}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var5)
 			if templ_7745c5c3_Err != nil {
@@ -249,7 +250,7 @@ func HouseholdSettingsSection(path string, actor services.Membership, h services
 			var templ_7745c5c3_Var7 string
 			templ_7745c5c3_Var7, templ_7745c5c3_Err = templ.JoinStringErrs(infoMessage)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/household-settings.templ`, Line: 83, Col: 89}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/household-settings.templ`, Line: 84, Col: 89}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var7))
 			if templ_7745c5c3_Err != nil {
@@ -268,7 +269,7 @@ func HouseholdSettingsSection(path string, actor services.Membership, h services
 				return templ_7745c5c3_Err
 			}
 			if !actor.DeletedAt.Valid {
-				templ_7745c5c3_Err = deleteHousehold(path, actor, h).Render(ctx, templ_7745c5c3_Buffer)
+				templ_7745c5c3_Err = deleteHousehold(actor, h).Render(ctx, templ_7745c5c3_Buffer)
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -289,7 +290,7 @@ func HouseholdSettingsSection(path string, actor services.Membership, h services
 			var templ_7745c5c3_Var8 string
 			templ_7745c5c3_Var8, templ_7745c5c3_Err = templ.JoinStringErrs(h.Name)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/household-settings.templ`, Line: 96, Col: 49}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/household-settings.templ`, Line: 97, Col: 49}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var8))
 			if templ_7745c5c3_Err != nil {
@@ -310,7 +311,7 @@ func HouseholdSettingsSection(path string, actor services.Membership, h services
 			var templ_7745c5c3_Var9 string
 			templ_7745c5c3_Var9, templ_7745c5c3_Err = templ.JoinStringErrs(h.Currency)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/household-settings.templ`, Line: 102, Col: 41}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/household-settings.templ`, Line: 103, Col: 41}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var9))
 			if templ_7745c5c3_Err != nil {
@@ -331,7 +332,7 @@ func HouseholdSettingsSection(path string, actor services.Membership, h services
 			var templ_7745c5c3_Var10 string
 			templ_7745c5c3_Var10, templ_7745c5c3_Err = templ.JoinStringErrs(timeZoneLabel(h.TimeZone))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/household-settings.templ`, Line: 108, Col: 56}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/household-settings.templ`, Line: 109, Col: 56}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var10))
 			if templ_7745c5c3_Err != nil {
@@ -352,7 +353,7 @@ func HouseholdSettingsSection(path string, actor services.Membership, h services
 			var templ_7745c5c3_Var11 string
 			templ_7745c5c3_Var11, templ_7745c5c3_Err = templ.JoinStringErrs(reminderHourLabel(h.ReminderHour))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/household-settings.templ`, Line: 114, Col: 64}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/household-settings.templ`, Line: 115, Col: 64}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var11))
 			if templ_7745c5c3_Err != nil {
@@ -373,7 +374,7 @@ func HouseholdSettingsSection(path string, actor services.Membership, h services
 
 // deleteHousehold asks an owner to type the household's name, open debts do not stop it but
 // are listed with the CSV downloads, an error is swapped into #household-delete-error
-func deleteHousehold(path string, actor services.Membership, h services.HouseholdSettings) templ.Component {
+func deleteHousehold(actor services.Membership, h services.HouseholdSettings) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -406,7 +407,7 @@ func deleteHousehold(path string, actor services.Membership, h services.Househol
 		var templ_7745c5c3_Var13 string
 		templ_7745c5c3_Var13, templ_7745c5c3_Err = templ.JoinStringErrs(utils.T(ctx, locales.LK_OwnershipDeleteDescription, days))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/household-settings.templ`, Line: 130, Col: 62}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/household-settings.templ`, Line: 131, Col: 62}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var13))
 		if templ_7745c5c3_Err != nil {
@@ -467,9 +468,9 @@ func deleteHousehold(path string, actor services.Membership, h services.Househol
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var17 string
-				templ_7745c5c3_Var17, templ_7745c5c3_Err = templruntime.NewAttributeExpression(templ.SafeURL(path + "/household/delete")).ResolveURL(ctx)
+				templ_7745c5c3_Var17, templ_7745c5c3_Err = templruntime.NewAttributeExpression(routes.URL(routes.HouseholdDelete, actor.HouseholdID)).ResolveURL(ctx)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/household-settings.templ`, Line: 137, Col: 60}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/household-settings.templ`, Line: 138, Col: 72}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var17)
 				if templ_7745c5c3_Err != nil {
@@ -528,7 +529,7 @@ func deleteHousehold(path string, actor services.Membership, h services.Househol
 						var templ_7745c5c3_Var21 string
 						templ_7745c5c3_Var21, templ_7745c5c3_Err = templ.JoinStringErrs(utils.T(ctx, locales.LK_OwnershipDeleteDescription, days))
 						if templ_7745c5c3_Err != nil {
-							return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/household-settings.templ`, Line: 143, Col: 66}
+							return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/household-settings.templ`, Line: 144, Col: 66}
 						}
 						_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var21))
 						if templ_7745c5c3_Err != nil {
@@ -593,7 +594,7 @@ func deleteHousehold(path string, actor services.Membership, h services.Househol
 							var templ_7745c5c3_Var24 string
 							templ_7745c5c3_Var24, templ_7745c5c3_Err = templ.JoinStringErrs(utils.T(ctx, locales.LK_OwnershipDeleteDebt, utils.MemberName(ctx, d.FromName), utils.MemberName(ctx, d.ToName), utils.FormatMoney(ctx, d.Cents, h.Currency)))
 							if templ_7745c5c3_Err != nil {
-								return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/household-settings.templ`, Line: 153, Col: 172}
+								return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/household-settings.templ`, Line: 154, Col: 172}
 							}
 							_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var24))
 							if templ_7745c5c3_Err != nil {
@@ -614,7 +615,7 @@ func deleteHousehold(path string, actor services.Membership, h services.Househol
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
-					templ_7745c5c3_Err = expenseExports(actor, string(householdURL(actor.HouseholdID, "expenses"))).Render(ctx, templ_7745c5c3_Buffer)
+					templ_7745c5c3_Err = expenseExports(actor).Render(ctx, templ_7745c5c3_Buffer)
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
@@ -646,7 +647,7 @@ func deleteHousehold(path string, actor services.Membership, h services.Househol
 						var templ_7745c5c3_Var27 string
 						templ_7745c5c3_Var27, templ_7745c5c3_Err = templ.JoinStringErrs(utils.T(ctx, locales.LK_OwnershipDeleteConfirmLabel, h.Name))
 						if templ_7745c5c3_Err != nil {
-							return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/household-settings.templ`, Line: 161, Col: 69}
+							return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/household-settings.templ`, Line: 162, Col: 69}
 						}
 						_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var27))
 						if templ_7745c5c3_Err != nil {
@@ -866,7 +867,7 @@ func timeZoneSelect(h services.HouseholdSettings) templ.Component {
 						var templ_7745c5c3_Var36 string
 						templ_7745c5c3_Var36, templ_7745c5c3_Err = templ.JoinStringErrs(timeZoneLabel(z))
 						if templ_7745c5c3_Err != nil {
-							return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/household-settings.templ`, Line: 216, Col: 23}
+							return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/household-settings.templ`, Line: 217, Col: 23}
 						}
 						_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var36))
 						if templ_7745c5c3_Err != nil {
@@ -981,7 +982,7 @@ func reminderHourSelect(h services.HouseholdSettings) templ.Component {
 						var templ_7745c5c3_Var42 string
 						templ_7745c5c3_Var42, templ_7745c5c3_Err = templ.JoinStringErrs(reminderHourLabel(i))
 						if templ_7745c5c3_Err != nil {
-							return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/household-settings.templ`, Line: 240, Col: 27}
+							return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/household-settings.templ`, Line: 241, Col: 27}
 						}
 						_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var42))
 						if templ_7745c5c3_Err != nil {
@@ -1038,7 +1039,7 @@ func currencySelect(h services.HouseholdSettings) templ.Component {
 			var templ_7745c5c3_Var44 string
 			templ_7745c5c3_Var44, templ_7745c5c3_Err = templruntime.NewAttributeExpression(h.Currency).Resolve(ctx)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/household-settings.templ`, Line: 254, Col: 57}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/household-settings.templ`, Line: 255, Col: 57}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var44)
 			if templ_7745c5c3_Err != nil {
@@ -1111,7 +1112,7 @@ func currencySelect(h services.HouseholdSettings) templ.Component {
 						var templ_7745c5c3_Var49 string
 						templ_7745c5c3_Var49, templ_7745c5c3_Err = templ.JoinStringErrs(c)
 						if templ_7745c5c3_Err != nil {
-							return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/household-settings.templ`, Line: 263, Col: 8}
+							return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/household-settings.templ`, Line: 264, Col: 8}
 						}
 						_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var49))
 						if templ_7745c5c3_Err != nil {

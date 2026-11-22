@@ -3,6 +3,7 @@ package middleware
 
 import (
 	"roommates/internal/logger"
+	"roommates/internal/routes"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -18,7 +19,7 @@ func NewZerolog() gin.HandlerFunc {
 		c.Next()
 
 		// the compose healthcheck probes it every 10 s
-		if c.Request.URL.Path == "/healthz" {
+		if c.Request.URL.Path == routes.Healthz {
 			return
 		}
 		log.Info().

@@ -9,6 +9,7 @@ import (
 
 	g "roommates/internal/config"
 	"roommates/internal/locales"
+	"roommates/internal/routes"
 	"roommates/internal/services"
 	"roommates/internal/utils"
 	"roommates/web/pages"
@@ -17,13 +18,9 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
-func choresPath(householdID pgtype.UUID) string {
-	return householdPath(householdID) + "/chores"
-}
-
 // choreFromContext is the :choreID of the request, or shows the not found page and returns false
 func choreFromContext(ctx *gin.Context) (pgtype.UUID, bool) {
-	id, err := utils.ParseUUID(ctx.Param(g.ParamChoreID))
+	id, err := utils.ParseUUID(ctx.Param(routes.ParamChoreID))
 	if err != nil {
 		swapMainOnError(ctx)
 		RenderTemplStatus(ctx, http.StatusNotFound, pages.NotFound())
@@ -218,7 +215,7 @@ func (h *DefaultHandler) DeleteChore(ctx *gin.Context) {
 		pageError(ctx, err)
 		return
 	}
-	Redirect(ctx, choresPath(actor.HouseholdID))
+	Redirect(ctx, routes.URL(routes.Chores, actor.HouseholdID))
 }
 
 // choreTurnAction runs an action of the card on the posted turn ("due" and "assignee") and shows the
@@ -327,7 +324,7 @@ func (h *DefaultHandler) MoveChoreMember(ctx *gin.Context) {
 	if !ok {
 		return
 	}
-	userID, err := utils.ParseUUID(ctx.Param(g.ParamUserID))
+	userID, err := utils.ParseUUID(ctx.Param(routes.ParamUserID))
 	if err != nil {
 		swapMainOnError(ctx)
 		RenderTemplStatus(ctx, http.StatusNotFound, pages.NotFound())

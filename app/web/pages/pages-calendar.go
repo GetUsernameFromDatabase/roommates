@@ -9,10 +9,10 @@ import (
 
 	g "roommates/internal/config"
 	"roommates/internal/locales"
+	"roommates/internal/routes"
 	"roommates/internal/services"
 	"roommates/internal/utils"
 
-	"github.com/a-h/templ"
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
@@ -42,32 +42,32 @@ type CalendarView struct {
 	MonthItems []services.CalendarItem
 }
 
-func eventURL(householdID, eventID pgtype.UUID, on time.Time) templ.SafeURL {
-	u := string(householdURL(householdID, "calendar", "events", eventID.String()))
+func eventURL(householdID, eventID pgtype.UUID, on time.Time) string {
+	u := routes.URL(routes.CalendarEvent, householdID, eventID)
 	if !on.IsZero() {
 		u += "?on=" + on.Format(services.DateLayout)
 	}
-	return templ.SafeURL(u)
+	return u
 }
 
 // calendarItemURL is where the item is: its event on the day it starts, its chore or its schedule
-func calendarItemURL(householdID pgtype.UUID, it services.CalendarItem) templ.SafeURL {
+func calendarItemURL(householdID pgtype.UUID, it services.CalendarItem) string {
 	switch it.Kind {
 	case services.CalendarKindChore:
-		return householdURL(householdID, "chores", it.ID.String())
+		return routes.URL(routes.Chore, householdID, it.ID)
 	case services.CalendarKindRecurring:
-		return householdURL(householdID, "recurring", it.ID.String())
+		return routes.URL(routes.RecurringExpense, householdID, it.ID)
 	}
 	return eventURL(householdID, it.ID, it.On)
 }
 
 // calendarMoreURL lists the agenda from day, last is the last day already shown, if any
-func calendarMoreURL(householdID pgtype.UUID, from, last time.Time) templ.SafeURL {
-	u := string(householdURL(householdID, "calendar", "agenda")) + "?from=" + from.Format(services.DateLayout)
+func calendarMoreURL(householdID pgtype.UUID, from, last time.Time) string {
+	u := routes.URL(routes.CalendarAgenda, householdID) + "?from=" + from.Format(services.DateLayout)
 	if !last.IsZero() {
 		u += "&last=" + last.Format(services.DateLayout)
 	}
-	return templ.SafeURL(u)
+	return u
 }
 
 // calendarDay is the items of one day
@@ -168,12 +168,12 @@ func calendarWeeks(month time.Time) [][]time.Time {
 }
 
 // calendarMonthURL is the calendar on month, with day picked when it is set
-func calendarMonthURL(householdID pgtype.UUID, month, day time.Time) templ.SafeURL {
-	u := string(householdURL(householdID, "calendar")) + "?month=" + month.Format("2006-01")
+func calendarMonthURL(householdID pgtype.UUID, month, day time.Time) string {
+	u := routes.URL(routes.Calendar, householdID) + "?month=" + month.Format("2006-01")
 	if !day.IsZero() {
 		u += "&day=" + day.Format(services.DateLayout)
 	}
-	return templ.SafeURL(u)
+	return u
 }
 
 // calendarRail is what the agenda shows under a day's number: "Today" or the short weekday

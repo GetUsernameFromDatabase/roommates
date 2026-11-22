@@ -20,6 +20,7 @@ import "roommates/internal/services"
 import "roommates/internal/events"
 import g "roommates/internal/config"
 import "roommates/internal/locales"
+import "roommates/internal/routes"
 import "roommates/internal/utils"
 import "github.com/invopop/ctxi18n/i18n"
 import "github.com/jackc/pgx/v5/pgtype"
@@ -132,7 +133,7 @@ func HouseholdFiles(actor services.Membership, files []dbqueries.ListFilesRow, f
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = fileUploadForm(householdURL(actor.HouseholdID, "files")).Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = fileUploadForm(routes.URL(routes.Files, actor.HouseholdID)).Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -193,9 +194,9 @@ func HouseholdFiles(actor services.Membership, files []dbqueries.ListFilesRow, f
 										return templ_7745c5c3_Err
 									}
 									var templ_7745c5c3_Var7 string
-									templ_7745c5c3_Var7, templ_7745c5c3_Err = templruntime.NewAttributeExpression(householdURL(actor.HouseholdID, "notes", f.NoteID.String())).ResolveURL(ctx)
+									templ_7745c5c3_Var7, templ_7745c5c3_Err = templruntime.NewAttributeExpression(routes.URL(routes.Note, actor.HouseholdID, f.NoteID)).ResolveURL(ctx)
 									if templ_7745c5c3_Err != nil {
-										return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/files.templ`, Line: 62, Col: 78}
+										return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/files.templ`, Line: 63, Col: 71}
 									}
 									_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var7)
 									if templ_7745c5c3_Err != nil {
@@ -240,7 +241,7 @@ func HouseholdFiles(actor services.Membership, files []dbqueries.ListFilesRow, f
 								var templ_7745c5c3_Var10 string
 								templ_7745c5c3_Var10, templ_7745c5c3_Err = templ.JoinStringErrs(utils.T(ctx, locales.LK_FilesOnNote, *f.NoteTitle))
 								if templ_7745c5c3_Err != nil {
-									return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/files.templ`, Line: 63, Col: 62}
+									return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/files.templ`, Line: 64, Col: 62}
 								}
 								_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var10))
 								if templ_7745c5c3_Err != nil {
@@ -260,9 +261,9 @@ func HouseholdFiles(actor services.Membership, files []dbqueries.ListFilesRow, f
 										return templ_7745c5c3_Err
 									}
 									var templ_7745c5c3_Var11 string
-									templ_7745c5c3_Var11, templ_7745c5c3_Err = templruntime.NewAttributeExpression(householdURL(actor.HouseholdID, "lists", f.ItemListID.String(), "items", f.ShoppingItemID.String())).ResolveURL(ctx)
+									templ_7745c5c3_Var11, templ_7745c5c3_Err = templruntime.NewAttributeExpression(routes.URL(routes.ShoppingItem, actor.HouseholdID, f.ItemListID, f.ShoppingItemID)).ResolveURL(ctx)
 									if templ_7745c5c3_Err != nil {
-										return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/files.templ`, Line: 66, Col: 118}
+										return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/files.templ`, Line: 67, Col: 101}
 									}
 									_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var11)
 									if templ_7745c5c3_Err != nil {
@@ -307,7 +308,7 @@ func HouseholdFiles(actor services.Membership, files []dbqueries.ListFilesRow, f
 								var templ_7745c5c3_Var14 string
 								templ_7745c5c3_Var14, templ_7745c5c3_Err = templ.JoinStringErrs(utils.T(ctx, locales.LK_FilesOnItem, *f.ItemText))
 								if templ_7745c5c3_Err != nil {
-									return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/files.templ`, Line: 67, Col: 61}
+									return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/files.templ`, Line: 68, Col: 61}
 								}
 								_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var14))
 								if templ_7745c5c3_Err != nil {
@@ -327,9 +328,9 @@ func HouseholdFiles(actor services.Membership, files []dbqueries.ListFilesRow, f
 										return templ_7745c5c3_Err
 									}
 									var templ_7745c5c3_Var15 string
-									templ_7745c5c3_Var15, templ_7745c5c3_Err = templruntime.NewAttributeExpression(householdURL(actor.HouseholdID, "expenses", f.ExpenseID.String())).ResolveURL(ctx)
+									templ_7745c5c3_Var15, templ_7745c5c3_Err = templruntime.NewAttributeExpression(routes.URL(routes.Expense, actor.HouseholdID, f.ExpenseID)).ResolveURL(ctx)
 									if templ_7745c5c3_Err != nil {
-										return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/files.templ`, Line: 70, Col: 84}
+										return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/files.templ`, Line: 71, Col: 77}
 									}
 									_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var15)
 									if templ_7745c5c3_Err != nil {
@@ -374,7 +375,7 @@ func HouseholdFiles(actor services.Membership, files []dbqueries.ListFilesRow, f
 								var templ_7745c5c3_Var18 string
 								templ_7745c5c3_Var18, templ_7745c5c3_Err = templ.JoinStringErrs(utils.T(ctx, locales.LK_FilesOnExpense, *f.ExpenseTitle))
 								if templ_7745c5c3_Err != nil {
-									return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/files.templ`, Line: 71, Col: 68}
+									return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/files.templ`, Line: 72, Col: 68}
 								}
 								_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var18))
 								if templ_7745c5c3_Err != nil {
@@ -394,9 +395,9 @@ func HouseholdFiles(actor services.Membership, files []dbqueries.ListFilesRow, f
 										return templ_7745c5c3_Err
 									}
 									var templ_7745c5c3_Var19 string
-									templ_7745c5c3_Var19, templ_7745c5c3_Err = templruntime.NewAttributeExpression(householdURL(actor.HouseholdID, "calendar", "events", f.EventID.String())).ResolveURL(ctx)
+									templ_7745c5c3_Var19, templ_7745c5c3_Err = templruntime.NewAttributeExpression(routes.URL(routes.CalendarEvent, actor.HouseholdID, f.EventID)).ResolveURL(ctx)
 									if templ_7745c5c3_Err != nil {
-										return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/files.templ`, Line: 74, Col: 92}
+										return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/files.templ`, Line: 75, Col: 81}
 									}
 									_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var19)
 									if templ_7745c5c3_Err != nil {
@@ -441,7 +442,7 @@ func HouseholdFiles(actor services.Membership, files []dbqueries.ListFilesRow, f
 								var templ_7745c5c3_Var22 string
 								templ_7745c5c3_Var22, templ_7745c5c3_Err = templ.JoinStringErrs(utils.T(ctx, locales.LK_FilesOnEvent, *f.EventTitle))
 								if templ_7745c5c3_Err != nil {
-									return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/files.templ`, Line: 75, Col: 64}
+									return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/files.templ`, Line: 76, Col: 64}
 								}
 								_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var22))
 								if templ_7745c5c3_Err != nil {
@@ -461,9 +462,9 @@ func HouseholdFiles(actor services.Membership, files []dbqueries.ListFilesRow, f
 										return templ_7745c5c3_Err
 									}
 									var templ_7745c5c3_Var23 string
-									templ_7745c5c3_Var23, templ_7745c5c3_Err = templruntime.NewAttributeExpression(householdURL(actor.HouseholdID, "chat")).ResolveURL(ctx)
+									templ_7745c5c3_Var23, templ_7745c5c3_Err = templruntime.NewAttributeExpression(routes.URL(routes.Chat, actor.HouseholdID)).ResolveURL(ctx)
 									if templ_7745c5c3_Err != nil {
-										return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/files.templ`, Line: 78, Col: 58}
+										return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/files.templ`, Line: 79, Col: 61}
 									}
 									_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var23)
 									if templ_7745c5c3_Err != nil {
@@ -516,7 +517,7 @@ func HouseholdFiles(actor services.Membership, files []dbqueries.ListFilesRow, f
 							}
 							return nil
 						})
-						templ_7745c5c3_Err = fileRow(actor, householdURL(actor.HouseholdID, "files"), "", false, false, f.RefCount, f.ID, f.Name, f.HasThumb, f.SizeBytes, f.UploaderID, f.UploaderName, f.CreatedAt).Render(templ.WithChildren(ctx, templ_7745c5c3_Var6), templ_7745c5c3_Buffer)
+						templ_7745c5c3_Err = fileRow(actor, routes.URL(routes.Files, actor.HouseholdID), "", false, false, f.RefCount, f.ID, f.Name, f.HasThumb, f.SizeBytes, f.UploaderID, f.UploaderName, f.CreatedAt).Render(templ.WithChildren(ctx, templ_7745c5c3_Var6), templ_7745c5c3_Buffer)
 						if templ_7745c5c3_Err != nil {
 							return templ_7745c5c3_Err
 						}
@@ -603,7 +604,7 @@ func fileFilters(actor services.Membership, filter services.FileFilter) templ.Co
 		}
 		ctx = templ.InitializeContext(ctx)
 		ctx = templ.ClearChildren(ctx)
-		filesURL := householdURL(actor.HouseholdID, "files")
+		filesURL := routes.URL(routes.Files, actor.HouseholdID)
 		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 36, "<form role=\"search\" action=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
@@ -611,7 +612,7 @@ func fileFilters(actor services.Membership, filter services.FileFilter) templ.Co
 		var templ_7745c5c3_Var27 string
 		templ_7745c5c3_Var27, templ_7745c5c3_Err = templruntime.NewAttributeExpression(filesURL).ResolveURL(ctx)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/files.templ`, Line: 135, Col: 19}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/files.templ`, Line: 136, Col: 19}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var27)
 		if templ_7745c5c3_Err != nil {
@@ -622,9 +623,9 @@ func fileFilters(actor services.Membership, filter services.FileFilter) templ.Co
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var28 string
-		templ_7745c5c3_Var28, templ_7745c5c3_Err = templruntime.NewAttributeExpression(string(filesURL)).Resolve(ctx)
+		templ_7745c5c3_Var28, templ_7745c5c3_Err = templruntime.NewAttributeExpression(filesURL).Resolve(ctx)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/files.templ`, Line: 137, Col: 27}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/files.templ`, Line: 138, Col: 19}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var28)
 		if templ_7745c5c3_Err != nil {
@@ -693,7 +694,7 @@ func fileFilterSelect(id, name, value string, label, all locales.LK, options []s
 
 // attachedFiles are the files of a note, shopping item or expense on page back, with a form to add
 // one and a picker of existing ones, hint says what belongs here if anything
-func attachedFiles(actor services.Membership, back templ.SafeURL, files []services.AttachedFile, hint locales.LK, errorMessage string) templ.Component {
+func attachedFiles(actor services.Membership, back string, files []services.AttachedFile, hint locales.LK, errorMessage string) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -763,7 +764,7 @@ func attachedFiles(actor services.Membership, back templ.SafeURL, files []servic
 }
 
 // attachedFilesTill is [attachedFiles] as a till slip, the receipts stapled to it
-func attachedFilesTill(actor services.Membership, back templ.SafeURL, files []services.AttachedFile, hint locales.LK, errorMessage string) templ.Component {
+func attachedFilesTill(actor services.Membership, back string, files []services.AttachedFile, hint locales.LK, errorMessage string) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -797,7 +798,7 @@ func attachedFilesTill(actor services.Membership, back templ.SafeURL, files []se
 }
 
 // attachedFilesContent goes on a sheet, or on till paper with till
-func attachedFilesContent(actor services.Membership, back templ.SafeURL, files []services.AttachedFile, hint locales.LK, errorMessage string, till bool) templ.Component {
+func attachedFilesContent(actor services.Membership, back string, files []services.AttachedFile, hint locales.LK, errorMessage string, till bool) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -894,7 +895,7 @@ func attachedFilesContent(actor services.Membership, back templ.SafeURL, files [
 					return templ_7745c5c3_Err
 				}
 				for _, f := range files {
-					templ_7745c5c3_Err = fileRow(actor, back, back+"/files/detach", f.LastRef, f.Shared, 0, f.ID, f.Name, f.HasThumb, f.SizeBytes, f.UploaderID, f.UploaderName, f.CreatedAt).Render(ctx, templ_7745c5c3_Buffer)
+					templ_7745c5c3_Err = fileRow(actor, back, back+routes.FileRefDetach, f.LastRef, f.Shared, 0, f.ID, f.Name, f.HasThumb, f.SizeBytes, f.UploaderID, f.UploaderName, f.CreatedAt).Render(ctx, templ_7745c5c3_Buffer)
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
@@ -954,7 +955,7 @@ func attachedFilesContent(actor services.Membership, back templ.SafeURL, files [
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = fileUploadForm(back+"/files").Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = fileUploadForm(back+routes.FileRefUpload).Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -972,7 +973,7 @@ func attachedFilesContent(actor services.Membership, back templ.SafeURL, files [
 
 // attachFilePicker lets the page at back show a file that already exists, the list is fetched
 // the first time it opens, after that it follows the search box
-func attachFilePicker(back templ.SafeURL) templ.Component {
+func attachFilePicker(back string) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -990,7 +991,7 @@ func attachFilePicker(back templ.SafeURL) templ.Component {
 		ctx = templ.InitializeContext(ctx)
 		ctx = templ.ClearChildren(ctx)
 		picks := templ.Attributes{
-			"hx-get":    string(back + "/files/picks"),
+			"hx-get":    back + routes.FileRefPicks,
 			"hx-target": "#attach-file-picks",
 			"hx-select": "#attach-file-picks",
 			"hx-swap":   "outerHTML",
@@ -1084,7 +1085,7 @@ func attachFilePicker(back templ.SafeURL) templ.Component {
 }
 
 // AttachFilePicks is the list of [attachFilePicker], the page reloads after a pick like after an upload
-func AttachFilePicks(actor services.Membership, back templ.SafeURL, files []dbqueries.ListFilesRow) templ.Component {
+func AttachFilePicks(actor services.Membership, back string, files []dbqueries.ListFilesRow) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -1106,9 +1107,9 @@ func AttachFilePicks(actor services.Membership, back templ.SafeURL, files []dbqu
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var45 string
-		templ_7745c5c3_Var45, templ_7745c5c3_Err = templruntime.NewAttributeExpression(back + "/files/attach").ResolveURL(ctx)
+		templ_7745c5c3_Var45, templ_7745c5c3_Err = templruntime.NewAttributeExpression(back + routes.FileRefAttach).ResolveURL(ctx)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/files.templ`, Line: 251, Col: 61}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/files.templ`, Line: 252, Col: 66}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var45)
 		if templ_7745c5c3_Err != nil {
@@ -1152,7 +1153,7 @@ func AttachFilePicks(actor services.Membership, back templ.SafeURL, files []dbqu
 				var templ_7745c5c3_Var46 string
 				templ_7745c5c3_Var46, templ_7745c5c3_Err = templruntime.NewAttributeExpression(f.ID.String()).Resolve(ctx)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/files.templ`, Line: 260, Col: 63}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/files.templ`, Line: 261, Col: 63}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var46)
 				if templ_7745c5c3_Err != nil {
@@ -1237,9 +1238,9 @@ func filePickContent(actor services.Membership, f dbqueries.ListFilesRow) templ.
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var50 string
-			templ_7745c5c3_Var50, templ_7745c5c3_Err = templruntime.NewAttributeExpression(string(householdURL(actor.HouseholdID, "files", f.ID.String())) + "/thumb").ResolveURL(ctx)
+			templ_7745c5c3_Var50, templ_7745c5c3_Err = templruntime.NewAttributeExpression(routes.URL(routes.FileThumb, actor.HouseholdID, f.ID)).ResolveURL(ctx)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/files.templ`, Line: 274, Col: 87}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/files.templ`, Line: 275, Col: 66}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var50)
 			if templ_7745c5c3_Err != nil {
@@ -1257,7 +1258,7 @@ func filePickContent(actor services.Membership, f dbqueries.ListFilesRow) templ.
 		var templ_7745c5c3_Var51 string
 		templ_7745c5c3_Var51, templ_7745c5c3_Err = templ.JoinStringErrs(f.Name)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/files.templ`, Line: 276, Col: 47}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/files.templ`, Line: 277, Col: 47}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var51))
 		if templ_7745c5c3_Err != nil {
@@ -1270,7 +1271,7 @@ func filePickContent(actor services.Membership, f dbqueries.ListFilesRow) templ.
 		var templ_7745c5c3_Var52 string
 		templ_7745c5c3_Var52, templ_7745c5c3_Err = templ.JoinStringErrs(formatSize(ctx, f.SizeBytes))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/files.templ`, Line: 277, Col: 84}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/files.templ`, Line: 278, Col: 84}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var52))
 		if templ_7745c5c3_Err != nil {
@@ -1286,7 +1287,7 @@ func filePickContent(actor services.Membership, f dbqueries.ListFilesRow) templ.
 
 // fileUploadForm is a plain form, not boosted, the page reloads after an upload;
 // file-upload.js submits it when a file is picked
-func fileUploadForm(action templ.SafeURL) templ.Component {
+func fileUploadForm(action string) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -1310,7 +1311,7 @@ func fileUploadForm(action templ.SafeURL) templ.Component {
 		var templ_7745c5c3_Var54 string
 		templ_7745c5c3_Var54, templ_7745c5c3_Err = templruntime.NewAttributeExpression(action).ResolveURL(ctx)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/files.templ`, Line: 283, Col: 22}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/files.templ`, Line: 284, Col: 22}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var54)
 		if templ_7745c5c3_Err != nil {
@@ -1377,7 +1378,7 @@ func fileUploadForm(action templ.SafeURL) templ.Component {
 // there instead, lastRef warns that this deletes it and if shared the dialog offers to keep it,
 // keeping a file of a private note would show it to everyone, refs is how many places a delete
 // takes it from
-func fileRow(actor services.Membership, back, detach templ.SafeURL, lastRef, shared bool, refs int64, id pgtype.UUID, name string, hasThumb bool, size int64,
+func fileRow(actor services.Membership, back, detach string, lastRef, shared bool, refs int64, id pgtype.UUID, name string, hasThumb bool, size int64,
 	uploaderID pgtype.UUID, uploaderName string, createdAt pgtype.Timestamptz) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
@@ -1396,7 +1397,7 @@ func fileRow(actor services.Membership, back, detach templ.SafeURL, lastRef, sha
 		ctx = templ.InitializeContext(ctx)
 		templ_7745c5c3_Var57 := templ.GetChildren(ctx)
 		ctx = templ.ClearChildren(ctx)
-		href := householdURL(actor.HouseholdID, "files", id.String())
+		href := routes.URL(routes.File, actor.HouseholdID, id)
 		{
 			templ_7745c5c3_ElementWriter := templ_7745c5c3_Buffer
 			templ_7745c5c3_Buffer := templ.GetBuffer()
@@ -1445,7 +1446,7 @@ func fileRow(actor services.Membership, back, detach templ.SafeURL, lastRef, sha
 			var templ_7745c5c3_Var60 string
 			templ_7745c5c3_Var60, templ_7745c5c3_Err = templruntime.NewAttributeExpression(href).ResolveURL(ctx)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/files.templ`, Line: 301, Col: 17}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/files.templ`, Line: 302, Col: 17}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var60)
 			if templ_7745c5c3_Err != nil {
@@ -1456,9 +1457,9 @@ func fileRow(actor services.Membership, back, detach templ.SafeURL, lastRef, sha
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var61 string
-			templ_7745c5c3_Var61, templ_7745c5c3_Err = templruntime.NewAttributeExpression(string(href) + "/thumb").ResolveURL(ctx)
+			templ_7745c5c3_Var61, templ_7745c5c3_Err = templruntime.NewAttributeExpression(routes.URL(routes.FileThumb, actor.HouseholdID, id)).ResolveURL(ctx)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/files.templ`, Line: 302, Col: 38}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/files.templ`, Line: 303, Col: 66}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var61)
 			if templ_7745c5c3_Err != nil {
@@ -1476,7 +1477,7 @@ func fileRow(actor services.Membership, back, detach templ.SafeURL, lastRef, sha
 		var templ_7745c5c3_Var62 string
 		templ_7745c5c3_Var62, templ_7745c5c3_Err = templruntime.NewAttributeExpression(href).ResolveURL(ctx)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/files.templ`, Line: 306, Col: 17}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/files.templ`, Line: 307, Col: 17}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var62)
 		if templ_7745c5c3_Err != nil {
@@ -1489,7 +1490,7 @@ func fileRow(actor services.Membership, back, detach templ.SafeURL, lastRef, sha
 		var templ_7745c5c3_Var63 string
 		templ_7745c5c3_Var63, templ_7745c5c3_Err = templ.JoinStringErrs(name)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/files.templ`, Line: 306, Col: 87}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/files.templ`, Line: 307, Col: 87}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var63))
 		if templ_7745c5c3_Err != nil {
@@ -1502,7 +1503,7 @@ func fileRow(actor services.Membership, back, detach templ.SafeURL, lastRef, sha
 		var templ_7745c5c3_Var64 string
 		templ_7745c5c3_Var64, templ_7745c5c3_Err = templ.JoinStringErrs(utils.T(ctx, locales.LK_FilesAddedBy, utils.MemberName(ctx, uploaderName), formatDate(ctx, createdAt), formatSize(ctx, size)))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/files.templ`, Line: 308, Col: 131}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/files.templ`, Line: 309, Col: 131}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var64))
 		if templ_7745c5c3_Err != nil {
@@ -1524,7 +1525,7 @@ func fileRow(actor services.Membership, back, detach templ.SafeURL, lastRef, sha
 			var templ_7745c5c3_Var65 string
 			templ_7745c5c3_Var65, templ_7745c5c3_Err = templruntime.NewAttributeExpression(detach).ResolveURL(ctx)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/files.templ`, Line: 313, Col: 20}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/files.templ`, Line: 314, Col: 20}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var65)
 			if templ_7745c5c3_Err != nil {
@@ -1542,7 +1543,7 @@ func fileRow(actor services.Membership, back, detach templ.SafeURL, lastRef, sha
 				var templ_7745c5c3_Var66 string
 				templ_7745c5c3_Var66, templ_7745c5c3_Err = templruntime.NewAttributeExpression(utils.T(ctx, locales.LK_FilesDetachLast, name)).Resolve(ctx)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/files.templ`, Line: 318, Col: 65}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/files.templ`, Line: 319, Col: 65}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var66)
 				if templ_7745c5c3_Err != nil {
@@ -1555,7 +1556,7 @@ func fileRow(actor services.Membership, back, detach templ.SafeURL, lastRef, sha
 				var templ_7745c5c3_Var67 string
 				templ_7745c5c3_Var67, templ_7745c5c3_Err = templruntime.NewAttributeExpression(utils.T(ctx, locales.LK_FilesDetach)).Resolve(ctx)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/files.templ`, Line: 319, Col: 63}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/files.templ`, Line: 320, Col: 63}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var67)
 				if templ_7745c5c3_Err != nil {
@@ -1573,7 +1574,7 @@ func fileRow(actor services.Membership, back, detach templ.SafeURL, lastRef, sha
 					var templ_7745c5c3_Var68 string
 					templ_7745c5c3_Var68, templ_7745c5c3_Err = templruntime.NewAttributeExpression(utils.T(ctx, locales.LK_FilesDetachKeep)).Resolve(ctx)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/files.templ`, Line: 321, Col: 67}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/files.templ`, Line: 322, Col: 67}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var68)
 					if templ_7745c5c3_Err != nil {
@@ -1592,7 +1593,7 @@ func fileRow(actor services.Membership, back, detach templ.SafeURL, lastRef, sha
 			var templ_7745c5c3_Var69 string
 			templ_7745c5c3_Var69, templ_7745c5c3_Err = templruntime.NewAttributeExpression(id.String()).Resolve(ctx)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/files.templ`, Line: 325, Col: 60}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/files.templ`, Line: 326, Col: 60}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var69)
 			if templ_7745c5c3_Err != nil {
@@ -1605,7 +1606,7 @@ func fileRow(actor services.Membership, back, detach templ.SafeURL, lastRef, sha
 			var templ_7745c5c3_Var70 string
 			templ_7745c5c3_Var70, templ_7745c5c3_Err = templruntime.NewAttributeExpression(g.QueryNext).Resolve(ctx)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/files.templ`, Line: 326, Col: 44}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/files.templ`, Line: 327, Col: 44}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var70)
 			if templ_7745c5c3_Err != nil {
@@ -1616,9 +1617,9 @@ func fileRow(actor services.Membership, back, detach templ.SafeURL, lastRef, sha
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var71 string
-			templ_7745c5c3_Var71, templ_7745c5c3_Err = templruntime.NewAttributeExpression(string(back)).Resolve(ctx)
+			templ_7745c5c3_Var71, templ_7745c5c3_Err = templruntime.NewAttributeExpression(back).Resolve(ctx)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/files.templ`, Line: 326, Col: 67}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/files.templ`, Line: 327, Col: 59}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var71)
 			if templ_7745c5c3_Err != nil {
@@ -1669,9 +1670,9 @@ func fileRow(actor services.Membership, back, detach templ.SafeURL, lastRef, sha
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var73 string
-			templ_7745c5c3_Var73, templ_7745c5c3_Err = templruntime.NewAttributeExpression(href + "/delete").ResolveURL(ctx)
+			templ_7745c5c3_Var73, templ_7745c5c3_Err = templruntime.NewAttributeExpression(routes.URL(routes.FileDelete, actor.HouseholdID, id)).ResolveURL(ctx)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/files.templ`, Line: 338, Col: 34}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/files.templ`, Line: 339, Col: 70}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var73)
 			if templ_7745c5c3_Err != nil {
@@ -1684,7 +1685,7 @@ func fileRow(actor services.Membership, back, detach templ.SafeURL, lastRef, sha
 			var templ_7745c5c3_Var74 string
 			templ_7745c5c3_Var74, templ_7745c5c3_Err = templruntime.NewAttributeExpression(deleteFileConfirm(ctx, name, refs)).Resolve(ctx)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/files.templ`, Line: 338, Col: 114}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/files.templ`, Line: 339, Col: 150}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var74)
 			if templ_7745c5c3_Err != nil {
@@ -1697,7 +1698,7 @@ func fileRow(actor services.Membership, back, detach templ.SafeURL, lastRef, sha
 			var templ_7745c5c3_Var75 string
 			templ_7745c5c3_Var75, templ_7745c5c3_Err = templruntime.NewAttributeExpression(g.QueryNext).Resolve(ctx)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/files.templ`, Line: 339, Col: 43}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/files.templ`, Line: 340, Col: 43}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var75)
 			if templ_7745c5c3_Err != nil {
@@ -1708,9 +1709,9 @@ func fileRow(actor services.Membership, back, detach templ.SafeURL, lastRef, sha
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var76 string
-			templ_7745c5c3_Var76, templ_7745c5c3_Err = templruntime.NewAttributeExpression(string(back)).Resolve(ctx)
+			templ_7745c5c3_Var76, templ_7745c5c3_Err = templruntime.NewAttributeExpression(back).Resolve(ctx)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/files.templ`, Line: 339, Col: 66}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/files.templ`, Line: 340, Col: 58}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var76)
 			if templ_7745c5c3_Err != nil {
@@ -1779,21 +1780,21 @@ func FilePage(actor services.Membership, f services.FileMeta, errorMessage strin
 		}
 		ctx = templ.InitializeContext(ctx)
 		ctx = templ.ClearChildren(ctx)
-		fileURL := householdURL(actor.HouseholdID, "files", f.ID.String())
-		back, backText, section := householdURL(actor.HouseholdID, "files"), utils.T(ctx, locales.LK_FilesAll), SectionFiles
+		fileURL := routes.URL(routes.File, actor.HouseholdID, f.ID)
+		back, backText, section := routes.URL(routes.Files, actor.HouseholdID), utils.T(ctx, locales.LK_FilesAll), SectionFiles
 		if f.NoteTitle != nil {
-			back, backText, section = householdURL(actor.HouseholdID, "notes", f.NoteID.String()), utils.T(ctx, locales.LK_FilesOnNote, *f.NoteTitle), SectionNotes
+			back, backText, section = routes.URL(routes.Note, actor.HouseholdID, f.NoteID), utils.T(ctx, locales.LK_FilesOnNote, *f.NoteTitle), SectionNotes
 		} else if f.ItemText != nil {
-			back = householdURL(actor.HouseholdID, "lists", f.ItemListID.String(), "items", f.ShoppingItemID.String())
+			back = routes.URL(routes.ShoppingItem, actor.HouseholdID, f.ItemListID, f.ShoppingItemID)
 			backText, section = utils.T(ctx, locales.LK_FilesOnItem, *f.ItemText), SectionShopping
 		} else if f.ExpenseTitle != nil {
-			back = householdURL(actor.HouseholdID, "expenses", f.ExpenseID.String())
+			back = routes.URL(routes.Expense, actor.HouseholdID, f.ExpenseID)
 			backText, section = utils.T(ctx, locales.LK_FilesOnExpense, *f.ExpenseTitle), SectionExpenses
 		} else if f.EventTitle != nil {
-			back = householdURL(actor.HouseholdID, "calendar", "events", f.EventID.String())
+			back = routes.URL(routes.CalendarEvent, actor.HouseholdID, f.EventID)
 			backText, section = utils.T(ctx, locales.LK_FilesOnEvent, *f.EventTitle), SectionCalendar
 		} else if f.MessageID.Valid {
-			back, backText, section = householdURL(actor.HouseholdID, "chat"), utils.T(ctx, locales.LK_FilesOnMessage), SectionChat
+			back, backText, section = routes.URL(routes.Chat, actor.HouseholdID), utils.T(ctx, locales.LK_FilesOnMessage), SectionChat
 		}
 		templ_7745c5c3_Var79 := templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 			templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
@@ -1832,7 +1833,7 @@ func FilePage(actor services.Membership, f services.FileMeta, errorMessage strin
 					var templ_7745c5c3_Var81 string
 					templ_7745c5c3_Var81, templ_7745c5c3_Err = templ.JoinStringErrs(ext)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/files.templ`, Line: 378, Col: 32}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/files.templ`, Line: 379, Col: 32}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var81))
 					if templ_7745c5c3_Err != nil {
@@ -1844,7 +1845,7 @@ func FilePage(actor services.Membership, f services.FileMeta, errorMessage strin
 					}
 					return nil
 				})
-				templ_7745c5c3_Err = nameHeader(back, backText, fileURL+"/name", stem,
+				templ_7745c5c3_Err = nameHeader(back, backText, routes.URL(routes.FileName, actor.HouseholdID, f.ID), stem,
 					services.MaxFileNameLength-utf8.RuneCountInString(ext), utils.T(ctx, locales.LK_FilesRename)).Render(templ.WithChildren(ctx, templ_7745c5c3_Var80), templ_7745c5c3_Buffer)
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
@@ -1862,7 +1863,7 @@ func FilePage(actor services.Membership, f services.FileMeta, errorMessage strin
 			var templ_7745c5c3_Var82 string
 			templ_7745c5c3_Var82, templ_7745c5c3_Err = templ.JoinStringErrs(utils.T(ctx, locales.LK_FilesAddedBy, utils.MemberName(ctx, f.UploaderName), formatDate(ctx, f.CreatedAt), formatSize(ctx, f.SizeBytes)))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/files.templ`, Line: 384, Col: 141}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/files.templ`, Line: 385, Col: 141}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var82))
 			if templ_7745c5c3_Err != nil {
@@ -1882,9 +1883,9 @@ func FilePage(actor services.Membership, f services.FileMeta, errorMessage strin
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var83 string
-				templ_7745c5c3_Var83, templ_7745c5c3_Err = templruntime.NewAttributeExpression(fileURL + "/raw").ResolveURL(ctx)
+				templ_7745c5c3_Var83, templ_7745c5c3_Err = templruntime.NewAttributeExpression(routes.URL(routes.FileRaw, actor.HouseholdID, f.ID)).ResolveURL(ctx)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/files.templ`, Line: 389, Col: 29}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/files.templ`, Line: 390, Col: 64}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var83)
 				if templ_7745c5c3_Err != nil {
@@ -1895,9 +1896,9 @@ func FilePage(actor services.Membership, f services.FileMeta, errorMessage strin
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var84 string
-				templ_7745c5c3_Var84, templ_7745c5c3_Err = templruntime.NewAttributeExpression(string(fileURL) + "/raw").ResolveURL(ctx)
+				templ_7745c5c3_Var84, templ_7745c5c3_Err = templruntime.NewAttributeExpression(routes.URL(routes.FileRaw, actor.HouseholdID, f.ID)).ResolveURL(ctx)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/files.templ`, Line: 390, Col: 39}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/files.templ`, Line: 391, Col: 66}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var84)
 				if templ_7745c5c3_Err != nil {
@@ -1910,7 +1911,7 @@ func FilePage(actor services.Membership, f services.FileMeta, errorMessage strin
 				var templ_7745c5c3_Var85 string
 				templ_7745c5c3_Var85, templ_7745c5c3_Err = templruntime.NewAttributeExpression(f.Name).Resolve(ctx)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/files.templ`, Line: 390, Col: 54}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/files.templ`, Line: 391, Col: 81}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var85)
 				if templ_7745c5c3_Err != nil {
@@ -1945,7 +1946,7 @@ func FilePage(actor services.Membership, f services.FileMeta, errorMessage strin
 			})
 			templ_7745c5c3_Err = button.Button(button.Props{
 				// its own address, the image's cached response has the name from before a rename
-				Href:       string(fileURL) + "/raw?name=" + url.QueryEscape(f.Name),
+				Href:       routes.URL(routes.FileRaw, actor.HouseholdID, f.ID) + "?name=" + url.QueryEscape(f.Name),
 				Size:       button.SizeLg,
 				Attributes: templ.Attributes{"download": f.Name},
 			}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var86), templ_7745c5c3_Buffer)
@@ -1958,9 +1959,9 @@ func FilePage(actor services.Membership, f services.FileMeta, errorMessage strin
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var87 string
-				templ_7745c5c3_Var87, templ_7745c5c3_Err = templruntime.NewAttributeExpression(fileURL + "/keep").ResolveURL(ctx)
+				templ_7745c5c3_Var87, templ_7745c5c3_Err = templruntime.NewAttributeExpression(routes.URL(routes.FileKeep, actor.HouseholdID, f.ID)).ResolveURL(ctx)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/files.templ`, Line: 404, Col: 36}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/files.templ`, Line: 405, Col: 71}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var87)
 				if templ_7745c5c3_Err != nil {
@@ -1973,7 +1974,7 @@ func FilePage(actor services.Membership, f services.FileMeta, errorMessage strin
 				var templ_7745c5c3_Var88 string
 				templ_7745c5c3_Var88, templ_7745c5c3_Err = templruntime.NewAttributeExpression(g.QueryNext).Resolve(ctx)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/files.templ`, Line: 405, Col: 44}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/files.templ`, Line: 406, Col: 44}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var88)
 				if templ_7745c5c3_Err != nil {
@@ -1984,9 +1985,9 @@ func FilePage(actor services.Membership, f services.FileMeta, errorMessage strin
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var89 string
-				templ_7745c5c3_Var89, templ_7745c5c3_Err = templruntime.NewAttributeExpression(string(fileURL)).Resolve(ctx)
+				templ_7745c5c3_Var89, templ_7745c5c3_Err = templruntime.NewAttributeExpression(fileURL).Resolve(ctx)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/files.templ`, Line: 405, Col: 70}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/files.templ`, Line: 406, Col: 62}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var89)
 				if templ_7745c5c3_Err != nil {
@@ -2029,9 +2030,9 @@ func FilePage(actor services.Membership, f services.FileMeta, errorMessage strin
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var91 string
-				templ_7745c5c3_Var91, templ_7745c5c3_Err = templruntime.NewAttributeExpression(fileURL + "/delete").ResolveURL(ctx)
+				templ_7745c5c3_Var91, templ_7745c5c3_Err = templruntime.NewAttributeExpression(routes.URL(routes.FileDelete, actor.HouseholdID, f.ID)).ResolveURL(ctx)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/files.templ`, Line: 413, Col: 33}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/files.templ`, Line: 414, Col: 68}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var91)
 				if templ_7745c5c3_Err != nil {
@@ -2044,7 +2045,7 @@ func FilePage(actor services.Membership, f services.FileMeta, errorMessage strin
 				var templ_7745c5c3_Var92 string
 				templ_7745c5c3_Var92, templ_7745c5c3_Err = templruntime.NewAttributeExpression(deleteFileConfirm(ctx, f.Name, f.RefCount)).Resolve(ctx)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/files.templ`, Line: 416, Col: 60}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/files.templ`, Line: 417, Col: 60}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var92)
 				if templ_7745c5c3_Err != nil {
@@ -2057,7 +2058,7 @@ func FilePage(actor services.Membership, f services.FileMeta, errorMessage strin
 				var templ_7745c5c3_Var93 string
 				templ_7745c5c3_Var93, templ_7745c5c3_Err = templruntime.NewAttributeExpression(g.QueryNext).Resolve(ctx)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/files.templ`, Line: 419, Col: 44}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/files.templ`, Line: 420, Col: 44}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var93)
 				if templ_7745c5c3_Err != nil {
@@ -2068,9 +2069,9 @@ func FilePage(actor services.Membership, f services.FileMeta, errorMessage strin
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var94 string
-				templ_7745c5c3_Var94, templ_7745c5c3_Err = templruntime.NewAttributeExpression(string(back)).Resolve(ctx)
+				templ_7745c5c3_Var94, templ_7745c5c3_Err = templruntime.NewAttributeExpression(back).Resolve(ctx)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/files.templ`, Line: 419, Col: 67}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/files.templ`, Line: 420, Col: 59}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var94)
 				if templ_7745c5c3_Err != nil {
@@ -2122,7 +2123,7 @@ func ShoppingItemPage(actor services.Membership, listID pgtype.UUID, it services
 		}
 		ctx = templ.InitializeContext(ctx)
 		ctx = templ.ClearChildren(ctx)
-		itemURL := householdURL(actor.HouseholdID, "lists", listID.String(), "items", it.ID.String())
+		itemURL := routes.URL(routes.ShoppingItem, actor.HouseholdID, listID, it.ID)
 		templ_7745c5c3_Var96 := templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 			templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 			templ_7745c5c3_Buffer, templ_7745c5c3_IsBuffer := templruntime.GetBuffer(templ_7745c5c3_W)
@@ -2167,7 +2168,7 @@ func ShoppingItemPage(actor services.Membership, listID pgtype.UUID, it services
 				}
 				return nil
 			})
-			templ_7745c5c3_Err = nameHeader(householdURL(actor.HouseholdID, "lists", listID.String()), utils.T(ctx, locales.LK_ShoppingItemBack), templ.SafeURL(itemURL+"/text"),
+			templ_7745c5c3_Err = nameHeader(routes.URL(routes.ShoppingList, actor.HouseholdID, listID), utils.T(ctx, locales.LK_ShoppingItemBack), routes.URL(routes.ShoppingItemText, actor.HouseholdID, listID, it.ID),
 				it.Text, services.MaxShoppingItemTextLength, utils.T(ctx, locales.LK_ShoppingItem)).Render(templ.WithChildren(ctx, templ_7745c5c3_Var97), templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
@@ -2181,9 +2182,9 @@ func ShoppingItemPage(actor services.Membership, listID pgtype.UUID, it services
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var98 string
-				templ_7745c5c3_Var98, templ_7745c5c3_Err = templruntime.NewAttributeExpression(itemURL + "/description").ResolveURL(ctx)
+				templ_7745c5c3_Var98, templ_7745c5c3_Err = templruntime.NewAttributeExpression(routes.URL(routes.ShoppingItemDescription, actor.HouseholdID, listID, it.ID)).ResolveURL(ctx)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/files.templ`, Line: 447, Col: 41}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/files.templ`, Line: 448, Col: 93}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var98)
 				if templ_7745c5c3_Err != nil {
@@ -2276,7 +2277,7 @@ func ShoppingItemPage(actor services.Membership, listID pgtype.UUID, it services
 				return templ_7745c5c3_Err
 			}
 			if expense != nil {
-				expenseURL := householdURL(actor.HouseholdID, "expenses", expense.Expense.ID.String())
+				expenseURL := routes.URL(routes.Expense, actor.HouseholdID, expense.Expense.ID)
 				{
 					templ_7745c5c3_ElementWriter := templ_7745c5c3_Buffer
 					templ_7745c5c3_Buffer := templ.GetBuffer()
@@ -2328,7 +2329,7 @@ func ShoppingItemPage(actor services.Membership, listID pgtype.UUID, it services
 				var templ_7745c5c3_Var104 string
 				templ_7745c5c3_Var104, templ_7745c5c3_Err = templruntime.NewAttributeExpression(expenseURL).ResolveURL(ctx)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/files.templ`, Line: 471, Col: 24}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/files.templ`, Line: 472, Col: 24}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var104)
 				if templ_7745c5c3_Err != nil {
@@ -2341,7 +2342,7 @@ func ShoppingItemPage(actor services.Membership, listID pgtype.UUID, it services
 				var templ_7745c5c3_Var105 string
 				templ_7745c5c3_Var105, templ_7745c5c3_Err = templ.JoinStringErrs(expense.Expense.Title)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/files.templ`, Line: 472, Col: 74}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/files.templ`, Line: 473, Col: 74}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var105))
 				if templ_7745c5c3_Err != nil {
@@ -2354,7 +2355,7 @@ func ShoppingItemPage(actor services.Membership, listID pgtype.UUID, it services
 				var templ_7745c5c3_Var106 string
 				templ_7745c5c3_Var106, templ_7745c5c3_Err = templ.JoinStringErrs(utils.FormatMoney(ctx, expense.Expense.AmountCents, actor.Currency))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/files.templ`, Line: 473, Col: 124}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/files.templ`, Line: 474, Col: 124}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var106))
 				if templ_7745c5c3_Err != nil {
@@ -2370,7 +2371,7 @@ func ShoppingItemPage(actor services.Membership, listID pgtype.UUID, it services
 						return templ_7745c5c3_Err
 					}
 					for _, f := range expense.Files {
-						templ_7745c5c3_Err = fileRow(actor, itemURL, expenseURL+"/files/detach", f.LastRef, f.Shared, 0, f.ID, f.Name, f.HasThumb, f.SizeBytes, f.UploaderID, f.UploaderName, f.CreatedAt).Render(ctx, templ_7745c5c3_Buffer)
+						templ_7745c5c3_Err = fileRow(actor, itemURL, expenseURL+routes.FileRefDetach, f.LastRef, f.Shared, 0, f.ID, f.Name, f.HasThumb, f.SizeBytes, f.UploaderID, f.UploaderName, f.CreatedAt).Render(ctx, templ_7745c5c3_Buffer)
 						if templ_7745c5c3_Err != nil {
 							return templ_7745c5c3_Err
 						}
@@ -2395,9 +2396,9 @@ func ShoppingItemPage(actor services.Membership, listID pgtype.UUID, it services
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var107 string
-				templ_7745c5c3_Var107, templ_7745c5c3_Err = templruntime.NewAttributeExpression(householdURL(actor.HouseholdID, "lists", listID.String(), "items", it.ID.String(), "delete")).ResolveURL(ctx)
+				templ_7745c5c3_Var107, templ_7745c5c3_Err = templruntime.NewAttributeExpression(routes.URL(routes.ShoppingItemDelete, actor.HouseholdID, listID, it.ID)).ResolveURL(ctx)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/files.templ`, Line: 486, Col: 105}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/files.templ`, Line: 487, Col: 84}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var107)
 				if templ_7745c5c3_Err != nil {
@@ -2410,7 +2411,7 @@ func ShoppingItemPage(actor services.Membership, listID pgtype.UUID, it services
 				var templ_7745c5c3_Var108 string
 				templ_7745c5c3_Var108, templ_7745c5c3_Err = templruntime.NewAttributeExpression(deleteConfirm(ctx, utils.T(ctx, locales.LK_ShoppingDeleteItemConfirm, it.Text), lastRefs(files))).Resolve(ctx)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/files.templ`, Line: 489, Col: 113}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/files.templ`, Line: 490, Col: 113}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var108)
 				if templ_7745c5c3_Err != nil {

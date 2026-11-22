@@ -5,51 +5,7 @@ package config
 
 import "time"
 
-// route paths for gin
-const (
-	RouteLogin      = "/login"
-	RouteLogout     = "/logout"
-	RouteRegister   = "/register"
-	RouteHouseholds = "/households"
-	// takes ?code=
-	RouteInvite = "/invite"
-	// prefix of everything scoped to one household, followed by /:householdID
-	RouteHousehold = "/h"
-	// takes ?token=
-	RouteVerifyEmail       = "/verify-email"
-	RouteVerifyEmailResend = "/verify-email/resend"
-	RouteForgotPassword    = "/forgot-password"
-	// takes ?token=
-	RouteResetPassword = "/reset-password"
-	// takes ?token=, the link sent to a new address
-	RouteConfirmEmail = "/confirm-email"
-	// POST theme, mode and next
-	RouteAppearance = "/appearance"
-	// POST language and next
-	RouteLanguage = "/language"
-	// the per-device settings, appearance and notifications
-	RouteSettings = "/settings"
-	// POST the "avatar" file under [RouteSettings] (at /settings or a household's), or delete it
-	RouteAvatar       = "/avatar"
-	RouteAvatarDelete = "/avatar/delete"
-	// POST under [RouteSettings] queues a data export, GET [RouteSettings]+[RouteDataExport]+"/:id" downloads it
-	RouteDataExport = "/export"
-	// POST under [RouteSettings] deletes the account, password in current_password
-	RouteDeleteAccount = "/delete-account"
-	// GET the page shown after the account was deleted, signed out
-	RouteAccountDeleted = "/account-deleted"
-	ParamExportID       = "exportID"
-	// GET /users/:userID/avatar is a user's picture
-	RouteUsers = "/users"
-	// POST the JSON of a browser's PushSubscription
-	RoutePushSubscribe = "/push/subscribe"
-	// POST {"endpoint": ...}
-	RoutePushUnsubscribe = "/push/unsubscribe"
-	// the web app manifest, makes the app installable
-	RouteManifest = "/manifest.webmanifest"
-	// the service worker shows it when a page cannot be loaded
-	RouteOffline = "/offline"
-)
+// route paths and params live in internal/routes
 
 // QueryNext is the query and form key of the path to return to after signing in
 const QueryNext = "next"
@@ -233,21 +189,4 @@ var ExpenseCategories = []string{"groceries", "utilities", "rent", "household", 
 const (
 	// services.Membership set by middleware.NewHouseholdMember
 	GinKeyMembership = "membership"
-)
-
-// path params
-const (
-	ParamHouseholdID = "householdID"
-	ParamInviteID    = "inviteID"
-	ParamUserID      = "userID"
-	ParamListID      = "listID"
-	ParamItemID      = "itemID"
-	ParamNoteID      = "noteID"
-	ParamFileID      = "fileID"
-	ParamExpenseID   = "expenseID"
-	ParamMessageID   = "messageID"
-	ParamSettleID    = "settlementID"
-	ParamRecurringID = "recurringID"
-	ParamChoreID     = "choreID"
-	ParamEventID     = "eventID"
 )

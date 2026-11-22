@@ -10,6 +10,7 @@ import (
 	g "roommates/internal/config"
 	"roommates/internal/db/dbqueries"
 	"roommates/internal/locales"
+	"roommates/internal/routes"
 
 	"github.com/jackc/pgx/v5/pgtype"
 )
@@ -506,7 +507,7 @@ func TestNotifyCalendarDue(t *testing.T) {
 	notify("too early", at(8, 59), 0)
 	got := notify("due", at(9, 1), 1)
 	on := tomorrow.Format(DateLayout)
-	if got[0].msg.URL != householdPath(ownerM.HouseholdID, "calendar", "events", dentist.String())+"?on="+on || got[0].msg.Tag != "event-"+dentist.String()+"-"+on {
+	if got[0].msg.URL != routes.URL(routes.CalendarEvent, ownerM.HouseholdID, dentist)+"?on="+on || got[0].msg.Tag != "event-"+dentist.String()+"-"+on {
 		t.Fatalf("push: got %+v", got[0].msg)
 	}
 	notify("claimed", at(9, 2), 0)

@@ -8,22 +8,14 @@ import (
 	"net/http"
 	g "roommates/internal/config"
 	"roommates/internal/locales"
+	"roommates/internal/routes"
 	"roommates/internal/services"
 	"roommates/internal/utils"
 	"roommates/web/pages"
 
-	"github.com/a-h/templ"
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5/pgtype"
 )
-
-func filesPath(householdID pgtype.UUID) string {
-	return householdPath(householdID) + "/files"
-}
-
-func shoppingItemPath(householdID, listID, itemID pgtype.UUID) string {
-	return shoppingListPath(householdID, listID) + "/items/" + itemID.String()
-}
 
 // uploadFile passes the "file" form field to the service, the body is cut off a little
 // above [services.MaxFileSize] so a huge upload is not read to the end
@@ -88,7 +80,7 @@ func (h *DefaultHandler) renderFiles(ctx *gin.Context, status int, errorMessage 
 func (h *DefaultHandler) UploadFile(ctx *gin.Context) {
 	actor := membershipFromContext(ctx)
 	h.handleUpload(ctx, services.FileTarget{NoteID: pgtype.UUID{}, ListID: pgtype.UUID{}, ShoppingItemID: pgtype.UUID{}, ExpenseID: pgtype.UUID{}, MessageID: pgtype.UUID{}, EventID: pgtype.UUID{}},
-		filesPath(actor.HouseholdID), func(status int, errorMessage string) {
+		routes.URL(routes.Files, actor.HouseholdID), func(status int, errorMessage string) {
 			h.renderFiles(ctx, status, errorMessage)
 		})
 }
@@ -100,15 +92,15 @@ func (h *DefaultHandler) UploadNoteFile(ctx *gin.Context) {
 	}
 	actor := membershipFromContext(ctx)
 	h.handleUpload(ctx, services.FileTarget{NoteID: n.ID, ListID: pgtype.UUID{}, ShoppingItemID: pgtype.UUID{}, ExpenseID: pgtype.UUID{}, MessageID: pgtype.UUID{}, EventID: pgtype.UUID{}},
-		notePath(actor.HouseholdID, n.ID), func(status int, errorMessage string) {
+		routes.URL(routes.Note, actor.HouseholdID, n.ID), func(status int, errorMessage string) {
 			h.renderNote(ctx, status, n, errorMessage)
 		})
 }
 
 // loadShoppingItem gets the :itemID item of the :listID list, or shows the error page and returns false
 func (h *DefaultHandler) loadShoppingItem(ctx *gin.Context) (pgtype.UUID, services.ShoppingItem, bool) {
-	listID, errList := utils.ParseUUID(ctx.Param(g.ParamListID))
-	itemID, errItem := utils.ParseUUID(ctx.Param(g.ParamItemID))
+	listID, errList := utils.ParseUUID(ctx.Param(routes.ParamListID))
+	itemID, errItem := utils.ParseUUID(ctx.Param(routes.ParamItemID))
 	if errList != nil || errItem != nil {
 		RenderTemplStatus(ctx, http.StatusNotFound, pages.NotFound())
 		return listID, services.ShoppingItem{}, false
@@ -157,7 +149,7 @@ func (h *DefaultHandler) SetShoppingItemDescription(ctx *gin.Context) {
 	err := h.service.SetShoppingItemDescription(ctx, actor, listID, it.ID, ctx.PostForm("description"))
 	switch {
 	case err == nil:
-		stay(ctx, shoppingItemPath(actor.HouseholdID, listID, it.ID))
+		stay(ctx, routes.URL(routes.ShoppingItem, actor.HouseholdID, listID, it.ID))
 	case errors.Is(err, g.ErrorInvalidInput):
 		h.renderShoppingItem(ctx, http.StatusUnprocessableEntity, listID, it,
 			utils.T(ctx.Request.Context(), locales.LK_ShoppingDescriptionLength, services.MaxShoppingItemDescriptionLength))
@@ -177,7 +169,7 @@ func (h *DefaultHandler) SetShoppingItemText(ctx *gin.Context) {
 	err := h.service.SetShoppingItemText(ctx, actor, listID, it.ID, ctx.PostForm("name"), ctx.PostForm("qty"))
 	switch {
 	case err == nil:
-		stay(ctx, shoppingItemPath(actor.HouseholdID, listID, it.ID))
+		stay(ctx, routes.URL(routes.ShoppingItem, actor.HouseholdID, listID, it.ID))
 	case errors.Is(err, g.ErrorInvalidInput):
 		h.renderShoppingItem(ctx, http.StatusUnprocessableEntity, listID, it,
 			utils.T(ctx.Request.Context(), locales.LK_ShoppingItemLength, services.MaxShoppingItemTextLength, services.MaxShoppingItemQtyLength))
@@ -193,7 +185,7 @@ func (h *DefaultHandler) UploadShoppingItemFile(ctx *gin.Context) {
 	}
 	actor := membershipFromContext(ctx)
 	h.handleUpload(ctx, services.FileTarget{NoteID: pgtype.UUID{}, ListID: listID, ShoppingItemID: it.ID, ExpenseID: pgtype.UUID{}, MessageID: pgtype.UUID{}, EventID: pgtype.UUID{}},
-		shoppingItemPath(actor.HouseholdID, listID, it.ID), func(status int, errorMessage string) {
+		routes.URL(routes.ShoppingItem, actor.HouseholdID, listID, it.ID), func(status int, errorMessage string) {
 			h.renderShoppingItem(ctx, status, listID, it, errorMessage)
 		})
 }
@@ -207,27 +199,27 @@ type FileTargetLoader func(ctx *gin.Context) (services.FileTarget, string, bool)
 func (h *DefaultHandler) ShoppingItemFileTarget(ctx *gin.Context) (services.FileTarget, string, bool) {
 	listID, it, ok := h.loadShoppingItem(ctx)
 	return services.FileTarget{NoteID: pgtype.UUID{}, ListID: listID, ShoppingItemID: it.ID, ExpenseID: pgtype.UUID{}, MessageID: pgtype.UUID{}, EventID: pgtype.UUID{}},
-		shoppingItemPath(membershipFromContext(ctx).HouseholdID, listID, it.ID), ok
+		routes.URL(routes.ShoppingItem, membershipFromContext(ctx).HouseholdID, listID, it.ID), ok
 }
 
 func (h *DefaultHandler) NoteFileTarget(ctx *gin.Context) (services.FileTarget, string, bool) {
 	n, ok := h.loadNote(ctx)
 	return services.FileTarget{NoteID: n.ID, ListID: pgtype.UUID{}, ShoppingItemID: pgtype.UUID{}, ExpenseID: pgtype.UUID{}, MessageID: pgtype.UUID{}, EventID: pgtype.UUID{}},
-		notePath(membershipFromContext(ctx).HouseholdID, n.ID), ok
+		routes.URL(routes.Note, membershipFromContext(ctx).HouseholdID, n.ID), ok
 }
 
 func (h *DefaultHandler) ExpenseFileTarget(ctx *gin.Context) (services.FileTarget, string, bool) {
 	e, ok := h.loadExpense(ctx)
 	return services.FileTarget{NoteID: pgtype.UUID{}, ListID: pgtype.UUID{}, ShoppingItemID: pgtype.UUID{}, ExpenseID: e.Expense.ID, MessageID: pgtype.UUID{}, EventID: pgtype.UUID{}},
-		expensePath(membershipFromContext(ctx).HouseholdID, e.Expense.ID), ok
+		routes.URL(routes.Expense, membershipFromContext(ctx).HouseholdID, e.Expense.ID), ok
 }
 
 // FileRefRoutes adds the routes that attach existing files to what load gets
 func (h *DefaultHandler) FileRefRoutes(group gin.IRoutes, load FileTargetLoader) {
-	group.GET("/files/picks", h.attachFilePicks(load))
-	group.POST("/files/attach", h.changeFileRef(load, h.service.AttachFile))
+	group.GET(routes.FileRefPicks, h.attachFilePicks(load))
+	group.POST(routes.FileRefAttach, h.changeFileRef(load, h.service.AttachFile))
 	detach, keepAndDetach := h.changeFileRef(load, h.service.DetachFile), h.changeFileRef(load, h.service.KeepAndDetachFile)
-	group.POST("/files/detach", func(ctx *gin.Context) {
+	group.POST(routes.FileRefDetach, func(ctx *gin.Context) {
 		if ctx.PostForm("keep") != "" {
 			keepAndDetach(ctx)
 			return
@@ -249,7 +241,7 @@ func (h *DefaultHandler) attachFilePicks(load FileTargetLoader) gin.HandlerFunc 
 			pageError(ctx, err)
 			return
 		}
-		RenderTempl(ctx, pages.AttachFilePicks(actor, templ.SafeURL(back), files))
+		RenderTempl(ctx, pages.AttachFilePicks(actor, back, files))
 	}
 }
 
@@ -282,7 +274,7 @@ func (h *DefaultHandler) changeFileRef(load FileTargetLoader,
 
 // PageFile shows a file inside the app, with a way back to where it is attached
 func (h *DefaultHandler) PageFile(ctx *gin.Context) {
-	fileID, err := utils.ParseUUID(ctx.Param(g.ParamFileID))
+	fileID, err := utils.ParseUUID(ctx.Param(routes.ParamFileID))
 	if err != nil {
 		RenderTemplStatus(ctx, http.StatusNotFound, pages.NotFound())
 		return
@@ -302,7 +294,7 @@ func (h *DefaultHandler) renderFile(ctx *gin.Context, status int, fileID pgtype.
 
 // RenameFile shows the file again, an invalid name shows on it
 func (h *DefaultHandler) RenameFile(ctx *gin.Context) {
-	fileID, err := utils.ParseUUID(ctx.Param(g.ParamFileID))
+	fileID, err := utils.ParseUUID(ctx.Param(routes.ParamFileID))
 	if err != nil {
 		RenderTemplStatus(ctx, http.StatusNotFound, pages.NotFound())
 		return
@@ -311,7 +303,7 @@ func (h *DefaultHandler) RenameFile(ctx *gin.Context) {
 	err = h.service.RenameFile(ctx, actor, fileID, ctx.PostForm("name"))
 	switch {
 	case err == nil:
-		stay(ctx, filesPath(actor.HouseholdID)+"/"+fileID.String())
+		stay(ctx, routes.URL(routes.File, actor.HouseholdID, fileID))
 	case errors.Is(err, g.ErrorInvalidInput):
 		h.renderFile(ctx, http.StatusUnprocessableEntity, fileID,
 			utils.T(ctx.Request.Context(), locales.LK_FilesNameInvalid, services.MaxFileNameLength))
@@ -332,7 +324,7 @@ func (h *DefaultHandler) DownloadFileThumb(ctx *gin.Context) {
 }
 
 func (h *DefaultHandler) serveFile(ctx *gin.Context, thumb bool) {
-	fileID, err := utils.ParseUUID(ctx.Param(g.ParamFileID))
+	fileID, err := utils.ParseUUID(ctx.Param(routes.ParamFileID))
 	if err != nil {
 		RenderTemplStatus(ctx, http.StatusNotFound, pages.NotFound())
 		return
@@ -361,7 +353,7 @@ func (h *DefaultHandler) serveFile(ctx *gin.Context, thumb bool) {
 
 // KeepFile goes back to the page in the form, like [DefaultHandler.DeleteFile]
 func (h *DefaultHandler) KeepFile(ctx *gin.Context) {
-	fileID, err := utils.ParseUUID(ctx.Param(g.ParamFileID))
+	fileID, err := utils.ParseUUID(ctx.Param(routes.ParamFileID))
 	if err != nil {
 		RenderTemplStatus(ctx, http.StatusNotFound, pages.NotFound())
 		return
@@ -375,7 +367,7 @@ func (h *DefaultHandler) KeepFile(ctx *gin.Context) {
 
 // DeleteFile goes back to the page in the form, the Referer holds only the origin (Referrer-Policy strict-origin)
 func (h *DefaultHandler) DeleteFile(ctx *gin.Context) {
-	fileID, err := utils.ParseUUID(ctx.Param(g.ParamFileID))
+	fileID, err := utils.ParseUUID(ctx.Param(routes.ParamFileID))
 	if err != nil {
 		RenderTemplStatus(ctx, http.StatusNotFound, pages.NotFound())
 		return

@@ -5,6 +5,7 @@ import (
 	"net/http"
 	g "roommates/internal/config"
 	"roommates/internal/locales"
+	"roommates/internal/routes"
 	"roommates/internal/services"
 	"roommates/internal/sessions"
 	"roommates/internal/utils"
@@ -26,7 +27,7 @@ func NewHouseholdMember(service *services.DefaultService) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		s := sessions.FromGinContext(ctx)
 		userID, errUser := utils.ParseUUID(s.UserID)
-		householdID, errHousehold := utils.ParseUUID(ctx.Param(g.ParamHouseholdID))
+		householdID, errHousehold := utils.ParseUUID(ctx.Param(routes.ParamHouseholdID))
 		if errUser != nil || errHousehold != nil {
 			notFound(ctx)
 			return
@@ -45,7 +46,7 @@ func NewHouseholdMember(service *services.DefaultService) gin.HandlerFunc {
 
 		// a deleted household is read-only until it is purged, restoring it is outside this group
 		if m.DeletedAt.Valid && ctx.Request.Method != http.MethodGet && ctx.Request.Method != http.MethodHead &&
-			!slices.Contains(userSettings, strings.TrimPrefix(ctx.FullPath(), g.RouteHousehold+"/:"+g.ParamHouseholdID)) {
+			!slices.Contains(userSettings, strings.TrimPrefix(ctx.FullPath(), routes.HouseholdSettings)) {
 			readOnly(ctx, m)
 			return
 		}
@@ -70,13 +71,13 @@ func NewHouseholdMember(service *services.DefaultService) gin.HandlerFunc {
 // userSettings are the forms of a household's settings page that change the user, not the
 // household, so a deleted household's read-only check lets them through (see accountRoutes)
 var userSettings = []string{
-	"/settings" + g.RouteAvatar,
-	"/settings" + g.RouteAvatarDelete,
-	"/settings/username",
-	"/settings/password",
-	"/settings/email",
-	"/settings/sign-out-everywhere",
-	"/settings/payment",
+	routes.AccountAvatar,
+	routes.AccountAvatarDelete,
+	routes.AccountUsername,
+	routes.AccountPassword,
+	routes.AccountEmail,
+	routes.AccountSignOutEverywhere,
+	routes.AccountPayment,
 }
 
 // readOnly refuses a change to a deleted household, htmx shows the message in <main>
@@ -91,7 +92,7 @@ func readOnly(ctx *gin.Context, m services.Membership) {
 	}
 	page := pages.Notice(utils.T(rctx, locales.LK_OwnershipReadOnlyTitle),
 		utils.T(rctx, locales.LK_OwnershipReadOnly, utils.FormatDate(rctx, services.PurgeDate(m.DeletedAt))),
-		templ.SafeURL(g.RouteHousehold+"/"+m.HouseholdID.String()), utils.T(rctx, locales.LK_OwnershipBack))
+		templ.SafeURL(routes.URL(routes.Household, m.HouseholdID)), utils.T(rctx, locales.LK_OwnershipBack))
 	r := renderer.New(rctx, http.StatusForbidden, page)
 	ctx.Render(r.Status, r)
 	ctx.Abort()

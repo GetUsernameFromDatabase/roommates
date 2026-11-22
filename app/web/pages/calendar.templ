@@ -16,6 +16,7 @@ import "roommates/internal/services"
 import "roommates/internal/events"
 import g "roommates/internal/config"
 import "roommates/internal/locales"
+import "roommates/internal/routes"
 import "roommates/internal/utils"
 import "cmp"
 import "slices"
@@ -111,7 +112,7 @@ templ calendarAgendaMore(actor services.Membership, from, last time.Time) {
 		Size:    button.SizeLg,
 		Class:   "mt-2 h-11 self-start",
 		Attributes: templ.Attributes{
-			"hx-get":          string(calendarMoreURL(actor.HouseholdID, from, last)),
+			"hx-get":          calendarMoreURL(actor.HouseholdID, from, last),
 			"hx-swap":         "outerHTML",
 			"hx-disabled-elt": "this",
 		},
@@ -222,8 +223,8 @@ templ calendarMonth(actor services.Membership, v CalendarView) {
 }
 
 // calendarSwap are the attributes of a link that shows another day or month of the grid in place
-func calendarSwap(url templ.SafeURL) templ.Attributes {
-	return templ.Attributes{"hx-get": string(url), "hx-target": "#cal-month", "hx-select": "#cal-month", "hx-swap": "outerHTML", "hx-replace-url": "true"}
+func calendarSwap(url string) templ.Attributes {
+	return templ.Attributes{"hx-get": url, "hx-target": "#cal-month", "hx-select": "#cal-month", "hx-swap": "outerHTML", "hx-replace-url": "true"}
 }
 
 // calendarMonthLink goes to month with day picked, size "icon" for an arrow
@@ -295,7 +296,7 @@ templ calendarChip(it services.CalendarItem) {
 
 // eventNew is a fold with the form, open again after an error
 templ eventNew(actor services.Membership, members []dbqueries.ListActiveMembersRow, f EventForm) {
-	{{ action := householdURL(actor.HouseholdID, "calendar", "events") }}
+	{{ action := routes.URL(routes.CalendarEvents, actor.HouseholdID) }}
 	<details id="event-new" class="group/new max-w-3xl" open?={ f.Open }>
 		<summary class={ utils.CN(button.Variants(button.Props{Variant: button.VariantSecondary, Size: button.SizeLg}), "cursor-pointer list-none [&::-webkit-details-marker]:hidden") }>
 			@navIcon("plus", "size-4")
@@ -306,7 +307,7 @@ templ eventNew(actor services.Membership, members []dbqueries.ListActiveMembersR
 				id="event-new-form"
 				action={ action }
 				method="post"
-				hx-post={ string(action) }
+				hx-post={ action }
 				hx-target="#event-new"
 				hx-select="#event-new"
 				hx-select-oob="#calendar, #calendar-notice"
@@ -330,7 +331,7 @@ templ eventNew(actor services.Membership, members []dbqueries.ListActiveMembersR
 // the form and the summary are swapped together, #event-main, after a save
 templ EventPage(actor services.Membership, d services.EventDetail, members []dbqueries.ListActiveMembersRow, f EventForm, fileError string) {
 	@appShell(d.Title, &HouseholdNav{HouseholdID: actor.HouseholdID, Section: SectionCalendar}) {
-		@doorplateHeader(householdURL(actor.HouseholdID, "calendar"), utils.T(ctx, locales.LK_CalendarTitle), d.Title)
+		@doorplateHeader(routes.URL(routes.Calendar, actor.HouseholdID),utils.T(ctx, locales.LK_CalendarTitle), d.Title)
 		<div id="event-main" class="flex flex-col gap-8">
 			@eventSummary(d)
 			if d.CanEdit {
@@ -339,7 +340,7 @@ templ EventPage(actor services.Membership, d services.EventDetail, members []dbq
 			}
 		</div>
 		if d.CanEdit {
-			@attachedFiles(actor, householdURL(actor.HouseholdID, "calendar", "events", d.EventID.String()), d.Files, "", fileError)
+			@attachedFiles(actor, routes.URL(routes.CalendarEvent, actor.HouseholdID, d.EventID),d.Files, "", fileError)
 		} else if len(d.Files) > 0 {
 			<section class={ utils.CN(sheetClass, "space-y-3") } aria-labelledby="attachments-title">
 				<h2 id="attachments-title" class="text-xl font-semibold">
@@ -348,7 +349,7 @@ templ EventPage(actor services.Membership, d services.EventDetail, members []dbq
 				<ul class="divide-y">
 					for _, file := range d.Files {
 						<li>
-							<a href={ householdURL(actor.HouseholdID, "files", file.ID.String()) } class="flex min-h-11 items-center font-medium break-words hover:underline">{ file.Name }</a>
+							<a href={ routes.URL(routes.File, actor.HouseholdID, file.ID) } class="flex min-h-11 items-center font-medium break-words hover:underline">{ file.Name }</a>
 						</li>
 					}
 				</ul>
@@ -401,7 +402,7 @@ templ eventEdit(actor services.Membership, d services.EventDetail, members []dbq
 		id="event-edit"
 		action={ action }
 		method="post"
-		hx-post={ string(action) }
+		hx-post={ action }
 		hx-target="#event-main"
 		hx-select="#event-main"
 		hx-swap="outerHTML"
@@ -431,7 +432,7 @@ templ eventEdit(actor services.Membership, d services.EventDetail, members []dbq
 
 // eventDelete asks first, for a series in a dialog that also asks which events go
 templ eventDelete(actor services.Membership, d services.EventDetail) {
-	{{ action := string(householdURL(actor.HouseholdID, "calendar", "events", d.EventID.String(), "delete")) + "?on=" + d.On.Format(services.DateLayout) }}
+	{{ action := routes.URL(routes.CalendarEventDelete, actor.HouseholdID, d.EventID) + "?on=" + d.On.Format(services.DateLayout) }}
 	if d.Repeats && !d.Detached {
 		<div>
 			@alertdialog.AlertDialog(alertdialog.Props{ID: "delete-event", Open: nil, DefaultOpen: false}) {
@@ -439,7 +440,7 @@ templ eventDelete(actor services.Membership, d services.EventDetail) {
 					@components.T(locales.LK_CommonDelete)
 				}
 				@alertdialog.Content(alertdialog.ContentProps{Class: "max-h-[calc(100dvh-2rem)] w-[calc(100vw-2rem)] overflow-y-auto", Attributes: nil, Size: ""}) {
-					<form action={ templ.SafeURL(action) } method="post" hx-boost="true" class="grid gap-4">
+					<form action={ action } method="post" hx-boost="true" class="grid gap-4">
 						@alertdialog.Header(alertdialog.HeaderProps{ID: "", Class: "", Attributes: nil}) {
 							@alertdialog.Title(alertdialog.TitleProps{ID: "", Class: "", Attributes: nil}) {
 								@components.T(locales.LK_CalendarDeleteTitle)
@@ -462,7 +463,7 @@ templ eventDelete(actor services.Membership, d services.EventDetail) {
 			}
 		</div>
 	} else {
-		<form action={ templ.SafeURL(action) } method="post" hx-boost="true" hx-confirm={ utils.T(ctx, locales.LK_CalendarDeleteConfirm) }>
+		<form action={ action } method="post" hx-boost="true" hx-confirm={ utils.T(ctx, locales.LK_CalendarDeleteConfirm) }>
 			<input type="hidden" name="scope" value={ services.EventScopeAll }/>
 			@deleteButton(locales.LK_CommonDelete)
 		</form>

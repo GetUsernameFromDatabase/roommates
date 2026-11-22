@@ -25,6 +25,7 @@ import "roommates/internal/services"
 import "roommates/internal/events"
 import g "roommates/internal/config"
 import "roommates/internal/locales"
+import "roommates/internal/routes"
 import "roommates/internal/utils"
 import "fmt"
 import "slices"
@@ -52,7 +53,6 @@ func HouseholdExpenses(actor services.Membership, o services.ExpensesOverview, f
 		ctx = templ.InitializeContext(ctx)
 		ctx = templ.ClearChildren(ctx)
 		errorMessage, settleTo := slip.Error, slip.To
-		expensesURL := householdURL(actor.HouseholdID, "expenses")
 		templ_7745c5c3_Var2 := templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 			templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 			templ_7745c5c3_Buffer, templ_7745c5c3_IsBuffer := templruntime.GetBuffer(templ_7745c5c3_W)
@@ -95,7 +95,7 @@ func HouseholdExpenses(actor services.Membership, o services.ExpensesOverview, f
 				}
 				return nil
 			})
-			templ_7745c5c3_Err = button.Button(button.Props{Href: string(expensesURL) + "/new", Size: button.SizeLg, Class: "h-10 shrink-0"}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var3), templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = button.Button(button.Props{Href: routes.URL(routes.ExpenseNew, actor.HouseholdID), Size: button.SizeLg, Class: "h-10 shrink-0"}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var3), templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -235,9 +235,9 @@ func HouseholdExpenses(actor services.Membership, o services.ExpensesOverview, f
 										return templ_7745c5c3_Err
 									}
 									var templ_7745c5c3_Var5 string
-									templ_7745c5c3_Var5, templ_7745c5c3_Err = templruntime.NewAttributeExpression(householdURL(actor.HouseholdID, "settlements")).ResolveURL(ctx)
+									templ_7745c5c3_Var5, templ_7745c5c3_Err = templruntime.NewAttributeExpression(routes.URL(routes.Settlements, actor.HouseholdID)).ResolveURL(ctx)
 									if templ_7745c5c3_Err != nil {
-										return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/expenses.templ`, Line: 95, Col: 75}
+										return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/expenses.templ`, Line: 95, Col: 78}
 									}
 									_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var5)
 									if templ_7745c5c3_Err != nil {
@@ -414,7 +414,7 @@ func HouseholdExpenses(actor services.Membership, o services.ExpensesOverview, f
 				}
 				return nil
 			})
-			templ_7745c5c3_Err = button.Button(button.Props{Href: string(householdURL(actor.HouseholdID, "recurring")), Variant: button.VariantOutline, Class: "h-11 self-start"}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var9), templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = button.Button(button.Props{Href: routes.URL(routes.Recurring, actor.HouseholdID), Variant: button.VariantOutline, Class: "h-11 self-start"}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var9), templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -457,9 +457,9 @@ func HouseholdExpenses(actor services.Membership, o services.ExpensesOverview, f
 						return templ_7745c5c3_Err
 					}
 					var templ_7745c5c3_Var10 string
-					templ_7745c5c3_Var10, templ_7745c5c3_Err = templruntime.NewAttributeExpression(householdURL(actor.HouseholdID, "expenses", e.ID.String())).ResolveURL(ctx)
+					templ_7745c5c3_Var10, templ_7745c5c3_Err = templruntime.NewAttributeExpression(routes.URL(routes.Expense, actor.HouseholdID, e.ID)).ResolveURL(ctx)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/expenses.templ`, Line: 168, Col: 78}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/expenses.templ`, Line: 168, Col: 71}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var10)
 					if templ_7745c5c3_Err != nil {
@@ -550,7 +550,7 @@ func HouseholdExpenses(actor services.Membership, o services.ExpensesOverview, f
 				return templ_7745c5c3_Err
 			}
 			if o.HasExpenses {
-				templ_7745c5c3_Err = expenseExports(actor, string(expensesURL)).Render(ctx, templ_7745c5c3_Buffer)
+				templ_7745c5c3_Err = expenseExports(actor).Render(ctx, templ_7745c5c3_Buffer)
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -584,7 +584,7 @@ func expenseFilters(actor services.Membership, filter services.ExpenseFilter) te
 		}
 		ctx = templ.InitializeContext(ctx)
 		ctx = templ.ClearChildren(ctx)
-		expensesURL := householdURL(actor.HouseholdID, "expenses")
+		expensesURL := routes.URL(routes.Expenses, actor.HouseholdID)
 		items := []selectcomp.ItemData{
 			{Value: "unpaid", Label: utils.T(ctx, locales.LK_ExpensesShowUnpaid)},
 			{Value: services.ExpenseShowAll, Label: utils.T(ctx, locales.LK_ExpensesShowAll)},
@@ -607,9 +607,9 @@ func expenseFilters(actor services.Membership, filter services.ExpenseFilter) te
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var17 string
-		templ_7745c5c3_Var17, templ_7745c5c3_Err = templruntime.NewAttributeExpression(string(expensesURL)).Resolve(ctx)
+		templ_7745c5c3_Var17, templ_7745c5c3_Err = templruntime.NewAttributeExpression(expensesURL).Resolve(ctx)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/expenses.templ`, Line: 212, Col: 30}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/expenses.templ`, Line: 212, Col: 22}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var17)
 		if templ_7745c5c3_Err != nil {
@@ -661,7 +661,6 @@ func pendingSlip(actor services.Membership, p dbqueries.ListPendingSettlementsRo
 		}
 		ctx = templ.InitializeContext(ctx)
 		ctx = templ.ClearChildren(ctx)
-		settlementURL := householdURL(actor.HouseholdID, "settlements", p.ID.String())
 		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 54, "<div class=\"till-paper space-y-3\"><div class=\"flex items-start justify-between gap-3\"><p class=\"min-w-0 break-words\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
@@ -670,7 +669,7 @@ func pendingSlip(actor services.Membership, p dbqueries.ListPendingSettlementsRo
 		templ_7745c5c3_Var19, templ_7745c5c3_Err = templ.JoinStringErrs(pairPhrase(ctx, actor, p.FromUser, p.FromName, p.ToUser, p.ToName,
 			locales.LK_ExpensesPaidTo, locales.LK_ExpensesYouPaidTo, locales.LK_ExpensesPaidYou))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/expenses.templ`, Line: 240, Col: 89}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/expenses.templ`, Line: 239, Col: 89}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var19))
 		if templ_7745c5c3_Err != nil {
@@ -683,7 +682,7 @@ func pendingSlip(actor services.Membership, p dbqueries.ListPendingSettlementsRo
 		var templ_7745c5c3_Var20 string
 		templ_7745c5c3_Var20, templ_7745c5c3_Err = templ.JoinStringErrs(utils.FormatMoney(ctx, p.AmountCents, p.Currency))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/expenses.templ`, Line: 241, Col: 124}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/expenses.templ`, Line: 240, Col: 124}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var20))
 		if templ_7745c5c3_Err != nil {
@@ -701,7 +700,7 @@ func pendingSlip(actor services.Membership, p dbqueries.ListPendingSettlementsRo
 			var templ_7745c5c3_Var21 string
 			templ_7745c5c3_Var21, templ_7745c5c3_Err = templ.JoinStringErrs(line)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/expenses.templ`, Line: 243, Col: 73}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/expenses.templ`, Line: 242, Col: 73}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var21))
 			if templ_7745c5c3_Err != nil {
@@ -730,9 +729,9 @@ func pendingSlip(actor services.Membership, p dbqueries.ListPendingSettlementsRo
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var22 string
-			templ_7745c5c3_Var22, templ_7745c5c3_Err = templruntime.NewAttributeExpression(settlementURL + "/confirm").ResolveURL(ctx)
+			templ_7745c5c3_Var22, templ_7745c5c3_Err = templruntime.NewAttributeExpression(routes.URL(routes.SettlementConfirm, actor.HouseholdID, p.ID)).ResolveURL(ctx)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/expenses.templ`, Line: 252, Col: 45}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/expenses.templ`, Line: 251, Col: 80}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var22)
 			if templ_7745c5c3_Err != nil {
@@ -774,9 +773,9 @@ func pendingSlip(actor services.Membership, p dbqueries.ListPendingSettlementsRo
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var24 string
-		templ_7745c5c3_Var24, templ_7745c5c3_Err = templruntime.NewAttributeExpression(settlementURL + "/delete").ResolveURL(ctx)
+		templ_7745c5c3_Var24, templ_7745c5c3_Err = templruntime.NewAttributeExpression(routes.URL(routes.SettlementDelete, actor.HouseholdID, p.ID)).ResolveURL(ctx)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/expenses.templ`, Line: 259, Col: 38}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/expenses.templ`, Line: 258, Col: 73}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var24)
 		if templ_7745c5c3_Err != nil {
@@ -789,7 +788,7 @@ func pendingSlip(actor services.Membership, p dbqueries.ListPendingSettlementsRo
 		var templ_7745c5c3_Var25 string
 		templ_7745c5c3_Var25, templ_7745c5c3_Err = templruntime.NewAttributeExpression(utils.T(ctx, utils.IfElse(p.ToUser == actor.UserID, locales.LK_ExpensesRejectConfirm, locales.LK_ExpensesCancelConfirm))).Resolve(ctx)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/expenses.templ`, Line: 262, Col: 137}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/expenses.templ`, Line: 261, Col: 137}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var25)
 		if templ_7745c5c3_Err != nil {
@@ -875,7 +874,7 @@ func debtBreakdown(actor services.Membership, d services.Debt) templ.Component {
 		templ_7745c5c3_Var28, templ_7745c5c3_Err = templ.JoinStringErrs(pairPhrase(ctx, actor, d.From, d.FromName, d.To, d.ToName,
 			locales.LK_ExpensesOwes, locales.LK_ExpensesYouOwe, locales.LK_ExpensesOwesYou))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/expenses.templ`, Line: 285, Col: 84}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/expenses.templ`, Line: 284, Col: 84}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var28))
 		if templ_7745c5c3_Err != nil {
@@ -928,7 +927,7 @@ func debtBreakdown(actor services.Membership, d services.Debt) templ.Component {
 		var templ_7745c5c3_Var31 string
 		templ_7745c5c3_Var31, templ_7745c5c3_Err = templ.JoinStringErrs(utils.FormatMoney(ctx, d.Cents, actor.Currency))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/expenses.templ`, Line: 286, Col: 201}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/expenses.templ`, Line: 285, Col: 201}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var31))
 		if templ_7745c5c3_Err != nil {
@@ -957,9 +956,9 @@ func debtBreakdown(actor services.Membership, d services.Debt) templ.Component {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var32 string
-				templ_7745c5c3_Var32, templ_7745c5c3_Err = templruntime.NewAttributeExpression(householdURL(actor.HouseholdID, "expenses", it.Row.ExpenseID.String())).ResolveURL(ctx)
+				templ_7745c5c3_Var32, templ_7745c5c3_Err = templruntime.NewAttributeExpression(routes.URL(routes.Expense, actor.HouseholdID, it.Row.ExpenseID)).ResolveURL(ctx)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/expenses.templ`, Line: 295, Col: 87}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/expenses.templ`, Line: 294, Col: 80}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var32)
 				if templ_7745c5c3_Err != nil {
@@ -972,7 +971,7 @@ func debtBreakdown(actor services.Membership, d services.Debt) templ.Component {
 				var templ_7745c5c3_Var33 string
 				templ_7745c5c3_Var33, templ_7745c5c3_Err = templ.JoinStringErrs(it.Row.Title)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/expenses.templ`, Line: 295, Col: 246}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/expenses.templ`, Line: 294, Col: 239}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var33))
 				if templ_7745c5c3_Err != nil {
@@ -991,7 +990,7 @@ func debtBreakdown(actor services.Membership, d services.Debt) templ.Component {
 				templ_7745c5c3_Var34, templ_7745c5c3_Err = templ.JoinStringErrs(pairPhrase(ctx, actor, it.Row.ToUser, it.Row.ToName, it.Row.FromUser, it.Row.FromName,
 					locales.LK_ExpensesPaidTo, locales.LK_ExpensesYouPaidTo, locales.LK_ExpensesPaidYou))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/expenses.templ`, Line: 300, Col: 93}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/expenses.templ`, Line: 299, Col: 93}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var34))
 				if templ_7745c5c3_Err != nil {
@@ -1054,7 +1053,7 @@ func debtBreakdown(actor services.Membership, d services.Debt) templ.Component {
 				var templ_7745c5c3_Var37 string
 				templ_7745c5c3_Var37, templ_7745c5c3_Err = templ.JoinStringErrs(utils.T(ctx, utils.IfElse(itemClass(actor, d, it.Cents) == "text-favour", locales.LK_ExpensesYouGet, locales.LK_ExpensesYouPay)))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/expenses.templ`, Line: 307, Col: 160}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/expenses.templ`, Line: 306, Col: 160}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var37))
 				if templ_7745c5c3_Err != nil {
@@ -1068,7 +1067,7 @@ func debtBreakdown(actor services.Membership, d services.Debt) templ.Component {
 			var templ_7745c5c3_Var38 string
 			templ_7745c5c3_Var38, templ_7745c5c3_Err = templ.JoinStringErrs(formatSignedMoney(ctx, it.Cents, actor.Currency))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/expenses.templ`, Line: 309, Col: 57}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/expenses.templ`, Line: 308, Col: 57}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var38))
 			if templ_7745c5c3_Err != nil {
@@ -1082,7 +1081,7 @@ func debtBreakdown(actor services.Membership, d services.Debt) templ.Component {
 				var templ_7745c5c3_Var39 string
 				templ_7745c5c3_Var39, templ_7745c5c3_Err = templ.JoinStringErrs(paidByLine(ctx, actor, it.Row.ToUser, it.Row.ToName, it.Row.OnDate))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/expenses.templ`, Line: 314, Col: 76}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/expenses.templ`, Line: 313, Col: 76}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var39))
 				if templ_7745c5c3_Err != nil {
@@ -1092,7 +1091,7 @@ func debtBreakdown(actor services.Membership, d services.Debt) templ.Component {
 				var templ_7745c5c3_Var40 string
 				templ_7745c5c3_Var40, templ_7745c5c3_Err = templ.JoinStringErrs(formatDay(ctx, it.Row.OnDate))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/expenses.templ`, Line: 316, Col: 38}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/expenses.templ`, Line: 315, Col: 38}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var40))
 				if templ_7745c5c3_Err != nil {
@@ -1106,7 +1105,7 @@ func debtBreakdown(actor services.Membership, d services.Debt) templ.Component {
 					var templ_7745c5c3_Var41 string
 					templ_7745c5c3_Var41, templ_7745c5c3_Err = templ.JoinStringErrs(" · " + line)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/expenses.templ`, Line: 318, Col: 23}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/expenses.templ`, Line: 317, Col: 23}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var41))
 					if templ_7745c5c3_Err != nil {
@@ -1130,9 +1129,9 @@ func debtBreakdown(actor services.Membership, d services.Debt) templ.Component {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var42 string
-				templ_7745c5c3_Var42, templ_7745c5c3_Err = templruntime.NewAttributeExpression(householdURL(actor.HouseholdID, "expenses", it.Row.ExpenseID.String(), "shares", d.From.String(), "paid")).ResolveURL(ctx)
+				templ_7745c5c3_Var42, templ_7745c5c3_Err = templruntime.NewAttributeExpression(routes.URL(routes.ExpenseSharePaid, actor.HouseholdID, it.Row.ExpenseID, d.From)).ResolveURL(ctx)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/expenses.templ`, Line: 326, Col: 126}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/expenses.templ`, Line: 325, Col: 101}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var42)
 				if templ_7745c5c3_Err != nil {
@@ -1145,7 +1144,7 @@ func debtBreakdown(actor services.Membership, d services.Debt) templ.Component {
 				var templ_7745c5c3_Var43 string
 				templ_7745c5c3_Var43, templ_7745c5c3_Err = templruntime.NewAttributeExpression(g.QueryNext).Resolve(ctx)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/expenses.templ`, Line: 328, Col: 46}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/expenses.templ`, Line: 327, Col: 46}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var43)
 				if templ_7745c5c3_Err != nil {
@@ -1156,9 +1155,9 @@ func debtBreakdown(actor services.Membership, d services.Debt) templ.Component {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var44 string
-				templ_7745c5c3_Var44, templ_7745c5c3_Err = templruntime.NewAttributeExpression(string(householdURL(actor.HouseholdID, "expenses"))).Resolve(ctx)
+				templ_7745c5c3_Var44, templ_7745c5c3_Err = templruntime.NewAttributeExpression(routes.URL(routes.Expenses, actor.HouseholdID)).Resolve(ctx)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/expenses.templ`, Line: 328, Col: 108}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/expenses.templ`, Line: 327, Col: 103}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var44)
 				if templ_7745c5c3_Err != nil {
@@ -1215,7 +1214,7 @@ func debtBreakdown(actor services.Membership, d services.Debt) templ.Component {
 		var templ_7745c5c3_Var46 string
 		templ_7745c5c3_Var46, templ_7745c5c3_Err = templ.JoinStringErrs(utils.FormatMoney(ctx, d.Cents, actor.Currency))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/expenses.templ`, Line: 338, Col: 89}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/expenses.templ`, Line: 337, Col: 89}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var46))
 		if templ_7745c5c3_Err != nil {
@@ -1277,7 +1276,7 @@ func ExpenseEditorWithRepeat(actor services.Membership, members []dbqueries.List
 		}
 		ctx = templ.InitializeContext(ctx)
 		ctx = templ.ClearChildren(ctx)
-		expensesURL := householdURL(actor.HouseholdID, "expenses")
+		expensesURL := routes.URL(routes.Expenses, actor.HouseholdID)
 		f := expenseFrame{
 			Action: expensesURL, Back: expensesURL, BackText: utils.T(ctx, locales.LK_ExpensesBack),
 			Heading: utils.T(ctx, locales.LK_ExpensesNew), Submit: locales.LK_ExpensesAdd, Lock: "",
@@ -1287,7 +1286,7 @@ func ExpenseEditorWithRepeat(actor services.Membership, members []dbqueries.List
 			f.Repeats = append([]string{repeatNever}, g.Intervals...)
 		}
 		if edit != nil {
-			f.Action = householdURL(actor.HouseholdID, "expenses", edit.Expense.ID.String())
+			f.Action = routes.URL(routes.Expense, actor.HouseholdID, edit.Expense.ID)
 			f.Back, f.BackText, f.Heading, f.Submit = f.Action, edit.Expense.Title, utils.T(ctx, locales.LK_ExpensesEditTitle), locales.LK_ExpensesSave
 			f.Lock, f.Repeats = edit.AmountLock(actor.Currency), nil
 		}
@@ -1355,7 +1354,7 @@ func expenseForm(members []dbqueries.ListActiveMembersRow, f expenseFrame, in se
 		var templ_7745c5c3_Var51 string
 		templ_7745c5c3_Var51, templ_7745c5c3_Err = templruntime.NewAttributeExpression(action).ResolveURL(ctx)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/expenses.templ`, Line: 391, Col: 23}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/expenses.templ`, Line: 390, Col: 23}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var51)
 		if templ_7745c5c3_Err != nil {
@@ -1368,7 +1367,7 @@ func expenseForm(members []dbqueries.ListActiveMembersRow, f expenseFrame, in se
 		var templ_7745c5c3_Var52 string
 		templ_7745c5c3_Var52, templ_7745c5c3_Err = templruntime.NewAttributeExpression(f.PayerID.String()).Resolve(ctx)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/expenses.templ`, Line: 391, Col: 95}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/expenses.templ`, Line: 390, Col: 95}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var52)
 		if templ_7745c5c3_Err != nil {
@@ -1386,7 +1385,7 @@ func expenseForm(members []dbqueries.ListActiveMembersRow, f expenseFrame, in se
 			var templ_7745c5c3_Var53 string
 			templ_7745c5c3_Var53, templ_7745c5c3_Err = templruntime.NewAttributeExpression(in.ListID.String()).Resolve(ctx)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/expenses.templ`, Line: 394, Col: 63}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/expenses.templ`, Line: 393, Col: 63}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var53)
 			if templ_7745c5c3_Err != nil {
@@ -1405,7 +1404,7 @@ func expenseForm(members []dbqueries.ListActiveMembersRow, f expenseFrame, in se
 			var templ_7745c5c3_Var54 string
 			templ_7745c5c3_Var54, templ_7745c5c3_Err = templruntime.NewAttributeExpression(in.ItemID.String()).Resolve(ctx)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/expenses.templ`, Line: 397, Col: 63}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/expenses.templ`, Line: 396, Col: 63}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var54)
 			if templ_7745c5c3_Err != nil {
@@ -1424,7 +1423,7 @@ func expenseForm(members []dbqueries.ListActiveMembersRow, f expenseFrame, in se
 			var templ_7745c5c3_Var55 string
 			templ_7745c5c3_Var55, templ_7745c5c3_Err = templruntime.NewAttributeExpression(in.RecurringID.String()).Resolve(ctx)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/expenses.templ`, Line: 401, Col: 73}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/expenses.templ`, Line: 400, Col: 73}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var55)
 			if templ_7745c5c3_Err != nil {
@@ -1437,7 +1436,7 @@ func expenseForm(members []dbqueries.ListActiveMembersRow, f expenseFrame, in se
 			var templ_7745c5c3_Var56 string
 			templ_7745c5c3_Var56, templ_7745c5c3_Err = templruntime.NewAttributeExpression(in.RecurringDue.Time.Format(services.DateLayout)).Resolve(ctx)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/expenses.templ`, Line: 402, Col: 102}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/expenses.templ`, Line: 401, Col: 102}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var56)
 			if templ_7745c5c3_Err != nil {
@@ -1806,7 +1805,7 @@ func expenseForm(members []dbqueries.ListActiveMembersRow, f expenseFrame, in se
 			var templ_7745c5c3_Var66 string
 			templ_7745c5c3_Var66, templ_7745c5c3_Err = templ.JoinStringErrs(utils.MemberName(ctx, m.Username))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/expenses.templ`, Line: 495, Col: 69}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/expenses.templ`, Line: 494, Col: 69}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var66))
 			if templ_7745c5c3_Err != nil {
@@ -1893,7 +1892,7 @@ func expenseForm(members []dbqueries.ListActiveMembersRow, f expenseFrame, in se
 			var templ_7745c5c3_Var69 string
 			templ_7745c5c3_Var69, templ_7745c5c3_Err = templruntime.NewAttributeExpression(assets.URL("expense-split.js")).ResolveURL(ctx)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/expenses.templ`, Line: 524, Col: 46}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/expenses.templ`, Line: 523, Col: 46}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var69)
 			if templ_7745c5c3_Err != nil {
@@ -1939,7 +1938,7 @@ func expenseFieldError(name, errorField, message string) templ.Component {
 			var templ_7745c5c3_Var71 string
 			templ_7745c5c3_Var71, templ_7745c5c3_Err = templruntime.NewAttributeExpression("expense-" + name + "-error").Resolve(ctx)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/expenses.templ`, Line: 531, Col: 40}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/expenses.templ`, Line: 530, Col: 40}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var71)
 			if templ_7745c5c3_Err != nil {
@@ -1981,7 +1980,6 @@ func ExpensePage(actor services.Membership, e services.Expense, uploadError stri
 		}
 		ctx = templ.InitializeContext(ctx)
 		ctx = templ.ClearChildren(ctx)
-		expenseURL := householdURL(actor.HouseholdID, "expenses", e.Expense.ID.String())
 		isPayer := e.Expense.PayerID == actor.UserID
 		templ_7745c5c3_Var73 := templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 			templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
@@ -1995,7 +1993,7 @@ func ExpensePage(actor services.Membership, e services.Expense, uploadError stri
 				}()
 			}
 			ctx = templ.InitializeContext(ctx)
-			templ_7745c5c3_Err = doorplateHeader(householdURL(actor.HouseholdID, "expenses"), utils.T(ctx, locales.LK_ExpensesBack), e.Expense.Title).Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = doorplateHeader(routes.URL(routes.Expenses, actor.HouseholdID), utils.T(ctx, locales.LK_ExpensesBack), e.Expense.Title).Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -2014,7 +2012,7 @@ func ExpensePage(actor services.Membership, e services.Expense, uploadError stri
 			var templ_7745c5c3_Var74 string
 			templ_7745c5c3_Var74, templ_7745c5c3_Err = templ.JoinStringErrs(paidByLine(ctx, actor, e.Expense.PayerID, e.Expense.PayerName, e.Expense.IncurredOn))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/expenses.templ`, Line: 551, Col: 98}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/expenses.templ`, Line: 549, Col: 98}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var74))
 			if templ_7745c5c3_Err != nil {
@@ -2027,7 +2025,7 @@ func ExpensePage(actor services.Membership, e services.Expense, uploadError stri
 			var templ_7745c5c3_Var75 string
 			templ_7745c5c3_Var75, templ_7745c5c3_Err = templ.JoinStringErrs(CategoryName(ctx, e.Expense.Category))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/expenses.templ`, Line: 552, Col: 51}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/expenses.templ`, Line: 550, Col: 51}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var75))
 			if templ_7745c5c3_Err != nil {
@@ -2061,7 +2059,7 @@ func ExpensePage(actor services.Membership, e services.Expense, uploadError stri
 					var templ_7745c5c3_Var77 string
 					templ_7745c5c3_Var77, templ_7745c5c3_Err = templ.JoinStringErrs(personName(ctx, actor, sh.UserID, sh.Username))
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/expenses.templ`, Line: 559, Col: 92}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/expenses.templ`, Line: 557, Col: 92}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var77))
 					if templ_7745c5c3_Err != nil {
@@ -2074,7 +2072,7 @@ func ExpensePage(actor services.Membership, e services.Expense, uploadError stri
 					var templ_7745c5c3_Var78 string
 					templ_7745c5c3_Var78, templ_7745c5c3_Err = templ.JoinStringErrs(utils.FormatMoney(ctx, sh.AmountCents, e.Expense.Currency))
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/expenses.templ`, Line: 561, Col: 120}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/expenses.templ`, Line: 559, Col: 120}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var78))
 					if templ_7745c5c3_Err != nil {
@@ -2099,9 +2097,9 @@ func ExpensePage(actor services.Membership, e services.Expense, uploadError stri
 								return templ_7745c5c3_Err
 							}
 							var templ_7745c5c3_Var79 string
-							templ_7745c5c3_Var79, templ_7745c5c3_Err = templruntime.NewAttributeExpression(expenseURL + "/shares/" + templ.SafeURL(sh.UserID.String()) + "/paid").ResolveURL(ctx)
+							templ_7745c5c3_Var79, templ_7745c5c3_Err = templruntime.NewAttributeExpression(routes.URL(routes.ExpenseSharePaid, actor.HouseholdID, e.Expense.ID, sh.UserID)).ResolveURL(ctx)
 							if templ_7745c5c3_Err != nil {
-								return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/expenses.templ`, Line: 568, Col: 96}
+								return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/expenses.templ`, Line: 566, Col: 106}
 							}
 							_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var79)
 							if templ_7745c5c3_Err != nil {
@@ -2114,7 +2112,7 @@ func ExpensePage(actor services.Membership, e services.Expense, uploadError stri
 							var templ_7745c5c3_Var80 string
 							templ_7745c5c3_Var80, templ_7745c5c3_Err = templruntime.NewAttributeExpression(utils.IfElse(sh.PaidAt.Valid, "0", "1")).Resolve(ctx)
 							if templ_7745c5c3_Err != nil {
-								return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/expenses.templ`, Line: 569, Col: 93}
+								return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/expenses.templ`, Line: 567, Col: 93}
 							}
 							_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var80)
 							if templ_7745c5c3_Err != nil {
@@ -2197,7 +2195,7 @@ func ExpensePage(actor services.Membership, e services.Expense, uploadError stri
 			var templ_7745c5c3_Var82 string
 			templ_7745c5c3_Var82, templ_7745c5c3_Err = templ.JoinStringErrs(utils.FormatMoney(ctx, e.Expense.AmountCents, e.Expense.Currency))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/expenses.templ`, Line: 591, Col: 131}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/expenses.templ`, Line: 589, Col: 131}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var82))
 			if templ_7745c5c3_Err != nil {
@@ -2207,7 +2205,7 @@ func ExpensePage(actor services.Membership, e services.Expense, uploadError stri
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = attachedFilesTill(actor, expenseURL, e.Files, locales.LK_ExpensesReceiptHint, uploadError).Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = attachedFilesTill(actor, routes.URL(routes.Expense, actor.HouseholdID, e.Expense.ID), e.Files, locales.LK_ExpensesReceiptHint, uploadError).Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -2233,7 +2231,7 @@ func ExpensePage(actor services.Membership, e services.Expense, uploadError stri
 				}
 				return nil
 			})
-			templ_7745c5c3_Err = button.Button(button.Props{Href: string(householdURL(actor.HouseholdID, "expenses", "new")) + "?from=" + e.Expense.ID.String(), Variant: button.VariantSecondary, Size: button.SizeLg}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var83), templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = button.Button(button.Props{Href: routes.URL(routes.ExpenseNew, actor.HouseholdID) + "?from=" + e.Expense.ID.String(), Variant: button.VariantSecondary, Size: button.SizeLg}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var83), templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -2256,7 +2254,7 @@ func ExpensePage(actor services.Membership, e services.Expense, uploadError stri
 					}
 					return nil
 				})
-				templ_7745c5c3_Err = button.Button(button.Props{Href: string(expenseURL) + "/edit", Variant: button.VariantSecondary, Size: button.SizeLg}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var84), templ_7745c5c3_Buffer)
+				templ_7745c5c3_Err = button.Button(button.Props{Href: routes.URL(routes.ExpenseEdit, actor.HouseholdID, e.Expense.ID), Variant: button.VariantSecondary, Size: button.SizeLg}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var84), templ_7745c5c3_Buffer)
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -2265,9 +2263,9 @@ func ExpensePage(actor services.Membership, e services.Expense, uploadError stri
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var85 string
-				templ_7745c5c3_Var85, templ_7745c5c3_Err = templruntime.NewAttributeExpression(expenseURL + "/delete").ResolveURL(ctx)
+				templ_7745c5c3_Var85, templ_7745c5c3_Err = templruntime.NewAttributeExpression(routes.URL(routes.ExpenseDelete, actor.HouseholdID, e.Expense.ID)).ResolveURL(ctx)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/expenses.templ`, Line: 606, Col: 36}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/expenses.templ`, Line: 604, Col: 79}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var85)
 				if templ_7745c5c3_Err != nil {
@@ -2280,7 +2278,7 @@ func ExpensePage(actor services.Membership, e services.Expense, uploadError stri
 				var templ_7745c5c3_Var86 string
 				templ_7745c5c3_Var86, templ_7745c5c3_Err = templruntime.NewAttributeExpression(deleteKeepConfirm(ctx, utils.T(ctx, locales.LK_ExpensesDeleteConfirm), lastRefs(e.Files))).Resolve(ctx)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/expenses.templ`, Line: 609, Col: 107}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/expenses.templ`, Line: 607, Col: 107}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var86)
 				if templ_7745c5c3_Err != nil {
@@ -2298,7 +2296,7 @@ func ExpensePage(actor services.Membership, e services.Expense, uploadError stri
 					var templ_7745c5c3_Var87 string
 					templ_7745c5c3_Var87, templ_7745c5c3_Err = templruntime.NewAttributeExpression(utils.T(ctx, locales.LK_FilesDeleteKeep)).Resolve(ctx)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/expenses.templ`, Line: 611, Col: 66}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/expenses.templ`, Line: 609, Col: 66}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var87)
 					if templ_7745c5c3_Err != nil {
@@ -2380,7 +2378,7 @@ func datePicker(id, name, value string) templ.Component {
 			var templ_7745c5c3_Var90 string
 			templ_7745c5c3_Var90, templ_7745c5c3_Err = templruntime.NewAttributeExpression(assets.URL("date-picker.js")).ResolveURL(ctx)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/expenses.templ`, Line: 632, Col: 44}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/expenses.templ`, Line: 630, Col: 44}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var90)
 			if templ_7745c5c3_Err != nil {
@@ -2404,7 +2402,7 @@ func datePicker(id, name, value string) templ.Component {
 		var templ_7745c5c3_Var91 string
 		templ_7745c5c3_Var91, templ_7745c5c3_Err = templruntime.NewAttributeExpression(id).Resolve(ctx)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/expenses.templ`, Line: 635, Col: 29}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/expenses.templ`, Line: 633, Col: 29}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var91)
 		if templ_7745c5c3_Err != nil {
@@ -2417,7 +2415,7 @@ func datePicker(id, name, value string) templ.Component {
 		var templ_7745c5c3_Var92 string
 		templ_7745c5c3_Var92, templ_7745c5c3_Err = templruntime.NewAttributeExpression(name).Resolve(ctx)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/expenses.templ`, Line: 635, Col: 43}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/expenses.templ`, Line: 633, Col: 43}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var92)
 		if templ_7745c5c3_Err != nil {
@@ -2430,7 +2428,7 @@ func datePicker(id, name, value string) templ.Component {
 		var templ_7745c5c3_Var93 string
 		templ_7745c5c3_Var93, templ_7745c5c3_Err = templruntime.NewAttributeExpression(value).Resolve(ctx)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/expenses.templ`, Line: 635, Col: 59}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/expenses.templ`, Line: 633, Col: 59}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var93)
 		if templ_7745c5c3_Err != nil {
@@ -2471,7 +2469,7 @@ func datePicker(id, name, value string) templ.Component {
 				var templ_7745c5c3_Var96 string
 				templ_7745c5c3_Var96, templ_7745c5c3_Err = templruntime.NewAttributeExpression(id + "-text").Resolve(ctx)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/expenses.templ`, Line: 642, Col: 26}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/expenses.templ`, Line: 640, Col: 26}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var96)
 				if templ_7745c5c3_Err != nil {
@@ -2484,7 +2482,7 @@ func datePicker(id, name, value string) templ.Component {
 				var templ_7745c5c3_Var97 string
 				templ_7745c5c3_Var97, templ_7745c5c3_Err = templ.JoinStringErrs(value)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/expenses.templ`, Line: 642, Col: 36}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/expenses.templ`, Line: 640, Col: 36}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var97))
 				if templ_7745c5c3_Err != nil {
@@ -2663,7 +2661,7 @@ func optionSelect(id, name, selected, class string, attrs templ.Attributes, item
 						var templ_7745c5c3_Var105 string
 						templ_7745c5c3_Var105, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprint(it.Label))
 						if templ_7745c5c3_Err != nil {
-							return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/expenses.templ`, Line: 684, Col: 27}
+							return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/expenses.templ`, Line: 682, Col: 27}
 						}
 						_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var105))
 						if templ_7745c5c3_Err != nil {
@@ -2795,7 +2793,7 @@ func fromEditBadge(actor services.Membership, expenseID pgtype.UUID) templ.Compo
 		})
 		templ_7745c5c3_Err = badge.Badge(badge.Props{
 			Variant: badge.VariantOutline,
-			Href:    utils.IfElse(expenseID.Valid, string(householdURL(actor.HouseholdID, "expenses", expenseID.String())), ""),
+			Href:    utils.IfElse(expenseID.Valid, routes.URL(routes.Expense, actor.HouseholdID, expenseID), ""),
 			Class:   "mt-1",
 		}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var110), templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
@@ -2888,7 +2886,7 @@ func methodSelect(id, selected string) templ.Component {
 						var templ_7745c5c3_Var116 string
 						templ_7745c5c3_Var116, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprint(it.Label))
 						if templ_7745c5c3_Err != nil {
-							return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/expenses.templ`, Line: 725, Col: 27}
+							return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/expenses.templ`, Line: 723, Col: 27}
 						}
 						_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var116))
 						if templ_7745c5c3_Err != nil {

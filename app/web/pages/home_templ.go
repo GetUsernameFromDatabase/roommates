@@ -18,6 +18,7 @@ import "roommates/internal/db/dbqueries"
 import "roommates/internal/models"
 import g "roommates/internal/config"
 import "roommates/internal/locales"
+import "roommates/internal/routes"
 import "roommates/internal/utils"
 import "roommates/internal/services"
 
@@ -59,7 +60,7 @@ func Home(username string, emailValidated bool, households []dbqueries.ListHouse
 			var templ_7745c5c3_Var3 string
 			templ_7745c5c3_Var3, templ_7745c5c3_Err = templ.JoinStringErrs(utils.T(ctx, locales.LK_HomePageGreeting, username))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/home.templ`, Line: 22, Col: 58}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/home.templ`, Line: 23, Col: 58}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var3))
 			if templ_7745c5c3_Err != nil {
@@ -88,9 +89,9 @@ func Home(username string, emailValidated bool, households []dbqueries.ListHouse
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var4 string
-			templ_7745c5c3_Var4, templ_7745c5c3_Err = templruntime.NewAttributeExpression(g.RouteLogout).ResolveURL(ctx)
+			templ_7745c5c3_Var4, templ_7745c5c3_Err = templruntime.NewAttributeExpression(routes.Logout).ResolveURL(ctx)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/home.templ`, Line: 30, Col: 31}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/home.templ`, Line: 31, Col: 31}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var4)
 			if templ_7745c5c3_Err != nil {
@@ -119,7 +120,7 @@ func Home(username string, emailValidated bool, households []dbqueries.ListHouse
 				return nil
 			})
 			templ_7745c5c3_Err = button.Button(button.Props{
-				Href:    g.RouteSettings,
+				Href:    routes.Settings,
 				Variant: button.VariantGhost,
 				Size:    button.SizeSm,
 			}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var5), templ_7745c5c3_Buffer)
@@ -167,7 +168,7 @@ func Home(username string, emailValidated bool, households []dbqueries.ListHouse
 			var templ_7745c5c3_Var7 string
 			templ_7745c5c3_Var7, templ_7745c5c3_Err = templruntime.NewAttributeExpression(utils.T(ctx, locales.LK_HomePageHouseholds)).Resolve(ctx)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/home.templ`, Line: 48, Col: 67}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/home.templ`, Line: 49, Col: 67}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var7)
 			if templ_7745c5c3_Err != nil {
@@ -197,7 +198,7 @@ func Home(username string, emailValidated bool, households []dbqueries.ListHouse
 					var templ_7745c5c3_Var9 string
 					templ_7745c5c3_Var9, templ_7745c5c3_Err = templ.JoinStringErrs(h.Name)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/home.templ`, Line: 53, Col: 15}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/home.templ`, Line: 54, Col: 15}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var9))
 					if templ_7745c5c3_Err != nil {
@@ -205,7 +206,7 @@ func Home(username string, emailValidated bool, households []dbqueries.ListHouse
 					}
 					return nil
 				})
-				templ_7745c5c3_Err = frontDoor(householdURL(h.ID)).Render(templ.WithChildren(ctx, templ_7745c5c3_Var8), templ_7745c5c3_Buffer)
+				templ_7745c5c3_Err = frontDoor(routes.URL(routes.Household, h.ID)).Render(templ.WithChildren(ctx, templ_7745c5c3_Var8), templ_7745c5c3_Buffer)
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -216,7 +217,7 @@ func Home(username string, emailValidated bool, households []dbqueries.ListHouse
 				var templ_7745c5c3_Var10 string
 				templ_7745c5c3_Var10, templ_7745c5c3_Err = templ.JoinStringErrs(RoleName(ctx, h.Role))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/home.templ`, Line: 55, Col: 73}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/home.templ`, Line: 56, Col: 73}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var10))
 				if templ_7745c5c3_Err != nil {
@@ -234,7 +235,7 @@ func Home(username string, emailValidated bool, households []dbqueries.ListHouse
 					var templ_7745c5c3_Var11 string
 					templ_7745c5c3_Var11, templ_7745c5c3_Err = templ.JoinStringErrs(utils.T(ctx, locales.LK_OwnershipDeletedHome, utils.FormatDate(ctx, services.PurgeDate(h.DeletedAt))))
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/home.templ`, Line: 58, Col: 111}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/home.templ`, Line: 59, Col: 111}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var11))
 					if templ_7745c5c3_Err != nil {
@@ -373,9 +374,9 @@ func CreateHouseholdForm(m models.Household) templ.Component {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var15 string
-		templ_7745c5c3_Var15, templ_7745c5c3_Err = templruntime.NewAttributeExpression(g.RouteHouseholds).ResolveURL(ctx)
+		templ_7745c5c3_Var15, templ_7745c5c3_Err = templruntime.NewAttributeExpression(routes.Households).ResolveURL(ctx)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/home.templ`, Line: 94, Col: 33}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/home.templ`, Line: 95, Col: 33}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var15)
 		if templ_7745c5c3_Err != nil {
@@ -404,7 +405,7 @@ func CreateHouseholdForm(m models.Household) templ.Component {
 			var templ_7745c5c3_Var17 string
 			templ_7745c5c3_Var17, templ_7745c5c3_Err = templruntime.NewAttributeExpression(assets.URL("local-time.js")).ResolveURL(ctx)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/home.templ`, Line: 96, Col: 44}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/home.templ`, Line: 97, Col: 44}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var17)
 			if templ_7745c5c3_Err != nil {
@@ -536,9 +537,9 @@ func JoinForm(code string) templ.Component {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var22 string
-		templ_7745c5c3_Var22, templ_7745c5c3_Err = templruntime.NewAttributeExpression(g.RouteInvite).ResolveURL(ctx)
+		templ_7745c5c3_Var22, templ_7745c5c3_Err = templruntime.NewAttributeExpression(routes.Invite).ResolveURL(ctx)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/home.templ`, Line: 126, Col: 29}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/home.templ`, Line: 127, Col: 29}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var22)
 		if templ_7745c5c3_Err != nil {

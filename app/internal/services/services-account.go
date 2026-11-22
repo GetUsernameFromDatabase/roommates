@@ -7,6 +7,7 @@ import (
 	"roommates/internal/db/dbqueries"
 	"roommates/internal/locales"
 	"roommates/internal/mailer"
+	"roommates/internal/routes"
 	"roommates/internal/utils"
 	"time"
 
@@ -266,7 +267,7 @@ func (s *DefaultService) RequestEmailChange(ctx context.Context, userID pgtype.U
 	if err != nil {
 		return err
 	}
-	link := g.GetAppBaseURL() + g.RouteConfirmEmail + "?token=" + token
+	link := g.GetAppBaseURL() + routes.ConfirmEmail + "?token=" + token
 	s.sendAsync(mailer.Message{
 		To:      email,
 		Subject: utils.T(ctx, locales.LK_MailEmailChangeSubject),

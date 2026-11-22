@@ -1,12 +1,13 @@
 // registers the service worker (web/assets/pwa/sw.js) on every page, and drives
-// the notification switch [data-push] and the logout form [data-push-logout]
+// the notification switch [data-push] and the logout form [data-push-logout];
+// paths come from self.ROUTES (/routes.js, loaded before this file)
 (() => {
   if (!("serviceWorker" in navigator)) {
     return;
   }
   // null when the worker cannot be registered (e.g. an untrusted certificate), then there is no push
   const ready = navigator.serviceWorker
-    .register("/sw.js")
+    .register(ROUTES.serviceWorker)
     .then(() => navigator.serviceWorker.ready)
     .catch((err) => {
       console.warn("service worker not registered", err);
@@ -34,7 +35,7 @@
     }
     const sub = await reg.pushManager.getSubscription();
     if (sub) {
-      await post("/push/unsubscribe", { endpoint: sub.endpoint });
+      await post(ROUTES.pushUnsubscribe, { endpoint: sub.endpoint });
       await sub.unsubscribe();
     }
   };
@@ -85,7 +86,7 @@
             userVisibleOnly: true,
             applicationServerKey: keyBytes(key),
           });
-          const res = await post("/push/subscribe", sub.toJSON());
+          const res = await post(ROUTES.pushSubscribe, sub.toJSON());
           if (!res.ok) {
             await sub.unsubscribe();
           }

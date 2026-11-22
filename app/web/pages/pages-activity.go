@@ -4,11 +4,11 @@ import (
 	"context"
 	g "roommates/internal/config"
 	"roommates/internal/locales"
+	"roommates/internal/routes"
 	"roommates/internal/services"
 	"roommates/internal/utils"
 	"time"
 
-	"github.com/a-h/templ"
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
@@ -77,29 +77,29 @@ func activityText(ctx context.Context, actor services.Membership, r services.Act
 }
 
 // activityLink is where the row's subject is, "" when it is gone or has no page
-func activityLink(householdID pgtype.UUID, r services.ActivityRow) templ.SafeURL {
-	id := r.SubjectID.String()
+func activityLink(householdID pgtype.UUID, r services.ActivityRow) string {
+	id := r.SubjectID
 	switch {
 	case r.ExpenseExists:
-		return householdURL(householdID, "expenses", id)
+		return routes.URL(routes.Expense, householdID, id)
 	case r.ListExists:
-		return householdURL(householdID, "lists", id)
+		return routes.URL(routes.ShoppingList, householdID, id)
 	case r.NoteExists:
-		return householdURL(householdID, "notes", id)
+		return routes.URL(routes.Note, householdID, id)
 	case r.FileExists:
-		return householdURL(householdID, "files", id)
+		return routes.URL(routes.File, householdID, id)
 	case r.RecurringExists:
-		return householdURL(householdID, "recurring")
+		return routes.URL(routes.Recurring, householdID)
 	case r.ChoreExists:
-		return householdURL(householdID, "chores", id)
+		return routes.URL(routes.Chore, householdID, id)
 	case r.EventExists:
-		return householdURL(householdID, "calendar", "events", id)
+		return routes.URL(routes.CalendarEvent, householdID, id)
 	}
 	return ""
 }
 
 // activityMoreURL loads the rows older than the last of rows
-func activityMoreURL(householdID pgtype.UUID, rows []services.ActivityRow) templ.SafeURL {
+func activityMoreURL(householdID pgtype.UUID, rows []services.ActivityRow) string {
 	before := rows[len(rows)-1].CreatedAt.Time.UTC().Format(time.RFC3339Nano)
-	return templ.SafeURL(string(householdURL(householdID, "activity")) + "?before=" + before)
+	return routes.URL(routes.HouseholdActivity, householdID) + "?before=" + before
 }

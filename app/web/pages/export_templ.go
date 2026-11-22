@@ -12,11 +12,12 @@ import templruntime "github.com/a-h/templ/runtime"
 import "roommates/web/components"
 import "roommates/web/components/button"
 import "roommates/internal/locales"
+import "roommates/internal/routes"
 import "roommates/internal/services"
 
-// expenseExports are the CSV downloads of the expenses page, base is its path,
+// expenseExports are the CSV downloads of the expenses page,
 // the server decides what the actor's file holds
-func expenseExports(actor services.Membership, base string) templ.Component {
+func expenseExports(actor services.Membership) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -63,7 +64,7 @@ func expenseExports(actor services.Membership, base string) templ.Component {
 			}
 			return nil
 		})
-		templ_7745c5c3_Err = button.Button(button.Props{Href: base + "/export.csv?format=wide", Variant: button.VariantOutline, Class: "h-11", Attributes: templ.Attributes{"hx-boost": "false", "download": ""}}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var2), templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = button.Button(button.Props{Href: routes.URL(routes.ExpensesExport, actor.HouseholdID) + "?format=wide", Variant: button.VariantOutline, Class: "h-11", Attributes: templ.Attributes{"hx-boost": "false", "download": ""}}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var2), templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -85,7 +86,7 @@ func expenseExports(actor services.Membership, base string) templ.Component {
 			}
 			return nil
 		})
-		templ_7745c5c3_Err = button.Button(button.Props{Href: base + "/export.csv?format=long", Variant: button.VariantOutline, Class: "h-11", Attributes: templ.Attributes{"hx-boost": "false", "download": ""}}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var3), templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = button.Button(button.Props{Href: routes.URL(routes.ExpensesExport, actor.HouseholdID) + "?format=long", Variant: button.VariantOutline, Class: "h-11", Attributes: templ.Attributes{"hx-boost": "false", "download": ""}}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var3), templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -107,7 +108,7 @@ func expenseExports(actor services.Membership, base string) templ.Component {
 			}
 			return nil
 		})
-		templ_7745c5c3_Err = button.Button(button.Props{Href: base + "/balances.csv", Variant: button.VariantOutline, Class: "h-11", Attributes: templ.Attributes{"hx-boost": "false", "download": ""}}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var4), templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = button.Button(button.Props{Href: routes.URL(routes.ExpensesBalances, actor.HouseholdID), Variant: button.VariantOutline, Class: "h-11", Attributes: templ.Attributes{"hx-boost": "false", "download": ""}}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var4), templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

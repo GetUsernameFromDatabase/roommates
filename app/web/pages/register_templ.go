@@ -15,8 +15,8 @@ import "roommates/web/components/field"
 import "roommates/web/components/input"
 import "roommates/web/components/button"
 import "roommates/internal/models"
-import g "roommates/internal/config"
 import "roommates/internal/locales"
+import "roommates/internal/routes"
 import "roommates/internal/utils"
 
 func Register(m models.Register) templ.Component {
@@ -98,7 +98,7 @@ func Register(m models.Register) templ.Component {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var5 string
-			templ_7745c5c3_Var5, templ_7745c5c3_Err = templruntime.NewAttributeExpression(withNext(g.RouteLogin, m.Next)).ResolveURL(ctx)
+			templ_7745c5c3_Var5, templ_7745c5c3_Err = templruntime.NewAttributeExpression(withNext(routes.Login, m.Next)).ResolveURL(ctx)
 			if templ_7745c5c3_Err != nil {
 				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/register.templ`, Line: 24, Col: 41}
 			}
@@ -154,7 +154,7 @@ func RegisterForm(m models.Register) templ.Component {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var7 string
-		templ_7745c5c3_Var7, templ_7745c5c3_Err = templruntime.NewAttributeExpression(g.RouteRegister).ResolveURL(ctx)
+		templ_7745c5c3_Var7, templ_7745c5c3_Err = templruntime.NewAttributeExpression(routes.Register).ResolveURL(ctx)
 		if templ_7745c5c3_Err != nil {
 			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/register.templ`, Line: 40, Col: 31}
 		}

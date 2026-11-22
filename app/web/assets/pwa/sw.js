@@ -1,12 +1,15 @@
-// service worker, served at /sw.js so its scope is the whole app
+// service worker, served at routes.ServiceWorker (/sw.js) so its scope is the whole app
 //
 // shows push notifications and the offline page, nothing else is cached
+
+// self.ROUTES, the paths of internal/routes; the one path a worker must know before it has them
+importScripts("/routes.js");
 
 // shortcut: the offline page keeps the theme and language of the visit that installed
 // the worker, bump the version to refresh it for everyone
 const CACHE = "offline-v1";
-const OFFLINE = "/offline";
-const CSS = "/assets/output.css";
+const OFFLINE = self.ROUTES.offline;
+const CSS = self.ROUTES.css;
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
@@ -59,7 +62,7 @@ self.addEventListener("push", (event) => {
         return self.registration.showNotification(msg.title, {
           body: msg.body,
           tag: msg.tag,
-          icon: "/icons/web-app-manifest-192x192.png",
+          icon: self.ROUTES.icon,
           data: { url: msg.url },
         });
       }),

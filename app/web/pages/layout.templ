@@ -5,9 +5,9 @@ import "roommates/web/components"
 import "roommates/web/components/alertdialog"
 import "roommates/web/components/badge"
 import "roommates/web/components/button"
-import g "roommates/internal/config"
 import "roommates/internal/events"
 import "roommates/internal/locales"
+import "roommates/internal/routes"
 import "roommates/internal/utils"
 import "github.com/jackc/pgx/v5/pgtype"
 import "strconv"
@@ -60,7 +60,7 @@ templ appShell(title string, nav *HouseholdNav) {
 			data-toast-class={ toastClass }
 			if nav != nil {
 				hx-ext="sse"
-				sse-connect={ string(householdURL(nav.HouseholdID, "events")) }
+				sse-connect={ routes.URL(routes.HouseholdEvents, nav.HouseholdID) }
 			}
 		>
 			if nav != nil {
@@ -166,13 +166,13 @@ templ householdNav(nav HouseholdNav) {
 		</div>
 		// the rooms of the household, on phones only the three used most
 		<ul class="mx-auto flex w-full max-w-lg px-2 py-1.5 sm:px-8 lg:mt-6 lg:max-w-none lg:flex-col lg:gap-1 lg:p-0">
-			@householdNavItem(householdURL(nav.HouseholdID), locales.LK_NavShopping, "shopping", nav.Section == SectionShopping, "")
-			@householdNavItem(householdURL(nav.HouseholdID, "expenses"), locales.LK_NavExpenses, "expenses", nav.Section == SectionExpenses, desktopOnly)
-			@householdNavItem(householdURL(nav.HouseholdID, "notes"), locales.LK_NavNotes, "notes", nav.Section == SectionNotes, "")
-			@householdNavItem(householdURL(nav.HouseholdID, "files"), locales.LK_NavFiles, "files", nav.Section == SectionFiles, desktopOnly)
-			@householdNavItem(householdURL(nav.HouseholdID, "chores"), locales.LK_NavChores, "chores", nav.Section == SectionChores, desktopOnly)
-			@householdNavItem(householdURL(nav.HouseholdID, "calendar"), locales.LK_NavCalendar, "calendar", nav.Section == SectionCalendar, desktopOnly)
-			@householdNavItem(householdURL(nav.HouseholdID, "chat"), locales.LK_NavChat, "chat", nav.Section == SectionChat, "") {
+			@householdNavItem(routes.URL(routes.Household, nav.HouseholdID),locales.LK_NavShopping, "shopping", nav.Section == SectionShopping, "")
+			@householdNavItem(routes.URL(routes.Expenses, nav.HouseholdID),locales.LK_NavExpenses, "expenses", nav.Section == SectionExpenses, desktopOnly)
+			@householdNavItem(routes.URL(routes.Notes, nav.HouseholdID),locales.LK_NavNotes, "notes", nav.Section == SectionNotes, "")
+			@householdNavItem(routes.URL(routes.Files, nav.HouseholdID),locales.LK_NavFiles, "files", nav.Section == SectionFiles, desktopOnly)
+			@householdNavItem(routes.URL(routes.Chores, nav.HouseholdID),locales.LK_NavChores, "chores", nav.Section == SectionChores, desktopOnly)
+			@householdNavItem(routes.URL(routes.Calendar, nav.HouseholdID),locales.LK_NavCalendar, "calendar", nav.Section == SectionCalendar, desktopOnly)
+			@householdNavItem(routes.URL(routes.Chat, nav.HouseholdID),locales.LK_NavChat, "chat", nav.Section == SectionChat, "") {
 				// the chat page marks everything read
 				if nav.Section != SectionChat {
 					@ChatBadge(nav.HouseholdID, utils.GetUnreadChat(ctx))
@@ -181,9 +181,9 @@ templ householdNav(nav HouseholdNav) {
 		</ul>
 		// the house itself, set apart by space only
 		<ul class={ desktopOnly + " mt-6 flex flex-col gap-1" }>
-			@householdNavItem(householdURL(nav.HouseholdID, "people"), locales.LK_NavPeople, "people", nav.Section == SectionPeople, "")
-			@householdNavItem(householdURL(nav.HouseholdID, "activity"), locales.LK_ActivityTitle, "activity", nav.Section == SectionActivity, "")
-			@householdNavItem(householdURL(nav.HouseholdID, "settings"), locales.LK_NavSettings, "settings", nav.Section == SectionSettings, "")
+			@householdNavItem(routes.URL(routes.HouseholdPeople, nav.HouseholdID),locales.LK_NavPeople, "people", nav.Section == SectionPeople, "")
+			@householdNavItem(routes.URL(routes.HouseholdActivity, nav.HouseholdID),locales.LK_ActivityTitle, "activity", nav.Section == SectionActivity, "")
+			@householdNavItem(routes.URL(routes.HouseholdSettings, nav.HouseholdID),locales.LK_NavSettings, "settings", nav.Section == SectionSettings, "")
 		</ul>
 		<div class={ desktopOnly + " mt-auto" }>
 			@logoutForm()
@@ -193,7 +193,7 @@ templ householdNav(nav HouseholdNav) {
 
 // householdNavItem is an icon over its label on the phone tab bar and a row in the sidebar,
 // children (the unread badge) sit by the icon on phones and at the end of the row on desktop
-templ householdNavItem(href templ.SafeURL, label locales.LK, icon string, current bool, class string) {
+templ householdNavItem(href string, label locales.LK, icon string, current bool, class string) {
 	<li class={ utils.CN("flex-1 lg:flex-none", class) }>
 		<a
 			href={ href }
@@ -240,13 +240,13 @@ templ householdMenu(nav HouseholdNav) {
 			}
 		</summary>
 		<ul class={ menuPanelClass + " right-0 w-60 origin-top-right" }>
-			@householdMenuItem(householdURL(nav.HouseholdID, "expenses"), locales.LK_NavExpenses, "expenses", nav.Section == SectionExpenses)
-			@householdMenuItem(householdURL(nav.HouseholdID, "files"), locales.LK_NavFiles, "files", nav.Section == SectionFiles)
-			@householdMenuItem(householdURL(nav.HouseholdID, "chores"), locales.LK_NavChores, "chores", nav.Section == SectionChores)
-			@householdMenuItem(householdURL(nav.HouseholdID, "calendar"), locales.LK_NavCalendar, "calendar", nav.Section == SectionCalendar)
-			@householdMenuItem(householdURL(nav.HouseholdID, "people"), locales.LK_NavPeople, "people", nav.Section == SectionPeople)
-			@householdMenuItem(householdURL(nav.HouseholdID, "activity"), locales.LK_ActivityTitle, "activity", nav.Section == SectionActivity)
-			@householdMenuItem(householdURL(nav.HouseholdID, "settings"), locales.LK_NavSettings, "settings", nav.Section == SectionSettings)
+			@householdMenuItem(routes.URL(routes.Expenses, nav.HouseholdID),locales.LK_NavExpenses, "expenses", nav.Section == SectionExpenses)
+			@householdMenuItem(routes.URL(routes.Files, nav.HouseholdID),locales.LK_NavFiles, "files", nav.Section == SectionFiles)
+			@householdMenuItem(routes.URL(routes.Chores, nav.HouseholdID),locales.LK_NavChores, "chores", nav.Section == SectionChores)
+			@householdMenuItem(routes.URL(routes.Calendar, nav.HouseholdID),locales.LK_NavCalendar, "calendar", nav.Section == SectionCalendar)
+			@householdMenuItem(routes.URL(routes.HouseholdPeople, nav.HouseholdID),locales.LK_NavPeople, "people", nav.Section == SectionPeople)
+			@householdMenuItem(routes.URL(routes.HouseholdActivity, nav.HouseholdID),locales.LK_ActivityTitle, "activity", nav.Section == SectionActivity)
+			@householdMenuItem(routes.URL(routes.HouseholdSettings, nav.HouseholdID),locales.LK_NavSettings, "settings", nav.Section == SectionSettings)
 			<li class="mt-1 border-t pt-1">
 				@logoutForm()
 			</li>
@@ -254,7 +254,7 @@ templ householdMenu(nav HouseholdNav) {
 	</details>
 }
 
-templ householdMenuItem(href templ.SafeURL, label locales.LK, icon string, current bool) {
+templ householdMenuItem(href string, label locales.LK, icon string, current bool) {
 	<li>
 		<a
 			href={ href }
@@ -379,7 +379,7 @@ templ navIcon(name, class string) {
 
 // ChatBadge is the count of unread chat messages, it fetches itself again on new messages
 templ ChatBadge(householdID pgtype.UUID, unread int64) {
-	<span id="chat-badge" hx-get={ string(householdURL(householdID, "chat", "badge")) } hx-trigger={ sseTrigger([]string{events.TopicChat, events.TopicRead}) } hx-swap="outerHTML">
+	<span id="chat-badge" hx-get={ routes.URL(routes.ChatBadge, householdID) } hx-trigger={ sseTrigger([]string{events.TopicChat, events.TopicRead}) } hx-swap="outerHTML">
 		if unread > 0 {
 			@badge.Badge(badge.Props{Class: "min-w-5 px-1.5", Attributes: templ.Attributes{"aria-hidden": "true"}}) {
 				{ unreadLabel(unread) }
@@ -458,7 +458,7 @@ templ householdSwitcher(current pgtype.UUID, class string) {
 			for _, h := range utils.GetHouseholds(ctx) {
 				<li>
 					<a
-						href={ householdURL(h.ID) }
+						href={ routes.URL(routes.Household, h.ID) }
 						if h.ID == current {
 							aria-current="page"
 						}
@@ -492,7 +492,7 @@ templ houseTile(name, class string) {
 
 // logoutForm is the nav's logout, it also unsubscribes this device (push.js)
 templ logoutForm() {
-	<form action={ g.RouteLogout } method="post" data-push-logout>
+	<form action={ routes.Logout } method="post" data-push-logout>
 		<button type="submit" class={ navRowClass + " text-muted-foreground hover:text-foreground" }>
 			@navIcon("logout", "size-5 shrink-0")
 			@components.T(locales.LK_Logout)
@@ -529,7 +529,7 @@ templ toast(message string) {
 const toastClass = "toast fixed right-[max(1rem,env(safe-area-inset-right))] bottom-[calc(6rem+env(safe-area-inset-bottom))] left-[max(1rem,env(safe-area-inset-left))] z-30 mx-auto flex w-fit max-w-sm items-center gap-2.5 rounded-3xl bg-foreground py-3 pr-5 pl-4 text-sm font-medium text-background shadow-lg lg:right-6 lg:bottom-6 lg:left-auto lg:mx-0"
 
 // doorplateHeader is a back link and the name of what the page is about, children sit beside the name
-templ doorplateHeader(back templ.SafeURL, backText, name string) {
+templ doorplateHeader(back string, backText, name string) {
 	<header>
 		@backLink(back, backText)
 		<div class="mt-1 flex flex-wrap items-center gap-x-1 gap-y-2">
@@ -543,7 +543,7 @@ var dirtySaveScript = templ.NewOnceHandle()
 
 // nameHeader is [doorplateHeader] with the name edited in place, action gets it as "name",
 // Save shows once it is changed (dirty-save.js), Enter saves without it, children follow the input
-templ nameHeader(back templ.SafeURL, backText string, action templ.SafeURL, name string, maxLength int, label string) {
+templ nameHeader(back string, backText string, action string, name string, maxLength int, label string) {
 	@dirtySaveScript.Once() {
 		<script src={ assets.URL("dirty-save.js") }></script>
 	}
@@ -592,7 +592,7 @@ templ deleteButton(label locales.LK) {
 	}
 }
 
-templ backLink(back templ.SafeURL, backText string) {
+templ backLink(back string, backText string) {
 	<a href={ back } class="inline-flex min-h-11 items-center text-sm text-muted-foreground underline-offset-4 hover:text-foreground hover:underline">
 		{ backText }
 	</a>

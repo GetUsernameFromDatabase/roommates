@@ -8,6 +8,7 @@ import (
 	"roommates/internal/db/dbqueries"
 	"roommates/internal/locales"
 	"roommates/internal/push"
+	"roommates/internal/routes"
 	"roommates/internal/utils"
 	"strings"
 	"unicode/utf8"
@@ -136,7 +137,7 @@ func (s *DefaultService) notifyChat(ctx context.Context, actor Membership, body 
 		return push.Message{
 			Title: utils.T(ctx, locales.LK_PushChatTitle, author, household),
 			Body:  text,
-			URL:   householdPath(actor.HouseholdID, "chat"),
+			URL:   routes.URL(routes.Chat, actor.HouseholdID),
 			// a new message replaces the notification of the previous one
 			Tag: "chat-" + actor.HouseholdID.String(),
 		}

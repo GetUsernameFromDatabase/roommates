@@ -7,13 +7,14 @@ import "roommates/internal/services"
 import "roommates/internal/events"
 import g "roommates/internal/config"
 import "roommates/internal/locales"
+import "roommates/internal/routes"
 import "roommates/internal/utils"
 
 // HouseholdRecurring lists every schedule of the household, the payer and owners open one to edit it
 templ HouseholdRecurring(actor services.Membership, rows []services.RecurringRow) {
 	{{ title := utils.T(ctx, locales.LK_RecurringTitle) }}
 	@appShell(title, &HouseholdNav{HouseholdID: actor.HouseholdID, Section: SectionExpenses}) {
-		@doorplateHeader(householdURL(actor.HouseholdID, "expenses"), utils.T(ctx, locales.LK_ExpensesBack), title)
+		@doorplateHeader(routes.URL(routes.Expenses, actor.HouseholdID),utils.T(ctx, locales.LK_ExpensesBack), title)
 		@liveRegion("recurring", events.TopicExpenses) {
 			<section class="till-roll w-full max-w-2xl">
 				<div class="till-paper">
@@ -26,7 +27,7 @@ templ HouseholdRecurring(actor services.Membership, rows []services.RecurringRow
 							for _, r := range rows {
 								<li>
 									if canEditRecurring(actor, r) {
-										<a href={ householdURL(actor.HouseholdID, "recurring", r.ID.String()) } class="block min-h-12 py-2 hover:underline">
+										<a href={ routes.URL(routes.RecurringExpense, actor.HouseholdID, r.ID) } class="block min-h-12 py-2 hover:underline">
 											@recurringLine(actor, r)
 										</a>
 									} else {
@@ -63,10 +64,9 @@ templ recurringLine(actor services.Membership, r services.RecurringRow) {
 // RecurringEditor is the form of schedule r, its date the next due day, changing it starts the
 // schedule again from that day
 templ RecurringEditor(actor services.Membership, members []dbqueries.ListActiveMembersRow, r services.RecurringRow, in services.RecurringInput, errorMessage string, errorField string) {
-	{{ recurringURL := householdURL(actor.HouseholdID, "recurring", r.ID.String()) }}
 	{{
 		f := expenseFrame{
-			Action: recurringURL, Back: householdURL(actor.HouseholdID, "recurring"), BackText: utils.T(ctx, locales.LK_RecurringTitle),
+			Action: routes.URL(routes.RecurringExpense, actor.HouseholdID, r.ID), Back: routes.URL(routes.Recurring, actor.HouseholdID), BackText: utils.T(ctx, locales.LK_RecurringTitle),
 			Heading: utils.T(ctx, locales.LK_RecurringEditTitle), Submit: locales.LK_ExpensesSave, Lock: "",
 			PayerID: r.PayerID, DateLabel: locales.LK_RecurringNextDue, Repeats: g.Intervals, Repeat: in.Interval,
 		}
@@ -81,7 +81,7 @@ templ RecurringEditor(actor services.Membership, members []dbqueries.ListActiveM
 			}
 		</p>
 		@expenseForm(members, f, in.ExpenseInput, errorMessage, errorField)
-		<form action={ recurringURL + "/delete" } method="post" hx-boost="true" hx-confirm={ utils.T(ctx, locales.LK_RecurringDeleteConfirm) }>
+		<form action={ routes.URL(routes.RecurringExpenseDelete, actor.HouseholdID, r.ID) } method="post" hx-boost="true" hx-confirm={ utils.T(ctx, locales.LK_RecurringDeleteConfirm) }>
 			@deleteButton(locales.LK_CommonDelete)
 		</form>
 	}
@@ -103,10 +103,10 @@ templ recurringDue(actor services.Membership, due []services.RecurringRow) {
 							<span class="tabular-nums">{ utils.FormatMoney(ctx, r.AmountCents, actor.Currency) }</span>
 						</p>
 						<div class="flex gap-2">
-							@button.Button(button.Props{Href: string(householdURL(actor.HouseholdID, "expenses", "new")) + "?recurring=" + r.ID.String(), Class: "h-11 px-4"}) {
+							@button.Button(button.Props{Href: routes.URL(routes.ExpenseNew, actor.HouseholdID) + "?recurring=" + r.ID.String(),Class: "h-11 px-4"}) {
 								@components.T(locales.LK_RecurringAdd)
 							}
-							<form action={ householdURL(actor.HouseholdID, "recurring", r.ID.String(), "skip") } method="post" hx-boost="true">
+							<form action={ routes.URL(routes.RecurringExpenseSkip, actor.HouseholdID, r.ID) } method="post" hx-boost="true">
 								<input type="hidden" name="due" value={ r.NextDue.Time.Format(services.DateLayout) }/>
 								@button.Button(button.Props{Type: button.TypeSubmit, Variant: button.VariantGhost, Class: "h-11 px-3"}) {
 									@components.T(locales.LK_RecurringSkip)

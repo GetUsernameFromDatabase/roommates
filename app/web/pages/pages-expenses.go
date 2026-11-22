@@ -6,12 +6,12 @@ import (
 	g "roommates/internal/config"
 	"roommates/internal/db/dbqueries"
 	"roommates/internal/locales"
+	"roommates/internal/routes"
 	"roommates/internal/services"
 	"roommates/internal/utils"
 	"slices"
 	"strings"
 
-	"github.com/a-h/templ"
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
@@ -25,12 +25,12 @@ func amountValue(ctx context.Context, s string) string {
 }
 
 // newExpenseURL opens the expense form with title filled in
-func newExpenseURL(householdID, listID, itemID pgtype.UUID) templ.SafeURL {
+func newExpenseURL(householdID, listID, itemID pgtype.UUID) string {
 	q := url.Values{"list": {listID.String()}}
 	if itemID.Valid {
 		q.Set("item", itemID.String())
 	}
-	return householdURL(householdID, "expenses", "new") + templ.SafeURL("?"+q.Encode())
+	return routes.URL(routes.ExpenseNew, householdID) + "?" + q.Encode()
 }
 
 // formatDay is a date column, it has no time zone
@@ -89,7 +89,7 @@ var intervalShortKeys = map[string]locales.LK{
 
 // expenseFrame is what the forms of [expenseForm] differ in
 type expenseFrame struct {
-	Action, Back      templ.SafeURL
+	Action, Back      string
 	BackText, Heading string
 	Submit            locales.LK
 	// Lock is the [services.Expense.AmountLock] of an expense being edited

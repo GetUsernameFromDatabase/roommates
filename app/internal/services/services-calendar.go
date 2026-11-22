@@ -9,6 +9,7 @@ import (
 	"roommates/internal/db/dbqueries"
 	"roommates/internal/locales"
 	"roommates/internal/push"
+	"roommates/internal/routes"
 	"roommates/internal/utils"
 	"slices"
 	"strings"
@@ -946,7 +947,7 @@ func (s *DefaultService) pushEventReminder(ctx context.Context, e dbqueries.Even
 		return push.Message{
 			Title: utils.T(ctx, locales.LK_CalendarPushTitle, household),
 			Body:  utils.T(ctx, locales.LK_CalendarPushBody, e.Title, when),
-			URL:   householdPath(e.HouseholdID, "calendar", "events", e.ID.String()) + "?on=" + on.Format(DateLayout),
+			URL:   routes.URL(routes.CalendarEvent, e.HouseholdID, e.ID) + "?on=" + on.Format(DateLayout),
 			Tag:   "event-" + e.ID.String() + "-" + on.Format(DateLayout),
 		}
 	})

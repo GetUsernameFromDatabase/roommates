@@ -3,8 +3,8 @@ package handlers
 import (
 	"net/http"
 
-	g "roommates/internal/config"
 	"roommates/internal/locales"
+	"roommates/internal/routes"
 	"roommates/internal/utils"
 	"roommates/web/pages"
 
@@ -44,7 +44,7 @@ func (h *DefaultHandler) DownloadDataExport(ctx *gin.Context) {
 		InternalError(ctx, err)
 		return
 	}
-	exportID, err := utils.ParseUUID(ctx.Param(g.ParamExportID))
+	exportID, err := utils.ParseUUID(ctx.Param(routes.ParamExportID))
 	if err != nil {
 		RenderTemplStatus(ctx, http.StatusNotFound, pages.NotFound())
 		return

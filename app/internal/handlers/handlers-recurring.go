@@ -4,6 +4,7 @@ import (
 	"errors"
 	"net/http"
 	g "roommates/internal/config"
+	"roommates/internal/routes"
 	"roommates/internal/services"
 	"roommates/internal/utils"
 	"roommates/web/pages"
@@ -12,10 +13,6 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5/pgtype"
 )
-
-func recurringPath(householdID pgtype.UUID) string {
-	return householdPath(householdID) + "/recurring"
-}
 
 // PageRecurring lists the household's schedules
 func (h *DefaultHandler) PageRecurring(ctx *gin.Context) {
@@ -45,7 +42,7 @@ func (h *DefaultHandler) loadRecurring(ctx *gin.Context, id string) (services.Re
 
 // PageEditRecurring shows the :recurringID schedule's form, only to its payer and owners
 func (h *DefaultHandler) PageEditRecurring(ctx *gin.Context) {
-	r, ok := h.loadRecurring(ctx, ctx.Param(g.ParamRecurringID))
+	r, ok := h.loadRecurring(ctx, ctx.Param(routes.ParamRecurringID))
 	if !ok {
 		return
 	}
@@ -69,7 +66,7 @@ func (h *DefaultHandler) renderRecurringEditor(ctx *gin.Context, status int, r s
 
 // UpdateRecurring saves the schedule form and goes back to the list
 func (h *DefaultHandler) UpdateRecurring(ctx *gin.Context) {
-	r, ok := h.loadRecurring(ctx, ctx.Param(g.ParamRecurringID))
+	r, ok := h.loadRecurring(ctx, ctx.Param(routes.ParamRecurringID))
 	if !ok {
 		return
 	}
@@ -78,7 +75,7 @@ func (h *DefaultHandler) UpdateRecurring(ctx *gin.Context) {
 	err := h.service.UpdateRecurring(ctx, actor, r.ID, in)
 	switch {
 	case err == nil:
-		Redirect(ctx, recurringPath(actor.HouseholdID))
+		Redirect(ctx, routes.URL(routes.Recurring, actor.HouseholdID))
 	case errors.Is(err, g.ErrorInvalidInput):
 		message, field := expenseInputError(ctx, err)
 		h.renderRecurringEditor(ctx, http.StatusUnprocessableEntity, r, in, message, field)
@@ -88,7 +85,7 @@ func (h *DefaultHandler) UpdateRecurring(ctx *gin.Context) {
 }
 
 func (h *DefaultHandler) DeleteRecurring(ctx *gin.Context) {
-	recurringID, err := utils.ParseUUID(ctx.Param(g.ParamRecurringID))
+	recurringID, err := utils.ParseUUID(ctx.Param(routes.ParamRecurringID))
 	if err != nil {
 		RenderTemplStatus(ctx, http.StatusNotFound, pages.NotFound())
 		return
@@ -98,13 +95,13 @@ func (h *DefaultHandler) DeleteRecurring(ctx *gin.Context) {
 		pageError(ctx, err)
 		return
 	}
-	Redirect(ctx, recurringPath(actor.HouseholdID))
+	Redirect(ctx, routes.URL(routes.Recurring, actor.HouseholdID))
 }
 
 // SkipRecurring moves the schedule past the posted "due" day and shows the expenses again,
 // a day already added or skipped elsewhere only shows them
 func (h *DefaultHandler) SkipRecurring(ctx *gin.Context) {
-	recurringID, err := utils.ParseUUID(ctx.Param(g.ParamRecurringID))
+	recurringID, err := utils.ParseUUID(ctx.Param(routes.ParamRecurringID))
 	if err != nil {
 		RenderTemplStatus(ctx, http.StatusNotFound, pages.NotFound())
 		return
@@ -118,5 +115,5 @@ func (h *DefaultHandler) SkipRecurring(ctx *gin.Context) {
 		pageError(ctx, err)
 		return
 	}
-	stay(ctx, expensesPath(actor.HouseholdID))
+	stay(ctx, routes.URL(routes.Expenses, actor.HouseholdID))
 }

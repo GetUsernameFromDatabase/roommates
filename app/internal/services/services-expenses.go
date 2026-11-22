@@ -9,6 +9,7 @@ import (
 	"roommates/internal/db/dbqueries"
 	"roommates/internal/locales"
 	"roommates/internal/push"
+	"roommates/internal/routes"
 	"roommates/internal/utils"
 	"slices"
 	"strconv"
@@ -287,7 +288,7 @@ func (s *DefaultService) createExpense(ctx context.Context, actor Membership, in
 		return push.Message{
 			Title: utils.T(ctx, locales.LK_PushExpenseTitle, household),
 			Body:  utils.T(ctx, locales.LK_PushExpenseBody, payer, p.Title, utils.FormatMoney(ctx, owed[userID], actor.Currency)),
-			URL:   householdPath(actor.HouseholdID, "expenses", expenseID.String()),
+			URL:   routes.URL(routes.Expense, actor.HouseholdID, expenseID),
 			Tag:   "expense-" + expenseID.String(),
 		}
 	})
@@ -811,7 +812,7 @@ func (s *DefaultService) CreateSettlement(ctx context.Context, actor Membership,
 		return push.Message{
 			Title: utils.T(ctx, locales.LK_PushSettlementTitle, from),
 			Body:  utils.T(ctx, locales.LK_PushSettlementBody, utils.FormatMoney(ctx, cents, actor.Currency), household),
-			URL:   householdPath(actor.HouseholdID, "expenses"),
+			URL:   routes.URL(routes.Expenses, actor.HouseholdID),
 			Tag:   "settlement-" + actor.HouseholdID.String() + "-" + actor.UserID.String(),
 		}
 	})
@@ -859,7 +860,7 @@ func (s *DefaultService) ConfirmSettlement(ctx context.Context, actor Membership
 		return push.Message{
 			Title: utils.T(ctx, locales.LK_PushConfirmedTitle, receiver),
 			Body:  utils.T(ctx, locales.LK_PushConfirmedBody, utils.FormatMoney(ctx, confirmed.AmountCents, confirmed.Currency), household),
-			URL:   householdPath(actor.HouseholdID, "expenses"),
+			URL:   routes.URL(routes.Expenses, actor.HouseholdID),
 			Tag:   "settlement-confirmed-" + settlementID.String(),
 		}
 	})

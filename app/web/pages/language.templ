@@ -6,6 +6,7 @@ import "roommates/web/components/field"
 import "roommates/web/components/select"
 import g "roommates/internal/config"
 import "roommates/internal/locales"
+import "roommates/internal/routes"
 import "roommates/internal/utils"
 
 // each in its own language, so it can be found whichever one the page is in
@@ -19,9 +20,9 @@ var languageItems = []selectcomp.ItemData{
 // compact is only the flag, for beside a title
 templ LanguageForm(id, next string, compact bool) {
 	<form
-		action={ g.RouteLanguage }
+		action={ routes.Language }
 		method="post"
-		hx-post={ g.RouteLanguage }
+		hx-post={ routes.Language }
 		hx-trigger="change"
 		hx-swap="none"
 		autocomplete="off"

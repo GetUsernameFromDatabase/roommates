@@ -4,6 +4,7 @@ import (
 	"net/http"
 	g "roommates/internal/config"
 	"roommates/internal/models"
+	"roommates/internal/routes"
 	"roommates/internal/services"
 	"roommates/web/pages"
 
@@ -28,7 +29,7 @@ func (h *DefaultHandler) PageHome(ctx *gin.Context) {
 				InternalError(ctx, err)
 				return
 			}
-			Redirect(ctx, householdPath(householdID))
+			Redirect(ctx, routes.URL(routes.Household, householdID))
 			return
 		}
 	}
@@ -56,9 +57,9 @@ func (h *DefaultHandler) PageSettings(ctx *gin.Context) {
 func settingsPath(ctx *gin.Context) (string, *pages.HouseholdNav) {
 	if m, ok := ctx.Get(g.GinKeyMembership); ok {
 		id := m.(services.Membership).HouseholdID
-		return householdPath(id) + g.RouteSettings, &pages.HouseholdNav{HouseholdID: id, Section: pages.SectionSettings}
+		return routes.URL(routes.HouseholdSettings, id), &pages.HouseholdNav{HouseholdID: id, Section: pages.SectionSettings}
 	}
-	return g.RouteSettings, nil
+	return routes.Settings, nil
 }
 
 // renderSettings shows the settings at /settings, or inside the household of the route

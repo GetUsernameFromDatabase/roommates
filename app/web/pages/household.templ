@@ -10,6 +10,7 @@ import "roommates/internal/services"
 import "roommates/internal/events"
 import g "roommates/internal/config"
 import "roommates/internal/locales"
+import "roommates/internal/routes"
 import "roommates/internal/utils"
 import "github.com/jackc/pgx/v5/pgtype"
 import "github.com/invopop/ctxi18n/i18n"
@@ -33,7 +34,7 @@ templ HouseholdShopping(actor services.Membership, o services.HouseholdOverview,
 				<ul class="bag-rail">
 					for _, l := range o.ShoppingLists {
 						<li>
-							<a href={ householdURL(actor.HouseholdID, "lists", l.ID.String()) } data-empty?={ l.OpenItems == 0 } class="tote">
+							<a href={ routes.URL(routes.ShoppingList, actor.HouseholdID, l.ID) } data-empty?={ l.OpenItems == 0 } class="tote">
 								<span class="tote-name">{ l.Name }</span>
 								<span class="text-sm">{ utils.T(ctx, locales.LK_ShoppingOpenItems, l.OpenItems) }</span>
 							</a>
@@ -50,7 +51,7 @@ templ HouseholdShopping(actor services.Membership, o services.HouseholdOverview,
 					</p>
 				}
 			}
-			<form action={ householdURL(actor.HouseholdID, "lists") } method="post" hx-boost="true" class="mt-4 grid grid-cols-[minmax(0,1fr)_auto] gap-2 sm:grid-cols-[minmax(0,1fr)_11rem_auto]">
+			<form action={ routes.URL(routes.ShoppingLists, actor.HouseholdID) } method="post" hx-boost="true" class="mt-4 grid grid-cols-[minmax(0,1fr)_auto] gap-2 sm:grid-cols-[minmax(0,1fr)_11rem_auto]">
 				@input.Input(input.Props{
 					ID:          "new-list",
 					Name:        "name",
@@ -138,7 +139,7 @@ templ HouseholdPeople(actor services.Membership, o services.HouseholdOverview, i
 								</details>
 								<div class="hidden w-full flex-wrap justify-end gap-2 [li:has(>details[open])>&]:flex">
 									<form
-										action={ householdURL(actor.HouseholdID, "members", m.UserID.String(), "promote") }
+										action={ routes.URL(routes.MemberPromote, actor.HouseholdID, m.UserID) }
 										method="post"
 										hx-boost="true"
 										hx-confirm={ utils.T(ctx, locales.LK_HouseholdPromoteConfirm, utils.MemberName(ctx, m.Username)) }
@@ -154,7 +155,7 @@ templ HouseholdPeople(actor services.Membership, o services.HouseholdOverview, i
 										}
 									</form>
 									<form
-										action={ householdURL(actor.HouseholdID, "members", m.UserID.String(), "transfer") }
+										action={ routes.URL(routes.MemberTransfer, actor.HouseholdID, m.UserID) }
 										method="post"
 										hx-boost="true"
 										hx-confirm={ utils.T(ctx, locales.LK_OwnershipTransferConfirm, utils.MemberName(ctx, m.Username)) }
@@ -170,7 +171,7 @@ templ HouseholdPeople(actor services.Membership, o services.HouseholdOverview, i
 										}
 									</form>
 									<form
-										action={ householdURL(actor.HouseholdID, "members", m.UserID.String(), "remove") }
+										action={ routes.URL(routes.MemberRemove, actor.HouseholdID, m.UserID) }
 										method="post"
 										hx-boost="true"
 										hx-confirm={ utils.T(ctx, locales.LK_HouseholdRemoveConfirm, utils.MemberName(ctx, m.Username)) }
@@ -217,7 +218,7 @@ templ HouseholdPeople(actor services.Membership, o services.HouseholdOverview, i
 											<span class="key-tag mr-auto">{ inv.Code }</span>
 											@copyButton(inv.Code, locales.LK_HouseholdCopyCode)
 											<form
-												action={ householdURL(actor.HouseholdID, "invites", inv.ID.String(), "delete") }
+												action={ routes.URL(routes.InviteDelete, actor.HouseholdID, inv.ID) }
 												method="post"
 												hx-boost="true"
 												hx-confirm={ utils.T(ctx, locales.LK_HouseholdRevokeConfirm) }
@@ -252,7 +253,7 @@ templ HouseholdPeople(actor services.Membership, o services.HouseholdOverview, i
 					</div>
 					<div class="mt-4 border-t pt-4">
 						if o.ActorEmailValidated {
-							<form action={ householdURL(actor.HouseholdID, "invites") } method="post" hx-boost="true">
+							<form action={ routes.URL(routes.Invites, actor.HouseholdID) } method="post" hx-boost="true">
 								@button.Button(button.Props{Type: button.TypeSubmit, Variant: button.VariantSecondary}) {
 									@components.T(locales.LK_HouseholdCreateInvite)
 								}
@@ -261,7 +262,7 @@ templ HouseholdPeople(actor services.Membership, o services.HouseholdOverview, i
 								@formError(errorFor(PeopleAtInvites))
 							</div>
 							<form
-								action={ householdURL(actor.HouseholdID, "invites", "email") }
+								action={ routes.URL(routes.InvitesEmail, actor.HouseholdID) }
 								method="post"
 								hx-boost="true"
 								class="mt-5 space-y-2"
@@ -296,7 +297,7 @@ templ HouseholdPeople(actor services.Membership, o services.HouseholdOverview, i
 		// the last owner cannot step down, they hand over with "make owner and step down"
 		if isOwner && ownerCount(o.Members) > 1 {
 			<form
-				action={ householdURL(actor.HouseholdID, "step-down") }
+				action={ routes.URL(routes.HouseholdStepDown, actor.HouseholdID) }
 				method="post"
 				hx-boost="true"
 				hx-confirm={ utils.T(ctx, locales.LK_OwnershipStepDownConfirm) }
@@ -314,7 +315,7 @@ templ HouseholdPeople(actor services.Membership, o services.HouseholdOverview, i
 			</form>
 		}
 		<form
-			action={ householdURL(actor.HouseholdID, "leave") }
+			action={ routes.URL(routes.HouseholdLeave, actor.HouseholdID) }
 			method="post"
 			hx-boost="true"
 			hx-confirm={ utils.T(ctx, locales.LK_HouseholdLeaveConfirm) }

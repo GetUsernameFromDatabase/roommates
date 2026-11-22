@@ -5,6 +5,7 @@ import (
 	"net/http/httptest"
 	"net/url"
 	g "roommates/internal/config"
+	"roommates/internal/routes"
 	"strings"
 	"testing"
 
@@ -26,17 +27,17 @@ func TestSetLanguage(t *testing.T) {
 	}{
 		// every text changes, so htmx reloads the page
 		{"htmx reloads", "en", true, http.StatusNoContent, "", "true", "en"},
-		{"plain form goes back to next", "et", false, http.StatusSeeOther, "/login", "", "et"},
+		{"plain form goes back to next", "et", false, http.StatusSeeOther, routes.Login, "", "et"},
 		{"unknown language is refused", "xx", true, http.StatusBadRequest, "", "", ""},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
 			r := gin.New()
 			r.Use(sessions.Sessions("test", cookie.NewStore([]byte("test-secret"))))
-			r.POST(g.RouteLanguage, (&DefaultHandler{}).SetLanguage)
+			r.POST(routes.Language, (&DefaultHandler{}).SetLanguage)
 
-			form := url.Values{"language": {c.language}, g.QueryNext: {"/login"}}
-			req := httptest.NewRequest(http.MethodPost, g.RouteLanguage, strings.NewReader(form.Encode()))
+			form := url.Values{"language": {c.language}, g.QueryNext: {routes.Login}}
+			req := httptest.NewRequest(http.MethodPost, routes.Language, strings.NewReader(form.Encode()))
 			req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 			if c.htmx {
 				req.Header.Set(g.HHK_HXRequest.String(), "true")

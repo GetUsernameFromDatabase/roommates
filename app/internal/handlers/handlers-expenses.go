@@ -8,6 +8,7 @@ import (
 	g "roommates/internal/config"
 	"roommates/internal/db/dbqueries"
 	"roommates/internal/locales"
+	"roommates/internal/routes"
 	"roommates/internal/services"
 	"roommates/internal/utils"
 	"roommates/web/pages"
@@ -18,14 +19,6 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5/pgtype"
 )
-
-func expensesPath(householdID pgtype.UUID) string {
-	return householdPath(householdID) + "/expenses"
-}
-
-func expensePath(householdID, expenseID pgtype.UUID) string {
-	return expensesPath(householdID) + "/" + expenseID.String()
-}
 
 func (h *DefaultHandler) PageExpenses(ctx *gin.Context) {
 	h.renderExpenses(ctx, http.StatusOK, "")
@@ -225,7 +218,7 @@ func (h *DefaultHandler) CreateExpense(ctx *gin.Context) {
 	}
 	switch {
 	case err == nil:
-		Redirect(ctx, expensePath(actor.HouseholdID, expenseID))
+		Redirect(ctx, routes.URL(routes.Expense, actor.HouseholdID, expenseID))
 	case errors.Is(err, g.ErrorInvalidInput):
 		message, field := expenseInputError(ctx, err)
 		h.renderExpenseEditor(ctx, http.StatusUnprocessableEntity, nil, in, repeat, message, field)
@@ -265,7 +258,7 @@ func (h *DefaultHandler) UpdateExpense(ctx *gin.Context) {
 	err := h.service.UpdateExpense(ctx, actor, e.Expense.ID, in)
 	switch {
 	case err == nil:
-		backTo(ctx, expensePath(actor.HouseholdID, e.Expense.ID))
+		backTo(ctx, routes.URL(routes.Expense, actor.HouseholdID, e.Expense.ID))
 	case errors.Is(err, g.ErrorInvalidInput):
 		message, field := expenseInputError(ctx, err)
 		h.renderExpenseEditor(ctx, http.StatusUnprocessableEntity, &e, in, "", message, field)
@@ -276,7 +269,7 @@ func (h *DefaultHandler) UpdateExpense(ctx *gin.Context) {
 
 // loadExpense gets the :expenseID expense, or shows the error page and returns false
 func (h *DefaultHandler) loadExpense(ctx *gin.Context) (services.Expense, bool) {
-	expenseID, err := utils.ParseUUID(ctx.Param(g.ParamExpenseID))
+	expenseID, err := utils.ParseUUID(ctx.Param(routes.ParamExpenseID))
 	if err != nil {
 		RenderTemplStatus(ctx, http.StatusNotFound, pages.NotFound())
 		return services.Expense{}, false
@@ -302,13 +295,13 @@ func (h *DefaultHandler) UploadExpenseFile(ctx *gin.Context) {
 	}
 	actor := membershipFromContext(ctx)
 	h.handleUpload(ctx, services.FileTarget{NoteID: pgtype.UUID{}, ListID: pgtype.UUID{}, ShoppingItemID: pgtype.UUID{}, ExpenseID: e.Expense.ID, MessageID: pgtype.UUID{}, EventID: pgtype.UUID{}},
-		expensePath(actor.HouseholdID, e.Expense.ID), func(status int, errorMessage string) {
+		routes.URL(routes.Expense, actor.HouseholdID, e.Expense.ID), func(status int, errorMessage string) {
 			RenderTemplStatus(ctx, status, pages.ExpensePage(actor, e, errorMessage))
 		})
 }
 
 func (h *DefaultHandler) DeleteExpense(ctx *gin.Context) {
-	expenseID, err := utils.ParseUUID(ctx.Param(g.ParamExpenseID))
+	expenseID, err := utils.ParseUUID(ctx.Param(routes.ParamExpenseID))
 	if err != nil {
 		RenderTemplStatus(ctx, http.StatusNotFound, pages.NotFound())
 		return
@@ -322,14 +315,14 @@ func (h *DefaultHandler) DeleteExpense(ctx *gin.Context) {
 		pageError(ctx, err)
 		return
 	}
-	Redirect(ctx, expensesPath(actor.HouseholdID))
+	Redirect(ctx, routes.URL(routes.Expenses, actor.HouseholdID))
 }
 
 // SetExpenseSharePaid takes the wanted state, not a toggle, so a stale page cannot undo it,
 // it goes back to the form's "next" page, by default the expense
 func (h *DefaultHandler) SetExpenseSharePaid(ctx *gin.Context) {
-	expenseID, errExpense := utils.ParseUUID(ctx.Param(g.ParamExpenseID))
-	userID, errUser := utils.ParseUUID(ctx.Param(g.ParamUserID))
+	expenseID, errExpense := utils.ParseUUID(ctx.Param(routes.ParamExpenseID))
+	userID, errUser := utils.ParseUUID(ctx.Param(routes.ParamUserID))
 	if errExpense != nil || errUser != nil {
 		RenderTemplStatus(ctx, http.StatusNotFound, pages.NotFound())
 		return
@@ -339,7 +332,7 @@ func (h *DefaultHandler) SetExpenseSharePaid(ctx *gin.Context) {
 		pageError(ctx, err)
 		return
 	}
-	stay(ctx, safeNextPath(cmp.Or(ctx.PostForm(g.QueryNext), expensePath(actor.HouseholdID, expenseID))))
+	stay(ctx, safeNextPath(cmp.Or(ctx.PostForm(g.QueryNext), routes.URL(routes.Expense, actor.HouseholdID, expenseID))))
 }
 
 // -----------------------------------------------------------------------------
@@ -355,7 +348,7 @@ func (h *DefaultHandler) CreateSettlement(ctx *gin.Context) {
 	}
 	switch {
 	case err == nil:
-		stay(ctx, expensesPath(actor.HouseholdID))
+		stay(ctx, routes.URL(routes.Expenses, actor.HouseholdID))
 	case errors.Is(err, g.ErrorInvalidInput):
 		var fe services.FieldError
 		errors.As(err, &fe)
@@ -372,7 +365,7 @@ func (h *DefaultHandler) CreateSettlement(ctx *gin.Context) {
 
 // settlementAction runs an action on the :settlementID settlement and goes back to the expenses
 func (h *DefaultHandler) settlementAction(ctx *gin.Context, action func(actor services.Membership, settlementID pgtype.UUID) error) {
-	settlementID, err := utils.ParseUUID(ctx.Param(g.ParamSettleID))
+	settlementID, err := utils.ParseUUID(ctx.Param(routes.ParamSettleID))
 	if err != nil {
 		RenderTemplStatus(ctx, http.StatusNotFound, pages.NotFound())
 		return
@@ -382,7 +375,7 @@ func (h *DefaultHandler) settlementAction(ctx *gin.Context, action func(actor se
 		pageError(ctx, err)
 		return
 	}
-	stay(ctx, expensesPath(actor.HouseholdID))
+	stay(ctx, routes.URL(routes.Expenses, actor.HouseholdID))
 }
 
 func (h *DefaultHandler) ConfirmSettlement(ctx *gin.Context) {

@@ -8,6 +8,7 @@ import (
 	g "roommates/internal/config"
 	"roommates/internal/db/dbqueries"
 	"roommates/internal/models"
+	"roommates/internal/routes"
 	"slices"
 	"strings"
 	"testing"
@@ -102,7 +103,7 @@ func TestChangeEmail(t *testing.T) {
 		t.Fatal(err)
 	}
 	msg := nextEmail(t, s)
-	if msg.To != newEmail || !strings.Contains(msg.Body, g.RouteConfirmEmail+"?token=") {
+	if msg.To != newEmail || !strings.Contains(msg.Body, routes.ConfirmEmail+"?token=") {
 		t.Fatalf("unexpected confirmation email %+v", msg)
 	}
 	token := tokenOf(t, msg.Body)

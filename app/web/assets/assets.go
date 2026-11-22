@@ -6,6 +6,7 @@ import (
 	"embed"
 	"encoding/hex"
 	"io/fs"
+	"roommates/internal/routes"
 	"sync"
 )
 
@@ -41,7 +42,7 @@ func Hash(path string) string {
 // URL is the address of a file in public with its content hash, so the browser can keep it until it changes
 func URL(name string) string {
 	if h := Hash("public/" + name); h != "" {
-		return "/assets/" + name + "?v=" + h
+		return routes.Assets + "/" + name + "?v=" + h
 	}
-	return "/assets/" + name
+	return routes.Assets + "/" + name
 }

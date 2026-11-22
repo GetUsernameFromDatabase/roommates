@@ -11,6 +11,7 @@ import (
 
 	g "roommates/internal/config"
 	"roommates/internal/locales"
+	"roommates/internal/routes"
 	"roommates/internal/services"
 	"roommates/internal/utils"
 	"roommates/web/pages"
@@ -25,22 +26,14 @@ const calendarAgendaDays = 30
 // monthLayout is the ?month= of the calendar page
 const monthLayout = "2006-01"
 
-func calendarPath(householdID pgtype.UUID) string {
-	return householdPath(householdID) + "/calendar"
-}
-
-func eventPath(householdID, eventID pgtype.UUID) string {
-	return calendarPath(householdID) + "/events/" + eventID.String()
-}
-
 // calendarDayPath is the calendar on the month of day with day picked
 func calendarDayPath(householdID pgtype.UUID, day time.Time) string {
-	return calendarPath(householdID) + "?month=" + day.Format(monthLayout) + "&day=" + day.Format(services.DateLayout)
+	return routes.URL(routes.Calendar, householdID) + "?month=" + day.Format(monthLayout) + "&day=" + day.Format(services.DateLayout)
 }
 
 // eventFromContext is the :eventID of the request, or shows the not found page and returns false
 func eventFromContext(ctx *gin.Context) (pgtype.UUID, bool) {
-	id, err := utils.ParseUUID(ctx.Param(g.ParamEventID))
+	id, err := utils.ParseUUID(ctx.Param(routes.ParamEventID))
 	if err != nil {
 		swapMainOnError(ctx)
 		RenderTemplStatus(ctx, http.StatusNotFound, pages.NotFound())
@@ -366,5 +359,5 @@ func (h *DefaultHandler) UploadEventFile(ctx *gin.Context) {
 func (h *DefaultHandler) EventFileTarget(ctx *gin.Context) (services.FileTarget, string, bool) {
 	id, ok := eventFromContext(ctx)
 	return services.FileTarget{NoteID: pgtype.UUID{}, ListID: pgtype.UUID{}, ShoppingItemID: pgtype.UUID{}, ExpenseID: pgtype.UUID{}, MessageID: pgtype.UUID{}, EventID: id},
-		eventPath(membershipFromContext(ctx).HouseholdID, id), ok
+		routes.URL(routes.CalendarEvent, membershipFromContext(ctx).HouseholdID, id), ok
 }

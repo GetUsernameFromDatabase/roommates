@@ -14,20 +14,12 @@ import "roommates/web/components/button"
 import "roommates/web/components/field"
 import "roommates/web/components/input"
 import "roommates/internal/locales"
+import "roommates/internal/routes"
 import "roommates/internal/db/dbqueries"
 import "roommates/internal/utils"
 
-// the forms of [AccountSection], also the last part of their action under the settings path
-const (
-	AccountAtUsername          = "username"
-	AccountAtEmail             = "email"
-	AccountAtPassword          = "password"
-	AccountAtSignOutEverywhere = "sign-out-everywhere"
-	AccountAtDeleteAccount     = "delete-account"
-)
-
 // AccountSection is how the user signs in, each form swaps the whole section with its outcome,
-// errorAt and infoAt (an AccountAt*) name the form errorMessage and infoMessage belong to
+// errorAt and infoAt (the routes.Account* the form posts to) name the form errorMessage and infoMessage belong to
 func AccountSection(path string, user dbqueries.GetUserRow, errorAt, errorMessage, infoAt, infoMessage string) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
@@ -164,13 +156,13 @@ func AccountSection(path string, user dbqueries.GetUserRow, errorAt, errorMessag
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = outcome(AccountAtUsername).Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = outcome(routes.AccountUsername).Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			return nil
 		})
-		templ_7745c5c3_Err = accountForm(path, AccountAtUsername).Render(templ.WithChildren(ctx, templ_7745c5c3_Var4), templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = accountForm(path, routes.AccountUsername).Render(templ.WithChildren(ctx, templ_7745c5c3_Var4), templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -201,7 +193,7 @@ func AccountSection(path string, user dbqueries.GetUserRow, errorAt, errorMessag
 			var templ_7745c5c3_Var8 string
 			templ_7745c5c3_Var8, templ_7745c5c3_Err = templ.JoinStringErrs(utils.T(ctx, locales.LK_AccountEmailDescription, user.Email))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/account.templ`, Line: 56, Col: 120}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/account.templ`, Line: 48, Col: 120}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var8))
 			if templ_7745c5c3_Err != nil {
@@ -271,13 +263,13 @@ func AccountSection(path string, user dbqueries.GetUserRow, errorAt, errorMessag
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = outcome(AccountAtEmail).Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = outcome(routes.AccountEmail).Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			return nil
 		})
-		templ_7745c5c3_Err = accountForm(path, AccountAtEmail).Render(templ.WithChildren(ctx, templ_7745c5c3_Var7), templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = accountForm(path, routes.AccountEmail).Render(templ.WithChildren(ctx, templ_7745c5c3_Var7), templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -413,13 +405,13 @@ func AccountSection(path string, user dbqueries.GetUserRow, errorAt, errorMessag
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = outcome(AccountAtPassword).Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = outcome(routes.AccountPassword).Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			return nil
 		})
-		templ_7745c5c3_Err = accountForm(path, AccountAtPassword).Render(templ.WithChildren(ctx, templ_7745c5c3_Var11), templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = accountForm(path, routes.AccountPassword).Render(templ.WithChildren(ctx, templ_7745c5c3_Var11), templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -428,9 +420,9 @@ func AccountSection(path string, user dbqueries.GetUserRow, errorAt, errorMessag
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var16 string
-		templ_7745c5c3_Var16, templ_7745c5c3_Err = templruntime.NewAttributeExpression(templ.SafeURL(path + "/" + AccountAtSignOutEverywhere)).ResolveURL(ctx)
+		templ_7745c5c3_Var16, templ_7745c5c3_Err = templruntime.NewAttributeExpression(path + routes.AccountSignOutEverywhere).ResolveURL(ctx)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/account.templ`, Line: 110, Col: 67}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/account.templ`, Line: 102, Col: 51}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var16)
 		if templ_7745c5c3_Err != nil {
@@ -443,7 +435,7 @@ func AccountSection(path string, user dbqueries.GetUserRow, errorAt, errorMessag
 		var templ_7745c5c3_Var17 string
 		templ_7745c5c3_Var17, templ_7745c5c3_Err = templruntime.NewAttributeExpression(utils.T(ctx, locales.LK_AccountSignOutEverywhereConfirm)).Resolve(ctx)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/account.templ`, Line: 113, Col: 73}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/account.templ`, Line: 105, Col: 73}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var17)
 		if templ_7745c5c3_Err != nil {
@@ -456,7 +448,7 @@ func AccountSection(path string, user dbqueries.GetUserRow, errorAt, errorMessag
 		var templ_7745c5c3_Var18 string
 		templ_7745c5c3_Var18, templ_7745c5c3_Err = templruntime.NewAttributeExpression(utils.T(ctx, locales.LK_AccountSignOutEverywhere)).Resolve(ctx)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/account.templ`, Line: 114, Col: 74}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/account.templ`, Line: 106, Col: 74}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var18)
 		if templ_7745c5c3_Err != nil {
@@ -501,9 +493,9 @@ func AccountSection(path string, user dbqueries.GetUserRow, errorAt, errorMessag
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var20 string
-		templ_7745c5c3_Var20, templ_7745c5c3_Err = templruntime.NewAttributeExpression(templ.SafeURL(path + "/" + AccountAtDeleteAccount)).ResolveURL(ctx)
+		templ_7745c5c3_Var20, templ_7745c5c3_Err = templruntime.NewAttributeExpression(path + routes.AccountDelete).ResolveURL(ctx)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/account.templ`, Line: 127, Col: 63}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/account.templ`, Line: 119, Col: 40}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var20)
 		if templ_7745c5c3_Err != nil {
@@ -514,9 +506,9 @@ func AccountSection(path string, user dbqueries.GetUserRow, errorAt, errorMessag
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var21 string
-		templ_7745c5c3_Var21, templ_7745c5c3_Err = templruntime.NewAttributeExpression(path + "/" + AccountAtDeleteAccount).Resolve(ctx)
+		templ_7745c5c3_Var21, templ_7745c5c3_Err = templruntime.NewAttributeExpression(path + routes.AccountDelete).Resolve(ctx)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/account.templ`, Line: 129, Col: 49}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/account.templ`, Line: 121, Col: 41}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var21)
 		if templ_7745c5c3_Err != nil {
@@ -529,7 +521,7 @@ func AccountSection(path string, user dbqueries.GetUserRow, errorAt, errorMessag
 		var templ_7745c5c3_Var22 string
 		templ_7745c5c3_Var22, templ_7745c5c3_Err = templruntime.NewAttributeExpression(utils.T(ctx, locales.LK_AccountDeleteConfirm)).Resolve(ctx)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/account.templ`, Line: 132, Col: 62}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/account.templ`, Line: 124, Col: 62}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var22)
 		if templ_7745c5c3_Err != nil {
@@ -542,7 +534,7 @@ func AccountSection(path string, user dbqueries.GetUserRow, errorAt, errorMessag
 		var templ_7745c5c3_Var23 string
 		templ_7745c5c3_Var23, templ_7745c5c3_Err = templruntime.NewAttributeExpression(utils.T(ctx, locales.LK_AccountDeleteSubmit)).Resolve(ctx)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/account.templ`, Line: 133, Col: 69}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/account.templ`, Line: 125, Col: 69}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var23)
 		if templ_7745c5c3_Err != nil {
@@ -594,7 +586,7 @@ func AccountSection(path string, user dbqueries.GetUserRow, errorAt, errorMessag
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = outcome(AccountAtDeleteAccount).Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = outcome(routes.AccountDelete).Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -606,8 +598,8 @@ func AccountSection(path string, user dbqueries.GetUserRow, errorAt, errorMessag
 	})
 }
 
-// accountForm posts to path/at and swaps [AccountSection] with the answer
-func accountForm(path, at string) templ.Component {
+// accountForm posts to path + route (a routes.Account*) and swaps [AccountSection] with the answer
+func accountForm(path, route string) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -630,9 +622,9 @@ func accountForm(path, at string) templ.Component {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var26 string
-		templ_7745c5c3_Var26, templ_7745c5c3_Err = templruntime.NewAttributeExpression(templ.SafeURL(path + "/" + at)).ResolveURL(ctx)
+		templ_7745c5c3_Var26, templ_7745c5c3_Err = templruntime.NewAttributeExpression(path + route).ResolveURL(ctx)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/account.templ`, Line: 157, Col: 41}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/account.templ`, Line: 149, Col: 23}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var26)
 		if templ_7745c5c3_Err != nil {
@@ -643,9 +635,9 @@ func accountForm(path, at string) templ.Component {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var27 string
-		templ_7745c5c3_Var27, templ_7745c5c3_Err = templruntime.NewAttributeExpression(path + "/" + at).Resolve(ctx)
+		templ_7745c5c3_Var27, templ_7745c5c3_Err = templruntime.NewAttributeExpression(path + route).Resolve(ctx)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/account.templ`, Line: 159, Col: 27}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/account.templ`, Line: 151, Col: 24}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var27)
 		if templ_7745c5c3_Err != nil {
@@ -830,7 +822,7 @@ func accountOutcome(isError bool, errorMessage string, isInfo bool, infoMessage 
 			var templ_7745c5c3_Var34 string
 			templ_7745c5c3_Var34, templ_7745c5c3_Err = templ.JoinStringErrs(infoMessage)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/account.templ`, Line: 201, Col: 50}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/account.templ`, Line: 193, Col: 50}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var34))
 			if templ_7745c5c3_Err != nil {

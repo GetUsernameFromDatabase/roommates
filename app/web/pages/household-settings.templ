@@ -11,14 +11,15 @@ import "roommates/web/components/field"
 import "roommates/web/components/input"
 import "roommates/web/components/select"
 import "roommates/internal/locales"
+import "roommates/internal/routes"
 import "roommates/internal/services"
 import "roommates/internal/utils"
 import g "roommates/internal/config"
 
-// HouseholdSettingsSection is the household's name and currency, path is the settings page, owners post to
-// path + "/household" and only this section is swapped, members see them read-only
+// HouseholdSettingsSection is the household's name and currency, owners post to
+// routes.HouseholdUpdate and only this section is swapped, members see them read-only
 // the currency is locked while a debt is open, errorMessage and infoMessage show by the save button
-templ HouseholdSettingsSection(path string, actor services.Membership, h services.HouseholdSettings, errorMessage, infoMessage string) {
+templ HouseholdSettingsSection(actor services.Membership, h services.HouseholdSettings, errorMessage, infoMessage string) {
 	{{ owner := actor.Role == g.RoleOwner }}
 	<section id="household-settings" aria-labelledby="household-settings-title" class={ sheetClass + " flex flex-col gap-4" }>
 		<h2 id="household-settings-title" class="text-xl font-semibold">
@@ -26,9 +27,9 @@ templ HouseholdSettingsSection(path string, actor services.Membership, h service
 		</h2>
 		if owner {
 			<form
-				action={ templ.SafeURL(path + "/household") }
+				action={ routes.URL(routes.HouseholdUpdate, actor.HouseholdID) }
 				method="post"
-				hx-post={ path + "/household" }
+				hx-post={ routes.URL(routes.HouseholdUpdate, actor.HouseholdID) }
 				hx-target="#household-settings"
 				hx-swap="outerHTML"
 				hx-disinherit="*"
@@ -85,7 +86,7 @@ templ HouseholdSettingsSection(path string, actor services.Membership, h service
 				@formError(errorMessage)
 			</form>
 			if !actor.DeletedAt.Valid {
-				@deleteHousehold(path, actor, h)
+				@deleteHousehold(actor, h)
 			}
 		} else {
 			<dl class="flex flex-col gap-3">
@@ -120,7 +121,7 @@ templ HouseholdSettingsSection(path string, actor services.Membership, h service
 
 // deleteHousehold asks an owner to type the household's name, open debts do not stop it but
 // are listed with the CSV downloads, an error is swapped into #household-delete-error
-templ deleteHousehold(path string, actor services.Membership, h services.HouseholdSettings) {
+templ deleteHousehold(actor services.Membership, h services.HouseholdSettings) {
 	{{ days := int(g.HouseholdPurgeAfter.Hours() / 24) }}
 	<div class="flex flex-col items-start gap-3 border-t pt-4">
 		<h3 class="font-semibold text-destructive">
@@ -134,7 +135,7 @@ templ deleteHousehold(path string, actor services.Membership, h services.Househo
 				@components.T(locales.LK_OwnershipDeleteTitle)
 			}
 			@alertdialog.Content(alertdialog.ContentProps{Class: "max-h-[calc(100dvh-2rem)] w-[calc(100vw-2rem)] overflow-y-auto", Attributes: nil, Size: ""}) {
-				<form action={ templ.SafeURL(path + "/household/delete") } method="post" hx-boost="true" class="grid gap-4">
+				<form action={ routes.URL(routes.HouseholdDelete, actor.HouseholdID) } method="post" hx-boost="true" class="grid gap-4">
 					@alertdialog.Header(alertdialog.HeaderProps{ID: "", Class: "", Attributes: nil}) {
 						@alertdialog.Title(alertdialog.TitleProps{ID: "", Class: "", Attributes: nil}) {
 							@components.T(locales.LK_OwnershipDeleteTitle)
@@ -154,7 +155,7 @@ templ deleteHousehold(path string, actor services.Membership, h services.Househo
 								}
 							</ul>
 						}
-						@expenseExports(actor, string(householdURL(actor.HouseholdID, "expenses")))
+						@expenseExports(actor)
 					}
 					@field.Field() {
 						@field.Label(field.LabelProps{For: "delete-household-name"}) {

@@ -6,6 +6,7 @@ import (
 	g "roommates/internal/config"
 	"roommates/internal/locales"
 	"roommates/internal/models"
+	"roommates/internal/routes"
 	"roommates/internal/utils"
 	"roommates/web/pages"
 
@@ -27,7 +28,7 @@ func (h *DefaultHandler) VerifyEmail(ctx *gin.Context) {
 	err := h.service.VerifyEmail(ctx, ctx.Query("token"))
 	if errors.Is(err, g.ErrorTokenInvalid) {
 		notice(ctx, http.StatusNotFound, locales.LK_CommonLinkInvalid,
-			locales.LK_VerifyEmailInvalidDescription, "/", locales.LK_VerifyEmailContinue)
+			locales.LK_VerifyEmailInvalidDescription, routes.Home, locales.LK_VerifyEmailContinue)
 		return
 	}
 	if err != nil {
@@ -35,7 +36,7 @@ func (h *DefaultHandler) VerifyEmail(ctx *gin.Context) {
 		return
 	}
 	notice(ctx, http.StatusOK, locales.LK_VerifyEmailDoneTitle,
-		locales.LK_VerifyEmailDoneDescription, "/", locales.LK_VerifyEmailContinue)
+		locales.LK_VerifyEmailDoneDescription, routes.Home, locales.LK_VerifyEmailContinue)
 }
 
 // ResendVerificationEmail sends a new link to the signed in user
@@ -60,7 +61,7 @@ func (h *DefaultHandler) ResendVerificationEmail(ctx *gin.Context) {
 		return
 	}
 	notice(ctx, http.StatusOK, locales.LK_VerifyEmailResentTitle,
-		locales.LK_VerifyEmailResentDescription, "/", locales.LK_VerifyEmailContinue, user.Email)
+		locales.LK_VerifyEmailResentDescription, routes.Home, locales.LK_VerifyEmailContinue, user.Email)
 }
 
 // PageForgotPassword sends a reset link, the answer is the same whether the account exists or not
@@ -82,14 +83,14 @@ func (h *DefaultHandler) PageForgotPassword(ctx *gin.Context) {
 		return
 	}
 	notice(ctx, http.StatusOK, locales.LK_ForgotPasswordPageSentTitle,
-		locales.LK_ForgotPasswordPageSentDescription, g.RouteLogin, locales.LK_LoginPageSignIn, model.Email)
+		locales.LK_ForgotPasswordPageSentDescription, routes.Login, locales.LK_LoginPageSignIn, model.Email)
 }
 
 // PageResetPassword asks for a new password for the ?token= link
 func (h *DefaultHandler) PageResetPassword(ctx *gin.Context) {
 	invalid := func() {
 		notice(ctx, http.StatusNotFound, locales.LK_CommonLinkInvalid,
-			locales.LK_ResetPasswordPageInvalidDescription, g.RouteForgotPassword, locales.LK_ResetPasswordPageNewLink)
+			locales.LK_ResetPasswordPageInvalidDescription, routes.ForgotPassword, locales.LK_ResetPasswordPageNewLink)
 	}
 
 	if ctx.Request.Method != http.MethodPost {
@@ -127,5 +128,5 @@ func (h *DefaultHandler) PageResetPassword(ctx *gin.Context) {
 		return
 	}
 	notice(ctx, http.StatusOK, locales.LK_ResetPasswordPageDoneTitle,
-		locales.LK_ResetPasswordPageDoneDescription, g.RouteLogin, locales.LK_LoginPageSignIn)
+		locales.LK_ResetPasswordPageDoneDescription, routes.Login, locales.LK_LoginPageSignIn)
 }

@@ -6,6 +6,7 @@ import (
 	"roommates/internal/db/dbqueries"
 	"roommates/internal/locales"
 	"roommates/internal/push"
+	"roommates/internal/routes"
 	"roommates/internal/utils"
 	"slices"
 	"time"
@@ -284,7 +285,7 @@ func (s *DefaultService) NotifyRecurringDue(ctx context.Context) error {
 			return push.Message{
 				Title: utils.T(ctx, locales.LK_RecurringPushTitle, household),
 				Body:  utils.T(ctx, locales.LK_RecurringPushBody, r.Title, utils.FormatDate(ctx, r.NextDue.Time)),
-				URL:   householdPath(r.HouseholdID, "expenses"),
+				URL:   routes.URL(routes.Expenses, r.HouseholdID),
 				Tag:   "recurring-" + r.ID.String(),
 			}
 		})

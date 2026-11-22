@@ -4,6 +4,7 @@ import "roommates/web/components"
 import "roommates/web/components/switch"
 import g "roommates/internal/config"
 import "roommates/internal/locales"
+import "roommates/internal/routes"
 import "roommates/internal/services"
 
 // notificationLabels are the name and the description of a kind of notification
@@ -48,9 +49,9 @@ templ notificationSection(m *services.Membership, settings []services.Notificati
 		for _, n := range settings {
 			{{ title, description := notificationLabels(n.Kind) }}
 			<form
-				action={ householdURL(m.HouseholdID, "settings", "notifications") }
+				action={ routes.URL(routes.HouseholdNotifications, m.HouseholdID) }
 				method="post"
-				hx-post={ string(householdURL(m.HouseholdID, "settings", "notifications")) }
+				hx-post={ routes.URL(routes.HouseholdNotifications, m.HouseholdID) }
 				hx-trigger="change"
 				hx-target="#notifications-section"
 				hx-swap="outerHTML"

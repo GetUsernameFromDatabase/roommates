@@ -113,11 +113,6 @@ func (s *DefaultService) notifyAsync(ctx context.Context, actor Membership, kind
 	})
 }
 
-// householdPath is the URL path of a page of the household, like the pages build it
-func householdPath(householdID pgtype.UUID, parts ...string) string {
-	return g.RouteHousehold + "/" + householdID.String() + "/" + strings.Join(parts, "/")
-}
-
 // pushPreview shortens a chat message to one line for a notification
 func pushPreview(body string) string {
 	body = strings.Join(strings.Fields(body), " ")

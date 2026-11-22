@@ -6,8 +6,8 @@ import "roommates/web/components/field"
 import "roommates/web/components/input"
 import "roommates/web/components/button"
 import "roommates/internal/models"
-import g "roommates/internal/config"
 import "roommates/internal/locales"
+import "roommates/internal/routes"
 import "roommates/internal/utils"
 
 templ Login(m models.Login) {
@@ -22,7 +22,7 @@ templ Login(m models.Login) {
 		<p class="mt-6 text-sm text-muted-foreground">
 			@components.T(locales.LK_LoginPageNoAccount)
 			<a
-				href={ withNext(g.RouteRegister, m.Next) }
+				href={ withNext(routes.Register, m.Next) }
 				class="font-medium text-foreground underline-offset-4 hover:underline ml-1"
 			>
 				@components.T(locales.LK_LoginPageCreateAccount)
@@ -36,7 +36,7 @@ templ LoginForm(m models.Login) {
 		emailValidations := m.ValidateEmail()
 		passwordValidations := m.ValidatePassword()
 	}}
-	<form action={ g.RouteLogin } method="post" hx-boost="true" class="space-y-5">
+	<form action={ routes.Login } method="post" hx-boost="true" class="space-y-5">
 		<input type="hidden" name="next" value={ m.Next }/>
 		@field.Group() {
 			<!-- Email -->
@@ -70,7 +70,7 @@ templ LoginForm(m models.Login) {
 						@components.T(locales.LK_PasswordTitle)
 					}
 					<a
-						href={ g.RouteForgotPassword }
+						href={ routes.ForgotPassword }
 						class="text-sm text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
 					>
 						@components.T(locales.LK_LoginPageForgotPassword)

@@ -5,6 +5,7 @@ import (
 	"regexp"
 	g "roommates/internal/config"
 	"roommates/internal/locales"
+	"roommates/internal/routes"
 	"strings"
 	"testing"
 
@@ -45,7 +46,7 @@ func TestVerifyEmail(t *testing.T) {
 		t.Fatal(err)
 	}
 	msg := nextEmail(t, s)
-	if !strings.Contains(msg.Body, g.RouteVerifyEmail+"?token=") {
+	if !strings.Contains(msg.Body, routes.VerifyEmail+"?token=") {
 		t.Fatalf("no verify link in %q", msg.Body)
 	}
 	token := tokenOf(t, msg.Body)
@@ -202,7 +203,7 @@ func TestInviteNeedsConfirmedEmail(t *testing.T) {
 		t.Fatal(err)
 	}
 	msg := nextEmail(t, s)
-	if msg.To != "friend@example.com" || !strings.Contains(msg.Body, g.RouteInvite+"?code=") {
+	if msg.To != "friend@example.com" || !strings.Contains(msg.Body, routes.Invite+"?code=") {
 		t.Fatalf("unexpected invite email %+v", msg)
 	}
 	if !strings.Contains(msg.Subject, "Flat") {

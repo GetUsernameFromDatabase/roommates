@@ -4,6 +4,7 @@ import "roommates/web/components"
 import "roommates/web/components/alert"
 import "roommates/web/components/button"
 import "roommates/internal/locales"
+import "roommates/internal/routes"
 import "roommates/internal/services"
 import "roommates/internal/utils"
 import g "roommates/internal/config"
@@ -26,7 +27,7 @@ templ DeletedBanner(m services.Membership) {
 
 // restoreForm undoes the deletion of a household, the page it is on is shown again
 templ restoreForm(householdID pgtype.UUID) {
-	<form action={ templ.SafeURL(g.RouteHouseholds + "/" + householdID.String() + "/restore") } method="post" hx-boost="true">
+	<form action={ routes.URL(routes.HouseholdRestore, householdID) } method="post" hx-boost="true">
 		@button.Button(button.Props{Type: button.TypeSubmit, Variant: button.VariantOutline, Size: button.SizeSm}) {
 			@components.T(locales.LK_OwnershipRestore)
 		}

@@ -7,6 +7,7 @@ import (
 	"roommates/internal/db/dbqueries"
 	"roommates/internal/locales"
 	"roommates/internal/push"
+	"roommates/internal/routes"
 	"roommates/internal/utils"
 	"slices"
 	"strings"
@@ -535,7 +536,7 @@ func (s *DefaultService) pushChoreTurn(ctx context.Context, actor Membership, c 
 		return push.Message{
 			Title: utils.T(ctx, locales.LK_ChorePushDueTitle, household),
 			Body:  utils.T(ctx, body, actorName, c.Title),
-			URL:   householdPath(c.HouseholdID, "chores", c.ID.String()),
+			URL:   routes.URL(routes.Chore, c.HouseholdID, c.ID),
 			Tag:   "chore-" + c.ID.String(),
 		}
 	})
@@ -605,7 +606,7 @@ func (s *DefaultService) NotifyChoresDue(ctx context.Context) error {
 			return push.Message{
 				Title: utils.T(ctx, title, household),
 				Body:  utils.T(ctx, body, r.Title, utils.FormatDate(ctx, r.NextDue.Time)),
-				URL:   householdPath(r.HouseholdID, "chores", r.ID.String()),
+				URL:   routes.URL(routes.Chore, r.HouseholdID, r.ID),
 				Tag:   "chore-" + r.ID.String(),
 			}
 		})

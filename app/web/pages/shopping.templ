@@ -10,6 +10,7 @@ import "roommates/internal/services"
 import "roommates/internal/events"
 import g "roommates/internal/config"
 import "roommates/internal/locales"
+import "roommates/internal/routes"
 import "roommates/internal/utils"
 import "github.com/invopop/ctxi18n/i18n"
 import "github.com/jackc/pgx/v5/pgtype"
@@ -30,7 +31,7 @@ templ ShoppingList(actor services.Membership, l services.ShoppingList, errorMess
 		}
 		@shoppingListHeader(actor, l)
 		// saved on pick, what the list's expenses start from
-		<form hx-post={ string(shoppingListURL(actor, l, "category")) } hx-trigger="change" hx-select="#list-category-saved" hx-target="#list-category-saved" hx-swap="outerHTML" class="-mt-5 flex items-center gap-2">
+		<form hx-post={ routes.URL(routes.ShoppingListCategory, actor.HouseholdID, l.List.ID) } hx-trigger="change" hx-select="#list-category-saved" hx-target="#list-category-saved" hx-swap="outerHTML" class="-mt-5 flex items-center gap-2">
 			<label for="list-category-trigger" class="text-sm text-muted-foreground">
 				@components.T(locales.LK_ExpensesCategory)
 			</label>
@@ -44,7 +45,7 @@ templ ShoppingList(actor services.Membership, l services.ShoppingList, errorMess
 		@shoppingListContent(actor, l, errorMessage, itemText, itemQty)
 		if l.List.CreatedBy == actor.UserID || actor.Role == g.RoleOwner {
 			<form
-				action={ shoppingListURL(actor, l, "delete") }
+				action={ routes.URL(routes.ShoppingListDelete, actor.HouseholdID, l.List.ID) }
 				method="post"
 				hx-boost="true"
 				hx-confirm={ deleteConfirm(ctx, utils.T(ctx, locales.LK_ShoppingDeleteListConfirm), int(l.LastFiles)) }
@@ -56,7 +57,7 @@ templ ShoppingList(actor services.Membership, l services.ShoppingList, errorMess
 }
 
 templ shoppingListHeader(actor services.Membership, l services.ShoppingList) {
-	@nameHeader(householdURL(actor.HouseholdID), utils.T(ctx, locales.LK_ShoppingBack), shoppingListURL(actor, l, "name"),
+	@nameHeader(routes.URL(routes.Household, actor.HouseholdID), utils.T(ctx, locales.LK_ShoppingBack), routes.URL(routes.ShoppingListName, actor.HouseholdID, l.List.ID),
 		l.List.Name, services.MaxShoppingListNameLength, utils.T(ctx, locales.LK_ShoppingRenameList))
 }
 
@@ -85,9 +86,9 @@ templ shoppingListContent(actor services.Membership, l services.ShoppingList, er
 			}
 			// the add form stays out of the regions, a flatmate's change must not clear what is typed
 			<form
-				action={ shoppingListURL(actor, l, "items") }
+				action={ routes.URL(routes.ShoppingItems, actor.HouseholdID, l.List.ID) }
 				method="post"
-				{ shoppingSwap(actor, l, "items")... }
+				{ shoppingSwap(routes.URL(routes.ShoppingItems, actor.HouseholdID, l.List.ID))... }
 				class="pad-line pad-add"
 			>
 				// the id brings the focus back after the swap, so the next item can be typed right away
@@ -148,11 +149,11 @@ templ shoppingListContent(actor services.Membership, l services.ShoppingList, er
 						</h2>
 						if hasUnlinked(bought) {
 							// one receipt usually pays for the whole shop
-							@button.Button(button.Props{Href: string(newExpenseURL(actor.HouseholdID, l.List.ID, pgtype.UUID{})), Variant: button.VariantSecondary, Size: button.SizeSm}) {
+							@button.Button(button.Props{Href: newExpenseURL(actor.HouseholdID, l.List.ID, pgtype.UUID{}), Variant: button.VariantSecondary, Size: button.SizeSm}) {
 								@components.T(locales.LK_ShoppingAddBagExpense)
 							}
 						}
-						<form action={ shoppingListURL(actor, l, "clear") } method="post" hx-confirm={ utils.T(ctx, locales.LK_ShoppingClearConfirm) } { shoppingSwap(actor, l, "clear")... }>
+						<form action={ routes.URL(routes.ShoppingListClear, actor.HouseholdID, l.List.ID) } method="post" hx-confirm={ utils.T(ctx, locales.LK_ShoppingClearConfirm) } { shoppingSwap(routes.URL(routes.ShoppingListClear, actor.HouseholdID, l.List.ID))... }>
 							@button.Button(button.Props{Type: button.TypeSubmit, Variant: button.VariantGhost, Size: button.SizeSm}) {
 								@components.T(locales.LK_ShoppingClear)
 							}
@@ -202,7 +203,7 @@ templ shoppingOpenItem(actor services.Membership, l services.ShoppingList, it db
 			}
 		</div>
 		// a place for a person at the end of the line, taken by whoever is buying it
-		<form action={ shoppingListURL(actor, l, "items", itemID, "claim") } method="post" { shoppingSwap(actor, l, "items", itemID, "claim")... }>
+		<form action={ routes.URL(routes.ShoppingItemClaim, actor.HouseholdID, l.List.ID, itemID) } method="post" { shoppingSwap(routes.URL(routes.ShoppingItemClaim, actor.HouseholdID, l.List.ID, itemID))... }>
 			<input type="hidden" name="claim" value={ utils.IfElse(it.ClaimedBy == actor.UserID, "0", "1") }/>
 			<button
 				type="submit"
@@ -230,7 +231,7 @@ templ shoppingBoughtItem(actor services.Membership, l services.ShoppingList, it 
 				<div class="text-xs">
 					{ utils.T(ctx, locales.LK_ShoppingBoughtBy, utils.MemberName(ctx, *it.CheckedByName)) } ·
 					if it.ExpenseID.Valid {
-						<a href={ householdURL(actor.HouseholdID, "expenses", it.ExpenseID.String()) } class={ boughtLinkClass }>
+						<a href={ routes.URL(routes.Expense, actor.HouseholdID, it.ExpenseID) } class={ boughtLinkClass }>
 							@components.T(locales.LK_ShoppingSeeExpense)
 						</a>
 					} else {
@@ -250,7 +251,7 @@ const boughtLinkClass = "inline-block py-2 underline underline-offset-4 hover:te
 templ shoppingTick(actor services.Membership, l services.ShoppingList, it dbqueries.ListShoppingItemsRow) {
 	{{ checked := it.CheckedAt.Valid }}
 	{{ itemID := it.ID.String() }}
-	<form action={ shoppingListURL(actor, l, "items", itemID, "check") } method="post" { shoppingSwap(actor, l, "items", itemID, "check")... } class="flex justify-center">
+	<form action={ routes.URL(routes.ShoppingItemCheck, actor.HouseholdID, l.List.ID, itemID) } method="post" { shoppingSwap(routes.URL(routes.ShoppingItemCheck, actor.HouseholdID, l.List.ID, itemID))... } class="flex justify-center">
 		<input type="hidden" name="checked" value={ utils.IfElse(checked, "0", "1") }/>
 		<button
 			type="submit"
@@ -278,7 +279,7 @@ templ shoppingItemName(actor services.Membership, l services.ShoppingList, it db
 	{{ itemID := it.ID.String() }}
 	<a
 		id={ "item-name-" + itemID }
-		href={ shoppingListURL(actor, l, "items", itemID) }
+		href={ routes.URL(routes.ShoppingItem, actor.HouseholdID, l.List.ID, itemID) }
 		class={ utils.CN("item-strike text-lg break-words underline-offset-4 hover:underline pointer-coarse:inline-block pointer-coarse:py-2",utils.IfElse(it.CheckedAt.Valid, "is-struck", "")) }
 	>
 		{ it.Text }

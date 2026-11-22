@@ -13,6 +13,7 @@ import "roommates/web/components"
 import "roommates/web/components/switch"
 import g "roommates/internal/config"
 import "roommates/internal/locales"
+import "roommates/internal/routes"
 import "roommates/internal/services"
 
 // notificationLabels are the name and the description of a kind of notification
@@ -166,9 +167,9 @@ func notificationSection(m *services.Membership, settings []services.Notificatio
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var6 string
-			templ_7745c5c3_Var6, templ_7745c5c3_Err = templruntime.NewAttributeExpression(householdURL(m.HouseholdID, "settings", "notifications")).ResolveURL(ctx)
+			templ_7745c5c3_Var6, templ_7745c5c3_Err = templruntime.NewAttributeExpression(routes.URL(routes.HouseholdNotifications, m.HouseholdID)).ResolveURL(ctx)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/notifications.templ`, Line: 51, Col: 69}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/notifications.templ`, Line: 52, Col: 69}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var6)
 			if templ_7745c5c3_Err != nil {
@@ -179,9 +180,9 @@ func notificationSection(m *services.Membership, settings []services.Notificatio
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var7 string
-			templ_7745c5c3_Var7, templ_7745c5c3_Err = templruntime.NewAttributeExpression(string(householdURL(m.HouseholdID, "settings", "notifications"))).Resolve(ctx)
+			templ_7745c5c3_Var7, templ_7745c5c3_Err = templruntime.NewAttributeExpression(routes.URL(routes.HouseholdNotifications, m.HouseholdID)).Resolve(ctx)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/notifications.templ`, Line: 53, Col: 78}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/notifications.templ`, Line: 54, Col: 70}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var7)
 			if templ_7745c5c3_Err != nil {
@@ -194,7 +195,7 @@ func notificationSection(m *services.Membership, settings []services.Notificatio
 			var templ_7745c5c3_Var8 string
 			templ_7745c5c3_Var8, templ_7745c5c3_Err = templruntime.NewAttributeExpression(n.Kind).Resolve(ctx)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/notifications.templ`, Line: 58, Col: 51}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/notifications.templ`, Line: 59, Col: 51}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var8)
 			if templ_7745c5c3_Err != nil {

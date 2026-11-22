@@ -6,6 +6,7 @@ import (
 	g "roommates/internal/config"
 	"roommates/internal/locales"
 	"roommates/internal/models"
+	"roommates/internal/routes"
 	"roommates/internal/services"
 	"roommates/internal/sessions"
 	"roommates/internal/utils"
@@ -15,7 +16,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// renderAccount swaps [pages.AccountSection] in place, errorAt and infoAt are a pages.AccountAt*
+// renderAccount swaps [pages.AccountSection] in place, errorAt and infoAt are the routes.Account* of the form
 func (h *DefaultHandler) renderAccount(ctx *gin.Context, status int, errorAt, errorMessage, infoAt, infoMessage string) {
 	path, _ := settingsPath(ctx)
 	userID, err := sessionUserID(ctx)
@@ -66,7 +67,7 @@ func (h *DefaultHandler) ChangeUsername(ctx *gin.Context) {
 	var model models.ChangeUsername
 	_ = ctx.ShouldBind(&model)
 	if ok, msgs := model.IsValid(); !ok {
-		h.invalidAccountForm(ctx, pages.AccountAtUsername, msgs)
+		h.invalidAccountForm(ctx, routes.AccountUsername, msgs)
 		return
 	}
 	if err := h.service.SetUsername(ctx, userID, model.Username); err != nil {
@@ -76,7 +77,7 @@ func (h *DefaultHandler) ChangeUsername(ctx *gin.Context) {
 	s := sessions.FromGinContext(ctx)
 	s.Session.Set(sessions.KeyUsername, model.Username)
 	s.Save()
-	h.renderAccount(ctx, http.StatusOK, "", "", pages.AccountAtUsername,
+	h.renderAccount(ctx, http.StatusOK, "", "", routes.AccountUsername,
 		utils.T(ctx.Request.Context(), locales.LK_CommonSaved))
 }
 
@@ -90,17 +91,17 @@ func (h *DefaultHandler) ChangePassword(ctx *gin.Context) {
 	var model models.ChangePassword
 	_ = ctx.ShouldBind(&model)
 	if ok, msgs := model.IsValid(); !ok {
-		h.invalidAccountForm(ctx, pages.AccountAtPassword, msgs)
+		h.invalidAccountForm(ctx, routes.AccountPassword, msgs)
 		return
 	}
 	if err := h.service.ChangePassword(ctx, userID, model.Current, model.Password); err != nil {
-		h.accountError(ctx, pages.AccountAtPassword, err)
+		h.accountError(ctx, routes.AccountPassword, err)
 		return
 	}
 	// every session was deleted, this one comes back under a new id
 	s := sessions.FromGinContext(ctx)
 	s.Login(s.SessionInfo)
-	h.renderAccount(ctx, http.StatusOK, "", "", pages.AccountAtPassword,
+	h.renderAccount(ctx, http.StatusOK, "", "", routes.AccountPassword,
 		utils.T(ctx.Request.Context(), locales.LK_AccountPasswordChanged))
 }
 
@@ -114,15 +115,15 @@ func (h *DefaultHandler) ChangeEmail(ctx *gin.Context) {
 	var model models.ChangeEmail
 	_ = ctx.ShouldBind(&model)
 	if ok, msgs := model.IsValid(); !ok {
-		h.invalidAccountForm(ctx, pages.AccountAtEmail, msgs)
+		h.invalidAccountForm(ctx, routes.AccountEmail, msgs)
 		return
 	}
 	// the request context carries the language of the email
 	if err := h.service.RequestEmailChange(ctx.Request.Context(), userID, model.Current, model.Email); err != nil {
-		h.accountError(ctx, pages.AccountAtEmail, err)
+		h.accountError(ctx, routes.AccountEmail, err)
 		return
 	}
-	h.renderAccount(ctx, http.StatusOK, "", "", pages.AccountAtEmail,
+	h.renderAccount(ctx, http.StatusOK, "", "", routes.AccountEmail,
 		utils.T(ctx.Request.Context(), locales.LK_AccountEmailSent, services.NormalizeEmail(model.Email)))
 }
 
@@ -139,7 +140,7 @@ func (h *DefaultHandler) SignOutEverywhere(ctx *gin.Context) {
 	}
 	s := sessions.FromGinContext(ctx)
 	s.Logout()
-	reload(ctx, g.RouteLogin)
+	reload(ctx, routes.Login)
 }
 
 // DeleteAccount deletes the account after the current password, signs out and shows when it is erased
@@ -161,22 +162,22 @@ func (h *DefaultHandler) DeleteAccount(ctx *gin.Context) {
 		if len(blocked.Unsettled) > 0 {
 			lines = append(lines, utils.T(c, locales.LK_AccountDeleteBlockedUnsettled, strings.Join(blocked.Unsettled, ", ")))
 		}
-		h.renderAccount(ctx, http.StatusUnprocessableEntity, pages.AccountAtDeleteAccount, strings.Join(lines, "\n"), "", "")
+		h.renderAccount(ctx, http.StatusUnprocessableEntity, routes.AccountDelete, strings.Join(lines, "\n"), "", "")
 		return
 	}
 	if err != nil {
-		h.accountError(ctx, pages.AccountAtDeleteAccount, err)
+		h.accountError(ctx, routes.AccountDelete, err)
 		return
 	}
 	s := sessions.FromGinContext(ctx)
 	s.Logout()
-	reload(ctx, g.RouteAccountDeleted)
+	reload(ctx, routes.AccountDeleted)
 }
 
 // PageAccountDeleted is where [DefaultHandler.DeleteAccount] ends, signed out
 func (h *DefaultHandler) PageAccountDeleted(ctx *gin.Context) {
 	notice(ctx, http.StatusOK, locales.LK_AccountDeletedTitle,
-		locales.LK_AccountDeletedDescription, g.RouteLogin, locales.LK_LoginPageSignIn)
+		locales.LK_AccountDeletedDescription, routes.Login, locales.LK_LoginPageSignIn)
 }
 
 // ConfirmEmailChange makes the email of the ?token= link the user's, signed in or not
@@ -185,14 +186,14 @@ func (h *DefaultHandler) ConfirmEmailChange(ctx *gin.Context) {
 	switch {
 	case errors.Is(err, g.ErrorTokenInvalid):
 		notice(ctx, http.StatusNotFound, locales.LK_CommonLinkInvalid,
-			locales.LK_ConfirmEmailInvalidDescription, "/", locales.LK_VerifyEmailContinue)
+			locales.LK_ConfirmEmailInvalidDescription, routes.Home, locales.LK_VerifyEmailContinue)
 	case errors.Is(err, g.ErrorAccountAlreadyExists):
 		notice(ctx, http.StatusConflict, locales.LK_ConfirmEmailTakenTitle,
-			locales.LK_ConfirmEmailTakenDescription, "/", locales.LK_VerifyEmailContinue)
+			locales.LK_ConfirmEmailTakenDescription, routes.Home, locales.LK_VerifyEmailContinue)
 	case err != nil:
 		InternalError(ctx, err)
 	default:
 		notice(ctx, http.StatusOK, locales.LK_ConfirmEmailDoneTitle,
-			locales.LK_ConfirmEmailDoneDescription, "/", locales.LK_VerifyEmailContinue)
+			locales.LK_ConfirmEmailDoneDescription, routes.Home, locales.LK_VerifyEmailContinue)
 	}
 }

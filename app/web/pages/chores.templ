@@ -15,6 +15,7 @@ import "roommates/internal/services"
 import "roommates/internal/events"
 import g "roommates/internal/config"
 import "roommates/internal/locales"
+import "roommates/internal/routes"
 import "roommates/internal/utils"
 
 // ChoresPage lists the household's chores soonest due first, with the form of a new one folded away
@@ -59,9 +60,9 @@ templ choreNew(actor services.Membership, members []dbqueries.ListActiveMembersR
 		<div class="mt-3">
 			<form
 				id="chore-new-form"
-				action={ choreURL(actor.HouseholdID) }
+				action={ routes.URL(routes.Chores, actor.HouseholdID) }
 				method="post"
-				hx-post={ string(choreURL(actor.HouseholdID)) }
+				hx-post={ routes.URL(routes.Chores, actor.HouseholdID) }
 				hx-target="#chore-new"
 				hx-select="#chore-new"
 				hx-select-oob="#chores, #chores-notice"
@@ -86,7 +87,7 @@ templ choreCard(actor services.Membership, c services.Chore) {
 	@card.Card(card.Props{Class: "gap-3"}) {
 		@card.Content(card.ContentProps{Class: "flex flex-col gap-3"}) {
 			<div class="flex flex-col gap-1">
-				<a href={ choreURL(actor.HouseholdID, c.ID.String()) } class="min-h-6 font-heading text-lg font-semibold break-words underline-offset-4 hover:underline">{ c.Title }</a>
+				<a href={ routes.URL(routes.Chore, actor.HouseholdID, c.ID) } class="min-h-6 font-heading text-lg font-semibold break-words underline-offset-4 hover:underline">{ c.Title }</a>
 				<p class="text-sm text-muted-foreground">{ choreSchedule(ctx, c) }</p>
 			</div>
 			<div class="flex flex-wrap items-center gap-x-3 gap-y-2">
@@ -96,20 +97,21 @@ templ choreCard(actor services.Membership, c services.Chore) {
 				}
 			</div>
 			<div class="flex flex-wrap gap-2">
-				@choreAction(actor, c, "done", dueField, locales.LK_ChoresDone, button.VariantDefault)
-				@choreAction(actor, c, "skip", dueField, locales.LK_ChoresSkip, button.VariantSecondary)
+				@choreAction(actor, c, routes.ChoreDone, dueField, locales.LK_ChoresDone, button.VariantDefault)
+				@choreAction(actor, c, routes.ChoreSkip, dueField, locales.LK_ChoresSkip, button.VariantSecondary)
 				if choreCanPass(c) {
-					@choreAction(actor, c, "pass", dueField, locales.LK_ChoresPass, button.VariantOutline)
+					@choreAction(actor, c, routes.ChorePass, dueField, locales.LK_ChoresPass, button.VariantOutline)
 				}
 			</div>
 		}
 	}
 }
 
-// choreAction is a button that posts the turn it was shown with, its due date and assignee, so an
-// action on a turn that already moved on does nothing
-templ choreAction(actor services.Membership, c services.Chore, action, due string, label locales.LK, variant button.Variant) {
-	<form action={ choreURL(actor.HouseholdID, c.ID.String(), action) } method="post" { choreSwapList(choreURL(actor.HouseholdID, c.ID.String(), action))... }>
+// choreAction is a button that posts to route (a routes.Chore* of one chore) the turn it was shown
+// with, its due date and assignee, so an action on a turn that already moved on does nothing
+templ choreAction(actor services.Membership, c services.Chore, route, due string, label locales.LK, variant button.Variant) {
+	{{ action := routes.URL(route, actor.HouseholdID, c.ID) }}
+	<form action={ action } method="post" { choreSwapList(action)... }>
 		<input type="hidden" name="due" value={ due }/>
 		<input type="hidden" name="assignee" value={ c.AssigneeID.String() }/>
 		@button.Button(button.Props{Type: button.TypeSubmit, Variant: variant, Class: "h-11 px-4"}) {
@@ -122,11 +124,11 @@ templ choreAction(actor services.Membership, c services.Chore, action, due strin
 templ ChorePage(actor services.Membership, d services.ChoreDetail, members []dbqueries.ListActiveMembersRow, f ChoreForm, notice string) {
 	{{ c := d.Chore }}
 	@appShell(c.Title, &HouseholdNav{HouseholdID: actor.HouseholdID, Section: SectionChores}) {
-		@doorplateHeader(choreURL(actor.HouseholdID), utils.T(ctx, locales.LK_ChoresTitle), c.Title)
+		@doorplateHeader(routes.URL(routes.Chores, actor.HouseholdID),utils.T(ctx, locales.LK_ChoresTitle), c.Title)
 		@choreEdit(actor, c, members, f)
 		@choreRota(actor, d)
 		<form
-			action={ choreURL(actor.HouseholdID, c.ID.String(), "delete") }
+			action={ routes.URL(routes.ChoreDelete, actor.HouseholdID, c.ID) }
 			method="post"
 			hx-boost="true"
 			hx-confirm={ utils.T(ctx, locales.LK_ChoresDeleteConfirm) }
@@ -143,9 +145,9 @@ templ ChorePage(actor services.Membership, d services.ChoreDetail, members []dbq
 templ choreEdit(actor services.Membership, c services.Chore, members []dbqueries.ListActiveMembersRow, f ChoreForm) {
 	<form
 		id="chore-edit"
-		action={ choreURL(actor.HouseholdID, c.ID.String()) }
+		action={ routes.URL(routes.Chore, actor.HouseholdID, c.ID) }
 		method="post"
-		hx-post={ string(choreURL(actor.HouseholdID, c.ID.String())) }
+		hx-post={ routes.URL(routes.Chore, actor.HouseholdID, c.ID) }
 		hx-target="this"
 		hx-select="#chore-edit"
 		hx-swap="outerHTML"
@@ -204,9 +206,9 @@ templ choreRota(actor services.Membership, d services.ChoreDetail) {
 					}
 				</ul>
 				<form
-					action={ choreURL(actor.HouseholdID, c.ID.String(), "assign") }
+					action={ routes.URL(routes.ChoreAssign, actor.HouseholdID, c.ID) }
 					method="post"
-					{ choreSwapRota(choreURL(actor.HouseholdID, c.ID.String(), "assign"))... }
+					{ choreSwapRota(routes.URL(routes.ChoreAssign, actor.HouseholdID, c.ID))... }
 					class="flex flex-col gap-2"
 				>
 					@field.Field() {
@@ -249,7 +251,7 @@ templ choreRota(actor services.Membership, d services.ChoreDetail) {
 
 // choreMove moves a member one place in the rota, an icon button with the name as its label
 templ choreMove(actor services.Membership, c services.Chore, m services.ChoreMember, dir string, disabled bool) {
-	{{ action := choreURL(actor.HouseholdID, c.ID.String(), "members", m.UserID.String(), "move") }}
+	{{ action := routes.URL(routes.ChoreMemberMove, actor.HouseholdID, c.ID, m.UserID) }}
 	<form action={ action } method="post" { choreSwapRota(action)... }>
 		<input type="hidden" name="dir" value={ dir }/>
 		@button.Button(button.Props{

@@ -14,9 +14,9 @@ import "roommates/web/components"
 import "roommates/web/components/alertdialog"
 import "roommates/web/components/badge"
 import "roommates/web/components/button"
-import g "roommates/internal/config"
 import "roommates/internal/events"
 import "roommates/internal/locales"
+import "roommates/internal/routes"
 import "roommates/internal/utils"
 import "github.com/jackc/pgx/v5/pgtype"
 import "strconv"
@@ -201,9 +201,9 @@ func appShell(title string, nav *HouseholdNav) templ.Component {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var9 string
-				templ_7745c5c3_Var9, templ_7745c5c3_Err = templruntime.NewAttributeExpression(string(householdURL(nav.HouseholdID, "events"))).Resolve(ctx)
+				templ_7745c5c3_Var9, templ_7745c5c3_Err = templruntime.NewAttributeExpression(routes.URL(routes.HouseholdEvents, nav.HouseholdID)).Resolve(ctx)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/layout.templ`, Line: 63, Col: 65}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/layout.templ`, Line: 63, Col: 69}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var9)
 				if templ_7745c5c3_Err != nil {
@@ -605,27 +605,27 @@ func householdNav(nav HouseholdNav) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = householdNavItem(householdURL(nav.HouseholdID), locales.LK_NavShopping, "shopping", nav.Section == SectionShopping, "").Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = householdNavItem(routes.URL(routes.Household, nav.HouseholdID), locales.LK_NavShopping, "shopping", nav.Section == SectionShopping, "").Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = householdNavItem(householdURL(nav.HouseholdID, "expenses"), locales.LK_NavExpenses, "expenses", nav.Section == SectionExpenses, desktopOnly).Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = householdNavItem(routes.URL(routes.Expenses, nav.HouseholdID), locales.LK_NavExpenses, "expenses", nav.Section == SectionExpenses, desktopOnly).Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = householdNavItem(householdURL(nav.HouseholdID, "notes"), locales.LK_NavNotes, "notes", nav.Section == SectionNotes, "").Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = householdNavItem(routes.URL(routes.Notes, nav.HouseholdID), locales.LK_NavNotes, "notes", nav.Section == SectionNotes, "").Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = householdNavItem(householdURL(nav.HouseholdID, "files"), locales.LK_NavFiles, "files", nav.Section == SectionFiles, desktopOnly).Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = householdNavItem(routes.URL(routes.Files, nav.HouseholdID), locales.LK_NavFiles, "files", nav.Section == SectionFiles, desktopOnly).Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = householdNavItem(householdURL(nav.HouseholdID, "chores"), locales.LK_NavChores, "chores", nav.Section == SectionChores, desktopOnly).Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = householdNavItem(routes.URL(routes.Chores, nav.HouseholdID), locales.LK_NavChores, "chores", nav.Section == SectionChores, desktopOnly).Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = householdNavItem(householdURL(nav.HouseholdID, "calendar"), locales.LK_NavCalendar, "calendar", nav.Section == SectionCalendar, desktopOnly).Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = householdNavItem(routes.URL(routes.Calendar, nav.HouseholdID), locales.LK_NavCalendar, "calendar", nav.Section == SectionCalendar, desktopOnly).Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -653,7 +653,7 @@ func householdNav(nav HouseholdNav) templ.Component {
 			}
 			return nil
 		})
-		templ_7745c5c3_Err = householdNavItem(householdURL(nav.HouseholdID, "chat"), locales.LK_NavChat, "chat", nav.Section == SectionChat, "").Render(templ.WithChildren(ctx, templ_7745c5c3_Var23), templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = householdNavItem(routes.URL(routes.Chat, nav.HouseholdID), locales.LK_NavChat, "chat", nav.Section == SectionChat, "").Render(templ.WithChildren(ctx, templ_7745c5c3_Var23), templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -701,15 +701,15 @@ func householdNav(nav HouseholdNav) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = householdNavItem(householdURL(nav.HouseholdID, "people"), locales.LK_NavPeople, "people", nav.Section == SectionPeople, "").Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = householdNavItem(routes.URL(routes.HouseholdPeople, nav.HouseholdID), locales.LK_NavPeople, "people", nav.Section == SectionPeople, "").Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = householdNavItem(householdURL(nav.HouseholdID, "activity"), locales.LK_ActivityTitle, "activity", nav.Section == SectionActivity, "").Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = householdNavItem(routes.URL(routes.HouseholdActivity, nav.HouseholdID), locales.LK_ActivityTitle, "activity", nav.Section == SectionActivity, "").Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = householdNavItem(householdURL(nav.HouseholdID, "settings"), locales.LK_NavSettings, "settings", nav.Section == SectionSettings, "").Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = householdNavItem(routes.URL(routes.HouseholdSettings, nav.HouseholdID), locales.LK_NavSettings, "settings", nav.Section == SectionSettings, "").Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -771,7 +771,7 @@ func householdNav(nav HouseholdNav) templ.Component {
 
 // householdNavItem is an icon over its label on the phone tab bar and a row in the sidebar,
 // children (the unread badge) sit by the icon on phones and at the end of the row on desktop
-func householdNavItem(href templ.SafeURL, label locales.LK, icon string, current bool, class string) templ.Component {
+func householdNavItem(href string, label locales.LK, icon string, current bool, class string) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -1080,31 +1080,31 @@ func householdMenu(nav HouseholdNav) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = householdMenuItem(householdURL(nav.HouseholdID, "expenses"), locales.LK_NavExpenses, "expenses", nav.Section == SectionExpenses).Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = householdMenuItem(routes.URL(routes.Expenses, nav.HouseholdID), locales.LK_NavExpenses, "expenses", nav.Section == SectionExpenses).Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = householdMenuItem(householdURL(nav.HouseholdID, "files"), locales.LK_NavFiles, "files", nav.Section == SectionFiles).Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = householdMenuItem(routes.URL(routes.Files, nav.HouseholdID), locales.LK_NavFiles, "files", nav.Section == SectionFiles).Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = householdMenuItem(householdURL(nav.HouseholdID, "chores"), locales.LK_NavChores, "chores", nav.Section == SectionChores).Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = householdMenuItem(routes.URL(routes.Chores, nav.HouseholdID), locales.LK_NavChores, "chores", nav.Section == SectionChores).Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = householdMenuItem(householdURL(nav.HouseholdID, "calendar"), locales.LK_NavCalendar, "calendar", nav.Section == SectionCalendar).Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = householdMenuItem(routes.URL(routes.Calendar, nav.HouseholdID), locales.LK_NavCalendar, "calendar", nav.Section == SectionCalendar).Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = householdMenuItem(householdURL(nav.HouseholdID, "people"), locales.LK_NavPeople, "people", nav.Section == SectionPeople).Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = householdMenuItem(routes.URL(routes.HouseholdPeople, nav.HouseholdID), locales.LK_NavPeople, "people", nav.Section == SectionPeople).Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = householdMenuItem(householdURL(nav.HouseholdID, "activity"), locales.LK_ActivityTitle, "activity", nav.Section == SectionActivity).Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = householdMenuItem(routes.URL(routes.HouseholdActivity, nav.HouseholdID), locales.LK_ActivityTitle, "activity", nav.Section == SectionActivity).Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = householdMenuItem(householdURL(nav.HouseholdID, "settings"), locales.LK_NavSettings, "settings", nav.Section == SectionSettings).Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = householdMenuItem(routes.URL(routes.HouseholdSettings, nav.HouseholdID), locales.LK_NavSettings, "settings", nav.Section == SectionSettings).Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1124,7 +1124,7 @@ func householdMenu(nav HouseholdNav) templ.Component {
 	})
 }
 
-func householdMenuItem(href templ.SafeURL, label locales.LK, icon string, current bool) templ.Component {
+func householdMenuItem(href string, label locales.LK, icon string, current bool) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -1450,9 +1450,9 @@ func ChatBadge(householdID pgtype.UUID, unread int64) templ.Component {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var50 string
-		templ_7745c5c3_Var50, templ_7745c5c3_Err = templruntime.NewAttributeExpression(string(householdURL(householdID, "chat", "badge"))).Resolve(ctx)
+		templ_7745c5c3_Var50, templ_7745c5c3_Err = templruntime.NewAttributeExpression(routes.URL(routes.ChatBadge, householdID)).Resolve(ctx)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/layout.templ`, Line: 382, Col: 82}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/layout.templ`, Line: 382, Col: 73}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var50)
 		if templ_7745c5c3_Err != nil {
@@ -1465,7 +1465,7 @@ func ChatBadge(householdID pgtype.UUID, unread int64) templ.Component {
 		var templ_7745c5c3_Var51 string
 		templ_7745c5c3_Var51, templ_7745c5c3_Err = templruntime.NewAttributeExpression(sseTrigger([]string{events.TopicChat, events.TopicRead})).Resolve(ctx)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/layout.templ`, Line: 382, Col: 154}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/layout.templ`, Line: 382, Col: 145}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var51)
 		if templ_7745c5c3_Err != nil {
@@ -1853,9 +1853,9 @@ func householdSwitcher(current pgtype.UUID, class string) templ.Component {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var69 string
-				templ_7745c5c3_Var69, templ_7745c5c3_Err = templruntime.NewAttributeExpression(householdURL(h.ID)).ResolveURL(ctx)
+				templ_7745c5c3_Var69, templ_7745c5c3_Err = templruntime.NewAttributeExpression(routes.URL(routes.Household, h.ID)).ResolveURL(ctx)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/layout.templ`, Line: 461, Col: 31}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/layout.templ`, Line: 461, Col: 47}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var69)
 				if templ_7745c5c3_Err != nil {
@@ -2092,7 +2092,7 @@ func logoutForm() templ.Component {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var80 string
-		templ_7745c5c3_Var80, templ_7745c5c3_Err = templruntime.NewAttributeExpression(g.RouteLogout).ResolveURL(ctx)
+		templ_7745c5c3_Var80, templ_7745c5c3_Err = templruntime.NewAttributeExpression(routes.Logout).ResolveURL(ctx)
 		if templ_7745c5c3_Err != nil {
 			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/layout.templ`, Line: 495, Col: 29}
 		}
@@ -2306,7 +2306,7 @@ func toast(message string) templ.Component {
 const toastClass = "toast fixed right-[max(1rem,env(safe-area-inset-right))] bottom-[calc(6rem+env(safe-area-inset-bottom))] left-[max(1rem,env(safe-area-inset-left))] z-30 mx-auto flex w-fit max-w-sm items-center gap-2.5 rounded-3xl bg-foreground py-3 pr-5 pl-4 text-sm font-medium text-background shadow-lg lg:right-6 lg:bottom-6 lg:left-auto lg:mx-0"
 
 // doorplateHeader is a back link and the name of what the page is about, children sit beside the name
-func doorplateHeader(back templ.SafeURL, backText, name string) templ.Component {
+func doorplateHeader(back string, backText, name string) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -2365,7 +2365,7 @@ var dirtySaveScript = templ.NewOnceHandle()
 
 // nameHeader is [doorplateHeader] with the name edited in place, action gets it as "name",
 // Save shows once it is changed (dirty-save.js), Enter saves without it, children follow the input
-func nameHeader(back templ.SafeURL, backText string, action templ.SafeURL, name string, maxLength int, label string) templ.Component {
+func nameHeader(back string, backText string, action string, name string, maxLength int, label string) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -2574,7 +2574,7 @@ func deleteButton(label locales.LK) templ.Component {
 	})
 }
 
-func backLink(back templ.SafeURL, backText string) templ.Component {
+func backLink(back string, backText string) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {

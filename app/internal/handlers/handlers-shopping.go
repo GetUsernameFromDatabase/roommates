@@ -5,6 +5,7 @@ import (
 	"net/http"
 	g "roommates/internal/config"
 	"roommates/internal/locales"
+	"roommates/internal/routes"
 	"roommates/internal/services"
 	"roommates/internal/utils"
 	"roommates/web/pages"
@@ -12,10 +13,6 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5/pgtype"
 )
-
-func shoppingListPath(householdID, listID pgtype.UUID) string {
-	return householdPath(householdID) + "/lists/" + listID.String()
-}
 
 // CreateShoppingList opens the new list, an invalid name shows on the household page
 func (h *DefaultHandler) CreateShoppingList(ctx *gin.Context) {
@@ -30,11 +27,11 @@ func (h *DefaultHandler) CreateShoppingList(ctx *gin.Context) {
 		InternalError(ctx, err)
 		return
 	}
-	Redirect(ctx, shoppingListPath(actor.HouseholdID, listID))
+	Redirect(ctx, routes.URL(routes.ShoppingList, actor.HouseholdID, listID))
 }
 
 func (h *DefaultHandler) PageShoppingList(ctx *gin.Context) {
-	listID, err := utils.ParseUUID(ctx.Param(g.ParamListID))
+	listID, err := utils.ParseUUID(ctx.Param(routes.ParamListID))
 	if err != nil {
 		RenderTemplStatus(ctx, http.StatusNotFound, pages.NotFound())
 		return
@@ -67,7 +64,7 @@ type listForm struct {
 // htmx requests get the page itself so they can swap in the list without a reload
 func (h *DefaultHandler) shoppingAction(ctx *gin.Context, done listForm,
 	action func(actor services.Membership, listID pgtype.UUID) error) {
-	listID, err := utils.ParseUUID(ctx.Param(g.ParamListID))
+	listID, err := utils.ParseUUID(ctx.Param(routes.ParamListID))
 	if err != nil {
 		RenderTemplStatus(ctx, http.StatusNotFound, pages.NotFound())
 		return
@@ -78,7 +75,7 @@ func (h *DefaultHandler) shoppingAction(ctx *gin.Context, done listForm,
 	case err == nil && IsRequestHTMX(ctx):
 		h.renderShoppingList(ctx, http.StatusOK, listID, done)
 	case err == nil:
-		Redirect(ctx, shoppingListPath(actor.HouseholdID, listID))
+		Redirect(ctx, routes.URL(routes.ShoppingList, actor.HouseholdID, listID))
 	case errors.Is(err, g.ErrorInvalidInput):
 		// only adding an item takes free text, the other actions post no text or qty
 		h.renderShoppingList(ctx, http.StatusUnprocessableEntity, listID, listForm{
@@ -99,7 +96,7 @@ func (h *DefaultHandler) shoppingAction(ctx *gin.Context, done listForm,
 // shoppingItemAction is [DefaultHandler.shoppingAction] with :itemID parsed
 func (h *DefaultHandler) shoppingItemAction(ctx *gin.Context,
 	action func(actor services.Membership, listID, itemID pgtype.UUID) error) {
-	itemID, err := utils.ParseUUID(ctx.Param(g.ParamItemID))
+	itemID, err := utils.ParseUUID(ctx.Param(routes.ParamItemID))
 	if err != nil {
 		RenderTemplStatus(ctx, http.StatusNotFound, pages.NotFound())
 		return
@@ -111,7 +108,7 @@ func (h *DefaultHandler) shoppingItemAction(ctx *gin.Context,
 
 // DeleteShoppingList goes back to the shopping lists
 func (h *DefaultHandler) DeleteShoppingList(ctx *gin.Context) {
-	listID, err := utils.ParseUUID(ctx.Param(g.ParamListID))
+	listID, err := utils.ParseUUID(ctx.Param(routes.ParamListID))
 	if err != nil {
 		RenderTemplStatus(ctx, http.StatusNotFound, pages.NotFound())
 		return
@@ -120,7 +117,7 @@ func (h *DefaultHandler) DeleteShoppingList(ctx *gin.Context) {
 	err = h.service.DeleteShoppingList(ctx, actor, listID)
 	switch {
 	case err == nil:
-		Redirect(ctx, householdPath(actor.HouseholdID))
+		Redirect(ctx, routes.URL(routes.Household, actor.HouseholdID))
 	case errors.Is(err, g.ErrorNotFound):
 		RenderTemplStatus(ctx, http.StatusNotFound, pages.NotFound())
 	default:
@@ -130,7 +127,7 @@ func (h *DefaultHandler) DeleteShoppingList(ctx *gin.Context) {
 
 // RenameShoppingList shows the list again, an invalid name shows on it
 func (h *DefaultHandler) RenameShoppingList(ctx *gin.Context) {
-	listID, err := utils.ParseUUID(ctx.Param(g.ParamListID))
+	listID, err := utils.ParseUUID(ctx.Param(routes.ParamListID))
 	if err != nil {
 		RenderTemplStatus(ctx, http.StatusNotFound, pages.NotFound())
 		return
@@ -139,7 +136,7 @@ func (h *DefaultHandler) RenameShoppingList(ctx *gin.Context) {
 	err = h.service.RenameShoppingList(ctx, actor, listID, ctx.PostForm("name"))
 	switch {
 	case err == nil:
-		stay(ctx, shoppingListPath(actor.HouseholdID, listID))
+		stay(ctx, routes.URL(routes.ShoppingList, actor.HouseholdID, listID))
 	case errors.Is(err, g.ErrorInvalidInput):
 		h.renderShoppingList(ctx, http.StatusUnprocessableEntity, listID, listForm{
 			errorMessage:  utils.T(ctx.Request.Context(), locales.LK_ShoppingNameLength, services.MaxShoppingListNameLength),
@@ -198,5 +195,5 @@ func (h *DefaultHandler) DeleteShoppingItem(ctx *gin.Context) {
 		pageError(ctx, err)
 		return
 	}
-	Redirect(ctx, shoppingListPath(actor.HouseholdID, listID))
+	Redirect(ctx, routes.URL(routes.ShoppingList, actor.HouseholdID, listID))
 }

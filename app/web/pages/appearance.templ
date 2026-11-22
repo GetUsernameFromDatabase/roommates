@@ -6,6 +6,7 @@ import "roommates/web/components/button"
 import "roommates/web/components/field"
 import g "roommates/internal/config"
 import "roommates/internal/locales"
+import "roommates/internal/routes"
 import "roommates/internal/utils"
 
 var themeNames = map[string]locales.LK{
@@ -30,9 +31,9 @@ templ AppearanceForm(next string) {
 	{{ a := utils.GetAppearance(ctx) }}
 	// autocomplete off: after a reload the radios show what the server has, not what the browser remembers
 	<form
-		action={ g.RouteAppearance }
+		action={ routes.Appearance }
 		method="post"
-		hx-post={ g.RouteAppearance }
+		hx-post={ routes.Appearance }
 		hx-trigger="change"
 		hx-swap="none"
 		autocomplete="off"

@@ -5,6 +5,7 @@ import (
 	"net/http"
 	g "roommates/internal/config"
 	"roommates/internal/locales"
+	"roommates/internal/routes"
 	"roommates/internal/services"
 	"roommates/internal/utils"
 	"roommates/web/pages"
@@ -13,14 +14,6 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5/pgtype"
 )
-
-func notesPath(householdID pgtype.UUID) string {
-	return householdPath(householdID) + "/notes"
-}
-
-func notePath(householdID, noteID pgtype.UUID) string {
-	return notesPath(householdID) + "/" + noteID.String()
-}
 
 func noteFromForm(ctx *gin.Context) services.NoteInput {
 	return services.NoteInput{
@@ -72,7 +65,7 @@ func (h *DefaultHandler) CreateNote(ctx *gin.Context) {
 	noteID, err := h.service.CreateNote(ctx, actor, in)
 	switch {
 	case err == nil:
-		Redirect(ctx, notePath(actor.HouseholdID, noteID))
+		Redirect(ctx, routes.URL(routes.Note, actor.HouseholdID, noteID))
 	case errors.Is(err, g.ErrorInvalidInput):
 		RenderTemplStatus(ctx, http.StatusUnprocessableEntity, pages.NoteEditor(actor,
 			pages.NoteForm{NoteID: pgtype.UUID{}, Input: in, IsAuthor: true, ErrorMessage: noteLengthMessage(ctx)}))
@@ -93,7 +86,7 @@ func (h *DefaultHandler) RenderNoteBody(ctx *gin.Context) {
 
 // loadNote gets the :noteID note, or shows the error page and returns false
 func (h *DefaultHandler) loadNote(ctx *gin.Context) (services.Note, bool) {
-	noteID, err := utils.ParseUUID(ctx.Param(g.ParamNoteID))
+	noteID, err := utils.ParseUUID(ctx.Param(routes.ParamNoteID))
 	if err != nil {
 		RenderTemplStatus(ctx, http.StatusNotFound, pages.NotFound())
 		return services.Note{}, false
@@ -144,7 +137,7 @@ func (h *DefaultHandler) PageEditNote(ctx *gin.Context) {
 
 // UpdateNote overwrites the note with the form, last write wins
 func (h *DefaultHandler) UpdateNote(ctx *gin.Context) {
-	noteID, err := utils.ParseUUID(ctx.Param(g.ParamNoteID))
+	noteID, err := utils.ParseUUID(ctx.Param(routes.ParamNoteID))
 	if err != nil {
 		RenderTemplStatus(ctx, http.StatusNotFound, pages.NotFound())
 		return
@@ -154,7 +147,7 @@ func (h *DefaultHandler) UpdateNote(ctx *gin.Context) {
 	err = h.service.UpdateNote(ctx, actor, noteID, in)
 	switch {
 	case err == nil:
-		Redirect(ctx, notePath(actor.HouseholdID, noteID))
+		Redirect(ctx, routes.URL(routes.Note, actor.HouseholdID, noteID))
 	case errors.Is(err, g.ErrorInvalidInput):
 		// loaded only here, to know whether to show the private switch
 		n, ok := h.loadNote(ctx)
@@ -175,7 +168,7 @@ func (h *DefaultHandler) UpdateNote(ctx *gin.Context) {
 // noteAction runs an action on the :noteID note and goes to next with done ([stay] or [Redirect])
 func (h *DefaultHandler) noteAction(ctx *gin.Context, done func(*gin.Context, string), next func(householdID, noteID pgtype.UUID) string,
 	action func(actor services.Membership, noteID pgtype.UUID) error) {
-	noteID, err := utils.ParseUUID(ctx.Param(g.ParamNoteID))
+	noteID, err := utils.ParseUUID(ctx.Param(routes.ParamNoteID))
 	if err != nil {
 		RenderTemplStatus(ctx, http.StatusNotFound, pages.NotFound())
 		return
@@ -190,13 +183,14 @@ func (h *DefaultHandler) noteAction(ctx *gin.Context, done func(*gin.Context, st
 
 // SetNotePinned takes the wanted state, not a toggle, so a stale page cannot undo others
 func (h *DefaultHandler) SetNotePinned(ctx *gin.Context) {
-	h.noteAction(ctx, stay, notePath, func(actor services.Membership, noteID pgtype.UUID) error {
-		return h.service.SetNotePinned(ctx, actor, noteID, ctx.PostForm("pinned") == "1")
-	})
+	h.noteAction(ctx, stay, func(householdID, noteID pgtype.UUID) string { return routes.URL(routes.Note, householdID, noteID) },
+		func(actor services.Membership, noteID pgtype.UUID) error {
+			return h.service.SetNotePinned(ctx, actor, noteID, ctx.PostForm("pinned") == "1")
+		})
 }
 
 func (h *DefaultHandler) DeleteNote(ctx *gin.Context) {
-	h.noteAction(ctx, Redirect, func(householdID, _ pgtype.UUID) string { return notesPath(householdID) },
+	h.noteAction(ctx, Redirect, func(householdID, _ pgtype.UUID) string { return routes.URL(routes.Notes, householdID) },
 		func(actor services.Membership, noteID pgtype.UUID) error {
 			return h.service.DeleteNote(ctx, actor, noteID)
 		})

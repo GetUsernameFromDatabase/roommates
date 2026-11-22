@@ -6,6 +6,7 @@ import (
 	g "roommates/internal/config"
 	"roommates/internal/db/dbqueries"
 	"roommates/internal/locales"
+	"roommates/internal/routes"
 	"roommates/internal/services"
 	"roommates/internal/utils"
 	"slices"
@@ -15,15 +16,6 @@ import (
 	"github.com/a-h/templ"
 	"github.com/jackc/pgx/v5/pgtype"
 )
-
-// householdURL is /h/:householdID followed by parts
-func householdURL(id pgtype.UUID, parts ...string) templ.SafeURL {
-	u := g.RouteHousehold + "/" + id.String()
-	for _, p := range parts {
-		u += "/" + url.PathEscape(p)
-	}
-	return templ.SafeURL(u)
-}
 
 // sseTrigger is the hx-trigger of server-sent events named topics,
 // and of live-resync when the page may have missed some (live-resync.js)
@@ -39,8 +31,8 @@ func unreadLabel(n int64) string {
 	return strconv.FormatInt(n, 10)
 }
 
-func inviteURL(code string) templ.SafeURL {
-	return templ.SafeURL(g.RouteInvite + "?" + url.Values{"code": {code}}.Encode())
+func inviteURL(code string) string {
+	return routes.Invite + "?" + url.Values{"code": {code}}.Encode()
 }
 
 // where on the people page the error of an action shows, next to that action
@@ -94,16 +86,11 @@ func RoleName(ctx context.Context, role string) string {
 	return utils.T(ctx, locales.LK_HouseholdRoleMember)
 }
 
-// shoppingListURL is /h/:householdID/lists/:listID followed by parts
-func shoppingListURL(actor services.Membership, l services.ShoppingList, parts ...string) templ.SafeURL {
-	return householdURL(actor.HouseholdID, append([]string{"lists", l.List.ID.String()}, parts...)...)
-}
-
-// shoppingSwap posts a form with htmx and swaps in only #shopping-list of the response,
+// shoppingSwap posts a form to action with htmx and swaps in only #shopping-list of the response,
 // as a view transition so a bought item slides down into the bag
-func shoppingSwap(actor services.Membership, l services.ShoppingList, parts ...string) templ.Attributes {
+func shoppingSwap(action string) templ.Attributes {
 	return templ.Attributes{
-		"hx-post":   string(shoppingListURL(actor, l, parts...)),
+		"hx-post":   action,
 		"hx-target": "#shopping-list",
 		"hx-select": "#shopping-list",
 		"hx-swap":   "outerHTML transition:true",

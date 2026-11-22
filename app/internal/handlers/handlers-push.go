@@ -6,6 +6,7 @@ import (
 	g "roommates/internal/config"
 	"roommates/internal/locales"
 	"roommates/internal/push"
+	"roommates/internal/routes"
 	"roommates/internal/utils"
 	"roommates/web/pages"
 
@@ -67,12 +68,12 @@ func (h *DefaultHandler) Manifest(ctx *gin.Context) {
 		"name":       name,
 		"short_name": name,
 		"lang":       utils.GetLocaleString(ctx.Request.Context()),
-		"start_url":  "/",
-		"scope":      "/",
+		"start_url":  routes.Home,
+		"scope":      routes.Home,
 		"display":    "standalone",
 		"icons": []gin.H{
-			{"src": "/icons/web-app-manifest-192x192.png", "sizes": "192x192", "type": "image/png"},
-			{"src": "/icons/web-app-manifest-512x512.png", "sizes": "512x512", "type": "image/png"},
+			{"src": routes.Icons + "/web-app-manifest-192x192.png", "sizes": "192x192", "type": "image/png"},
+			{"src": routes.Icons + "/web-app-manifest-512x512.png", "sizes": "512x512", "type": "image/png"},
 		},
 	})
 }

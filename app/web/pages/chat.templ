@@ -13,6 +13,7 @@ import "roommates/internal/db/dbqueries"
 import "roommates/internal/events"
 import "roommates/internal/services"
 import "roommates/internal/locales"
+import "roommates/internal/routes"
 import "roommates/internal/utils"
 import "github.com/jackc/pgx/v5/pgtype"
 import "net/url"
@@ -47,13 +48,13 @@ templ ChatPage(actor services.Membership, c services.Chat, older bool, search st
 		// edge to edge on phones; with the keyboard open it is what the keyboard leaves less main's padding,
 		// the live region's wrapper is display: contents so the log itself is the flex child that shrinks
 		<section id="chat" class={ utils.CN(sheetClass, "flex min-h-0 flex-1 flex-col gap-4 max-sm:-mx-4 max-sm:rounded-none max-sm:px-3 max-sm:py-3 max-sm:ring-0 in-data-keyboard:h-[calc(var(--visible-height)-1rem)] in-data-keyboard:flex-none [&>#chat-messages]:contents") }>
-			{{ chatURL := householdURL(actor.HouseholdID, "chat") }}
+			{{ chatURL := routes.URL(routes.Chat, actor.HouseholdID) }}
 			// "search", not "q" (the file picker's); the live region refetches the page's own URL, so it keeps the search
 			<form
 				role="search"
 				action={ chatURL }
 				method="get"
-				hx-get={ string(chatURL) }
+				hx-get={ chatURL }
 				hx-trigger="input delay:300ms"
 				hx-target="#chat-messages"
 				hx-select="#chat-messages"
@@ -75,10 +76,10 @@ templ ChatPage(actor services.Membership, c services.Chat, older bool, search st
 			}
 			<form
 				id="chat-composer"
-				action={ householdURL(actor.HouseholdID, "chat") }
+				action={ routes.URL(routes.Chat, actor.HouseholdID) }
 				method="post"
 				enctype="multipart/form-data"
-				hx-post={ string(householdURL(actor.HouseholdID, "chat")) }
+				hx-post={ routes.URL(routes.Chat, actor.HouseholdID) }
 				hx-target="#chat"
 				hx-select="#chat"
 				hx-swap="outerHTML"
@@ -95,11 +96,11 @@ templ ChatPage(actor services.Membership, c services.Chat, older bool, search st
 								@replySnippet(reply.Body)
 							</div>
 							@button.Button(button.Props{
-								Href:    string(householdURL(actor.HouseholdID, "chat")),
+								Href:    routes.URL(routes.Chat, actor.HouseholdID),
 								Variant: button.VariantGhost,
 								Size:    button.SizeIconLg,
 								Class:   "size-11",
-								Attributes: utils.MergeAttributes(chatReplySwap(householdURL(actor.HouseholdID, "chat")), templ.Attributes{
+								Attributes: utils.MergeAttributes(chatReplySwap(routes.URL(routes.Chat, actor.HouseholdID)),templ.Attributes{
 									"aria-label": utils.T(ctx, locales.LK_ChatCancelReply),
 								}),
 							}) {
@@ -151,7 +152,7 @@ templ ChatPage(actor services.Membership, c services.Chat, older bool, search st
 templ chatFilePicker(actor services.Membership) {
 	{{
 		picks := templ.Attributes{
-			"hx-get":    string(householdURL(actor.HouseholdID, "chat", "files")),
+			"hx-get":    routes.URL(routes.ChatFiles, actor.HouseholdID),
 			"hx-target": "#chat-file-picks",
 			"hx-select": "#chat-file-picks",
 			"hx-swap":   "outerHTML",
@@ -213,7 +214,7 @@ templ ChatFilePicks(actor services.Membership, files []dbqueries.ListFilesRow) {
 templ chatMessages(actor services.Membership, c services.Chat, older bool, search string) {
 	<div role="log" class="flex min-h-0 flex-1 flex-col-reverse gap-3 overflow-y-auto" tabindex="0" aria-label={ utils.T(ctx, locales.LK_ChatTitle) }>
 		if older {
-			<a href={ templ.SafeURL(string(householdURL(actor.HouseholdID, "chat")) + "?search=" + url.QueryEscape(search)) } class="inline-flex min-h-11 items-center self-center text-sm text-muted-foreground underline underline-offset-4 hover:text-foreground">
+			<a href={ routes.URL(routes.Chat, actor.HouseholdID) + "?search=" + url.QueryEscape(search) } class="inline-flex min-h-11 items-center self-center text-sm text-muted-foreground underline underline-offset-4 hover:text-foreground">
 				@components.T(locales.LK_ChatNewest)
 			</a>
 		}
@@ -284,16 +285,14 @@ templ chatMessages(actor services.Membership, c services.Chat, older bool, searc
 							// files sent together stay together: the images in one bubble, the other files in another
 							{{ images, others := splitFiles(m.Files) }}
 							if len(images) == 1 {
-								{{ href := householdURL(actor.HouseholdID, "files", images[0].ID.String()) }}
-								@bubble.Content(bubble.ContentProps{Href: string(href), Class: "p-1", Attributes: templ.Attributes{"draggable": "false"}}) {
-									<img src={ string(href) + "/thumb" } alt={ images[0].Name } loading="lazy" draggable="false" class="max-h-48 rounded-lg"/>
+								@bubble.Content(bubble.ContentProps{Href: routes.URL(routes.File, actor.HouseholdID, images[0].ID), Class: "p-1", Attributes: templ.Attributes{"draggable": "false"}}) {
+									<img src={ routes.URL(routes.FileThumb, actor.HouseholdID, images[0].ID) } alt={ images[0].Name } loading="lazy" draggable="false" class="max-h-48 rounded-lg"/>
 								}
 							} else if len(images) > 1 {
 								@bubble.Content(bubble.ContentProps{Class: "grid w-64 max-w-full grid-cols-2 gap-1 p-1"}) {
 									for _, f := range images {
-										{{ href := householdURL(actor.HouseholdID, "files", f.ID.String()) }}
-										<a href={ href } draggable="false" class="rounded-lg outline-none focus-visible:ring-3 focus-visible:ring-ring/50">
-											<img src={ string(href) + "/thumb" } alt={ f.Name } loading="lazy" draggable="false" class="aspect-square size-full rounded-lg object-cover"/>
+										<a href={ routes.URL(routes.File, actor.HouseholdID, f.ID) } draggable="false" class="rounded-lg outline-none focus-visible:ring-3 focus-visible:ring-ring/50">
+											<img src={ routes.URL(routes.FileThumb, actor.HouseholdID, f.ID) } alt={ f.Name } loading="lazy" draggable="false" class="aspect-square size-full rounded-lg object-cover"/>
 										</a>
 									}
 								}
@@ -301,7 +300,7 @@ templ chatMessages(actor services.Membership, c services.Chat, older bool, searc
 							if len(others) > 0 {
 								@bubble.Content(bubble.ContentProps{Class: "flex flex-col gap-1"}) {
 									for _, f := range others {
-										<a href={ householdURL(actor.HouseholdID, "files", f.ID.String()) } class="underline underline-offset-4">
+										<a href={ routes.URL(routes.File, actor.HouseholdID, f.ID) } class="underline underline-offset-4">
 											<span aria-hidden="true">📎</span> { f.Name } <span class="text-xs text-muted-foreground">{ formatSize(ctx, f.SizeBytes) }</span>
 										</a>
 									}
@@ -314,11 +313,11 @@ templ chatMessages(actor services.Membership, c services.Chat, older bool, searc
 						@message.Footer(message.FooterProps{Class: utils.CN(chatControlsClass, utils.IfElse(own, "pointer-coarse:end-2", "pointer-coarse:start-10"))}) {
 							@tooltip.Tooltip() {
 								@button.Button(button.Props{
-									Href:       string(householdURL(actor.HouseholdID, "chat")) + "?reply=" + m.ID.String(),
+									Href:       routes.URL(routes.Chat, actor.HouseholdID) + "?reply=" + m.ID.String(),
 									Variant:    button.VariantGhost,
 									Size:       button.SizeSm,
 									Class:      chatControlClass,
-									Attributes: utils.MergeAttributes(tooltip.Trigger(ctx), chatReplySwap(householdURL(actor.HouseholdID, "chat")+templ.SafeURL("?reply="+m.ID.String()))),
+									Attributes: utils.MergeAttributes(tooltip.Trigger(ctx), chatReplySwap(routes.URL(routes.Chat, actor.HouseholdID)+"?reply="+m.ID.String())),
 								}) {
 									@chatControlLabel("reply", locales.LK_ChatReply)
 								}
@@ -334,9 +333,9 @@ templ chatMessages(actor services.Membership, c services.Chat, older bool, searc
 							}
 							if own {
 								<form
-									action={ householdURL(actor.HouseholdID, "chat", m.ID.String(), "delete") }
+									action={ routes.URL(routes.ChatMessageDelete, actor.HouseholdID, m.ID) }
 									method="post"
-									hx-post={ string(householdURL(actor.HouseholdID, "chat", m.ID.String(), "delete")) }
+									hx-post={ routes.URL(routes.ChatMessageDelete, actor.HouseholdID, m.ID) }
 									hx-target="#chat-messages"
 									hx-select="#chat-messages"
 									hx-swap="outerHTML"
@@ -357,7 +356,7 @@ templ chatMessages(actor services.Membership, c services.Chat, older bool, searc
 		}
 		if c.HasOlder {
 			<a
-				href={ templ.SafeURL(string(householdURL(actor.HouseholdID, "chat")) + "?before=" + c.Messages[len(c.Messages)-1].ID.String() + "&search=" + url.QueryEscape(search)) }
+				href={ routes.URL(routes.Chat, actor.HouseholdID) + "?before=" + c.Messages[len(c.Messages)-1].ID.String() + "&search=" + url.QueryEscape(search) }
 				class="inline-flex min-h-11 items-center self-center text-sm text-muted-foreground underline underline-offset-4 hover:text-foreground"
 			>
 				@components.T(locales.LK_ChatOlder)

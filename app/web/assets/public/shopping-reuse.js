@@ -20,7 +20,7 @@ if (!window.shoppingReuseLoaded) {
   // after the Add button too, the swap takes the button's focus away and a phone would close its keyboard
   document.addEventListener("htmx:afterSettle", function (e) {
     var request = e.detail.requestConfig;
-    if (!request || request.verb !== "post" || !request.path.endsWith("/items")) return;
+    if (!request || request.verb !== "post" || !request.elt.closest(".pad-add")) return;
     var text = document.getElementById("item-text");
     if (text) text.focus();
   });

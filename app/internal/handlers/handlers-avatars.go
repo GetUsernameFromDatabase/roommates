@@ -5,6 +5,7 @@ import (
 	"net/http"
 	g "roommates/internal/config"
 	"roommates/internal/locales"
+	"roommates/internal/routes"
 	"roommates/internal/services"
 	"roommates/internal/utils"
 
@@ -71,7 +72,7 @@ func (h *DefaultHandler) DownloadAvatar(ctx *gin.Context) {
 		InternalError(ctx, err)
 		return
 	}
-	userID, err := utils.ParseUUID(ctx.Param(g.ParamUserID))
+	userID, err := utils.ParseUUID(ctx.Param(routes.ParamUserID))
 	if err != nil {
 		ctx.Status(http.StatusNotFound)
 		return

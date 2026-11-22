@@ -7,6 +7,7 @@ import (
 	"roommates/internal/db/dbqueries"
 	"roommates/internal/locales"
 	"roommates/internal/models"
+	"roommates/internal/routes"
 	"roommates/internal/services"
 	"roommates/internal/sessions"
 	"roommates/internal/utils"
@@ -73,7 +74,7 @@ func (h *DefaultHandler) PageLogin(ctx *gin.Context) {
 		}
 		if restored {
 			notice(ctx, http.StatusOK, locales.LK_AccountRestoredTitle,
-				locales.LK_AccountRestoredDescription, "/", locales.LK_VerifyEmailContinue)
+				locales.LK_AccountRestoredDescription, routes.Home, locales.LK_VerifyEmailContinue)
 			return
 		}
 		reload(ctx, safeNextPath(model.Next))
@@ -143,5 +144,5 @@ func (h *DefaultHandler) PageRegister(ctx *gin.Context) {
 func (h *DefaultHandler) Logout(ctx *gin.Context) {
 	s := sessions.FromGinContext(ctx)
 	s.Logout()
-	reload(ctx, g.RouteLogin)
+	reload(ctx, routes.Login)
 }

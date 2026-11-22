@@ -19,6 +19,7 @@ import "roommates/internal/services"
 import "roommates/internal/events"
 import g "roommates/internal/config"
 import "roommates/internal/locales"
+import "roommates/internal/routes"
 import "roommates/internal/utils"
 import "github.com/invopop/ctxi18n/i18n"
 import "github.com/jackc/pgx/v5/pgtype"
@@ -80,7 +81,7 @@ func ShoppingList(actor services.Membership, l services.ShoppingList, errorMessa
 				var templ_7745c5c3_Var4 string
 				templ_7745c5c3_Var4, templ_7745c5c3_Err = templruntime.NewAttributeExpression(assets.URL("shopping-reuse.js")).ResolveURL(ctx)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/shopping.templ`, Line: 29, Col: 48}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/shopping.templ`, Line: 30, Col: 48}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var4)
 				if templ_7745c5c3_Err != nil {
@@ -105,9 +106,9 @@ func ShoppingList(actor services.Membership, l services.ShoppingList, errorMessa
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var5 string
-			templ_7745c5c3_Var5, templ_7745c5c3_Err = templruntime.NewAttributeExpression(string(shoppingListURL(actor, l, "category"))).Resolve(ctx)
+			templ_7745c5c3_Var5, templ_7745c5c3_Err = templruntime.NewAttributeExpression(routes.URL(routes.ShoppingListCategory, actor.HouseholdID, l.List.ID)).Resolve(ctx)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/shopping.templ`, Line: 33, Col: 63}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/shopping.templ`, Line: 34, Col: 87}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var5)
 			if templ_7745c5c3_Err != nil {
@@ -153,9 +154,9 @@ func ShoppingList(actor services.Membership, l services.ShoppingList, errorMessa
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var6 string
-				templ_7745c5c3_Var6, templ_7745c5c3_Err = templruntime.NewAttributeExpression(shoppingListURL(actor, l, "delete")).ResolveURL(ctx)
+				templ_7745c5c3_Var6, templ_7745c5c3_Err = templruntime.NewAttributeExpression(routes.URL(routes.ShoppingListDelete, actor.HouseholdID, l.List.ID)).ResolveURL(ctx)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/shopping.templ`, Line: 47, Col: 48}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/shopping.templ`, Line: 48, Col: 80}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var6)
 				if templ_7745c5c3_Err != nil {
@@ -168,7 +169,7 @@ func ShoppingList(actor services.Membership, l services.ShoppingList, errorMessa
 				var templ_7745c5c3_Var7 string
 				templ_7745c5c3_Var7, templ_7745c5c3_Err = templruntime.NewAttributeExpression(deleteConfirm(ctx, utils.T(ctx, locales.LK_ShoppingDeleteListConfirm), int(l.LastFiles))).Resolve(ctx)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/shopping.templ`, Line: 50, Col: 105}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/shopping.templ`, Line: 51, Col: 105}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var7)
 				if templ_7745c5c3_Err != nil {
@@ -214,7 +215,7 @@ func shoppingListHeader(actor services.Membership, l services.ShoppingList) temp
 		}
 		ctx = templ.InitializeContext(ctx)
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = nameHeader(householdURL(actor.HouseholdID), utils.T(ctx, locales.LK_ShoppingBack), shoppingListURL(actor, l, "name"),
+		templ_7745c5c3_Err = nameHeader(routes.URL(routes.Household, actor.HouseholdID), utils.T(ctx, locales.LK_ShoppingBack), routes.URL(routes.ShoppingListName, actor.HouseholdID, l.List.ID),
 			l.List.Name, services.MaxShoppingListNameLength, utils.T(ctx, locales.LK_ShoppingRenameList)).Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
@@ -310,9 +311,9 @@ func shoppingListContent(actor services.Membership, l services.ShoppingList, err
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var11 string
-			templ_7745c5c3_Var11, templ_7745c5c3_Err = templruntime.NewAttributeExpression(shoppingListURL(actor, l, "items")).ResolveURL(ctx)
+			templ_7745c5c3_Var11, templ_7745c5c3_Err = templruntime.NewAttributeExpression(routes.URL(routes.ShoppingItems, actor.HouseholdID, l.List.ID)).ResolveURL(ctx)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/shopping.templ`, Line: 88, Col: 47}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/shopping.templ`, Line: 89, Col: 75}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var11)
 			if templ_7745c5c3_Err != nil {
@@ -322,7 +323,7 @@ func shoppingListContent(actor services.Membership, l services.ShoppingList, err
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.RenderAttributes(ctx, templ_7745c5c3_Buffer, templ_7745c5c3_ElementWriter, "form", shoppingSwap(actor, l, "items"))
+			templ_7745c5c3_Err = templruntime.RenderAttributes(ctx, templ_7745c5c3_Buffer, templ_7745c5c3_ElementWriter, "form", shoppingSwap(routes.URL(routes.ShoppingItems, actor.HouseholdID, l.List.ID)))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -373,7 +374,7 @@ func shoppingListContent(actor services.Membership, l services.ShoppingList, err
 			var templ_7745c5c3_Var12 string
 			templ_7745c5c3_Var12, templ_7745c5c3_Err = templruntime.NewAttributeExpression(old.Text).Resolve(ctx)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/shopping.templ`, Line: 110, Col: 30}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/shopping.templ`, Line: 111, Col: 30}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var12)
 			if templ_7745c5c3_Err != nil {
@@ -480,7 +481,7 @@ func shoppingListContent(actor services.Membership, l services.ShoppingList, err
 					}
 					return nil
 				})
-				templ_7745c5c3_Err = button.Button(button.Props{Href: string(newExpenseURL(actor.HouseholdID, l.List.ID, pgtype.UUID{})), Variant: button.VariantSecondary, Size: button.SizeSm}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var14), templ_7745c5c3_Buffer)
+				templ_7745c5c3_Err = button.Button(button.Props{Href: newExpenseURL(actor.HouseholdID, l.List.ID, pgtype.UUID{}), Variant: button.VariantSecondary, Size: button.SizeSm}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var14), templ_7745c5c3_Buffer)
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -494,9 +495,9 @@ func shoppingListContent(actor services.Membership, l services.ShoppingList, err
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var15 string
-				templ_7745c5c3_Var15, templ_7745c5c3_Err = templruntime.NewAttributeExpression(shoppingListURL(actor, l, "clear")).ResolveURL(ctx)
+				templ_7745c5c3_Var15, templ_7745c5c3_Err = templruntime.NewAttributeExpression(routes.URL(routes.ShoppingListClear, actor.HouseholdID, l.List.ID)).ResolveURL(ctx)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/shopping.templ`, Line: 155, Col: 55}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/shopping.templ`, Line: 156, Col: 87}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var15)
 				if templ_7745c5c3_Err != nil {
@@ -509,7 +510,7 @@ func shoppingListContent(actor services.Membership, l services.ShoppingList, err
 				var templ_7745c5c3_Var16 string
 				templ_7745c5c3_Var16, templ_7745c5c3_Err = templruntime.NewAttributeExpression(utils.T(ctx, locales.LK_ShoppingClearConfirm)).Resolve(ctx)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/shopping.templ`, Line: 155, Col: 130}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/shopping.templ`, Line: 156, Col: 162}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var16)
 				if templ_7745c5c3_Err != nil {
@@ -519,7 +520,7 @@ func shoppingListContent(actor services.Membership, l services.ShoppingList, err
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.RenderAttributes(ctx, templ_7745c5c3_Buffer, templ_7745c5c3_ElementWriter, "form", shoppingSwap(actor, l, "clear"))
+				templ_7745c5c3_Err = templruntime.RenderAttributes(ctx, templ_7745c5c3_Buffer, templ_7745c5c3_ElementWriter, "form", shoppingSwap(routes.URL(routes.ShoppingListClear, actor.HouseholdID, l.List.ID)))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -631,7 +632,7 @@ func shoppingListContent(actor services.Membership, l services.ShoppingList, err
 				var templ_7745c5c3_Var20 string
 				templ_7745c5c3_Var20, templ_7745c5c3_Err = templruntime.NewAttributeExpression(old.Text).Resolve(ctx)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/shopping.templ`, Line: 177, Col: 56}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/shopping.templ`, Line: 178, Col: 56}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var20)
 				if templ_7745c5c3_Err != nil {
@@ -644,7 +645,7 @@ func shoppingListContent(actor services.Membership, l services.ShoppingList, err
 				var templ_7745c5c3_Var21 string
 				templ_7745c5c3_Var21, templ_7745c5c3_Err = templruntime.NewAttributeExpression(old.Qty).Resolve(ctx)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/shopping.templ`, Line: 177, Col: 83}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/shopping.templ`, Line: 178, Col: 83}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var21)
 				if templ_7745c5c3_Err != nil {
@@ -657,7 +658,7 @@ func shoppingListContent(actor services.Membership, l services.ShoppingList, err
 				var templ_7745c5c3_Var22 string
 				templ_7745c5c3_Var22, templ_7745c5c3_Err = templ.JoinStringErrs(old.Text)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/shopping.templ`, Line: 178, Col: 19}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/shopping.templ`, Line: 179, Col: 19}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var22))
 				if templ_7745c5c3_Err != nil {
@@ -709,7 +710,7 @@ func shoppingOpenItem(actor services.Membership, l services.ShoppingList, it dbq
 		var templ_7745c5c3_Var24 string
 		templ_7745c5c3_Var24, templ_7745c5c3_Err = templruntime.NewAttributeExpression("item-" + itemID).Resolve(ctx)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/shopping.templ`, Line: 194, Col: 26}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/shopping.templ`, Line: 195, Col: 26}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var24)
 		if templ_7745c5c3_Err != nil {
@@ -722,7 +723,7 @@ func shoppingOpenItem(actor services.Membership, l services.ShoppingList, it dbq
 		var templ_7745c5c3_Var25 string
 		templ_7745c5c3_Var25, templ_7745c5c3_Err = templruntime.SanitizeStyleAttributeValues(itemTransitionName(itemID))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/shopping.templ`, Line: 194, Col: 80}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/shopping.templ`, Line: 195, Col: 80}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var25))
 		if templ_7745c5c3_Err != nil {
@@ -752,7 +753,7 @@ func shoppingOpenItem(actor services.Membership, l services.ShoppingList, it dbq
 			var templ_7745c5c3_Var26 string
 			templ_7745c5c3_Var26, templ_7745c5c3_Err = templ.JoinStringErrs(utils.T(ctx, locales.LK_ShoppingBuyingBy, utils.MemberName(ctx, *it.ClaimedByName)))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/shopping.templ`, Line: 200, Col: 90}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/shopping.templ`, Line: 201, Col: 90}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var26))
 			if templ_7745c5c3_Err != nil {
@@ -776,9 +777,9 @@ func shoppingOpenItem(actor services.Membership, l services.ShoppingList, it dbq
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var27 string
-			templ_7745c5c3_Var27, templ_7745c5c3_Err = templruntime.NewAttributeExpression(shoppingListURL(actor, l, "items", itemID, "claim")).ResolveURL(ctx)
+			templ_7745c5c3_Var27, templ_7745c5c3_Err = templruntime.NewAttributeExpression(routes.URL(routes.ShoppingItemClaim, actor.HouseholdID, l.List.ID, itemID)).ResolveURL(ctx)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/shopping.templ`, Line: 205, Col: 68}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/shopping.templ`, Line: 206, Col: 91}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var27)
 			if templ_7745c5c3_Err != nil {
@@ -788,7 +789,7 @@ func shoppingOpenItem(actor services.Membership, l services.ShoppingList, it dbq
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.RenderAttributes(ctx, templ_7745c5c3_Buffer, templ_7745c5c3_ElementWriter, "form", shoppingSwap(actor, l, "items", itemID, "claim"))
+			templ_7745c5c3_Err = templruntime.RenderAttributes(ctx, templ_7745c5c3_Buffer, templ_7745c5c3_ElementWriter, "form", shoppingSwap(routes.URL(routes.ShoppingItemClaim, actor.HouseholdID, l.List.ID, itemID)))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -809,7 +810,7 @@ func shoppingOpenItem(actor services.Membership, l services.ShoppingList, it dbq
 		var templ_7745c5c3_Var28 string
 		templ_7745c5c3_Var28, templ_7745c5c3_Err = templruntime.NewAttributeExpression(utils.IfElse(it.ClaimedBy == actor.UserID, "0", "1")).Resolve(ctx)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/shopping.templ`, Line: 206, Col: 97}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/shopping.templ`, Line: 207, Col: 97}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var28)
 		if templ_7745c5c3_Err != nil {
@@ -822,7 +823,7 @@ func shoppingOpenItem(actor services.Membership, l services.ShoppingList, it dbq
 		var templ_7745c5c3_Var29 string
 		templ_7745c5c3_Var29, templ_7745c5c3_Err = templruntime.NewAttributeExpression("claim-" + itemID).Resolve(ctx)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/shopping.templ`, Line: 209, Col: 26}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/shopping.templ`, Line: 210, Col: 26}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var29)
 		if templ_7745c5c3_Err != nil {
@@ -835,7 +836,7 @@ func shoppingOpenItem(actor services.Membership, l services.ShoppingList, it dbq
 		var templ_7745c5c3_Var30 string
 		templ_7745c5c3_Var30, templ_7745c5c3_Err = templruntime.NewAttributeExpression(utils.IfElse(it.ClaimedBy == actor.UserID, utils.T(ctx, locales.LK_ShoppingStopBuying), utils.T(ctx, locales.LK_ShoppingBuying)) + ": " + it.Text).Resolve(ctx)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/shopping.templ`, Line: 210, Col: 162}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/shopping.templ`, Line: 211, Col: 162}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var30)
 		if templ_7745c5c3_Err != nil {
@@ -889,7 +890,7 @@ func shoppingBoughtItem(actor services.Membership, l services.ShoppingList, it d
 		var templ_7745c5c3_Var32 string
 		templ_7745c5c3_Var32, templ_7745c5c3_Err = templruntime.NewAttributeExpression("item-" + itemID).Resolve(ctx)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/shopping.templ`, Line: 225, Col: 26}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/shopping.templ`, Line: 226, Col: 26}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var32)
 		if templ_7745c5c3_Err != nil {
@@ -902,7 +903,7 @@ func shoppingBoughtItem(actor services.Membership, l services.ShoppingList, it d
 		var templ_7745c5c3_Var33 string
 		templ_7745c5c3_Var33, templ_7745c5c3_Err = templruntime.SanitizeStyleAttributeValues(itemTransitionName(itemID))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/shopping.templ`, Line: 225, Col: 102}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/shopping.templ`, Line: 226, Col: 102}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var33))
 		if templ_7745c5c3_Err != nil {
@@ -932,7 +933,7 @@ func shoppingBoughtItem(actor services.Membership, l services.ShoppingList, it d
 			var templ_7745c5c3_Var34 string
 			templ_7745c5c3_Var34, templ_7745c5c3_Err = templ.JoinStringErrs(utils.T(ctx, locales.LK_ShoppingBoughtBy, utils.MemberName(ctx, *it.CheckedByName)))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/shopping.templ`, Line: 231, Col: 90}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/shopping.templ`, Line: 232, Col: 90}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var34))
 			if templ_7745c5c3_Err != nil {
@@ -952,9 +953,9 @@ func shoppingBoughtItem(actor services.Membership, l services.ShoppingList, it d
 						return templ_7745c5c3_Err
 					}
 					var templ_7745c5c3_Var35 string
-					templ_7745c5c3_Var35, templ_7745c5c3_Err = templruntime.NewAttributeExpression(householdURL(actor.HouseholdID, "expenses", it.ExpenseID.String())).ResolveURL(ctx)
+					templ_7745c5c3_Var35, templ_7745c5c3_Err = templruntime.NewAttributeExpression(routes.URL(routes.Expense, actor.HouseholdID, it.ExpenseID)).ResolveURL(ctx)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/shopping.templ`, Line: 233, Col: 82}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/shopping.templ`, Line: 234, Col: 75}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var35)
 					if templ_7745c5c3_Err != nil {
@@ -1016,7 +1017,7 @@ func shoppingBoughtItem(actor services.Membership, l services.ShoppingList, it d
 					var templ_7745c5c3_Var38 string
 					templ_7745c5c3_Var38, templ_7745c5c3_Err = templruntime.NewAttributeExpression(newExpenseURL(actor.HouseholdID, l.List.ID, it.ID)).ResolveURL(ctx)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/shopping.templ`, Line: 237, Col: 66}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/shopping.templ`, Line: 238, Col: 66}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var38)
 					if templ_7745c5c3_Err != nil {
@@ -1111,9 +1112,9 @@ func shoppingTick(actor services.Membership, l services.ShoppingList, it dbqueri
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var42 string
-			templ_7745c5c3_Var42, templ_7745c5c3_Err = templruntime.NewAttributeExpression(shoppingListURL(actor, l, "items", itemID, "check")).ResolveURL(ctx)
+			templ_7745c5c3_Var42, templ_7745c5c3_Err = templruntime.NewAttributeExpression(routes.URL(routes.ShoppingItemCheck, actor.HouseholdID, l.List.ID, itemID)).ResolveURL(ctx)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/shopping.templ`, Line: 253, Col: 67}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/shopping.templ`, Line: 254, Col: 90}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var42)
 			if templ_7745c5c3_Err != nil {
@@ -1123,7 +1124,7 @@ func shoppingTick(actor services.Membership, l services.ShoppingList, it dbqueri
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.RenderAttributes(ctx, templ_7745c5c3_Buffer, templ_7745c5c3_ElementWriter, "form", shoppingSwap(actor, l, "items", itemID, "check"))
+			templ_7745c5c3_Err = templruntime.RenderAttributes(ctx, templ_7745c5c3_Buffer, templ_7745c5c3_ElementWriter, "form", shoppingSwap(routes.URL(routes.ShoppingItemCheck, actor.HouseholdID, l.List.ID, itemID)))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -1148,7 +1149,7 @@ func shoppingTick(actor services.Membership, l services.ShoppingList, it dbqueri
 		var templ_7745c5c3_Var43 string
 		templ_7745c5c3_Var43, templ_7745c5c3_Err = templruntime.NewAttributeExpression(utils.IfElse(checked, "0", "1")).Resolve(ctx)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/shopping.templ`, Line: 254, Col: 77}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/shopping.templ`, Line: 255, Col: 77}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var43)
 		if templ_7745c5c3_Err != nil {
@@ -1161,7 +1162,7 @@ func shoppingTick(actor services.Membership, l services.ShoppingList, it dbqueri
 		var templ_7745c5c3_Var44 string
 		templ_7745c5c3_Var44, templ_7745c5c3_Err = templruntime.NewAttributeExpression("check-" + itemID).Resolve(ctx)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/shopping.templ`, Line: 257, Col: 25}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/shopping.templ`, Line: 258, Col: 25}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var44)
 		if templ_7745c5c3_Err != nil {
@@ -1174,7 +1175,7 @@ func shoppingTick(actor services.Membership, l services.ShoppingList, it dbqueri
 		var templ_7745c5c3_Var45 string
 		templ_7745c5c3_Var45, templ_7745c5c3_Err = templruntime.NewAttributeExpression(utils.IfElse(checked, "true", "false")).Resolve(ctx)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/shopping.templ`, Line: 259, Col: 56}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/shopping.templ`, Line: 260, Col: 56}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var45)
 		if templ_7745c5c3_Err != nil {
@@ -1187,7 +1188,7 @@ func shoppingTick(actor services.Membership, l services.ShoppingList, it dbqueri
 		var templ_7745c5c3_Var46 string
 		templ_7745c5c3_Var46, templ_7745c5c3_Err = templruntime.NewAttributeExpression(utils.IfElse(checked, utils.T(ctx, locales.LK_ShoppingUncheck), utils.T(ctx, locales.LK_ShoppingCheck)) + ": " + it.Text).Resolve(ctx)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/shopping.templ`, Line: 260, Col: 136}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/shopping.templ`, Line: 261, Col: 136}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var46)
 		if templ_7745c5c3_Err != nil {
@@ -1208,7 +1209,7 @@ func shoppingTick(actor services.Membership, l services.ShoppingList, it dbqueri
 			var templ_7745c5c3_Var47 string
 			templ_7745c5c3_Var47, templ_7745c5c3_Err = templruntime.NewAttributeExpression("tick-" + itemID).Resolve(ctx)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/shopping.templ`, Line: 265, Col: 25}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/shopping.templ`, Line: 266, Col: 25}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var47)
 			if templ_7745c5c3_Err != nil {
@@ -1285,7 +1286,7 @@ func shoppingItemName(actor services.Membership, l services.ShoppingList, it dbq
 			var templ_7745c5c3_Var51 string
 			templ_7745c5c3_Var51, templ_7745c5c3_Err = templruntime.NewAttributeExpression("item-name-" + itemID).Resolve(ctx)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/shopping.templ`, Line: 280, Col: 28}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/shopping.templ`, Line: 281, Col: 28}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var51)
 			if templ_7745c5c3_Err != nil {
@@ -1296,9 +1297,9 @@ func shoppingItemName(actor services.Membership, l services.ShoppingList, it dbq
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var52 string
-			templ_7745c5c3_Var52, templ_7745c5c3_Err = templruntime.NewAttributeExpression(shoppingListURL(actor, l, "items", itemID)).ResolveURL(ctx)
+			templ_7745c5c3_Var52, templ_7745c5c3_Err = templruntime.NewAttributeExpression(routes.URL(routes.ShoppingItem, actor.HouseholdID, l.List.ID, itemID)).ResolveURL(ctx)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/shopping.templ`, Line: 281, Col: 51}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/shopping.templ`, Line: 282, Col: 78}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var52)
 			if templ_7745c5c3_Err != nil {
@@ -1343,7 +1344,7 @@ func shoppingItemName(actor services.Membership, l services.ShoppingList, it dbq
 		var templ_7745c5c3_Var55 string
 		templ_7745c5c3_Var55, templ_7745c5c3_Err = templ.JoinStringErrs(it.Text)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/shopping.templ`, Line: 284, Col: 11}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/shopping.templ`, Line: 285, Col: 11}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var55))
 		if templ_7745c5c3_Err != nil {
@@ -1361,7 +1362,7 @@ func shoppingItemName(actor services.Membership, l services.ShoppingList, it dbq
 			var templ_7745c5c3_Var56 string
 			templ_7745c5c3_Var56, templ_7745c5c3_Err = templ.JoinStringErrs(it.Qty)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/shopping.templ`, Line: 287, Col: 46}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/shopping.templ`, Line: 288, Col: 46}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var56))
 			if templ_7745c5c3_Err != nil {
@@ -1380,7 +1381,7 @@ func shoppingItemName(actor services.Membership, l services.ShoppingList, it dbq
 			var templ_7745c5c3_Var57 string
 			templ_7745c5c3_Var57, templ_7745c5c3_Err = templ.JoinStringErrs(it.FileCount)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/shopping.templ`, Line: 291, Col: 47}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/shopping.templ`, Line: 292, Col: 47}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var57))
 			if templ_7745c5c3_Err != nil {
@@ -1393,7 +1394,7 @@ func shoppingItemName(actor services.Membership, l services.ShoppingList, it dbq
 			var templ_7745c5c3_Var58 string
 			templ_7745c5c3_Var58, templ_7745c5c3_Err = templ.JoinStringErrs(utils.N(ctx, locales.LK_FilesCount, int(it.FileCount), i18n.M{"count": it.FileCount}))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/shopping.templ`, Line: 292, Col: 111}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/shopping.templ`, Line: 293, Col: 111}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var58))
 			if templ_7745c5c3_Err != nil {
@@ -1412,7 +1413,7 @@ func shoppingItemName(actor services.Membership, l services.ShoppingList, it dbq
 			var templ_7745c5c3_Var59 string
 			templ_7745c5c3_Var59, templ_7745c5c3_Err = templ.JoinStringErrs(it.Description)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/shopping.templ`, Line: 296, Col: 84}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/shopping.templ`, Line: 297, Col: 84}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var59))
 			if templ_7745c5c3_Err != nil {
