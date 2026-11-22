@@ -934,9 +934,9 @@ func chatMessages(actor services.Membership, c services.Chat, older bool, search
 								return templ_7745c5c3_Err
 							}
 							var templ_7745c5c3_Var39 string
-							templ_7745c5c3_Var39, templ_7745c5c3_Err = templruntime.NewAttributeExpression(templ.SafeURL("#message-" + m.ReplyToID.String())).ResolveURL(ctx)
+							templ_7745c5c3_Var39, templ_7745c5c3_Err = templruntime.NewAttributeExpression(templ.SafeURL("#message-" + routes.ShortUUID(m.ReplyToID))).ResolveURL(ctx)
 							if templ_7745c5c3_Err != nil {
-								return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/chat.templ`, Line: 260, Col: 65}
+								return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/chat.templ`, Line: 260, Col: 74}
 							}
 							_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var39)
 							if templ_7745c5c3_Err != nil {
@@ -1314,11 +1314,11 @@ func chatMessages(actor services.Membership, c services.Chat, older bool, search
 								return nil
 							})
 							templ_7745c5c3_Err = button.Button(button.Props{
-								Href:       routes.URL(routes.Chat, actor.HouseholdID) + "?reply=" + m.ID.String(),
+								Href:       routes.URL(routes.Chat, actor.HouseholdID) + "?reply=" + routes.ShortUUID(m.ID),
 								Variant:    button.VariantGhost,
 								Size:       button.SizeSm,
 								Class:      chatControlClass,
-								Attributes: utils.MergeAttributes(tooltip.Trigger(ctx), chatReplySwap(routes.URL(routes.Chat, actor.HouseholdID)+"?reply="+m.ID.String())),
+								Attributes: utils.MergeAttributes(tooltip.Trigger(ctx), chatReplySwap(routes.URL(routes.Chat, actor.HouseholdID)+"?reply="+routes.ShortUUID(m.ID))),
 							}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var60), templ_7745c5c3_Buffer)
 							if templ_7745c5c3_Err != nil {
 								return templ_7745c5c3_Err
@@ -1495,7 +1495,7 @@ func chatMessages(actor services.Membership, c services.Chat, older bool, search
 				return nil
 			})
 			templ_7745c5c3_Err = message.Message(message.Props{
-				ID:    "message-" + m.ID.String(),
+				ID:    "message-" + routes.ShortUUID(m.ID),
 				Align: utils.IfElse(own, message.AlignEnd, message.AlignStart),
 				Class: utils.CN("pointer-coarse:select-none pointer-coarse:[-webkit-touch-callout:none] pointer-coarse:[-webkit-user-drag:none]", utils.IfElse(starts, "", "-mt-2")),
 			}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var34), templ_7745c5c3_Buffer)
@@ -1509,9 +1509,9 @@ func chatMessages(actor services.Membership, c services.Chat, older bool, search
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var68 string
-			templ_7745c5c3_Var68, templ_7745c5c3_Err = templruntime.NewAttributeExpression(routes.URL(routes.Chat, actor.HouseholdID) + "?before=" + c.Messages[len(c.Messages)-1].ID.String() + "&search=" + url.QueryEscape(search)).ResolveURL(ctx)
+			templ_7745c5c3_Var68, templ_7745c5c3_Err = templruntime.NewAttributeExpression(routes.URL(routes.Chat, actor.HouseholdID) + "?before=" + routes.ShortUUID(c.Messages[len(c.Messages)-1].ID) + "&search=" + url.QueryEscape(search)).ResolveURL(ctx)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/chat.templ`, Line: 357, Col: 149}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/chat.templ`, Line: 357, Col: 157}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var68)
 			if templ_7745c5c3_Err != nil {

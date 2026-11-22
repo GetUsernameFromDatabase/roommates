@@ -232,7 +232,7 @@ templ chatMessages(actor services.Membership, c services.Chat, older bool, searc
 			}}
 			// on touch screens chat-hold.js shows the controls on a long press, which would otherwise select text
 			@message.Message(message.Props{
-				ID:    "message-" + m.ID.String(),
+				ID:    "message-" + routes.ShortUUID(m.ID),
 				Align: utils.IfElse(own, message.AlignEnd, message.AlignStart),
 				Class: utils.CN("pointer-coarse:select-none pointer-coarse:[-webkit-touch-callout:none] pointer-coarse:[-webkit-user-drag:none]", utils.IfElse(starts, "", "-mt-2")),
 			}) {
@@ -257,7 +257,7 @@ templ chatMessages(actor services.Membership, c services.Chat, older bool, searc
 						}
 					}
 					if m.ReplyAuthorName != nil {
-						<a href={ templ.SafeURL("#message-" + m.ReplyToID.String()) } data-slot="message-reply" class={ utils.CN("max-w-[80%] rounded-lg bg-muted/60 px-3 py-1 text-xs text-muted-foreground border-primary/50", utils.IfElse(own, "border-r-4", "border-l-4")) }>
+						<a href={ templ.SafeURL("#message-" + routes.ShortUUID(m.ReplyToID)) } data-slot="message-reply" class={ utils.CN("max-w-[80%] rounded-lg bg-muted/60 px-3 py-1 text-xs text-muted-foreground border-primary/50", utils.IfElse(own, "border-r-4", "border-l-4")) }>
 							<span class="font-medium">{ utils.MemberName(ctx, *m.ReplyAuthorName) }</span>
 							@replySnippet(m.ReplyBody)
 						</a>
@@ -311,11 +311,11 @@ templ chatMessages(actor services.Membership, c services.Chat, older bool, searc
 						@message.Footer(message.FooterProps{Class: utils.CN(chatControlsClass, utils.IfElse(own, "pointer-coarse:end-2", "pointer-coarse:start-10"))}) {
 							@tooltip.Tooltip() {
 								@button.Button(button.Props{
-									Href:       routes.URL(routes.Chat, actor.HouseholdID) + "?reply=" + m.ID.String(),
+									Href:       routes.URL(routes.Chat, actor.HouseholdID) + "?reply=" + routes.ShortUUID(m.ID),
 									Variant:    button.VariantGhost,
 									Size:       button.SizeSm,
 									Class:      chatControlClass,
-									Attributes: utils.MergeAttributes(tooltip.Trigger(ctx), chatReplySwap(routes.URL(routes.Chat, actor.HouseholdID)+"?reply="+m.ID.String())),
+									Attributes: utils.MergeAttributes(tooltip.Trigger(ctx), chatReplySwap(routes.URL(routes.Chat, actor.HouseholdID)+"?reply="+routes.ShortUUID(m.ID))),
 								}) {
 									@chatControlLabel("reply", locales.LK_ChatReply)
 								}
@@ -354,7 +354,7 @@ templ chatMessages(actor services.Membership, c services.Chat, older bool, searc
 		}
 		if c.HasOlder {
 			<a
-				href={ routes.URL(routes.Chat, actor.HouseholdID) + "?before=" + c.Messages[len(c.Messages)-1].ID.String() + "&search=" + url.QueryEscape(search) }
+				href={ routes.URL(routes.Chat, actor.HouseholdID) + "?before=" + routes.ShortUUID(c.Messages[len(c.Messages)-1].ID) +"&search=" + url.QueryEscape(search) }
 				class="inline-flex min-h-11 items-center self-center text-sm text-muted-foreground underline underline-offset-4 hover:text-foreground"
 			>
 				@components.T(locales.LK_ChatOlder)

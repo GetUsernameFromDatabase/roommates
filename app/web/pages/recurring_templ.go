@@ -503,7 +503,7 @@ func recurringDue(actor services.Membership, due []services.RecurringRow) templ.
 				}
 				return nil
 			})
-			templ_7745c5c3_Err = button.Button(button.Props{Href: routes.URL(routes.ExpenseNew, actor.HouseholdID) + "?recurring=" + r.ID.String(), Class: "h-11 px-4"}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var22), templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = button.Button(button.Props{Href: routes.URL(routes.ExpenseNew, actor.HouseholdID) + "?recurring=" + routes.ShortUUID(r.ID), Class: "h-11 px-4"}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var22), templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}

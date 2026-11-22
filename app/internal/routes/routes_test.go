@@ -9,7 +9,7 @@ import (
 
 func TestURL(t *testing.T) {
 	id := pgtype.UUID{Bytes: [16]byte{1}, Valid: true}
-	if got, want := URL(ChoreDone, id, id), "/h/"+id.String()+"/chores/"+id.String()+"/done"; got != want {
+	if got, want := URL(ChoreDone, id, id), "/h/01SZwviYzes2mjOamuMJWw/chores/01SZwviYzes2mjOamuMJWw/done"; got != want {
 		t.Errorf("URL(ChoreDone) = %q, want %q", got, want)
 	}
 	if got := URL(Settings); got != "/settings" {

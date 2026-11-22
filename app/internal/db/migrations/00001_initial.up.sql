@@ -17,7 +17,7 @@ CREATE EXTENSION IF NOT EXISTS moddatetime;
 -- emails are stored lowercase so Foo@x.com and foo@x.com are the same account,
 -- avatar_key is the user's picture, a small JPEG in object storage
 CREATE TABLE users (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  id UUID PRIMARY KEY DEFAULT uuidv7(),
   email TEXT NOT NULL UNIQUE,
   email_validated BOOLEAN NOT NULL DEFAULT FALSE,
   username TEXT NOT NULL,
@@ -101,7 +101,7 @@ CREATE INDEX idx_push_subscriptions_user_id ON push_subscriptions (user_id);
 -- lang is the language of its email; attempted_at is the last build try, a failing one
 -- goes to the back of the queue so it does not hold up the others
 CREATE TABLE data_exports (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  id UUID PRIMARY KEY DEFAULT uuidv7(),
   user_id UUID NOT NULL REFERENCES users (id),
   object_key TEXT UNIQUE,
   size_bytes BIGINT,
@@ -117,7 +117,7 @@ CREATE INDEX idx_data_exports_user_id ON data_exports (user_id);
 -- HOUSEHOLDS
 -- =============================================================================
 CREATE TABLE households (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  id UUID PRIMARY KEY DEFAULT uuidv7(),
   name TEXT NOT NULL,
   -- ISO 4217, amounts are stored as integer minor units (cents)
   currency TEXT NOT NULL DEFAULT 'EUR',
@@ -154,7 +154,7 @@ CREATE INDEX idx_memberships_user_id ON memberships (user_id);
 -- -----------------------------------------------------------------------------
 -- reusable until expires_at, the code works both in a link and typed by hand
 CREATE TABLE invites (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  id UUID PRIMARY KEY DEFAULT uuidv7(),
   household_id UUID NOT NULL REFERENCES households (id) ON DELETE CASCADE,
   code TEXT NOT NULL UNIQUE,
   created_by UUID NOT NULL REFERENCES users (id),
@@ -175,7 +175,7 @@ CREATE TABLE notification_mutes (
 -- who did what, written by the services in the same transaction, kept per grp for
 -- g.ActivityRetention; title and amount are copies so the row outlives its subject
 CREATE TABLE activity (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  id UUID PRIMARY KEY DEFAULT uuidv7(),
   household_id UUID NOT NULL REFERENCES households (id) ON DELETE CASCADE,
   actor_id UUID REFERENCES users (id),
   grp TEXT NOT NULL CHECK (grp IN ('money', 'shopping', 'notes', 'members', 'chores', 'calendar')),
@@ -203,7 +203,7 @@ VALUES ('groceries'),
 -- -----------------------------------------------------------------------------
 -- whoever enters an expense paid it, so payer_id is also its creator
 CREATE TABLE expenses (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  id UUID PRIMARY KEY DEFAULT uuidv7(),
   household_id UUID NOT NULL REFERENCES households (id) ON DELETE CASCADE,
   payer_id UUID NOT NULL,
   category TEXT NOT NULL REFERENCES expense_categories (id) ON UPDATE CASCADE,
@@ -237,7 +237,7 @@ CREATE INDEX idx_expense_shares_user_id ON expense_shares (user_id);
 -- method is how from_user paid, NULL only on one an expense edit made (from_edit), that one
 -- records a share the payer had marked paid outside the app, expense_id is that expense
 CREATE TABLE settlements (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  id UUID PRIMARY KEY DEFAULT uuidv7(),
   household_id UUID NOT NULL REFERENCES households (id) ON DELETE CASCADE,
   from_user UUID NOT NULL,
   to_user UUID NOT NULL,
@@ -276,7 +276,7 @@ CREATE INDEX idx_settlement_shares_share ON settlement_shares (expense_id, user_
 -- a schedule makes a draft on next_due that the payer adds (through CreateExpense) or skips,
 -- either moves next_due one interval on from anchor; ended by a trigger when the payer leaves
 CREATE TABLE recurring_expenses (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  id UUID PRIMARY KEY DEFAULT uuidv7(),
   household_id UUID NOT NULL REFERENCES households (id) ON DELETE CASCADE,
   payer_id UUID NOT NULL,
   category TEXT NOT NULL REFERENCES expense_categories (id) ON UPDATE CASCADE,
@@ -311,7 +311,7 @@ CREATE TABLE recurring_expense_shares (
 -- SHOPPING
 -- =============================================================================
 CREATE TABLE shopping_lists (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  id UUID PRIMARY KEY DEFAULT uuidv7(),
   household_id UUID NOT NULL REFERENCES households (id) ON DELETE CASCADE,
   name TEXT NOT NULL,
   created_by UUID NOT NULL REFERENCES users (id),
@@ -330,7 +330,7 @@ CREATE INDEX idx_shopping_lists_household_id ON shopping_lists (household_id);
 -- description and files, expense_id is the expense it was bought under, several items
 -- can share one receipt and deleting the expense only drops the link
 CREATE TABLE shopping_items (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  id UUID PRIMARY KEY DEFAULT uuidv7(),
   list_id UUID NOT NULL,
   household_id UUID NOT NULL,
   text TEXT NOT NULL,
@@ -364,7 +364,7 @@ WHERE cleared_at IS NOT NULL;
 -- =============================================================================
 -- a household note is read and edited by every member, a private one only by its author
 CREATE TABLE notes (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  id UUID PRIMARY KEY DEFAULT uuidv7(),
   household_id UUID NOT NULL REFERENCES households (id) ON DELETE CASCADE,
   author_id UUID NOT NULL REFERENCES users (id),
   title TEXT NOT NULL,
@@ -385,7 +385,7 @@ CREATE INDEX idx_notes_household_id ON notes (household_id);
 -- a message can answer another message of the same household,
 -- deleting the answered message keeps the reply without its quote
 CREATE TABLE messages (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  id UUID PRIMARY KEY DEFAULT uuidv7(),
   household_id UUID NOT NULL REFERENCES households (id) ON DELETE CASCADE,
   author_id UUID NOT NULL REFERENCES users (id),
   body TEXT NOT NULL CHECK (length(body) <= 4000),
@@ -406,7 +406,7 @@ WHERE reply_to_id IS NOT NULL;
 -- repeats like a chore (every N units, or on weekdays) from start_date until repeat_until;
 -- an occurrence edited alone is a one-off detached_from its series on detached_on
 CREATE TABLE events (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  id UUID PRIMARY KEY DEFAULT uuidv7(),
   household_id UUID NOT NULL REFERENCES households (id) ON DELETE CASCADE,
   title TEXT NOT NULL,
   location TEXT NOT NULL DEFAULT '',
@@ -475,7 +475,7 @@ CREATE TABLE event_reminders (
 -- (bit 0 Monday .. bit 6 Sunday) or every `every` every_unit counted from when it was done;
 -- chore_next_assignee says whose turn comes next
 CREATE TABLE chores (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  id UUID PRIMARY KEY DEFAULT uuidv7(),
   household_id UUID NOT NULL REFERENCES households (id) ON DELETE CASCADE,
   title TEXT NOT NULL,
   rotation TEXT NOT NULL CHECK (rotation IN ('fixed', 'least_recent', 'manual')),
@@ -514,7 +514,7 @@ CREATE TABLE chore_members (
 --
 -- shortcut: never purged, rows go with their chore; purge old ones in RunCleanup if it grows
 CREATE TABLE chore_log (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  id UUID PRIMARY KEY DEFAULT uuidv7(),
   chore_id UUID NOT NULL,
   household_id UUID NOT NULL,
   kind TEXT NOT NULL CHECK (kind IN ('done', 'skipped', 'passed')),
@@ -532,7 +532,7 @@ CREATE INDEX idx_chore_log_chore_id ON chore_log (chore_id, created_at DESC);
 -- in file_refs, a file lasts as long as something refers to it,
 -- kept files, those of the Files page, last until they are deleted
 CREATE TABLE files (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  id UUID PRIMARY KEY DEFAULT uuidv7(),
   household_id UUID NOT NULL REFERENCES households (id) ON DELETE CASCADE,
   uploader_id UUID NOT NULL REFERENCES users (id),
   object_key TEXT NOT NULL UNIQUE,

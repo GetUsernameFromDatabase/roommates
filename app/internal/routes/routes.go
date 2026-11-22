@@ -10,8 +10,11 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"math/big"
 	"net/url"
 	"strings"
+
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 // path params, read with gin's ctx.Param
@@ -241,8 +244,36 @@ func jsSource() ([]byte, string) {
 	return src, hex.EncodeToString(sum[:8])
 }
 
-// URL fills the :params of pattern in order, a string is path-escaped and anything else
-// must be a [fmt.Stringer] (pgtype.UUID); it panics on a wrong count, which is a bug in the caller
+// shortUUIDLen is the length of [ShortUUID], 62^22 > 2^128
+const shortUUIDLen = 22
+
+// ShortUUID is id in base62 (0-9a-zA-Z) padded to 22 characters, the form IDs take in URLs
+func ShortUUID(id pgtype.UUID) string {
+	s := new(big.Int).SetBytes(id.Bytes[:]).Text(62)
+	return strings.Repeat("0", shortUUIDLen-len(s)) + s
+}
+
+// ParseShortUUID reverses [ShortUUID], ok is false for anything it would not have made
+func ParseShortUUID(s string) (u pgtype.UUID, ok bool) {
+	if len(s) != shortUUIDLen {
+		return u, false
+	}
+	n, ok := new(big.Int).SetString(s, 62)
+	if !ok || n.BitLen() > 128 {
+		return u, false
+	}
+	n.FillBytes(u.Bytes[:])
+	u.Valid = true
+	// SetString also takes a sign, so only the exact encoding counts
+	if ShortUUID(u) != s {
+		return pgtype.UUID{}, false
+	}
+	return u, true
+}
+
+// URL fills the :params of pattern in order: a pgtype.UUID becomes its [ShortUUID], a string
+// is path-escaped and anything else must be a [fmt.Stringer]; it panics on a wrong count,
+// which is a bug in the caller
 //
 //	URL(ChoreDone, householdID, choreID) == "/h/<householdID>/chores/<choreID>/done"
 func URL(pattern string, args ...any) string {
@@ -259,6 +290,8 @@ func URL(pattern string, args ...any) string {
 		switch a := args[n].(type) {
 		case string:
 			v = a
+		case pgtype.UUID:
+			v = ShortUUID(a)
 		case fmt.Stringer:
 			v = a.String()
 		default:

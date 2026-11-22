@@ -104,7 +104,7 @@ templ recurringDue(actor services.Membership, due []services.RecurringRow) {
 							<span class="tabular-nums">{ utils.FormatMoney(ctx, r.AmountCents, actor.Currency) }</span>
 						</p>
 						<div class="flex gap-2">
-							@button.Button(button.Props{Href: routes.URL(routes.ExpenseNew, actor.HouseholdID) + "?recurring=" + r.ID.String(),Class: "h-11 px-4"}) {
+							@button.Button(button.Props{Href: routes.URL(routes.ExpenseNew, actor.HouseholdID) + "?recurring=" + routes.ShortUUID(r.ID),Class: "h-11 px-4"}) {
 								@components.T(locales.LK_RecurringAdd)
 							}
 							<form action={ routes.URL(routes.RecurringExpenseSkip, actor.HouseholdID, r.ID) } method="post" hx-boost="true">

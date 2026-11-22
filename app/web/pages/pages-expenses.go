@@ -26,9 +26,9 @@ func amountValue(ctx context.Context, s string) string {
 
 // newExpenseURL opens the expense form with title filled in
 func newExpenseURL(householdID, listID, itemID pgtype.UUID) string {
-	q := url.Values{"list": {listID.String()}}
+	q := url.Values{"list": {routes.ShortUUID(listID)}}
 	if itemID.Valid {
-		q.Set("item", itemID.String())
+		q.Set("item", routes.ShortUUID(itemID))
 	}
 	return routes.URL(routes.ExpenseNew, householdID) + "?" + q.Encode()
 }
