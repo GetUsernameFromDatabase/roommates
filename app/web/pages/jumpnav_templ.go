@@ -15,14 +15,6 @@ import "roommates/web/components/button"
 import "roommates/internal/locales"
 import "roommates/internal/utils"
 
-// jumpLink is a section of a long page in its [jumpNav], ID is the section's id
-type jumpLink struct {
-	ID    string
-	Label locales.LK
-}
-
-var jumpNavScript = templ.NewOnceHandle()
-
 // jumpNav is a row of links to the sections of a long page, it sticks under the bars above it
 // and jump-nav.js marks the section being read and shows it only on a page about two screens
 // long; one section needs no row
@@ -65,7 +57,7 @@ func jumpNav(links ...jumpLink) templ.Component {
 				var templ_7745c5c3_Var3 string
 				templ_7745c5c3_Var3, templ_7745c5c3_Err = templruntime.NewAttributeExpression(assets.URL("jump-nav.js")).ResolveURL(ctx)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/jumpnav.templ`, Line: 25, Col: 42}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/jumpnav.templ`, Line: 17, Col: 42}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var3)
 				if templ_7745c5c3_Err != nil {
@@ -88,7 +80,7 @@ func jumpNav(links ...jumpLink) templ.Component {
 			var templ_7745c5c3_Var4 string
 			templ_7745c5c3_Var4, templ_7745c5c3_Err = templruntime.NewAttributeExpression(utils.T(ctx, locales.LK_NavOnPage)).Resolve(ctx)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/jumpnav.templ`, Line: 31, Col: 50}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/jumpnav.templ`, Line: 23, Col: 50}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var4)
 			if templ_7745c5c3_Err != nil {
@@ -114,7 +106,7 @@ func jumpNav(links ...jumpLink) templ.Component {
 					var templ_7745c5c3_Var5 string
 					templ_7745c5c3_Var5, templ_7745c5c3_Err = templruntime.NewAttributeExpression(templ.SafeURL("#" + l.ID)).ResolveURL(ctx)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/jumpnav.templ`, Line: 38, Col: 39}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/jumpnav.templ`, Line: 30, Col: 39}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var5)
 					if templ_7745c5c3_Err != nil {

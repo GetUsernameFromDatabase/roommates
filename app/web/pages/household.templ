@@ -334,8 +334,6 @@ templ HouseholdPeople(actor services.Membership, o services.HouseholdOverview, i
 	}
 }
 
-var copyScript = templ.NewOnceHandle()
-
 // copyButton copies value to the clipboard, web/assets/public/copy.js
 templ copyButton(value string, label locales.LK) {
 	@copyScript.Once() {

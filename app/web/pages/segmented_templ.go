@@ -9,16 +9,7 @@ package pages
 import "github.com/a-h/templ"
 import templruntime "github.com/a-h/templ/runtime"
 
-import (
-	"roommates/internal/locales"
-	"roommates/web/components"
-)
-
-// segmentOption is one choice of a [segmented] control
-type segmentOption struct {
-	Value string
-	Label locales.LK
-}
+import "roommates/web/components"
 
 // segmented is radio choices drawn as one control, the caller wraps it in a fieldset with a legend;
 // the radios stay real inputs, so the form posts without JS and CSS can show the picked one's fields
@@ -51,7 +42,7 @@ func segmented(id, name, value string, options []segmentOption) templ.Component 
 			var templ_7745c5c3_Var2 string
 			templ_7745c5c3_Var2, templ_7745c5c3_Err = templruntime.NewAttributeExpression(id + "-" + o.Value).Resolve(ctx)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/segmented.templ`, Line: 20, Col: 28}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/segmented.templ`, Line: 11, Col: 28}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var2)
 			if templ_7745c5c3_Err != nil {
@@ -64,7 +55,7 @@ func segmented(id, name, value string, options []segmentOption) templ.Component 
 			var templ_7745c5c3_Var3 string
 			templ_7745c5c3_Var3, templ_7745c5c3_Err = templruntime.NewAttributeExpression(id + "-" + o.Value).Resolve(ctx)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/segmented.templ`, Line: 23, Col: 63}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/segmented.templ`, Line: 14, Col: 63}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var3)
 			if templ_7745c5c3_Err != nil {
@@ -77,7 +68,7 @@ func segmented(id, name, value string, options []segmentOption) templ.Component 
 			var templ_7745c5c3_Var4 string
 			templ_7745c5c3_Var4, templ_7745c5c3_Err = templruntime.NewAttributeExpression(name).Resolve(ctx)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/segmented.templ`, Line: 23, Col: 77}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/segmented.templ`, Line: 14, Col: 77}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var4)
 			if templ_7745c5c3_Err != nil {
@@ -90,7 +81,7 @@ func segmented(id, name, value string, options []segmentOption) templ.Component 
 			var templ_7745c5c3_Var5 string
 			templ_7745c5c3_Var5, templ_7745c5c3_Err = templruntime.NewAttributeExpression(o.Value).Resolve(ctx)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/segmented.templ`, Line: 23, Col: 95}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/segmented.templ`, Line: 14, Col: 95}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var5)
 			if templ_7745c5c3_Err != nil {

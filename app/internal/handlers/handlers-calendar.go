@@ -157,7 +157,7 @@ func (h *DefaultHandler) renderCalendar(ctx *gin.Context, status int, notice str
 		return
 	}
 	month := time.Date(today.Year(), today.Month(), 1, 0, 0, 0, 0, time.UTC)
-	if m, err := time.Parse(pages.MonthLayout,ctx.Query("month")); err == nil {
+	if m, err := time.Parse(pages.MonthLayout, ctx.Query("month")); err == nil {
 		month = m
 	}
 	next := month.AddDate(0, 1, 0)

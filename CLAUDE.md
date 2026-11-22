@@ -31,6 +31,7 @@ From the repo root: `docker compose up --build` runs db + app (app on https://12
 
 - Commits follow [Conventional Commits 1.0.0](https://www.conventionalcommits.org/en/v1.0.0/) (`feat:`, `fix:`, `refactor:`, `chore:`, `docs:` …).
 - Name a number or string when it repeats or its meaning isn't obvious; leave it inline when it is self-describing where it's used (`hx-trigger="input delay:300ms"`, `10, time.Minute`). Put a named one in the narrowest place all its users can reach: used in one package → unexported const at the top of the file; used outside its domain → exported from the owning package (`services.MaxFileSize`); cross-cutting or ops tunable (cache headers, rate limits, server timeouts) → `internal/config`. Name durations for what they're for (`inviteValidFor`), not generic units.
+- `web/pages/*.templ` and `web/components/*.templ` hold only `templ` components (plus `{{ }}` blocks inside them). Their Go `func`/`var`/`const`/`type` declarations, including `templ.NewOnceHandle()` vars, go in `<name>.go` next to `<name>.templ`, because `templ generate` copies Go declared in a `.templ` into its `_templ.go`, so the same code would exist twice. `scripts/lint.sh` checks this. The shadcn-templ components in `web/components/*/` are left as upstream ships them, so they stay easy to update.
 
 ## graphify
 

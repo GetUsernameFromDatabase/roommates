@@ -11,28 +11,9 @@ import templruntime "github.com/a-h/templ/runtime"
 
 import "roommates/web/components"
 import "roommates/web/components/switch"
-import g "roommates/internal/config"
 import "roommates/internal/locales"
 import "roommates/internal/routes"
 import "roommates/internal/services"
-
-// notificationLabels are the name and the description of a kind of notification
-func notificationLabels(kind string) (title, description locales.LK) {
-	switch kind {
-	case g.NotifyChat:
-		return locales.LK_NotificationsChat, locales.LK_NotificationsChatDescription
-	case g.NotifyMoney:
-		return locales.LK_NotificationsMoney, locales.LK_NotificationsMoneyDescription
-	case g.NotifyRecurring:
-		return locales.LK_NotificationsRecurring, locales.LK_NotificationsRecurringDescription
-	case g.NotifyChores:
-		return locales.LK_NotificationsChores, locales.LK_NotificationsChoresDescription
-	case g.NotifyCalendar:
-		return locales.LK_NotificationsCalendar, locales.LK_NotificationsCalendarDescription
-	default:
-		return locales.LK_NotificationsHousehold, locales.LK_NotificationsHouseholdDescription
-	}
-}
 
 // NotificationSection is what the member gets push notifications about in this household,
 // a switch posts its wanted state and swaps only this section
@@ -169,7 +150,7 @@ func notificationSection(m *services.Membership, settings []services.Notificatio
 			var templ_7745c5c3_Var6 string
 			templ_7745c5c3_Var6, templ_7745c5c3_Err = templruntime.NewAttributeExpression(routes.URL(routes.HouseholdNotifications, m.HouseholdID)).ResolveURL(ctx)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/notifications.templ`, Line: 52, Col: 69}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/notifications.templ`, Line: 33, Col: 69}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var6)
 			if templ_7745c5c3_Err != nil {
@@ -182,7 +163,7 @@ func notificationSection(m *services.Membership, settings []services.Notificatio
 			var templ_7745c5c3_Var7 string
 			templ_7745c5c3_Var7, templ_7745c5c3_Err = templruntime.NewAttributeExpression(routes.URL(routes.HouseholdNotifications, m.HouseholdID)).Resolve(ctx)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/notifications.templ`, Line: 54, Col: 70}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/notifications.templ`, Line: 35, Col: 70}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var7)
 			if templ_7745c5c3_Err != nil {
@@ -195,7 +176,7 @@ func notificationSection(m *services.Membership, settings []services.Notificatio
 			var templ_7745c5c3_Var8 string
 			templ_7745c5c3_Var8, templ_7745c5c3_Err = templruntime.NewAttributeExpression(n.Kind).Resolve(ctx)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/notifications.templ`, Line: 59, Col: 51}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/notifications.templ`, Line: 40, Col: 51}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var8)
 			if templ_7745c5c3_Err != nil {

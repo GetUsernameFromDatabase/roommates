@@ -1,8 +1,6 @@
 package pages
 
-import "fmt"
 import "strconv"
-import "strings"
 import "roommates/web/components"
 import "roommates/web/components/alert"
 import "roommates/web/components/alertdialog"
@@ -189,17 +187,6 @@ templ deleteHousehold(actor services.Membership, h services.HouseholdSettings) {
 	</div>
 }
 
-// currencySelect is disabled while a debt is open, a disabled field posts nothing,
-// so the kept currency goes in a hidden input
-// timeZoneLabel is an IANA name as people read it: "America/New_York" is "America / New York"
-func timeZoneLabel(zone string) string {
-	return strings.ReplaceAll(strings.ReplaceAll(zone, "/", " / "), "_", " ")
-}
-
-func reminderHourLabel(hour int) string {
-	return fmt.Sprintf("%02d:00", hour)
-}
-
 // timeZoneSelect has no search, the kit select jumps to an option by typing its first letters
 templ timeZoneSelect(h services.HouseholdSettings) {
 	{{
@@ -245,6 +232,8 @@ templ reminderHourSelect(h services.HouseholdSettings) {
 	}
 }
 
+// currencySelect is disabled while a debt is open, a disabled field posts nothing,
+// so the kept currency goes in a hidden input
 templ currencySelect(h services.HouseholdSettings) {
 	{{
 		items := utils.Map(services.HouseholdCurrencies, func(c string) selectcomp.ItemData {

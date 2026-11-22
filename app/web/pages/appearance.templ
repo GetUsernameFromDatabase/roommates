@@ -9,19 +9,6 @@ import "roommates/internal/locales"
 import "roommates/internal/routes"
 import "roommates/internal/utils"
 
-var themeNames = map[string]locales.LK{
-	"home":  locales.LK_AppearanceThemeHome,
-	"plain": locales.LK_AppearanceThemePlain,
-}
-
-var modeNames = map[string]locales.LK{
-	"system": locales.LK_AppearanceModeSystem,
-	"light":  locales.LK_AppearanceModeLight,
-	"dark":   locales.LK_AppearanceModeDark,
-}
-
-var appearancePreviewScript = templ.NewOnceHandle()
-
 // AppearanceForm picks the theme and mode of this device, a pick is saved right away,
 // without JS Save does it and next is where to go after
 templ AppearanceForm(next string) {

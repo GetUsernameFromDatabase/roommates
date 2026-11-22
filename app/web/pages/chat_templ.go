@@ -29,8 +29,6 @@ import "net/url"
 import "strings"
 import "time"
 
-var chatScript = templ.NewOnceHandle()
-
 // ChatPage is the household's chat, draft and errorMessage are a message that could not be sent,
 // a non-nil reply is the message the composer answers
 //
@@ -84,7 +82,7 @@ func ChatPage(actor services.Membership, c services.Chat, older bool, search str
 				var templ_7745c5c3_Var4 string
 				templ_7745c5c3_Var4, templ_7745c5c3_Err = templruntime.NewAttributeExpression(assets.URL("chat-hold.js")).ResolveURL(ctx)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/chat.templ`, Line: 33, Col: 43}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/chat.templ`, Line: 31, Col: 43}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var4)
 				if templ_7745c5c3_Err != nil {
@@ -97,7 +95,7 @@ func ChatPage(actor services.Membership, c services.Chat, older bool, search str
 				var templ_7745c5c3_Var5 string
 				templ_7745c5c3_Var5, templ_7745c5c3_Err = templruntime.NewAttributeExpression(assets.URL("chat-keyboard.js")).ResolveURL(ctx)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/chat.templ`, Line: 34, Col: 47}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/chat.templ`, Line: 32, Col: 47}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var5)
 				if templ_7745c5c3_Err != nil {
@@ -126,7 +124,7 @@ func ChatPage(actor services.Membership, c services.Chat, older bool, search str
 					var templ_7745c5c3_Var7 string
 					templ_7745c5c3_Var7, templ_7745c5c3_Err = templruntime.NewAttributeExpression(assets.URL("local-time.js")).ResolveURL(ctx)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/chat.templ`, Line: 37, Col: 45}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/chat.templ`, Line: 35, Col: 45}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var7)
 					if templ_7745c5c3_Err != nil {
@@ -208,7 +206,7 @@ func ChatPage(actor services.Membership, c services.Chat, older bool, search str
 			var templ_7745c5c3_Var10 string
 			templ_7745c5c3_Var10, templ_7745c5c3_Err = templruntime.NewAttributeExpression(chatURL).ResolveURL(ctx)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/chat.templ`, Line: 55, Col: 20}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/chat.templ`, Line: 53, Col: 20}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var10)
 			if templ_7745c5c3_Err != nil {
@@ -221,7 +219,7 @@ func ChatPage(actor services.Membership, c services.Chat, older bool, search str
 			var templ_7745c5c3_Var11 string
 			templ_7745c5c3_Var11, templ_7745c5c3_Err = templruntime.NewAttributeExpression(chatURL).Resolve(ctx)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/chat.templ`, Line: 57, Col: 20}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/chat.templ`, Line: 55, Col: 20}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var11)
 			if templ_7745c5c3_Err != nil {
@@ -275,7 +273,7 @@ func ChatPage(actor services.Membership, c services.Chat, older bool, search str
 			var templ_7745c5c3_Var13 string
 			templ_7745c5c3_Var13, templ_7745c5c3_Err = templruntime.NewAttributeExpression(routes.URL(routes.Chat, actor.HouseholdID)).ResolveURL(ctx)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/chat.templ`, Line: 79, Col: 55}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/chat.templ`, Line: 77, Col: 55}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var13)
 			if templ_7745c5c3_Err != nil {
@@ -288,7 +286,7 @@ func ChatPage(actor services.Membership, c services.Chat, older bool, search str
 			var templ_7745c5c3_Var14 string
 			templ_7745c5c3_Var14, templ_7745c5c3_Err = templruntime.NewAttributeExpression(routes.URL(routes.Chat, actor.HouseholdID)).Resolve(ctx)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/chat.templ`, Line: 82, Col: 56}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/chat.templ`, Line: 80, Col: 56}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var14)
 			if templ_7745c5c3_Err != nil {
@@ -314,7 +312,7 @@ func ChatPage(actor services.Membership, c services.Chat, older bool, search str
 				var templ_7745c5c3_Var15 string
 				templ_7745c5c3_Var15, templ_7745c5c3_Err = templruntime.NewAttributeExpression(reply.ID.String()).Resolve(ctx)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/chat.templ`, Line: 92, Col: 68}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/chat.templ`, Line: 90, Col: 68}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var15)
 				if templ_7745c5c3_Err != nil {
@@ -327,7 +325,7 @@ func ChatPage(actor services.Membership, c services.Chat, older bool, search str
 				var templ_7745c5c3_Var16 string
 				templ_7745c5c3_Var16, templ_7745c5c3_Err = templ.JoinStringErrs(utils.T(ctx, locales.LK_ChatReplyingTo, utils.MemberName(ctx, reply.AuthorName)))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/chat.templ`, Line: 95, Col: 113}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/chat.templ`, Line: 93, Col: 113}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var16))
 				if templ_7745c5c3_Err != nil {
@@ -387,7 +385,7 @@ func ChatPage(actor services.Membership, c services.Chat, older bool, search str
 			var templ_7745c5c3_Var18 string
 			templ_7745c5c3_Var18, templ_7745c5c3_Err = templruntime.NewAttributeExpression(utils.T(ctx, locales.LK_CommonDelete)).Resolve(ctx)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/chat.templ`, Line: 114, Col: 79}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/chat.templ`, Line: 112, Col: 79}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var18)
 			if templ_7745c5c3_Err != nil {
@@ -400,7 +398,7 @@ func ChatPage(actor services.Membership, c services.Chat, older bool, search str
 			var templ_7745c5c3_Var19 string
 			templ_7745c5c3_Var19, templ_7745c5c3_Err = templruntime.NewAttributeExpression(utils.T(ctx, locales.LK_CommonDelete)).Resolve(ctx)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/chat.templ`, Line: 116, Col: 75}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/chat.templ`, Line: 114, Col: 75}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var19)
 			if templ_7745c5c3_Err != nil {
@@ -413,7 +411,7 @@ func ChatPage(actor services.Membership, c services.Chat, older bool, search str
 			var templ_7745c5c3_Var20 string
 			templ_7745c5c3_Var20, templ_7745c5c3_Err = templruntime.NewAttributeExpression(utils.T(ctx, locales.LK_ChatAttach)).Resolve(ctx)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/chat.templ`, Line: 119, Col: 49}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/chat.templ`, Line: 117, Col: 49}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var20)
 			if templ_7745c5c3_Err != nil {
@@ -426,7 +424,7 @@ func ChatPage(actor services.Membership, c services.Chat, older bool, search str
 			var templ_7745c5c3_Var21 string
 			templ_7745c5c3_Var21, templ_7745c5c3_Err = templruntime.NewAttributeExpression(utils.T(ctx, locales.LK_ChatAttach)).Resolve(ctx)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/chat.templ`, Line: 122, Col: 111}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/chat.templ`, Line: 120, Col: 111}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var21)
 			if templ_7745c5c3_Err != nil {
@@ -530,7 +528,7 @@ func chatFilePicker(actor services.Membership) templ.Component {
 			var templ_7745c5c3_Var24 string
 			templ_7745c5c3_Var24, templ_7745c5c3_Err = templruntime.NewAttributeExpression(utils.T(ctx, locales.LK_ChatReference)).Resolve(ctx)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/chat.templ`, Line: 163, Col: 54}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/chat.templ`, Line: 161, Col: 54}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var24)
 			if templ_7745c5c3_Err != nil {
@@ -543,7 +541,7 @@ func chatFilePicker(actor services.Membership) templ.Component {
 			var templ_7745c5c3_Var25 string
 			templ_7745c5c3_Var25, templ_7745c5c3_Err = templruntime.NewAttributeExpression(utils.T(ctx, locales.LK_ChatReference)).Resolve(ctx)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/chat.templ`, Line: 164, Col: 49}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/chat.templ`, Line: 162, Col: 49}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var25)
 			if templ_7745c5c3_Err != nil {
@@ -649,7 +647,7 @@ func ChatFilePicks(actor services.Membership, files []dbqueries.ListFilesRow) te
 				var templ_7745c5c3_Var27 string
 				templ_7745c5c3_Var27, templ_7745c5c3_Err = templruntime.NewAttributeExpression(f.ID.String()).Resolve(ctx)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/chat.templ`, Line: 204, Col: 55}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/chat.templ`, Line: 202, Col: 55}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var27)
 				if templ_7745c5c3_Err != nil {
@@ -662,7 +660,7 @@ func ChatFilePicks(actor services.Membership, files []dbqueries.ListFilesRow) te
 				var templ_7745c5c3_Var28 string
 				templ_7745c5c3_Var28, templ_7745c5c3_Err = templruntime.NewAttributeExpression(f.Name).Resolve(ctx)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/chat.templ`, Line: 204, Col: 76}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/chat.templ`, Line: 202, Col: 76}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var28)
 				if templ_7745c5c3_Err != nil {
@@ -747,7 +745,7 @@ func chatMessages(actor services.Membership, c services.Chat, older bool, search
 		var templ_7745c5c3_Var32 string
 		templ_7745c5c3_Var32, templ_7745c5c3_Err = templruntime.NewAttributeExpression(utils.T(ctx, locales.LK_ChatTitle)).Resolve(ctx)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/chat.templ`, Line: 215, Col: 144}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/chat.templ`, Line: 213, Col: 144}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var32)
 		if templ_7745c5c3_Err != nil {
@@ -765,7 +763,7 @@ func chatMessages(actor services.Membership, c services.Chat, older bool, search
 			var templ_7745c5c3_Var33 string
 			templ_7745c5c3_Var33, templ_7745c5c3_Err = templruntime.NewAttributeExpression(routes.URL(routes.Chat, actor.HouseholdID) + "?search=" + url.QueryEscape(search)).ResolveURL(ctx)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/chat.templ`, Line: 217, Col: 94}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/chat.templ`, Line: 215, Col: 94}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var33)
 			if templ_7745c5c3_Err != nil {
@@ -892,7 +890,7 @@ func chatMessages(actor services.Membership, c services.Chat, older bool, search
 								var templ_7745c5c3_Var38 string
 								templ_7745c5c3_Var38, templ_7745c5c3_Err = templ.JoinStringErrs(utils.MemberName(ctx, m.AuthorName))
 								if templ_7745c5c3_Err != nil {
-									return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/chat.templ`, Line: 254, Col: 51}
+									return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/chat.templ`, Line: 252, Col: 51}
 								}
 								_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var38))
 								if templ_7745c5c3_Err != nil {
@@ -938,7 +936,7 @@ func chatMessages(actor services.Membership, c services.Chat, older bool, search
 							var templ_7745c5c3_Var39 string
 							templ_7745c5c3_Var39, templ_7745c5c3_Err = templruntime.NewAttributeExpression(templ.SafeURL("#message-" + m.ReplyToID.String())).ResolveURL(ctx)
 							if templ_7745c5c3_Err != nil {
-								return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/chat.templ`, Line: 262, Col: 65}
+								return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/chat.templ`, Line: 260, Col: 65}
 							}
 							_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var39)
 							if templ_7745c5c3_Err != nil {
@@ -983,7 +981,7 @@ func chatMessages(actor services.Membership, c services.Chat, older bool, search
 						var templ_7745c5c3_Var42 string
 						templ_7745c5c3_Var42, templ_7745c5c3_Err = templ.JoinStringErrs(utils.MemberName(ctx, *m.ReplyAuthorName))
 						if templ_7745c5c3_Err != nil {
-							return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/chat.templ`, Line: 263, Col: 76}
+							return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/chat.templ`, Line: 261, Col: 76}
 						}
 						_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var42))
 						if templ_7745c5c3_Err != nil {
@@ -1034,7 +1032,7 @@ func chatMessages(actor services.Membership, c services.Chat, older bool, search
 								var templ_7745c5c3_Var45 string
 								templ_7745c5c3_Var45, templ_7745c5c3_Err = templ.JoinStringErrs(m.Body)
 								if templ_7745c5c3_Err != nil {
-									return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/chat.templ`, Line: 277, Col: 17}
+									return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/chat.templ`, Line: 275, Col: 17}
 								}
 								_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var45))
 								if templ_7745c5c3_Err != nil {
@@ -1099,7 +1097,7 @@ func chatMessages(actor services.Membership, c services.Chat, older bool, search
 								var templ_7745c5c3_Var48 string
 								templ_7745c5c3_Var48, templ_7745c5c3_Err = templruntime.NewAttributeExpression(routes.URL(routes.FileThumb, actor.HouseholdID, images[0].ID)).ResolveURL(ctx)
 								if templ_7745c5c3_Err != nil {
-									return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/chat.templ`, Line: 289, Col: 81}
+									return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/chat.templ`, Line: 287, Col: 81}
 								}
 								_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var48)
 								if templ_7745c5c3_Err != nil {
@@ -1112,7 +1110,7 @@ func chatMessages(actor services.Membership, c services.Chat, older bool, search
 								var templ_7745c5c3_Var49 string
 								templ_7745c5c3_Var49, templ_7745c5c3_Err = templruntime.NewAttributeExpression(images[0].Name).Resolve(ctx)
 								if templ_7745c5c3_Err != nil {
-									return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/chat.templ`, Line: 289, Col: 104}
+									return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/chat.templ`, Line: 287, Col: 104}
 								}
 								_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var49)
 								if templ_7745c5c3_Err != nil {
@@ -1149,7 +1147,7 @@ func chatMessages(actor services.Membership, c services.Chat, older bool, search
 									var templ_7745c5c3_Var51 string
 									templ_7745c5c3_Var51, templ_7745c5c3_Err = templruntime.NewAttributeExpression(routes.URL(routes.File, actor.HouseholdID, f.ID)).ResolveURL(ctx)
 									if templ_7745c5c3_Err != nil {
-										return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/chat.templ`, Line: 294, Col: 68}
+										return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/chat.templ`, Line: 292, Col: 68}
 									}
 									_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var51)
 									if templ_7745c5c3_Err != nil {
@@ -1162,7 +1160,7 @@ func chatMessages(actor services.Membership, c services.Chat, older bool, search
 									var templ_7745c5c3_Var52 string
 									templ_7745c5c3_Var52, templ_7745c5c3_Err = templruntime.NewAttributeExpression(routes.URL(routes.FileThumb, actor.HouseholdID, f.ID)).ResolveURL(ctx)
 									if templ_7745c5c3_Err != nil {
-										return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/chat.templ`, Line: 295, Col: 75}
+										return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/chat.templ`, Line: 293, Col: 75}
 									}
 									_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var52)
 									if templ_7745c5c3_Err != nil {
@@ -1175,7 +1173,7 @@ func chatMessages(actor services.Membership, c services.Chat, older bool, search
 									var templ_7745c5c3_Var53 string
 									templ_7745c5c3_Var53, templ_7745c5c3_Err = templruntime.NewAttributeExpression(f.Name).Resolve(ctx)
 									if templ_7745c5c3_Err != nil {
-										return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/chat.templ`, Line: 295, Col: 90}
+										return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/chat.templ`, Line: 293, Col: 90}
 									}
 									_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var53)
 									if templ_7745c5c3_Err != nil {
@@ -1218,7 +1216,7 @@ func chatMessages(actor services.Membership, c services.Chat, older bool, search
 									var templ_7745c5c3_Var55 string
 									templ_7745c5c3_Var55, templ_7745c5c3_Err = templruntime.NewAttributeExpression(routes.URL(routes.File, actor.HouseholdID, f.ID)).ResolveURL(ctx)
 									if templ_7745c5c3_Err != nil {
-										return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/chat.templ`, Line: 303, Col: 68}
+										return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/chat.templ`, Line: 301, Col: 68}
 									}
 									_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var55)
 									if templ_7745c5c3_Err != nil {
@@ -1231,7 +1229,7 @@ func chatMessages(actor services.Membership, c services.Chat, older bool, search
 									var templ_7745c5c3_Var56 string
 									templ_7745c5c3_Var56, templ_7745c5c3_Err = templ.JoinStringErrs(f.Name)
 									if templ_7745c5c3_Err != nil {
-										return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/chat.templ`, Line: 304, Col: 56}
+										return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/chat.templ`, Line: 302, Col: 56}
 									}
 									_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var56))
 									if templ_7745c5c3_Err != nil {
@@ -1244,7 +1242,7 @@ func chatMessages(actor services.Membership, c services.Chat, older bool, search
 									var templ_7745c5c3_Var57 string
 									templ_7745c5c3_Var57, templ_7745c5c3_Err = templ.JoinStringErrs(formatSize(ctx, f.SizeBytes))
 									if templ_7745c5c3_Err != nil {
-										return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/chat.templ`, Line: 304, Col: 133}
+										return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/chat.templ`, Line: 302, Col: 133}
 									}
 									_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var57))
 									if templ_7745c5c3_Err != nil {
@@ -1393,7 +1391,7 @@ func chatMessages(actor services.Membership, c services.Chat, older bool, search
 							var templ_7745c5c3_Var63 string
 							templ_7745c5c3_Var63, templ_7745c5c3_Err = templruntime.NewAttributeExpression(routes.URL(routes.ChatMessageDelete, actor.HouseholdID, m.ID)).ResolveURL(ctx)
 							if templ_7745c5c3_Err != nil {
-								return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/chat.templ`, Line: 336, Col: 79}
+								return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/chat.templ`, Line: 334, Col: 79}
 							}
 							_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var63)
 							if templ_7745c5c3_Err != nil {
@@ -1406,7 +1404,7 @@ func chatMessages(actor services.Membership, c services.Chat, older bool, search
 							var templ_7745c5c3_Var64 string
 							templ_7745c5c3_Var64, templ_7745c5c3_Err = templruntime.NewAttributeExpression(routes.URL(routes.ChatMessageDelete, actor.HouseholdID, m.ID)).Resolve(ctx)
 							if templ_7745c5c3_Err != nil {
-								return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/chat.templ`, Line: 338, Col: 80}
+								return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/chat.templ`, Line: 336, Col: 80}
 							}
 							_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var64)
 							if templ_7745c5c3_Err != nil {
@@ -1419,7 +1417,7 @@ func chatMessages(actor services.Membership, c services.Chat, older bool, search
 							var templ_7745c5c3_Var65 string
 							templ_7745c5c3_Var65, templ_7745c5c3_Err = templruntime.NewAttributeExpression(deleteConfirm(ctx, utils.T(ctx, locales.LK_ChatDeleteConfirm), m.LastFiles)).Resolve(ctx)
 							if templ_7745c5c3_Err != nil {
-								return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/chat.templ`, Line: 342, Col: 97}
+								return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/chat.templ`, Line: 340, Col: 97}
 							}
 							_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var65)
 							if templ_7745c5c3_Err != nil {
@@ -1513,7 +1511,7 @@ func chatMessages(actor services.Membership, c services.Chat, older bool, search
 			var templ_7745c5c3_Var68 string
 			templ_7745c5c3_Var68, templ_7745c5c3_Err = templruntime.NewAttributeExpression(routes.URL(routes.Chat, actor.HouseholdID) + "?before=" + c.Messages[len(c.Messages)-1].ID.String() + "&search=" + url.QueryEscape(search)).ResolveURL(ctx)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/chat.templ`, Line: 359, Col: 149}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/chat.templ`, Line: 357, Col: 149}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var68)
 			if templ_7745c5c3_Err != nil {
@@ -1539,17 +1537,6 @@ func chatMessages(actor services.Membership, c services.Chat, older bool, search
 		return nil
 	})
 }
-
-const chatControlsClass = "shrink-0 gap-0.5 self-center px-0 pointer-events-none opacity-0 " +
-	"pointer-coarse:absolute pointer-coarse:-top-4 pointer-coarse:z-10 pointer-coarse:rounded-full pointer-coarse:bg-popover " +
-	"pointer-coarse:p-0.5 pointer-coarse:shadow-md pointer-coarse:ring-1 pointer-coarse:ring-foreground/10 " +
-	"group-hover/message:pointer-events-auto group-hover/message:opacity-100 " +
-	"group-focus-within/message:pointer-events-auto group-focus-within/message:opacity-100 " +
-	"group-data-open/message:pointer-events-auto group-data-open/message:opacity-100 " +
-	"motion-safe:group-data-open/message:animate-in motion-safe:group-data-open/message:fade-in motion-safe:group-data-open/message:zoom-in-95 motion-safe:group-data-open/message:duration-120"
-
-// chatControlClass is a labelled touch target on touch screens, a round icon with a mouse
-const chatControlClass = "min-h-11 rounded-full text-muted-foreground pointer-fine:size-8 pointer-fine:min-h-8 pointer-fine:p-0"
 
 // chatControlLabel is the icon of a control with a mouse and its text on touch screens,
 // the text stays for screen readers
@@ -1677,7 +1664,7 @@ func replySnippet(body string) templ.Component {
 			var templ_7745c5c3_Var73 string
 			templ_7745c5c3_Var73, templ_7745c5c3_Err = templ.JoinStringErrs(body)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/chat.templ`, Line: 415, Col: 9}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/chat.templ`, Line: 402, Col: 9}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var73))
 			if templ_7745c5c3_Err != nil {
@@ -1696,12 +1683,6 @@ func replySnippet(body string) templ.Component {
 		return nil
 	})
 }
-
-// localTimeScript is local-time.js, a page with times loads it at page level, not in localTime
-var localTimeScript = templ.NewOnceHandle()
-
-// utcMinuteLayout is the UTC time shown until local-time.js replaces it
-const utcMinuteLayout = "2006-01-02 15:04"
 
 // localTime is shown in the viewer's time zone by local-time.js, the server only knows UTC,
 // without today's date and this year, attrs can hold its data-today and data-yesterday phrases
@@ -1733,7 +1714,7 @@ func localTime(t pgtype.Timestamptz, attrs templ.Attributes) templ.Component {
 			var templ_7745c5c3_Var75 string
 			templ_7745c5c3_Var75, templ_7745c5c3_Err = templruntime.NewAttributeExpression(t.Time.UTC().Format(time.RFC3339)).Resolve(ctx)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/chat.templ`, Line: 431, Col: 51}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/chat.templ`, Line: 412, Col: 51}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var75)
 			if templ_7745c5c3_Err != nil {
@@ -1764,7 +1745,7 @@ func localTime(t pgtype.Timestamptz, attrs templ.Attributes) templ.Component {
 		var templ_7745c5c3_Var76 string
 		templ_7745c5c3_Var76, templ_7745c5c3_Err = templ.JoinStringErrs(t.Time.UTC().Format(utcMinuteLayout))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/chat.templ`, Line: 431, Col: 116}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/chat.templ`, Line: 412, Col: 116}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var76))
 		if templ_7745c5c3_Err != nil {

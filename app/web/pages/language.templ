@@ -9,12 +9,6 @@ import "roommates/internal/locales"
 import "roommates/internal/routes"
 import "roommates/internal/utils"
 
-// each in its own language, so it can be found whichever one the page is in
-var languageItems = []selectcomp.ItemData{
-	{Value: locales.ET.String(), Label: languageLabel(locales.ET.String(), "Eesti")},
-	{Value: locales.EN.String(), Label: languageLabel(locales.EN.String(), "English")},
-}
-
 // LanguageForm picks the language, a pick is saved right away and the page reloads in it,
 // id keeps the select unique on the page, without JS Save does it and next is where to go after,
 // compact is only the flag, for beside a title

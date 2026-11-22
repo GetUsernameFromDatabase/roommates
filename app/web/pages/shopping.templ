@@ -15,11 +15,6 @@ import "roommates/internal/utils"
 import "github.com/invopop/ctxi18n/i18n"
 import "github.com/jackc/pgx/v5/pgtype"
 
-var shoppingReuseScript = templ.NewOnceHandle()
-
-// shoppingBuyAgainShown is how many of the old items show as buttons, all of them are suggested while typing
-const shoppingBuyAgainShown = 8
-
 // ShoppingList shows the items of one list, errorMessage is the outcome of the last action
 //
 // the forms post with hx-select so only #shopping-list is swapped,
@@ -187,9 +182,6 @@ templ shoppingListContent(actor services.Membership, l services.ShoppingList, er
 	</div>
 }
 
-// padInputClass writes on the pad's line, the line shows the focus (.pad-add)
-const padInputClass = "h-11 rounded-none border-0 bg-transparent px-0 text-lg shadow-none focus-visible:ring-0 dark:bg-transparent md:text-lg"
-
 templ shoppingOpenItem(actor services.Membership, l services.ShoppingList, it dbqueries.ListShoppingItemsRow) {
 	{{ itemID := it.ID.String() }}
 	<li id={ "item-" + itemID } class="pad-line" style={ itemTransitionName(itemID) }>
@@ -244,8 +236,6 @@ templ shoppingBoughtItem(actor services.Membership, l services.ShoppingList, it 
 		</div>
 	</li>
 }
-
-const boughtLinkClass = "inline-block py-2 underline underline-offset-4 hover:text-foreground"
 
 // shoppingTick crosses an item off or brings it back
 templ shoppingTick(actor services.Membership, l services.ShoppingList, it dbqueries.ListShoppingItemsRow) {

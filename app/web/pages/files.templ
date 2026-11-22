@@ -13,29 +13,10 @@ import g "roommates/internal/config"
 import "roommates/internal/locales"
 import "roommates/internal/routes"
 import "roommates/internal/utils"
-import "github.com/invopop/ctxi18n/i18n"
 import "github.com/jackc/pgx/v5/pgtype"
 import "cmp"
-import "context"
 import "net/url"
 import "unicode/utf8"
-
-// names of the [services.FileKinds] and [services.FilePlaces] options
-var (
-	fileKindNames = map[string]locales.LK{
-		"image": locales.LK_FilesTypeImage,
-		"pdf":   locales.LK_FilesTypePdf,
-		"other": locales.LK_FilesTypeOther,
-	}
-	filePlaceNames = map[string]locales.LK{
-		"note":    locales.LK_FilesPlaceNote,
-		"item":    locales.LK_FilesPlaceItem,
-		"expense": locales.LK_FilesPlaceExpense,
-		"message": locales.LK_FilesPlaceMessage,
-		"event":   locales.LK_FilesPlaceEvent,
-		"none":   locales.LK_FilesPlaceNone,
-	}
-)
 
 // HouseholdFiles lists the files the actor may see that match filter, newest first,
 // errorMessage is the outcome of an upload
@@ -88,44 +69,6 @@ templ HouseholdFiles(actor services.Membership, files []dbqueries.ListFilesRow, 
 		</section>
 	}
 }
-
-// deleteConfirm adds to question how many files would go with the deletion
-func deleteConfirm(ctx context.Context, question string, files int) string {
-	if files == 0 {
-		return question
-	}
-	return question + "\n" + utils.N(ctx, locales.LK_FilesDeletedWith, files, i18n.M{"count": files})
-}
-
-// deleteKeepConfirm is [deleteConfirm] for a form with data-confirm-keep, the dialog itself saves the files
-func deleteKeepConfirm(ctx context.Context, question string, files int) string {
-	if files == 0 {
-		return question
-	}
-	return question + "\n" + utils.N(ctx, locales.LK_FilesDeletedWithKeep, files, i18n.M{"count": files})
-}
-
-// deleteFileConfirm says where else a file on refs places goes from, the Files list shows only its first
-func deleteFileConfirm(ctx context.Context, name string, refs int64) string {
-	question := utils.T(ctx, locales.LK_FilesDeleteConfirm, name)
-	if refs < 2 {
-		return question
-	}
-	return question + "\n" + utils.T(ctx, locales.LK_FilesDeleteShared, refs)
-}
-
-// lastRefs counts the files that go with what they are attached to
-func lastRefs(files []services.AttachedFile) int {
-	n := 0
-	for _, f := range files {
-		if f.LastRef {
-			n++
-		}
-	}
-	return n
-}
-
-const fileContextClass = "block text-xs text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
 
 // fileFilters swaps in the matching files while typing and keeps the filter in the address,
 // the live region then refetches the same filter; it stays out of the region, a refetch would clear what is typed
@@ -266,8 +209,6 @@ templ AttachFilePicks(actor services.Membership, back string, files []dbqueries.
 		</ul>
 	</form>
 }
-
-const filePickClass = "flex min-h-11 w-full items-center gap-2 rounded-lg px-2 text-left text-sm outline-none hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/50"
 
 // filePickContent is a row of a list of existing files to pick from
 templ filePickContent(actor services.Membership, f dbqueries.ListFilesRow) {

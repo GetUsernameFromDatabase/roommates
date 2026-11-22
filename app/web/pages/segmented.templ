@@ -1,15 +1,6 @@
 package pages
 
-import (
-	"roommates/internal/locales"
-	"roommates/web/components"
-)
-
-// segmentOption is one choice of a [segmented] control
-type segmentOption struct {
-	Value string
-	Label locales.LK
-}
+import "roommates/web/components"
 
 // segmented is radio choices drawn as one control, the caller wraps it in a fieldset with a legend;
 // the radios stay real inputs, so the form posts without JS and CSS can show the picked one's fields

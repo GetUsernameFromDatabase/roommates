@@ -340,8 +340,6 @@ templ debtBreakdown(actor services.Membership, d services.Debt) {
 	</details>
 }
 
-var expenseSplitScript = templ.NewOnceHandle()
-
 // ExpenseEditor is [ExpenseEditorWithRepeat] with the repeat select on never
 templ ExpenseEditor(actor services.Membership, members []dbqueries.ListActiveMembersRow, edit *services.Expense, in services.ExpenseInput, errorMessage string, errorField string) {
 	@ExpenseEditorWithRepeat(actor, members, edit, in, "", errorMessage, errorField)
@@ -616,12 +614,6 @@ templ ExpensePage(actor services.Membership, e services.Expense, uploadError str
 		</div>
 	}
 }
-
-// tillFieldClass is a line to write on, the input's ring stays as the focus mark because
-// a read only share has no border to show it
-const tillFieldClass = "h-11 rounded-none border-0 border-b-2 border-dotted border-foreground/40 bg-transparent px-1 shadow-none dark:bg-transparent"
-
-var datePickerScript = templ.NewOnceHandle()
 
 // datePicker is a required day as [time.DateOnly], web/assets/public/date-picker.js
 // copies the calendar's pick to the hidden input, the calendar itself is portaled out of the form

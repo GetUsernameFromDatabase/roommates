@@ -6,14 +6,6 @@ import "roommates/web/components/button"
 import "roommates/internal/locales"
 import "roommates/internal/utils"
 
-// jumpLink is a section of a long page in its [jumpNav], ID is the section's id
-type jumpLink struct {
-	ID    string
-	Label locales.LK
-}
-
-var jumpNavScript = templ.NewOnceHandle()
-
 // jumpNav is a row of links to the sections of a long page, it sticks under the bars above it
 // and jump-nav.js marks the section being read and shows it only on a page about two screens
 // long; one section needs no row
