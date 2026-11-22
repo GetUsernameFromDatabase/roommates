@@ -220,4 +220,13 @@ func TestNotifyRecurringDue(t *testing.T) {
 		t.Fatal(err)
 	}
 	notify("next due", 1)
+	// skipped, then edited back to the date it was pushed about: that is a new due, pushed again
+	r = mustRecurring(t, s, ownerM, "Rent")
+	if err := s.SkipRecurring(ctx, ownerM, r.ID, r.NextDue); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.UpdateRecurring(ctx, ownerM, r.ID, recurringInput("Rent", r.NextDue.Time.Format(time.DateOnly), ownerM.UserID)); err != nil {
+		t.Fatal(err)
+	}
+	notify("moved back", 1)
 }

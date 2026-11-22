@@ -21,7 +21,21 @@ CREATE TABLE users (
   -- after that the cleanup erases the row: username '' (shown as "Former member"),
   -- email <id>@erased.invalid, password '' and the personal fields NULL
   deleted_at TIMESTAMP WITH TIME ZONE,
-  CONSTRAINT chk_users_email_lowercase CHECK (email = lower(email))
+  CONSTRAINT chk_users_email_lowercase CHECK (email = lower(email)),
+  -- username '' is the erased state, only EraseUser reaches it
+  CHECK (
+    username <> ''
+    OR (
+      deleted_at IS NOT NULL
+      AND password = ''
+      AND avatar_key IS NULL
+      AND payee_name IS NULL
+      AND payee_iban IS NULL
+      AND language IS NULL
+      AND NOT email_validated
+    )
+  ),
+  CHECK (password <> '' OR username = '')
 );
 -- if in the future switch is made from like ex% to %ex% then this index won't do
 CREATE INDEX idx_users_username ON users (username);
@@ -54,7 +68,8 @@ CREATE TABLE memberships (
   -- messages of others after it are unread, a new member starts with nothing unread
   chat_read_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
   show_payment_details BOOLEAN NOT NULL DEFAULT FALSE,
-  PRIMARY KEY (household_id, user_id)
+  PRIMARY KEY (household_id, user_id),
+  CHECK (left_at IS NULL OR left_at >= joined_at)
 );
 CREATE INDEX idx_memberships_user_id ON memberships (user_id);
 -- -----------------------------------------------------------------------------
@@ -148,7 +163,12 @@ CREATE TABLE shopping_items (
   FOREIGN KEY (list_id, household_id) REFERENCES shopping_lists (id, household_id) ON DELETE CASCADE,
   FOREIGN KEY (expense_id, household_id) REFERENCES expenses (id, household_id) ON DELETE SET NULL (expense_id),
   -- target of the composite key in file_refs
-  UNIQUE (id, household_id)
+  UNIQUE (id, household_id),
+  -- open -> claimed -> bought -> cleared, only a bought item is cleared or tied to an expense
+  CHECK ((checked_at IS NULL) = (checked_by IS NULL)),
+  CHECK (cleared_at IS NULL OR checked_at IS NOT NULL),
+  CHECK (cleared_at IS NULL OR claimed_by IS NULL),
+  CHECK (expense_id IS NULL OR checked_at IS NOT NULL)
 );
 CREATE INDEX idx_shopping_items_list_id ON shopping_items (list_id);
 CREATE INDEX idx_shopping_items_expense_id ON shopping_items (expense_id);
@@ -201,6 +221,10 @@ CREATE TABLE settlements (
   from_edit BOOLEAN NOT NULL DEFAULT FALSE,
   expense_id UUID,
   CHECK (from_user <> to_user),
+  -- one from an expense edit has no method, is born confirmed and is the only kind with an expense
+  CHECK (from_edit = (method IS NULL)),
+  CHECK (NOT from_edit OR confirmed_at IS NOT NULL),
+  CHECK (expense_id IS NULL OR from_edit),
   FOREIGN KEY (expense_id, household_id) REFERENCES expenses (id, household_id) ON DELETE
   SET NULL (expense_id)
 );
@@ -399,7 +423,9 @@ CREATE TABLE recurring_expenses (
   notified_on DATE,
   created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
   UNIQUE (id, household_id),
-  FOREIGN KEY (household_id, payer_id) REFERENCES memberships (household_id, user_id)
+  FOREIGN KEY (household_id, payer_id) REFERENCES memberships (household_id, user_id),
+  -- moving next_due clears it, so it is never about an old date
+  CHECK (notified_on IS NULL OR notified_on = next_due)
 );
 CREATE INDEX idx_recurring_expenses_due ON recurring_expenses (next_due);
 CREATE TABLE recurring_expense_shares (
@@ -434,6 +460,9 @@ CREATE TABLE chores (
   UNIQUE (id, household_id),
   CHECK ((every IS NULL) = (every_unit IS NULL)),
   CHECK ((every IS NULL) <> (weekdays IS NULL)),
+  -- moving the turn clears both, the nudge only follows the due push
+  CHECK (notified_on IS NULL OR notified_on = next_due),
+  CHECK (nudged_on IS NULL OR nudged_on = notified_on),
   FOREIGN KEY (household_id, assignee_id) REFERENCES memberships (household_id, user_id)
 );
 CREATE INDEX idx_chores_household_id ON chores (household_id, next_due);
@@ -496,7 +525,8 @@ CREATE TABLE data_exports (
   created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
   attempted_at TIMESTAMP WITH TIME ZONE,
   ready_at TIMESTAMP WITH TIME ZONE,
-  CHECK ((object_key IS NULL) = (ready_at IS NULL))
+  CHECK ((object_key IS NULL) = (ready_at IS NULL)),
+  CHECK ((size_bytes IS NULL) = (ready_at IS NULL))
 );
 CREATE INDEX idx_data_exports_user_id ON data_exports (user_id);
 -- -----------------------------------------------------------------------------

@@ -64,9 +64,13 @@ FROM recurring_expenses
 WHERE id = $1
   AND household_id = $2 FOR
 UPDATE;
+-- a moved due date is pushed about again
 -- name: SetRecurringNextDue :exec
 UPDATE recurring_expenses
-SET next_due = $3
+SET notified_on = CASE
+    WHEN next_due = $3 THEN notified_on
+  END,
+  next_due = $3
 WHERE id = $1
   AND household_id = $2;
 -- name: UpdateRecurring :exec
@@ -77,6 +81,9 @@ SET category = $3,
   custom = $6,
   interval = $7,
   anchor = $8,
+  notified_on = CASE
+    WHEN next_due = $9 THEN notified_on
+  END,
   next_due = $9
 WHERE id = $1
   AND household_id = $2;

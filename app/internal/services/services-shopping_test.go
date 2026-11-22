@@ -67,6 +67,14 @@ func TestShoppingList(t *testing.T) {
 		!l.Items[1].CheckedAt.Valid || l.Items[1].CheckedByName == nil {
 		t.Fatalf("unexpected items after claim and check %+v", l.Items)
 	}
+	var bought int
+	if err := s.pool.QueryRow(ctx, "SELECT count(*) FROM activity WHERE household_id = $1 AND kind = $2",
+		ownerM.HouseholdID, g.ActItemBought).Scan(&bought); err != nil {
+		t.Fatal(err)
+	}
+	if bought != 1 {
+		t.Fatalf("a second check logged it again, %d bought entries", bought)
+	}
 
 	// the member takes over the claim, the owner's stale "Not buying" keeps it theirs
 	if err := s.SetShoppingItemClaim(ctx, memberM, listID, bread, true); err != nil {
@@ -278,7 +286,7 @@ func TestShoppingExpenseLink(t *testing.T) {
 	}
 }
 
-// a stale page can untick an item someone removed meanwhile
+// a stale page cannot untick or claim an item someone removed meanwhile
 func TestShoppingHiddenItemNotOpen(t *testing.T) {
 	s := newTestService(t)
 	ctx := t.Context()
@@ -287,9 +295,8 @@ func TestShoppingHiddenItemNotOpen(t *testing.T) {
 	if err := s.ClearCheckedShoppingItems(ctx, ownerM, listID); err != nil {
 		t.Fatal(err)
 	}
-	if err := s.SetShoppingItemChecked(ctx, ownerM, listID, ids[0], false); err != nil {
-		t.Fatal(err)
-	}
+	wantErr(t, "untick cleared item", s.SetShoppingItemChecked(ctx, ownerM, listID, ids[0], false), g.ErrorNotFound)
+	wantErr(t, "claim cleared item", s.SetShoppingItemClaim(ctx, ownerM, listID, ids[0], true), g.ErrorNotFound)
 	o, err := s.GetHouseholdOverview(ctx, ownerM)
 	if err != nil {
 		t.Fatal(err)

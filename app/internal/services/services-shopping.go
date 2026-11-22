@@ -255,16 +255,29 @@ func (s *DefaultService) SetShoppingItemClaim(ctx context.Context, actor Members
 	}))
 }
 
+// SetShoppingItemChecked takes the wanted state, an item already in it is left as is and
+// logs nothing; [g.ErrorNotFound] for a deleted or cleared item
 func (s *DefaultService) SetShoppingItemChecked(ctx context.Context, actor Membership, listID, itemID pgtype.UUID, checked bool) error {
 	return s.inTx(ctx, func(q *dbqueries.Queries) error {
-		if err := rowsAffected(q.SetShoppingItemChecked(ctx, dbqueries.SetShoppingItemCheckedParams{
+		n, err := q.SetShoppingItemChecked(ctx, dbqueries.SetShoppingItemCheckedParams{
 			Checked:     checked,
 			UserID:      actor.UserID,
 			ID:          itemID,
 			ListID:      listID,
 			HouseholdID: actor.HouseholdID,
-		})); err != nil || !checked {
+		})
+		if err != nil {
 			return err
+		}
+		if n == 0 {
+			open, err := q.ShoppingItemOpen(ctx, dbqueries.ShoppingItemOpenParams{ID: itemID, ListID: listID, HouseholdID: actor.HouseholdID})
+			if err != nil || open {
+				return err
+			}
+			return g.ErrorNotFound
+		}
+		if !checked {
+			return nil
 		}
 		it, err := q.GetShoppingItem(ctx, dbqueries.GetShoppingItemParams{ID: itemID, ListID: listID, HouseholdID: actor.HouseholdID})
 		if err != nil {

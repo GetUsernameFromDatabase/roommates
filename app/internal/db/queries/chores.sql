@@ -214,10 +214,12 @@ WHERE id = @id
   AND next_due = @next_due
   AND assignee_id = @assignee_id
   AND notified_on IS DISTINCT FROM next_due;
+-- 0 rows too when the due push was cleared meanwhile, the next run sends that one first
 -- name: ClaimChoreNudged :execrows
 UPDATE chores
 SET nudged_on = next_due
 WHERE id = @id
   AND next_due = @next_due
   AND assignee_id = @assignee_id
+  AND notified_on = next_due
   AND nudged_on IS DISTINCT FROM next_due;

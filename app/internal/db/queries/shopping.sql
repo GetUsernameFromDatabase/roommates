@@ -117,23 +117,34 @@ SET claimed_by = CASE
   END
 WHERE id = sqlc.arg(id)
   AND list_id = sqlc.arg(list_id)
-  AND household_id = sqlc.arg(household_id);
--- checking an already checked item keeps who bought it and when, unchecking drops the
--- expense, buying it later is a new purchase
+  AND household_id = sqlc.arg(household_id)
+  AND cleared_at IS NULL;
+-- 0 rows when the item already is in the wanted state, see ShoppingItemOpen; unchecking
+-- drops the expense, buying it later is a new purchase
 -- name: SetShoppingItemChecked :execrows
 UPDATE shopping_items
 SET checked_at = CASE
-    WHEN sqlc.arg(checked)::boolean THEN COALESCE(checked_at, CURRENT_TIMESTAMP)
+    WHEN sqlc.arg(checked)::boolean THEN CURRENT_TIMESTAMP
   END,
   checked_by = CASE
-    WHEN sqlc.arg(checked)::boolean THEN COALESCE(checked_by, sqlc.arg(user_id)::uuid)
+    WHEN sqlc.arg(checked)::boolean THEN sqlc.arg(user_id)::uuid
   END,
-  expense_id = CASE
-    WHEN sqlc.arg(checked)::boolean THEN expense_id
-  END
+  expense_id = NULL
 WHERE id = sqlc.arg(id)
   AND list_id = sqlc.arg(list_id)
-  AND household_id = sqlc.arg(household_id);
+  AND household_id = sqlc.arg(household_id)
+  AND cleared_at IS NULL
+  AND (checked_at IS NULL) = sqlc.arg(checked)::boolean;
+-- an item still on its list, not deleted or cleared
+-- name: ShoppingItemOpen :one
+SELECT EXISTS (
+    SELECT 1
+    FROM shopping_items
+    WHERE id = $1
+      AND list_id = $2
+      AND household_id = $3
+      AND cleared_at IS NULL
+  );
 -- only the creator deletes an item
 -- name: DeleteShoppingItem :execrows
 DELETE FROM shopping_items

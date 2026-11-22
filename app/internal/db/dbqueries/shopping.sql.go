@@ -513,17 +513,17 @@ func (q *Queries) ReviveShoppingItem(ctx context.Context, arg ReviveShoppingItem
 const setShoppingItemChecked = `-- name: SetShoppingItemChecked :execrows
 UPDATE shopping_items
 SET checked_at = CASE
-    WHEN $1::boolean THEN COALESCE(checked_at, CURRENT_TIMESTAMP)
+    WHEN $1::boolean THEN CURRENT_TIMESTAMP
   END,
   checked_by = CASE
-    WHEN $1::boolean THEN COALESCE(checked_by, $2::uuid)
+    WHEN $1::boolean THEN $2::uuid
   END,
-  expense_id = CASE
-    WHEN $1::boolean THEN expense_id
-  END
+  expense_id = NULL
 WHERE id = $3
   AND list_id = $4
   AND household_id = $5
+  AND cleared_at IS NULL
+  AND (checked_at IS NULL) = $1::boolean
 `
 
 type SetShoppingItemCheckedParams struct {
@@ -534,8 +534,8 @@ type SetShoppingItemCheckedParams struct {
 	HouseholdID pgtype.UUID `json:"household_id"`
 }
 
-// checking an already checked item keeps who bought it and when, unchecking drops the
-// expense, buying it later is a new purchase
+// 0 rows when the item already is in the wanted state, see ShoppingItemOpen; unchecking
+// drops the expense, buying it later is a new purchase
 func (q *Queries) SetShoppingItemChecked(ctx context.Context, arg SetShoppingItemCheckedParams) (int64, error) {
 	result, err := q.db.Exec(ctx, setShoppingItemChecked,
 		arg.Checked,
@@ -559,6 +559,7 @@ SET claimed_by = CASE
 WHERE id = $3
   AND list_id = $4
   AND household_id = $5
+  AND cleared_at IS NULL
 `
 
 type SetShoppingItemClaimParams struct {
@@ -688,4 +689,29 @@ func (q *Queries) SetShoppingListName(ctx context.Context, arg SetShoppingListNa
 		return 0, err
 	}
 	return result.RowsAffected(), nil
+}
+
+const shoppingItemOpen = `-- name: ShoppingItemOpen :one
+SELECT EXISTS (
+    SELECT 1
+    FROM shopping_items
+    WHERE id = $1
+      AND list_id = $2
+      AND household_id = $3
+      AND cleared_at IS NULL
+  )
+`
+
+type ShoppingItemOpenParams struct {
+	ID          pgtype.UUID `json:"id"`
+	ListID      pgtype.UUID `json:"list_id"`
+	HouseholdID pgtype.UUID `json:"household_id"`
+}
+
+// an item still on its list, not deleted or cleared
+func (q *Queries) ShoppingItemOpen(ctx context.Context, arg ShoppingItemOpenParams) (bool, error) {
+	row := q.db.QueryRow(ctx, shoppingItemOpen, arg.ID, arg.ListID, arg.HouseholdID)
+	var exists bool
+	err := row.Scan(&exists)
+	return exists, err
 }

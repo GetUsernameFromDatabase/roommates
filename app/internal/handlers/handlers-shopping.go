@@ -102,7 +102,12 @@ func (h *DefaultHandler) shoppingItemAction(ctx *gin.Context,
 		return
 	}
 	h.shoppingAction(ctx, listForm{}, func(actor services.Membership, listID pgtype.UUID) error {
-		return action(actor, listID, itemID)
+		err := action(actor, listID, itemID)
+		if errors.Is(err, g.ErrorNotFound) {
+			// deleted or cleared meanwhile by someone else, the fresh list shows that
+			return nil
+		}
+		return err
 	})
 }
 

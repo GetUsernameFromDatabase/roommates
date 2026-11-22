@@ -74,6 +74,7 @@ SET nudged_on = next_due
 WHERE id = $1
   AND next_due = $2
   AND assignee_id = $3
+  AND notified_on = next_due
   AND nudged_on IS DISTINCT FROM next_due
 `
 
@@ -83,6 +84,7 @@ type ClaimChoreNudgedParams struct {
 	AssigneeID pgtype.UUID `json:"assignee_id"`
 }
 
+// 0 rows too when the due push was cleared meanwhile, the next run sends that one first
 func (q *Queries) ClaimChoreNudged(ctx context.Context, arg ClaimChoreNudgedParams) (int64, error) {
 	result, err := q.db.Exec(ctx, claimChoreNudged, arg.ID, arg.NextDue, arg.AssigneeID)
 	if err != nil {

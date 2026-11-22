@@ -333,7 +333,10 @@ func (q *Queries) LockRecurring(ctx context.Context, arg LockRecurringParams) (R
 
 const setRecurringNextDue = `-- name: SetRecurringNextDue :exec
 UPDATE recurring_expenses
-SET next_due = $3
+SET notified_on = CASE
+    WHEN next_due = $3 THEN notified_on
+  END,
+  next_due = $3
 WHERE id = $1
   AND household_id = $2
 `
@@ -344,6 +347,7 @@ type SetRecurringNextDueParams struct {
 	NextDue     pgtype.Date `json:"next_due"`
 }
 
+// a moved due date is pushed about again
 func (q *Queries) SetRecurringNextDue(ctx context.Context, arg SetRecurringNextDueParams) error {
 	_, err := q.db.Exec(ctx, setRecurringNextDue, arg.ID, arg.HouseholdID, arg.NextDue)
 	return err
@@ -379,6 +383,9 @@ SET category = $3,
   custom = $6,
   interval = $7,
   anchor = $8,
+  notified_on = CASE
+    WHEN next_due = $9 THEN notified_on
+  END,
   next_due = $9
 WHERE id = $1
   AND household_id = $2
