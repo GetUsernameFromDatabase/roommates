@@ -237,7 +237,7 @@ func LoginForm(m models.Login) templ.Component {
 					Placeholder: utils.T(ctx, locales.LK_EmailPlaceholder),
 					Required:    true,
 					Attributes: templ.Attributes{
-						"autocomplete":     "email",
+						"autocomplete":     "username",
 						"aria-invalid":     len(emailValidations) > 0,
 						"aria-describedby": "email-errors",
 					},

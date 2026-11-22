@@ -61,7 +61,7 @@ templ AccountSection(path string, user dbqueries.GetUserRow, errorAt, errorMessa
 						Attributes:  templ.Attributes{"autocomplete": "email"},
 					})
 				}
-				@currentPasswordField("account-email-password")
+				@currentPasswordField("account-email-password", user.Email)
 				@accountSubmit(locales.LK_AccountEmailSubmit)
 				@outcome(routes.AccountEmail)
 			}
@@ -69,7 +69,7 @@ templ AccountSection(path string, user dbqueries.GetUserRow, errorAt, errorMessa
 				<h3 class="font-semibold">
 					@components.T(locales.LK_PasswordTitle)
 				</h3>
-				@currentPasswordField("account-current-password")
+				@currentPasswordField("account-current-password", user.Email)
 				@field.Field() {
 					@field.Label(field.LabelProps{For: "account-new-password"}) {
 						@components.T(locales.LK_AccountNewPassword)
@@ -133,7 +133,7 @@ templ AccountSection(path string, user dbqueries.GetUserRow, errorAt, errorMessa
 						@components.T(locales.LK_AccountDeleteDescription)
 					</p>
 				</div>
-				@currentPasswordField("account-delete-password")
+				@currentPasswordField("account-delete-password", user.Email)
 				@button.Button(button.Props{Type: button.TypeSubmit, Variant: button.VariantDestructive, Class: "h-11 self-start"}) {
 					@components.T(locales.LK_AccountDeleteSubmit)
 				}
@@ -163,7 +163,10 @@ templ accountSubmit(label locales.LK) {
 	}
 }
 
-templ currentPasswordField(id string) {
+// email is the sign-in name, hidden so password managers match the form to the right login
+// instead of guessing, and nameless so it is not posted
+templ currentPasswordField(id, email string) {
+	<input type="email" value={ email } autocomplete="username" readonly hidden/>
 	@field.Field() {
 		@field.Label(field.LabelProps{For: id}) {
 			@components.T(locales.LK_AccountCurrentPassword)
