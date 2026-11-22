@@ -5,12 +5,32 @@ import (
 	"context"
 	g "roommates/internal/config"
 	"roommates/internal/db/dbqueries"
+	"roommates/internal/routes"
+	"roommates/internal/utils"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgtype"
 )
+
+// a cursor goes through a ?before= link unchanged, to the microsecond postgres keeps
+func TestCursorRoundTrip(t *testing.T) {
+	id, _ := utils.ParseUUID("0193a1b2-c3d4-7e5f-8a9b-0c1d2e3f4a5b")
+	c := Cursor{At: pgtype.Timestamptz{Time: time.UnixMicro(1732371234567890), Valid: true, InfinityModifier: pgtype.Finite}, ID: id}
+	got, err := ParseCursor(c.String())
+	if err != nil || !got.At.Time.Equal(c.At.Time) || !got.At.Valid || got.ID != c.ID {
+		t.Fatalf("%q -> %+v, %v", c.String(), got, err)
+	}
+	if got, err := ParseCursor(""); err != nil || got != (Cursor{}) {
+		t.Fatalf("empty -> %+v, %v", got, err)
+	}
+	for _, bad := range []string{"x", "123", "123-", "-" + routes.ShortUUID(id), "12a-" + routes.ShortUUID(id)} {
+		if _, err := ParseCursor(bad); err == nil {
+			t.Errorf("%q parsed", bad)
+		}
+	}
+}
 
 func TestActivity(t *testing.T) {
 	s := newTestService(t)
@@ -33,7 +53,7 @@ func TestActivity(t *testing.T) {
 
 	// round trip with names and amount
 	log(ownerM, ActivityEntry{Kind: g.ActExpenseAdded, SubjectID: pgtype.UUID{}, TargetUserID: memberM.UserID, Title: "Rent", AmountCents: &cents, Currency: "EUR"})
-	rows, err := s.ListActivity(ctx, ownerM, pgtype.Timestamptz{})
+	rows, err := s.ListActivity(ctx, ownerM, Cursor{})
 	// newest first, after the member's join from newTestHousehold
 	if err != nil || len(rows) != 2 || rows[1].Kind != g.ActMemberJoined {
 		t.Fatalf("rows %+v, %v", rows, err)
@@ -43,29 +63,36 @@ func TestActivity(t *testing.T) {
 		r.Currency == nil || *r.Currency != "EUR" || r.ActorName == nil || r.TargetName == nil || r.ExpenseExists {
 		t.Fatalf("row %+v", r)
 	}
-	if rows, err = s.ListActivity(ctx, strangerM, pgtype.Timestamptz{}); err != nil || len(rows) != 0 {
+	if rows, err = s.ListActivity(ctx, strangerM, Cursor{}); err != nil || len(rows) != 0 {
 		t.Fatalf("stranger sees %+v, %v", rows, err)
 	}
 
-	// pagination: 60 more rows, a page is 50 and before continues after the last one
+	// pagination: 60 more rows, a page is 50 and before continues after the last one;
+	// rows 50 and 51 have the same time, as the rows of one transaction do
+	at := time.Now()
 	for i := range 60 {
+		mins := i + 1
+		if mins > 48 {
+			mins--
+		}
 		if _, err := s.pool.Exec(ctx, `INSERT INTO activity (household_id, actor_id, grp, kind, title, created_at)
-			VALUES ($1, $2, 'notes', $3, 'n', now() - make_interval(mins => $4))`,
-			ownerM.HouseholdID, ownerM.UserID, g.ActNoteEdited, i+1); err != nil {
+			VALUES ($1, $2, 'notes', $3, 'n', $4)`,
+			ownerM.HouseholdID, ownerM.UserID, g.ActNoteEdited, at.Add(-time.Duration(mins)*time.Minute)); err != nil {
 			t.Fatal(err)
 		}
 	}
-	page1, err := s.ListActivity(ctx, ownerM, pgtype.Timestamptz{})
+	page1, err := s.ListActivity(ctx, ownerM, Cursor{})
 	if err != nil || len(page1) != ActivityPageSize {
 		t.Fatalf("page 1: %d rows, %v", len(page1), err)
 	}
-	page2, err := s.ListActivity(ctx, ownerM, page1[len(page1)-1].CreatedAt)
+	last := page1[len(page1)-1]
+	page2, err := s.ListActivity(ctx, ownerM, Cursor{At: last.CreatedAt, ID: last.ID})
 	// 60 + the expense + the member's join
 	if err != nil || len(page2) != 12 {
 		t.Fatalf("page 2: %d rows, %v", len(page2), err)
 	}
-	if !page2[0].CreatedAt.Time.Before(page1[len(page1)-1].CreatedAt.Time) {
-		t.Fatal("page 2 is not older than page 1")
+	if !page2[0].CreatedAt.Time.Equal(last.CreatedAt.Time) || page2[0].ID == last.ID {
+		t.Fatalf("page 2 starts at %v, not the row that shares the time of page 1's last", page2[0].CreatedAt.Time)
 	}
 
 	// a private note's activity is for its author
@@ -76,7 +103,7 @@ func TestActivity(t *testing.T) {
 	log(ownerM, ActivityEntry{Kind: g.ActNoteCreated, SubjectID: noteID, TargetUserID: pgtype.UUID{}, Title: "Diary", AmountCents: nil, Currency: ""})
 	has := func(actor Membership) bool {
 		t.Helper()
-		rows, err := s.ListActivity(ctx, actor, pgtype.Timestamptz{})
+		rows, err := s.ListActivity(ctx, actor, Cursor{})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -115,7 +142,7 @@ func TestActivity(t *testing.T) {
 // loggedKinds is the kinds of the household's activity the actor sees, with their titles
 func loggedKinds(t *testing.T, s *DefaultService, actor Membership) map[string][]string {
 	t.Helper()
-	rows, err := s.ListActivity(context.Background(), actor, pgtype.Timestamptz{})
+	rows, err := s.ListActivity(context.Background(), actor, Cursor{})
 	if err != nil {
 		t.Fatal(err)
 	}

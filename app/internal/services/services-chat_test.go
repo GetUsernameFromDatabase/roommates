@@ -37,7 +37,7 @@ func TestChatFileRefs(t *testing.T) {
 	wantErr(t, "reference to a private note's file", s.PostMessage(ctx, ownerM, "see", none, nil, []pgtype.UUID{secret}), g.ErrorInvalidInput)
 	wantErr(t, "reference across households", s.PostMessage(ctx, strangerM, "see", none, nil, []pgtype.UUID{lease}), g.ErrorInvalidInput)
 	wantErr(t, "too many references", s.PostMessage(ctx, ownerM, "", none, nil, make([]pgtype.UUID, MaxMessageFiles+1)), g.ErrorInvalidInput)
-	if c, _ := s.ListChat(ctx, ownerM, none); len(c.Messages) != 0 {
+	if c, _ := s.ListChat(ctx, ownerM, Cursor{}); len(c.Messages) != 0 {
 		t.Fatalf("refused references left messages: %+v", c.Messages)
 	}
 	picks, err := s.ListReferableFiles(ctx, ownerM, "")
@@ -49,7 +49,7 @@ func TestChatFileRefs(t *testing.T) {
 	if err := s.PostMessage(ctx, ownerM, "", none, nil, []pgtype.UUID{lease}); err != nil {
 		t.Fatal(err)
 	}
-	c, err := s.ListChat(ctx, memberM, none)
+	c, err := s.ListChat(ctx, memberM, Cursor{})
 	if err != nil || len(c.Messages) != 1 || len(c.Messages[0].Files) != 1 || c.Messages[0].Files[0].ID != lease {
 		t.Fatalf("chat = %+v, %v", c, err)
 	}
@@ -69,7 +69,7 @@ func TestChatFileRefs(t *testing.T) {
 	if err := s.DeleteFile(ctx, ownerM, lease); err != nil {
 		t.Fatal(err)
 	}
-	c, err = s.ListChat(ctx, memberM, none)
+	c, err = s.ListChat(ctx, memberM, Cursor{})
 	if err != nil || len(c.Messages) != 1 || len(c.Messages[0].Files) != 0 {
 		t.Fatalf("after deleting the file: %+v, %v", c, err)
 	}
@@ -92,7 +92,7 @@ func TestChatFileRefs(t *testing.T) {
 	}
 	seen := func(m Membership) int {
 		t.Helper()
-		c, err := s.ListChat(ctx, m, none)
+		c, err := s.ListChat(ctx, m, Cursor{})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -154,7 +154,7 @@ func TestChat(t *testing.T) {
 	}
 	wantErr(t, "too many files", s.PostMessage(ctx, ownerM, "", none, make([]Upload, MaxMessageFiles+1), nil), g.ErrorInvalidInput)
 
-	c, err := s.ListChat(ctx, ownerM, none)
+	c, err := s.ListChat(ctx, ownerM, Cursor{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -164,7 +164,7 @@ func TestChat(t *testing.T) {
 	if got := unread(ownerM); got != 0 {
 		t.Fatalf("owner has %d unread after reading", got)
 	}
-	other, err := s.ListChat(ctx, strangerM, none)
+	other, err := s.ListChat(ctx, strangerM, Cursor{})
 	if err != nil || len(other.Messages) != 0 {
 		t.Fatalf("stranger sees %+v, %v", other, err)
 	}
@@ -189,14 +189,19 @@ func TestChat(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	first, err := s.ListChat(ctx, memberM, none)
+	first, err := s.ListChat(ctx, memberM, Cursor{})
 	if err != nil {
 		t.Fatal(err)
 	}
 	if len(first.Messages) != ChatPageSize || !first.HasOlder {
 		t.Fatalf("first page has %d messages, older %v", len(first.Messages), first.HasOlder)
 	}
-	older, err := s.ListChat(ctx, memberM, first.Messages[ChatPageSize-1].ID)
+	// the message the page ended on is deleted before "older" is clicked, the cursor still holds
+	last := first.Messages[ChatPageSize-1]
+	if err := s.DeleteMessage(ctx, memberM, last.ID); err != nil {
+		t.Fatal(err)
+	}
+	older, err := s.ListChat(ctx, memberM, Cursor{At: last.CreatedAt, ID: last.ID})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -215,7 +220,7 @@ func TestChatReply(t *testing.T) {
 	if err := s.PostMessage(ctx, ownerM, "Who took my milk?", none, nil, nil); err != nil {
 		t.Fatal(err)
 	}
-	c, err := s.ListChat(ctx, ownerM, none)
+	c, err := s.ListChat(ctx, ownerM, Cursor{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -226,7 +231,7 @@ func TestChatReply(t *testing.T) {
 	if err := s.PostMessage(ctx, memberM, "Sorry", question, nil, nil); err != nil {
 		t.Fatal(err)
 	}
-	c, err = s.ListChat(ctx, ownerM, none)
+	c, err = s.ListChat(ctx, ownerM, Cursor{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -238,7 +243,7 @@ func TestChatReply(t *testing.T) {
 	if err := s.DeleteMessage(ctx, ownerM, question); err != nil {
 		t.Fatal(err)
 	}
-	c, err = s.ListChat(ctx, ownerM, none)
+	c, err = s.ListChat(ctx, ownerM, Cursor{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -259,12 +264,12 @@ func TestSearchChat(t *testing.T) {
 		}
 	}
 	for q, want := range map[string]int{"milk": 1, "%": 1, "e": 2, "nope": 0, "": 3} {
-		c, err := s.SearchChat(ctx, memberM, none, q)
+		c, err := s.SearchChat(ctx, memberM, Cursor{}, q)
 		if err != nil || len(c.Messages) != want {
 			t.Fatalf("search %q: %d messages, %v, want %d", q, len(c.Messages), err, want)
 		}
 	}
-	if c, err := s.SearchChat(ctx, strangerM, none, "milk"); err != nil || len(c.Messages) != 0 {
+	if c, err := s.SearchChat(ctx, strangerM, Cursor{}, "milk"); err != nil || len(c.Messages) != 0 {
 		t.Fatalf("stranger searches: %+v, %v", c.Messages, err)
 	}
 }
@@ -302,7 +307,7 @@ func TestHouseholdEvents(t *testing.T) {
 	next("message", events.TopicChat)
 
 	// reading the chat tells only the badges, not the chat, which would read again
-	if _, err := s.ListChat(ctx, ownerM, pgtype.UUID{}); err != nil {
+	if _, err := s.ListChat(ctx, ownerM, Cursor{}); err != nil {
 		t.Fatal(err)
 	}
 	next("read", events.TopicRead)

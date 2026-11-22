@@ -7,7 +7,6 @@ import (
 	"roommates/internal/routes"
 	"roommates/internal/services"
 	"roommates/internal/utils"
-	"time"
 
 	"github.com/jackc/pgx/v5/pgtype"
 )
@@ -100,6 +99,6 @@ func activityLink(householdID pgtype.UUID, r services.ActivityRow) string {
 
 // activityMoreURL loads the rows older than the last of rows
 func activityMoreURL(householdID pgtype.UUID, rows []services.ActivityRow) string {
-	before := rows[len(rows)-1].CreatedAt.Time.UTC().Format(time.RFC3339Nano)
-	return routes.URL(routes.HouseholdActivity, householdID) + "?before=" + before
+	last := rows[len(rows)-1]
+	return routes.URL(routes.HouseholdActivity, householdID) + "?before=" + services.Cursor{At: last.CreatedAt, ID: last.ID}.String()
 }

@@ -15,10 +15,10 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
-// PageChat shows the newest messages, or with ?before=<message id> the ones older than it,
+// PageChat shows the newest messages, or with ?before=<[services.Cursor]> the ones older than it,
 // ?reply=<message id> answers that message
 func (h *DefaultHandler) PageChat(ctx *gin.Context) {
-	before, errBefore := optionalUUID(ctx.Query("before"))
+	before, errBefore := services.ParseCursor(ctx.Query("before"))
 	replyTo, errReply := optionalUUID(ctx.Query("reply"))
 	if errBefore != nil || errReply != nil {
 		RenderTemplStatus(ctx, http.StatusNotFound, pages.NotFound())
@@ -36,7 +36,7 @@ func optionalUUID(s string) (pgtype.UUID, error) {
 }
 
 // renderChat shows the composer answering replyTo, a message that is gone is no longer answered
-func (h *DefaultHandler) renderChat(ctx *gin.Context, status int, before, replyTo pgtype.UUID, draft, errorMessage string) {
+func (h *DefaultHandler) renderChat(ctx *gin.Context, status int, before services.Cursor, replyTo pgtype.UUID, draft, errorMessage string) {
 	actor := membershipFromContext(ctx)
 	// ?search= narrows the messages (not q, the file picker has it), only pages have it
 	search := ctx.Query("search")
@@ -58,7 +58,7 @@ func (h *DefaultHandler) renderChat(ctx *gin.Context, status int, before, replyT
 			return
 		}
 	}
-	RenderTemplStatus(ctx, status, pages.ChatPage(actor, c, before.Valid, search, reply, draft, errorMessage))
+	RenderTemplStatus(ctx, status, pages.ChatPage(actor, c, before.At.Valid, search, reply, draft, errorMessage))
 }
 
 // PostMessage sends the "body" field with the optional "file",
@@ -77,17 +77,17 @@ func (h *DefaultHandler) PostMessage(ctx *gin.Context) {
 	case err == nil && IsRequestHTMX(ctx):
 		// a ?reply= left in the address bar would answer the same message again after a reload
 		ctx.Header(g.HHK_HXReplaceURL.String(), routes.URL(routes.Chat, actor.HouseholdID))
-		h.renderChat(ctx, http.StatusOK, pgtype.UUID{}, pgtype.UUID{}, "", "")
+		h.renderChat(ctx, http.StatusOK, services.Cursor{}, pgtype.UUID{}, "", "")
 	case err == nil:
 		Redirect(ctx, routes.URL(routes.Chat, actor.HouseholdID))
 	case errors.Is(err, g.ErrorFileTooLarge):
-		h.renderChat(ctx, http.StatusRequestEntityTooLarge, pgtype.UUID{}, replyTo, body,
+		h.renderChat(ctx, http.StatusRequestEntityTooLarge, services.Cursor{}, replyTo, body,
 			utils.T(c, locales.LK_ChatFilesTooLarge, services.MaxFileSize>>20))
 	case errors.Is(err, g.ErrorNotFound):
 		// the answered message is gone, the draft comes back without its banner and is sent as a plain message
-		h.renderChat(ctx, http.StatusUnprocessableEntity, pgtype.UUID{}, pgtype.UUID{}, body, "")
+		h.renderChat(ctx, http.StatusUnprocessableEntity, services.Cursor{}, pgtype.UUID{}, body, "")
 	case errors.Is(err, g.ErrorInvalidInput):
-		h.renderChat(ctx, http.StatusUnprocessableEntity, pgtype.UUID{}, replyTo, body,
+		h.renderChat(ctx, http.StatusUnprocessableEntity, services.Cursor{}, replyTo, body,
 			utils.T(c, locales.LK_ChatLength, services.MaxMessageFiles, services.MaxMessageLength))
 	default:
 		swapMainOnError(ctx)
@@ -149,7 +149,7 @@ func (h *DefaultHandler) DeleteMessage(ctx *gin.Context) {
 	switch {
 	case (err == nil || errors.Is(err, g.ErrorNotFound)) && IsRequestHTMX(ctx):
 		// the form swaps only the messages out of it, a message already gone (another tab) is no error
-		h.renderChat(ctx, http.StatusOK, pgtype.UUID{}, pgtype.UUID{}, "", "")
+		h.renderChat(ctx, http.StatusOK, services.Cursor{}, pgtype.UUID{}, "", "")
 	case err == nil:
 		Redirect(ctx, routes.URL(routes.Chat, actor.HouseholdID))
 	case errors.Is(err, g.ErrorNotFound):

@@ -11,8 +11,8 @@ INSERT INTO activity (
     currency
   )
 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9);
--- one page of the household's activity, newest first, before_at (NULL for the first page) leaves out
--- what is not older; a private note's rows are for its author, a file's rows for those who see the file;
+-- one page of the household's activity, newest first, after the row (before_at, before_id) that ended
+-- the last page (NULL for the first); id breaks ties between the rows of one transaction; a private note's rows are for its author, a file's rows for those who see the file;
 -- the *_exists columns say whether the subject is still there to link to
 -- name: ListActivity :many
 SELECT a.id,
@@ -74,7 +74,10 @@ FROM activity a
 WHERE a.household_id = sqlc.arg(household_id)
   AND (
     sqlc.narg(before_at)::timestamptz IS NULL
-    OR a.created_at < sqlc.narg(before_at)::timestamptz
+    OR (a.created_at, a.id) < (
+      sqlc.narg(before_at)::timestamptz,
+      sqlc.narg(before_id)::uuid
+    )
   )
   AND NOT EXISTS (
     SELECT 1

@@ -218,29 +218,27 @@ FROM messages m
   LEFT JOIN users reply_author ON reply_author.id = reply.author_id
 WHERE m.household_id = $1
   AND (
-    $2::uuid IS NULL
+    $2::timestamptz IS NULL
     OR (m.created_at, m.id) < (
-      SELECT b.created_at,
-        b.id
-      FROM messages b
-      WHERE b.id = $2
-        AND b.household_id = $1
+      $2::timestamptz,
+      $3::uuid
     )
   )
   AND (
-    $3::text = ''
-    OR strpos(lower(m.body), lower($3)) > 0
+    $4::text = ''
+    OR strpos(lower(m.body), lower($4)) > 0
   )
 ORDER BY m.created_at DESC,
   m.id DESC
-LIMIT $4
+LIMIT $5
 `
 
 type ListMessagesParams struct {
-	HouseholdID pgtype.UUID `json:"household_id"`
-	Before      pgtype.UUID `json:"before"`
-	Q           string      `json:"q"`
-	MaxCount    int32       `json:"max_count"`
+	HouseholdID pgtype.UUID        `json:"household_id"`
+	BeforeAt    pgtype.Timestamptz `json:"before_at"`
+	BeforeID    pgtype.UUID        `json:"before_id"`
+	Q           string             `json:"q"`
+	MaxCount    int32              `json:"max_count"`
 }
 
 type ListMessagesRow struct {
@@ -255,11 +253,13 @@ type ListMessagesRow struct {
 	ReplyBody       string             `json:"reply_body"`
 }
 
-// the newest messages, older than the before message when it is given
+// the newest messages, older than (before_at, before_id) of the message that ended the last page
+// when given, by value so that message may have been deleted since
 func (q *Queries) ListMessages(ctx context.Context, arg ListMessagesParams) ([]ListMessagesRow, error) {
 	rows, err := q.db.Query(ctx, listMessages,
 		arg.HouseholdID,
-		arg.Before,
+		arg.BeforeAt,
+		arg.BeforeID,
 		arg.Q,
 		arg.MaxCount,
 	)

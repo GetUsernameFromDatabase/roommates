@@ -204,7 +204,7 @@ func TestEditExpenseRefused(t *testing.T) {
 		t.Fatalf("after editing an old currency expense = %+v, %v", e, err)
 	}
 	// the history shows the edit in the expense's own currency, not the household's new one
-	rows, err := s.ListActivity(ctx, ownerNow, pgtype.Timestamptz{})
+	rows, err := s.ListActivity(ctx, ownerNow, Cursor{})
 	if err != nil || len(rows) == 0 || rows[0].Kind != g.ActExpenseEdited || rows[0].Currency == nil || *rows[0].Currency != e.Expense.Currency {
 		t.Fatalf("newest activity %+v, %v", rows[:min(len(rows), 1)], err)
 	}

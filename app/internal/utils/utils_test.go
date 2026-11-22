@@ -14,7 +14,7 @@ func TestParseUUID(t *testing.T) {
 	for i := range max {
 		max[i] = 0xff
 	}
-	ids := []pgtype.UUID{{Bytes: [16]byte{}, Valid: true},{Bytes: [16]byte{15: 1}, Valid: true}, {Bytes: max, Valid: true}}
+	ids := []pgtype.UUID{{Bytes: [16]byte{}, Valid: true}, {Bytes: [16]byte{15: 1}, Valid: true}, {Bytes: max, Valid: true}}
 	for range 1000 {
 		var b [16]byte
 		_, _ = rand.Read(b[:])

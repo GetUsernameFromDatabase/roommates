@@ -354,7 +354,7 @@ templ chatMessages(actor services.Membership, c services.Chat, older bool, searc
 		}
 		if c.HasOlder {
 			<a
-				href={ routes.URL(routes.Chat, actor.HouseholdID) + "?before=" + routes.ShortUUID(c.Messages[len(c.Messages)-1].ID) +"&search=" + url.QueryEscape(search) }
+				href={ routes.URL(routes.Chat, actor.HouseholdID) + "?before=" + olderCursor(c) + "&search=" + url.QueryEscape(search) }
 				class="inline-flex min-h-11 items-center self-center text-sm text-muted-foreground underline underline-offset-4 hover:text-foreground"
 			>
 				@components.T(locales.LK_ChatOlder)

@@ -2,7 +2,8 @@
 INSERT INTO messages (household_id, author_id, body, reply_to_id)
 VALUES ($1, $2, $3, $4)
 RETURNING id;
--- the newest messages, older than the before message when it is given
+-- the newest messages, older than (before_at, before_id) of the message that ended the last page
+-- when given, by value so that message may have been deleted since
 -- name: ListMessages :many
 SELECT m.id,
   m.author_id,
@@ -19,13 +20,10 @@ FROM messages m
   LEFT JOIN users reply_author ON reply_author.id = reply.author_id
 WHERE m.household_id = sqlc.arg(household_id)
   AND (
-    sqlc.narg(before)::uuid IS NULL
+    sqlc.narg(before_at)::timestamptz IS NULL
     OR (m.created_at, m.id) < (
-      SELECT b.created_at,
-        b.id
-      FROM messages b
-      WHERE b.id = sqlc.narg(before)
-        AND b.household_id = sqlc.arg(household_id)
+      sqlc.narg(before_at)::timestamptz,
+      sqlc.narg(before_id)::uuid
     )
   )
   AND (

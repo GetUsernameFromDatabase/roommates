@@ -38,8 +38,7 @@ ENV GIN_MODE=release
 RUN adduser -D -H app
 WORKDIR /app
 
-COPY --from=build-stage /app/web/assets web/assets
-# output from `task build`
+# output from `task build`, web/assets is embedded in it
 COPY --from=build-stage /app/bin/app bin/app
 USER app
 CMD ["bin/app"]

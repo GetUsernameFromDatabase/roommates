@@ -15,6 +15,12 @@ import (
 // runGap is how far apart messages of one author can be and still read as one run
 const runGap = 5 * time.Minute
 
+// olderCursor is where the "older messages" link of c continues, after its oldest message
+func olderCursor(c services.Chat) string {
+	last := c.Messages[len(c.Messages)-1]
+	return services.Cursor{At: last.CreatedAt, ID: last.ID}.String()
+}
+
 // sameRun is true when b follows a without its author's name and time being shown again
 func sameRun(a, b services.Message) bool {
 	d := a.CreatedAt.Time.Sub(b.CreatedAt.Time).Abs()

@@ -296,7 +296,7 @@ func TestFileRefs(t *testing.T) {
 	if err := s.PostMessage(ctx, ownerM, "", pgtype.UUID{}, nil, []pgtype.UUID{onNote}); err != nil {
 		t.Fatal(err)
 	}
-	c, err := s.ListChat(ctx, ownerM, pgtype.UUID{})
+	c, err := s.ListChat(ctx, ownerM, Cursor{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -370,13 +370,13 @@ func TestFileRefs(t *testing.T) {
 	if err := s.PostMessage(ctx, ownerM, "", pgtype.UUID{}, nil, []pgtype.UUID{keptOnList}); err != nil {
 		t.Fatal(err)
 	}
-	c, err = s.ListChat(ctx, ownerM, pgtype.UUID{})
+	c, err = s.ListChat(ctx, ownerM, Cursor{})
 	if err != nil {
 		t.Fatal(err)
 	}
 	sent.MessageID = c.Messages[0].ID
 	upload(ownerM, sent, "photo.txt")
-	if c, err = s.ListChat(ctx, ownerM, pgtype.UUID{}); err != nil {
+	if c, err = s.ListChat(ctx, ownerM, Cursor{}); err != nil {
 		t.Fatal(err)
 	}
 	if c.Messages[0].LastFiles != 1 || len(c.Messages[0].Files) != 2 {

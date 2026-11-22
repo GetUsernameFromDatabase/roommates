@@ -69,15 +69,13 @@ func logShare(ctx context.Context, q *dbqueries.Queries, actor Membership, kind 
 	return logActivity(ctx, q, actor, ActivityEntry{Kind: kind, SubjectID: expenseID, TargetUserID: userID, Title: e.Title, AmountCents: &cents, Currency: e.Currency})
 }
 
-// ListActivity returns [ActivityPageSize] rows of the actor's household, newest first, older than before
-// unless it is not valid; rows about what the actor may not see are left out
-//
-// shortcut: pages are cut by time, rows with the very same time (one transaction) can fall between
-// two pages, when that shows switch to a (created_at, id) cursor
-func (s *DefaultService) ListActivity(ctx context.Context, actor Membership, before pgtype.Timestamptz) ([]ActivityRow, error) {
+// ListActivity returns [ActivityPageSize] rows of the actor's household, newest first, after before
+// (the first page for a zero Cursor); rows about what the actor may not see are left out
+func (s *DefaultService) ListActivity(ctx context.Context, actor Membership, before Cursor) ([]ActivityRow, error) {
 	return s.db.ListActivity(ctx, dbqueries.ListActivityParams{
 		HouseholdID: actor.HouseholdID,
-		BeforeAt:    before,
+		BeforeAt:    before.At,
+		BeforeID:    before.ID,
 		UserID:      actor.UserID,
 		PageSize:    ActivityPageSize,
 	})

@@ -113,7 +113,10 @@ FROM activity a
 WHERE a.household_id = $1
   AND (
     $2::timestamptz IS NULL
-    OR a.created_at < $2::timestamptz
+    OR (a.created_at, a.id) < (
+      $2::timestamptz,
+      $3::uuid
+    )
   )
   AND NOT EXISTS (
     SELECT 1
@@ -121,7 +124,7 @@ WHERE a.household_id = $1
     WHERE n.id = a.subject_id
       AND n.household_id = a.household_id
       AND n.visibility = 'private'
-      AND n.author_id IS DISTINCT FROM $3::uuid
+      AND n.author_id IS DISTINCT FROM $4::uuid
   )
   AND (
     NOT EXISTS (
@@ -130,16 +133,17 @@ WHERE a.household_id = $1
       WHERE f.id = a.subject_id
         AND f.household_id = a.household_id
     )
-    OR file_visible(a.subject_id, $3::uuid)
+    OR file_visible(a.subject_id, $4::uuid)
   )
 ORDER BY a.created_at DESC,
   a.id DESC
-LIMIT $4
+LIMIT $5
 `
 
 type ListActivityParams struct {
 	HouseholdID pgtype.UUID        `json:"household_id"`
 	BeforeAt    pgtype.Timestamptz `json:"before_at"`
+	BeforeID    pgtype.UUID        `json:"before_id"`
 	UserID      pgtype.UUID        `json:"user_id"`
 	PageSize    int32              `json:"page_size"`
 }
@@ -165,13 +169,14 @@ type ListActivityRow struct {
 	EventExists     bool               `json:"event_exists"`
 }
 
-// one page of the household's activity, newest first, before_at (NULL for the first page) leaves out
-// what is not older; a private note's rows are for its author, a file's rows for those who see the file;
+// one page of the household's activity, newest first, after the row (before_at, before_id) that ended
+// the last page (NULL for the first); id breaks ties between the rows of one transaction; a private note's rows are for its author, a file's rows for those who see the file;
 // the *_exists columns say whether the subject is still there to link to
 func (q *Queries) ListActivity(ctx context.Context, arg ListActivityParams) ([]ListActivityRow, error) {
 	rows, err := q.db.Query(ctx, listActivity,
 		arg.HouseholdID,
 		arg.BeforeAt,
+		arg.BeforeID,
 		arg.UserID,
 		arg.PageSize,
 	)
