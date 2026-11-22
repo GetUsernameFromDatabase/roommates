@@ -349,6 +349,7 @@ en:
     title: Language
   nav:
     label: Household
+    on-page: On this page
     shopping: Shopping
     notes: Notes
     files: Files

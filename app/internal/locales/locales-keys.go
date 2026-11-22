@@ -584,6 +584,7 @@ const (
 	LK_NavMore                              LK = "nav.more"
 	LK_NavMoreWaiting                       LK = "nav.more-waiting"
 	LK_NavNotes                             LK = "nav.notes"
+	LK_NavOnPage                            LK = "nav.on-page"
 	LK_NavPeople                            LK = "nav.people"
 	LK_NavSettings                          LK = "nav.settings"
 	LK_NavShopping                          LK = "nav.shopping"

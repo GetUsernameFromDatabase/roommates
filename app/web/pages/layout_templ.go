@@ -503,7 +503,7 @@ func householdTopBar(nav HouseholdNav) templ.Component {
 		}
 		ctx = templ.InitializeContext(ctx)
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 21, "<header class=\"sticky top-0 z-20 flex items-center justify-between gap-2 border-b bg-background px-2 py-1 sm:px-8 lg:hidden in-data-keyboard:hidden\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 21, "<header class=\"sticky top-0 z-20 flex items-center justify-between gap-2 h-14 border-b bg-background px-2 sm:px-8 lg:hidden in-data-keyboard:hidden\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

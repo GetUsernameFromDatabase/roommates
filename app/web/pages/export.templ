@@ -8,7 +8,7 @@ import "roommates/internal/services"
 // expenseExports are the CSV downloads of the expenses page, base is its path,
 // the server decides what the actor's file holds
 templ expenseExports(actor services.Membership, base string) {
-	<section aria-labelledby="export-title" class="flex flex-col gap-2">
+	<section id="expense-export" aria-labelledby="export-title" class="flex flex-col gap-2">
 		<h2 id="export-title" class="text-sm font-medium text-muted-foreground">
 			@components.T(locales.LK_ExportHeading)
 		</h2>

@@ -33,7 +33,7 @@ func expenseExports(actor services.Membership, base string) templ.Component {
 		}
 		ctx = templ.InitializeContext(ctx)
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<section aria-labelledby=\"export-title\" class=\"flex flex-col gap-2\"><h2 id=\"export-title\" class=\"text-sm font-medium text-muted-foreground\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<section id=\"expense-export\" aria-labelledby=\"export-title\" class=\"flex flex-col gap-2\"><h2 id=\"export-title\" class=\"text-sm font-medium text-muted-foreground\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

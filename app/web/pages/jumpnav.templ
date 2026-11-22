@@ -1,0 +1,52 @@
+package pages
+
+import "roommates/web/assets"
+import "roommates/web/components"
+import "roommates/web/components/button"
+import "roommates/internal/locales"
+import "roommates/internal/utils"
+
+// jumpLink is a section of a long page in its [jumpNav], ID is the section's id
+type jumpLink struct {
+	ID    string
+	Label locales.LK
+}
+
+var jumpNavScript = templ.NewOnceHandle()
+
+// jumpNav is a row of links to the sections of a long page, it sticks under the bars above it
+// and jump-nav.js marks the section being read and shows it only on a page about two screens
+// long; one section needs no row
+//
+// inside a household on phones it sits under the top bar, the only <header> right in <body>
+templ jumpNav(links ...jumpLink) {
+	if len(links) > 1 {
+		@jumpNavScript.Once() {
+			<script src={ assets.URL("jump-nav.js") }></script>
+		}
+		// hidden until jump-nav.js finds the page long enough to need it
+		<nav
+			data-jump-nav
+			hidden
+			aria-label={ utils.T(ctx, locales.LK_NavOnPage) }
+			class="sticky top-0 z-10 -mx-4 -my-4 bg-background px-4 py-1 sm:-mx-10 sm:px-10 [body:has(>header)_&]:max-lg:top-14"
+		>
+			<ul class="relative flex gap-2 overflow-x-auto py-1 [scrollbar-width:none]">
+				for _, l := range links {
+					<li class="shrink-0">
+						<a
+							href={ templ.SafeURL("#" + l.ID) }
+							class={ button.Variants(button.Props{
+								Variant: button.VariantSecondary,
+								Size:    button.SizeLg,
+								Class:   "rounded-full px-3.5 aria-[current=true]:bg-primary aria-[current=true]:text-primary-foreground",
+							}) }
+						>
+							@components.T(l.Label)
+						</a>
+					</li>
+				}
+			</ul>
+		</nav>
+	}
+}

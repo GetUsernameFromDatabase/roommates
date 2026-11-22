@@ -36,6 +36,11 @@ templ Settings(pushKey string, nav *HouseholdNav, path string, user dbqueries.Ge
 		} else {
 			@doorplateHeader("/", utils.T(ctx, locales.LK_HouseholdBack), utils.T(ctx, locales.LK_NavSettings))
 		}
+		{{ jumps := []jumpLink{{"avatar-section", locales.LK_AvatarTitle}, {"account", locales.LK_AccountTitle}, {"data-export", locales.LK_DataExportTitle}, {"payment-section", locales.LK_PaymentTitle}} }}
+		if member != nil {
+			{{ jumps = append(jumps, jumpLink{"household-settings", locales.LK_HouseholdSettingsTitle}, jumpLink{"notifications-section", locales.LK_NotificationsTitle}) }}
+		}
+		@jumpNav(append(jumps, jumpLink{"device", locales.LK_SettingsDeviceTitle}, jumpLink{"language-section", locales.LK_LanguageTitle})...)
 		@avatarForm(path, user, errorMessage)
 		@AccountSection(path, user, "", "", "", "")
 		@DataExportSection(path, export, "")
@@ -47,7 +52,7 @@ templ Settings(pushKey string, nav *HouseholdNav, path string, user dbqueries.Ge
 			@PaymentSection(path, payment, nil, "", "")
 		}
 		// one sheet per scope: the picture is seen by housemates, the rest only changes this device
-		<section aria-labelledby="device-title" class={ sheetClass + " flex flex-col gap-5" }>
+		<section id="device" aria-labelledby="device-title" class={ sheetClass + " flex flex-col gap-5" }>
 			<div>
 				<h2 id="device-title" class="text-xl font-semibold">
 					@components.T(locales.LK_SettingsDeviceTitle)
@@ -60,7 +65,7 @@ templ Settings(pushKey string, nav *HouseholdNav, path string, user dbqueries.Ge
 			@AppearanceForm(path)
 		</section>
 		// not in "this device": it is saved on the account and follows the user on sign in
-		<section class={ sheetClass }>
+		<section id="language-section" class={ sheetClass }>
 			@LanguageForm("language", path, false)
 		</section>
 	}
@@ -69,7 +74,7 @@ templ Settings(pushKey string, nav *HouseholdNav, path string, user dbqueries.Ge
 // avatarForm uploads the user's picture, or removes it, errorMessage is why the upload failed
 // while a new picture is chosen the only way back is cancelling it, the current one can't be removed
 templ avatarForm(path string, user dbqueries.GetUserRow, errorMessage string) {
-	<section aria-labelledby="avatar-title" class={ sheetClass + " group/avatar flex flex-col gap-4" }>
+	<section id="avatar-section" aria-labelledby="avatar-title" class={ sheetClass + " group/avatar flex flex-col gap-4" }>
 		<div class="flex items-center gap-4">
 			@personAvatar(user.ID, user.AvatarKey, user.Username, avatar.SizeLg, "size-20 shrink-0 text-2xl")
 			<div class="min-w-0">

@@ -95,7 +95,10 @@ templ HouseholdPeople(actor services.Membership, o services.HouseholdOverview, i
 		@VerifyEmailBanner(o.ActorEmailValidated)
 		@toast(infoMessage)
 		// the name board by the front door: who lives here, the biggest thing on the page
-		<section aria-labelledby="members-title" class={ sheetClass }>
+		if isOwner {
+			@jumpNav(jumpLink{"members-section", locales.LK_HouseholdMembers}, jumpLink{"invites-section", locales.LK_HouseholdInvites})
+		}
+		<section id="members-section" aria-labelledby="members-title" class={ sheetClass }>
 			<h2 id="members-title" class="sr-only">
 				@components.T(locales.LK_HouseholdMembers)
 			</h2>
@@ -193,7 +196,7 @@ templ HouseholdPeople(actor services.Membership, o services.HouseholdOverview, i
 			</div>
 		</section>
 		if isOwner {
-			<section aria-labelledby="invites-title">
+			<section id="invites-section" aria-labelledby="invites-title">
 				<h2 id="invites-title" class="text-xl font-semibold">
 					@components.T(locales.LK_HouseholdInvites)
 				</h2>

@@ -37,6 +37,11 @@ templ HouseholdExpenses(actor services.Membership, o services.ExpensesOverview, 
 				@components.T(locales.LK_ExpensesNew)
 			}
 		</header>
+		{{ jumps := []jumpLink{{"expenses", locales.LK_ExpensesBalances}, {"expense-column", locales.LK_NavExpenses}} }}
+		if o.HasExpenses {
+			{{ jumps = append(jumps, jumpLink{"expense-export", locales.LK_ExportHeading}) }}
+		}
+		@jumpNav(jumps...)
 		// outside the region, a refetch would clear it before it is read
 		if settleTo == "" {
 			@formError(errorMessage)
@@ -141,7 +146,7 @@ templ HouseholdExpenses(actor services.Membership, o services.ExpensesOverview, 
 					</div>
 				}
 			}
-			<div class="flex min-w-0 flex-col gap-4">
+			<div id="expense-column" class="flex min-w-0 flex-col gap-4">
 				@button.Button(button.Props{Href: string(householdURL(actor.HouseholdID, "recurring")), Variant: button.VariantOutline, Class: "h-11 self-start"}) {
 					@components.T(locales.LK_RecurringTitle)
 				}

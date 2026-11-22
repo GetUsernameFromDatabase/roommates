@@ -149,7 +149,7 @@ const desktopOnly = "max-lg:hidden"
 // householdTopBar is on phones the household and [householdMenu], the sidebar has both on desktop
 templ householdTopBar(nav HouseholdNav) {
 	// with the keyboard open (chat-keyboard.js) the page is only the chat
-	<header class="sticky top-0 z-20 flex items-center justify-between gap-2 border-b bg-background px-2 py-1 sm:px-8 lg:hidden in-data-keyboard:hidden">
+	<header class="sticky top-0 z-20 flex items-center justify-between gap-2 h-14 border-b bg-background px-2 sm:px-8 lg:hidden in-data-keyboard:hidden">
 		@householdSwitcher(nav.HouseholdID, "")
 		@householdMenu(nav)
 	</header>
