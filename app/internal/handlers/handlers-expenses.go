@@ -212,7 +212,7 @@ func (h *DefaultHandler) CreateExpense(ctx *gin.Context) {
 	var expenseID pgtype.UUID
 	var err error
 	if slices.Contains(g.Intervals, repeat) && !in.RecurringID.Valid {
-		expenseID, err = h.service.CreateRecurring(ctx, actor, services.RecurringInput{ExpenseInput: in, Interval: repeat})
+		expenseID, err = h.service.CreateRecurring(ctx, actor, services.RecurringInput{ExpenseInput: in, Interval: repeat, ShownDue: ""})
 	} else {
 		expenseID, err = h.service.CreateExpense(ctx, actor, in)
 	}

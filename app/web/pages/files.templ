@@ -412,7 +412,7 @@ templ ShoppingItemPage(actor services.Membership, listID pgtype.UUID, it service
 				</h2>
 				<a href={ expenseURL } class="flex min-h-11 items-center justify-between gap-3 hover:underline">
 					<span class="min-w-0 font-medium wrap-break-word">{ expense.Expense.Title }</span>
-					<span class="shrink-0 font-semibold tabular-nums">{ utils.FormatMoney(ctx, expense.Expense.AmountCents, actor.Currency) }</span>
+					<span class="shrink-0 font-semibold tabular-nums">{ utils.FormatMoney(ctx, expense.Expense.AmountCents, expense.Expense.Currency) }</span>
 				</a>
 				if len(expense.Files) > 0 {
 					<ul class="divide-y border-t">

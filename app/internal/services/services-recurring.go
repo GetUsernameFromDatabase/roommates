@@ -1,6 +1,7 @@
 package services
 
 import (
+	"cmp"
 	"context"
 	g "roommates/internal/config"
 	"roommates/internal/db/dbqueries"
@@ -18,6 +19,9 @@ import (
 type RecurringInput struct {
 	ExpenseInput
 	Interval string
+	// [time.DateOnly], the next due day the edit form was shown with: an IncurredOn still on it is no
+	// change, so a draft added since is not due again, "" compares with the stored one
+	ShownDue string
 }
 
 // RecurringRow is a schedule, Shares are filled in only by [DefaultService.GetRecurring]
@@ -39,6 +43,7 @@ func (r RecurringRow) Input() RecurringInput {
 		ListID:     pgtype.UUID{},
 		ItemID:     pgtype.UUID{},
 		Interval:   r.Interval,
+		ShownDue:   r.NextDue.Time.Format(time.DateOnly),
 	}
 	for _, sh := range r.Shares {
 		in.Members = append(in.Members, sh.UserID)
@@ -203,10 +208,14 @@ func (s *DefaultService) UpdateRecurring(ctx context.Context, actor Membership, 
 		if err != nil {
 			return err
 		}
-		// a new interval counts from the next due day too, the old anchor is on the old step
+		// a new date starts it again from that day, a new interval alone counts from the next due day,
+		// the old anchor is on the old step
 		anchor, next := r.Anchor, r.NextDue
-		if !p.IncurredOn.Time.Equal(r.NextDue.Time) || in.Interval != r.Interval {
+		switch {
+		case p.IncurredOn.Time.Format(time.DateOnly) != cmp.Or(in.ShownDue, r.NextDue.Time.Format(time.DateOnly)):
 			anchor, next = p.IncurredOn, p.IncurredOn
+		case in.Interval != r.Interval:
+			anchor = r.NextDue
 		}
 		if err := q.UpdateRecurring(ctx, dbqueries.UpdateRecurringParams{
 			ID:          id,

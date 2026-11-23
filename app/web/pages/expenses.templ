@@ -354,7 +354,7 @@ templ ExpenseEditorWithRepeat(actor services.Membership, members []dbqueries.Lis
 		f := expenseFrame{
 			Action: expensesURL, Back: expensesURL, BackText: utils.T(ctx, locales.LK_ExpensesBack),
 			Heading: utils.T(ctx, locales.LK_ExpensesNew), Submit: locales.LK_ExpensesAdd, Lock: "",
-			PayerID: actor.UserID, DateLabel: locales.LK_ExpensesDate, Repeats: nil, Repeat: repeat,
+			PayerID: actor.UserID, DateLabel: locales.LK_ExpensesDate, Repeats: nil, Repeat: repeat, ShownDue: "",
 		}
 		if !in.RecurringID.Valid {
 			f.Repeats = append([]string{repeatNever}, g.Intervals...)
@@ -397,6 +397,9 @@ templ expenseForm(members []dbqueries.ListActiveMembersRow, f expenseFrame, in s
 			if in.RecurringID.Valid {
 				<input type="hidden" name="recurring" value={ in.RecurringID.String() }/>
 				<input type="hidden" name="recurring_due" value={ in.RecurringDue.Time.Format(time.DateOnly) }/>
+			}
+			if f.ShownDue != "" {
+				<input type="hidden" name="shown_due" value={ f.ShownDue }/>
 			}
 			if errorField == "" {
 				@formError(errorMessage)

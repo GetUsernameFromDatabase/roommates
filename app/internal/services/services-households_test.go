@@ -10,6 +10,7 @@ import (
 	"roommates/internal/db"
 	"roommates/internal/db/dbqueries"
 	"roommates/internal/mailer"
+	"roommates/internal/models"
 	"strings"
 	"testing"
 	"time"
@@ -386,7 +387,7 @@ func TestUpdateHousehold(t *testing.T) {
 	const tz = "Europe/Tallinn"
 	wantErr(t, "member updates", s.UpdateHousehold(ctx, memberM, "Mine", "EUR", tz, 9), g.ErrorForbidden)
 	wantErr(t, "empty name", s.UpdateHousehold(ctx, ownerM, "  ", "EUR", tz, 9), g.ErrorInvalidInput)
-	wantErr(t, "long name", s.UpdateHousehold(ctx, ownerM, strings.Repeat("x", MaxHouseholdNameLength+1), "EUR", tz, 9), g.ErrorInvalidInput)
+	wantErr(t, "long name", s.UpdateHousehold(ctx, ownerM, strings.Repeat("x", models.MaxHouseholdNameLength+1), "EUR", tz, 9), g.ErrorInvalidInput)
 	wantErr(t, "unknown currency", s.UpdateHousehold(ctx, ownerM, "Flat", "XYZ", tz, 9), g.ErrorInvalidInput)
 	for _, bad := range []string{"", "Mars/Olympus", "posix/Europe/Tallinn", "EST5EDT"} {
 		err := s.UpdateHousehold(ctx, ownerM, "Flat", "EUR", bad, 9)

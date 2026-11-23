@@ -154,6 +154,9 @@ templ choreEdit(actor services.Membership, c services.Chore, members []dbqueries
 		hx-swap="outerHTML"
 		class={ sheetClass + " flex flex-col gap-5" }
 	>
+		// the turn this form shows, a Done meanwhile is not undone by a save, see services.ChoreInput
+		<input type="hidden" name="shown_due" value={ f.Input.Shown.Due.Time.Format(time.DateOnly) }/>
+		<input type="hidden" name="shown_assignee" value={ f.Input.Shown.Assignee.String() }/>
 		@choreFields(members, f, "chore-edit")
 		<div class="flex flex-wrap items-center gap-3">
 			@button.Button(button.Props{Type: button.TypeSubmit, Size: button.SizeLg}) {

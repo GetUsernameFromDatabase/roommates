@@ -48,11 +48,13 @@ Restoring onto a new, empty RustFS volume: the backup holds the files but not th
 
 ### Newest dump
 
-Database, into the running `db` service:
+Database, into the running `db` service. It drops and recreates the whole database (the app is stopped, so nothing else is connected). `pg_restore --clean` would not do: after a rollback, a table that a newer migration added stays and keeps the tables it points at from being dropped.
 
 ```sh
-docker compose run --rm --entrypoint sh backup -c \
-  'pg_restore --clean --if-exists --no-owner -d "$PGDATABASE" /backups/db/roommates-2026-01-31.dump'
+docker compose run --rm --entrypoint sh backup -c '
+  dropdb "$PGDATABASE" &&
+  createdb "$PGDATABASE" &&
+  pg_restore --no-owner -d "$PGDATABASE" /backups/db/roommates-2026-01-31.dump'
 ```
 
 Files, copied back into the bucket:

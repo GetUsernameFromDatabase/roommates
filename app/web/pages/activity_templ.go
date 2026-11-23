@@ -68,7 +68,7 @@ func ActivityPage(actor services.Membership, rows []services.ActivityRow, hasMor
 				var templ_7745c5c3_Var4 string
 				templ_7745c5c3_Var4, templ_7745c5c3_Err = templruntime.NewAttributeExpression(assets.URL("local-time.js")).ResolveURL(ctx)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/activity.templ`, Line: 18, Col: 44}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/activity.templ`, Line: 17, Col: 44}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var4)
 				if templ_7745c5c3_Err != nil {
@@ -187,7 +187,7 @@ func ActivityPage(actor services.Membership, rows []services.ActivityRow, hasMor
 							var templ_7745c5c3_Var8 string
 							templ_7745c5c3_Var8, templ_7745c5c3_Err = templruntime.NewAttributeExpression(link).ResolveURL(ctx)
 							if templ_7745c5c3_Err != nil {
-								return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/activity.templ`, Line: 42, Col: 24}
+								return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/activity.templ`, Line: 41, Col: 24}
 							}
 							_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var8)
 							if templ_7745c5c3_Err != nil {
@@ -200,7 +200,7 @@ func ActivityPage(actor services.Membership, rows []services.ActivityRow, hasMor
 							var templ_7745c5c3_Var9 string
 							templ_7745c5c3_Var9, templ_7745c5c3_Err = templ.JoinStringErrs(activityText(ctx, actor, r))
 							if templ_7745c5c3_Err != nil {
-								return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/activity.templ`, Line: 42, Col: 99}
+								return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/activity.templ`, Line: 41, Col: 99}
 							}
 							_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var9))
 							if templ_7745c5c3_Err != nil {
@@ -214,7 +214,7 @@ func ActivityPage(actor services.Membership, rows []services.ActivityRow, hasMor
 							var templ_7745c5c3_Var10 string
 							templ_7745c5c3_Var10, templ_7745c5c3_Err = templ.JoinStringErrs(activityText(ctx, actor, r))
 							if templ_7745c5c3_Err != nil {
-								return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/activity.templ`, Line: 44, Col: 39}
+								return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/activity.templ`, Line: 43, Col: 39}
 							}
 							_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var10))
 							if templ_7745c5c3_Err != nil {

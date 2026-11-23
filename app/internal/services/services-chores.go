@@ -31,6 +31,9 @@ type ChoreInput struct {
 	Members []pgtype.UUID
 	// whose turn it is first, or the manual assignee, not valid for unassigned
 	Assignee pgtype.UUID
+	// the turn an edit form was shown with: FirstDue and Assignee still at it are no change, so a
+	// Done, Skip or Pass made since stays, see [DefaultService.UpdateChore]
+	Shown ChoreTurn
 }
 
 type ChoreMember struct {
@@ -379,6 +382,16 @@ func (s *DefaultService) UpdateChore(ctx context.Context, actor Membership, id p
 		c, err := lockChore(ctx, q, actor, id)
 		if err != nil {
 			return err
+		}
+		// a field the form still has as it was shown takes the chore's current turn, the person only
+		// while the posted rota keeps them, else the error would name someone the form does not show
+		if in.Shown.Due.Valid {
+			if in.FirstDue == in.Shown.Due.Time.Format(time.DateOnly) {
+				in.FirstDue = c.NextDue.Time.Format(time.DateOnly)
+			}
+			if in.Assignee == in.Shown.Assignee && (!c.AssigneeID.Valid || slices.Contains(in.Members, c.AssigneeID)) {
+				in.Assignee = c.AssigneeID
+			}
 		}
 		f, err := cleanChore(ctx, q, actor, in, c.NextDue)
 		if err != nil {

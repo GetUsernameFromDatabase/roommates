@@ -12,7 +12,6 @@ import "roommates/internal/utils"
 //
 // the live region refetches the page's own URL, so it shows the first rows again
 templ ActivityPage(actor services.Membership, rows []services.ActivityRow, hasMore bool) {
-	// no SectionActivity in layout.templ yet: the literal is what it will be
 	@appShell(utils.T(ctx, locales.LK_ActivityTitle), &HouseholdNav{HouseholdID: actor.HouseholdID, Section: SectionActivity}) {
 		@localTimeScript.Once() {
 			<script src={ assets.URL("local-time.js") }></script>

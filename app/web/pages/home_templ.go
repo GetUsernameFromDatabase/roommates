@@ -466,7 +466,7 @@ func CreateHouseholdForm(m models.Household) templ.Component {
 				Value:    m.Name,
 				Required: true,
 				Attributes: templ.Attributes{
-					"maxlength":        "64",
+					"maxlength":        models.MaxHouseholdNameLength,
 					"aria-invalid":     len(nameValidations) > 0,
 					"aria-describedby": "name-errors",
 				},

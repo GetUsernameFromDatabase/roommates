@@ -17,10 +17,10 @@ func (m *Household) ValidateName() (msgs []l.LKMessage) {
 	}
 
 	nameLength := utf8.RuneCountInString(strings.TrimSpace(m.Name))
-	if nameLength < minHouseholdNameLength || nameLength > maxHouseholdNameLength {
+	if nameLength < minHouseholdNameLength || nameLength > MaxHouseholdNameLength {
 		msgs = append(msgs, l.LKMessage{
 			Key:  l.LK_ValidationErrorsHouseholdNameLength,
-			Args: []any{minHouseholdNameLength, maxHouseholdNameLength},
+			Args: []any{minHouseholdNameLength, MaxHouseholdNameLength},
 		})
 	}
 	return msgs

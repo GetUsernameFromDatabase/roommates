@@ -60,6 +60,7 @@ func choreInputFromForm(ctx *gin.Context) services.ChoreInput {
 		Weekdays: nil,
 		Members:  nil,
 		Assignee: pgtype.UUID{},
+		Shown:    services.ChoreTurn{},
 	}
 	in.Every, _ = strconv.Atoi(strings.TrimSpace(ctx.PostForm("every")))
 	for _, v := range ctx.PostFormArray("weekday") {
@@ -76,7 +77,19 @@ func choreInputFromForm(ctx *gin.Context) services.ChoreInput {
 	if id, err := utils.ParseUUID(ctx.PostForm("assignee")); err == nil {
 		in.Assignee = id
 	}
+	in.Shown = choreTurnFromForm(ctx, "shown_")
 	return in
+}
+
+// choreTurnFromForm reads the posted turn prefix+"due" and prefix+"assignee", see [services.ChoreTurn]
+func choreTurnFromForm(ctx *gin.Context, prefix string) services.ChoreTurn {
+	var turn services.ChoreTurn
+	if day, err := time.Parse(time.DateOnly, ctx.PostForm(prefix+"due")); err == nil {
+		turn.Due = pgtype.Date{Time: day, InfinityModifier: pgtype.Finite, Valid: true}
+	}
+	// "" is nobody's turn, which stays an invalid UUID
+	turn.Assignee, _ = utils.ParseUUID(ctx.PostForm(prefix + "assignee"))
+	return turn
 }
 
 // choreInput is the form of an existing chore, its next due date is the first one
@@ -90,6 +103,7 @@ func choreInput(c services.Chore) services.ChoreInput {
 		FirstDue: c.NextDue.Format(time.DateOnly),
 		Members:  nil,
 		Assignee: c.AssigneeID,
+		Shown:    c.Turn(),
 	}
 	for _, m := range c.Members {
 		in.Members = append(in.Members, m.UserID)
@@ -127,6 +141,7 @@ func (h *DefaultHandler) renderChores(ctx *gin.Context, status int, notice strin
 			FirstDue: today.Format(time.DateOnly),
 			Members:  nil,
 			Assignee: pgtype.UUID{},
+			Shown:    services.ChoreTurn{},
 		}
 		for _, m := range members {
 			in.Members = append(in.Members, m.UserID)
@@ -229,13 +244,7 @@ func (h *DefaultHandler) choreTurnAction(ctx *gin.Context,
 		return
 	}
 	actor := membershipFromContext(ctx)
-	var turn services.ChoreTurn
-	if day, err := time.Parse(time.DateOnly, ctx.PostForm("due")); err == nil {
-		turn.Due = pgtype.Date{Time: day, InfinityModifier: pgtype.Finite, Valid: true}
-	}
-	// "" is nobody's turn, which stays an invalid UUID
-	turn.Assignee, _ = utils.ParseUUID(ctx.PostForm("assignee"))
-	err := run(actor, id, turn)
+	err := run(actor, id, choreTurnFromForm(ctx, ""))
 	if errors.Is(err, g.ErrorInvalidInput) || errors.Is(err, services.ErrChoreTurnMoved) {
 		h.renderChores(ctx, http.StatusOK, "", nil)
 		return

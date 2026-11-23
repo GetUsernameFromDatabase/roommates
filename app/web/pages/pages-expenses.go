@@ -100,6 +100,8 @@ type expenseFrame struct {
 	// Repeats are the repeat select's options, none hides it, Repeat is the chosen one or the first
 	Repeats []string
 	Repeat  string
+	// ShownDue is the next due day a schedule's form was shown with, see services.RecurringInput
+	ShownDue string
 }
 
 // canEditRecurring says whether the actor can change schedule r, see services.UpdateRecurring

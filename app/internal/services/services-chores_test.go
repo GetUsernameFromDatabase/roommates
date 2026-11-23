@@ -49,7 +49,7 @@ func TestChoreClean(t *testing.T) {
 	a, b, stranger := uid(1), uid(2), uid(3)
 	active := []dbqueries.ListActiveMembersRow{{UserID: a, Username: "a", AvatarKey: nil, Role: g.RoleOwner, JoinedAt: pgtype.Timestamptz{}}, {UserID: b, Username: "b", AvatarKey: nil, Role: g.RoleOwner, JoinedAt: pgtype.Timestamptz{}}}
 	ok := func() ChoreInput {
-		return ChoreInput{Title: " Bins ", Rotation: g.RotationFixed, Unit: g.ChoreUnitWeek, Every: 2, Weekdays: nil, FirstDue: "2026-11-19", Members: []pgtype.UUID{a, b}, Assignee: b}
+		return ChoreInput{Title: " Bins ", Rotation: g.RotationFixed, Unit: g.ChoreUnitWeek, Every: 2, Weekdays: nil, FirstDue: "2026-11-19", Members: []pgtype.UUID{a, b}, Assignee: b, Shown: ChoreTurn{}}
 	}
 	f, err := ok().clean(today, pgtype.Date{}, active)
 	if err != nil || f.title != "Bins" || *f.every != 2 || *f.unit != g.ChoreUnitWeek || f.weekdays != nil || !f.due.Equal(today.Time) {
@@ -119,6 +119,7 @@ func everyDayChore(title, rotation string, assignee pgtype.UUID, members ...pgty
 		FirstDue: "",
 		Members:  members,
 		Assignee: assignee,
+		Shown:    ChoreTurn{},
 	}
 }
 
@@ -224,6 +225,51 @@ func TestChoreFixedRotation(t *testing.T) {
 		t.Fatal(err)
 	}
 	wantKinds(t, s, ownerM, g.ActChoreDeleted)
+}
+
+// an edit form opened before a Done does not undo it when saved
+func TestChoreStaleEdit(t *testing.T) {
+	s := newTestService(t)
+	ctx := t.Context()
+	ownerM, memberM, _, _ := choreTestHousehold(t, s)
+	today, err := s.HouseholdToday(ctx, ownerM)
+	if err != nil {
+		t.Fatal(err)
+	}
+	in := everyDayChore("Bins", g.RotationFixed, ownerM.UserID, ownerM.UserID, memberM.UserID)
+	in.Unit, in.Every, in.Weekdays, in.FirstDue = g.ChoreUnitWeek, 1, nil, today.Format(time.DateOnly)
+	id := mustCreateChore(t, s, ownerM, in)
+	c := wantTurn(t, s, ownerM, id, ownerM.UserID, 0, "created")
+
+	// the form as the edit page shows it
+	in.FirstDue, in.Assignee, in.Shown = c.NextDue.Format(time.DateOnly), c.AssigneeID, c.Turn()
+	if err := s.DoneChore(ctx, ownerM, id, c.Turn()); err != nil {
+		t.Fatal(err)
+	}
+	wantTurn(t, s, ownerM, id, memberM.UserID, 7, "done")
+	in.Title = "Bins out"
+	if err := s.UpdateChore(ctx, memberM, id, in); err != nil {
+		t.Fatal(err)
+	}
+	wantTurn(t, s, ownerM, id, memberM.UserID, 7, "stale edit")
+
+	// the stale form takes off whose turn it is now: its shown person gets the turn, no error about
+	// someone it does not show
+	in.Members = []pgtype.UUID{ownerM.UserID}
+	if err := s.UpdateChore(ctx, ownerM, id, in); err != nil {
+		t.Fatal(err)
+	}
+	wantTurn(t, s, ownerM, id, ownerM.UserID, 7, "stale edit without the turn's person")
+
+	// a field changed on the form still changes
+	in.Members = []pgtype.UUID{ownerM.UserID, memberM.UserID}
+	c = mustChore(t, s, ownerM, id).Chore
+	in.Shown = c.Turn()
+	in.Assignee, in.FirstDue = memberM.UserID, c.Today.AddDate(0, 0, 3).Format(time.DateOnly)
+	if err := s.UpdateChore(ctx, memberM, id, in); err != nil {
+		t.Fatal(err)
+	}
+	wantTurn(t, s, ownerM, id, memberM.UserID, 3, "changed")
 }
 
 func historyKinds(h []ChoreLogEntry) []string {

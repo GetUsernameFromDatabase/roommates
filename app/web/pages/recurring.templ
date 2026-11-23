@@ -70,6 +70,7 @@ templ RecurringEditor(actor services.Membership, members []dbqueries.ListActiveM
 			Action: routes.URL(routes.RecurringExpense, actor.HouseholdID, r.ID), Back: routes.URL(routes.Recurring, actor.HouseholdID), BackText: utils.T(ctx, locales.LK_RecurringTitle),
 			Heading: utils.T(ctx, locales.LK_RecurringEditTitle), Submit: locales.LK_ExpensesSave, Lock: "",
 			PayerID: r.PayerID, DateLabel: locales.LK_RecurringNextDue, Repeats: g.Intervals, Repeat: in.Interval,
+			ShownDue: in.ShownDue,
 		}
 	}}
 	@appShell(f.Heading, &HouseholdNav{HouseholdID: actor.HouseholdID, Section: SectionExpenses}) {

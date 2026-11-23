@@ -9,6 +9,7 @@ import "roommates/web/components/field"
 import "roommates/web/components/input"
 import "roommates/web/components/select"
 import "roommates/internal/locales"
+import "roommates/internal/models"
 import "roommates/internal/routes"
 import "roommates/internal/services"
 import "roommates/internal/utils"
@@ -45,7 +46,7 @@ templ HouseholdSettingsSection(actor services.Membership, h services.HouseholdSe
 						Required: true,
 						Class:    "h-11",
 						Attributes: templ.Attributes{
-							"maxlength": services.MaxHouseholdNameLength,
+							"maxlength": models.MaxHouseholdNameLength,
 						},
 					})
 				</div>

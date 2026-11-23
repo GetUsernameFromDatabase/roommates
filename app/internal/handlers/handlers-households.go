@@ -344,7 +344,7 @@ func (h *DefaultHandler) UpdateHousehold(ctx *gin.Context) {
 	case errors.Is(err, g.ErrorForbidden):
 		RenderTemplStatus(ctx, http.StatusForbidden, pages.Error())
 	case errors.As(err, &field) && field.Field == services.FieldName:
-		show(http.StatusUnprocessableEntity, utils.T(ctx.Request.Context(), locales.LK_ValidationErrorsHouseholdNameLength, 1, services.MaxHouseholdNameLength), "")
+		show(http.StatusUnprocessableEntity, utils.T(ctx.Request.Context(), locales.LK_ValidationErrorsHouseholdNameLength, 1, models.MaxHouseholdNameLength), "")
 	case errors.As(err, &field) && field.Field == services.FieldTimeZone:
 		show(http.StatusUnprocessableEntity, utils.T(ctx.Request.Context(), locales.LK_HouseholdSettingsTimeZoneInvalid), "")
 	case errors.As(err, &field) && field.Field == services.FieldReminderHour:

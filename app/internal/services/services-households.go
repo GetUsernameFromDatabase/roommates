@@ -8,6 +8,7 @@ import (
 	g "roommates/internal/config"
 	"roommates/internal/db/dbqueries"
 	"roommates/internal/locales"
+	"roommates/internal/models"
 	"roommates/internal/push"
 	"roommates/internal/routes"
 	"roommates/internal/utils"
@@ -591,8 +592,6 @@ func (s *DefaultService) PurgeDeletedHouseholds(ctx context.Context) error {
 
 // -----------------------------------------------------------------------------
 
-const MaxHouseholdNameLength = 64
-
 // what a [FieldError] of [DefaultService.UpdateHousehold] names
 const (
 	FieldName         = "name"
@@ -645,7 +644,7 @@ func (s *DefaultService) UpdateHousehold(ctx context.Context, actor Membership, 
 	if actor.Role != g.RoleOwner {
 		return g.ErrorForbidden
 	}
-	name, ok := trimToLength(name, 1, MaxHouseholdNameLength)
+	name, ok := trimToLength(name, 1, models.MaxHouseholdNameLength)
 	if !ok {
 		return FieldError{Field: FieldName}
 	}

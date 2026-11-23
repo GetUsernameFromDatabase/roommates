@@ -55,6 +55,7 @@ func recurringInput(title, date string, members ...pgtype.UUID) RecurringInput {
 		ListID:     pgtype.UUID{},
 		ItemID:     pgtype.UUID{},
 		Interval:   g.IntervalWeek,
+		ShownDue:   "",
 	}
 }
 
@@ -199,6 +200,29 @@ func TestRecurringChanges(t *testing.T) {
 	}
 	if err := s.DeleteRecurring(ctx, ownerM, internet.ID); err != nil {
 		t.Fatal(err)
+	}
+}
+
+// an edit form opened before a draft was skipped (or added) does not make it due again when saved
+func TestRecurringStaleEdit(t *testing.T) {
+	s := newTestService(t)
+	ctx := t.Context()
+	ownerM, _, _ := newTestHousehold(t, s)
+	if _, err := s.CreateRecurring(ctx, ownerM, recurringInput("Rent", daysAgo(1), ownerM.UserID)); err != nil {
+		t.Fatal(err)
+	}
+	r := mustRecurring(t, s, ownerM, "Rent")
+	form := r.Input()
+	if err := s.SkipRecurring(ctx, ownerM, r.ID, r.NextDue); err != nil {
+		t.Fatal(err)
+	}
+	next := mustRecurring(t, s, ownerM, "Rent").NextDue
+	form.Title = "Flat rent"
+	if err := s.UpdateRecurring(ctx, ownerM, r.ID, form); err != nil {
+		t.Fatal(err)
+	}
+	if got := mustRecurring(t, s, ownerM, "Flat rent"); !got.NextDue.Time.Equal(next.Time) || !got.Anchor.Time.Equal(r.Anchor.Time) {
+		t.Fatalf("stale edit: got next %v anchor %v, want %v and %v", got.NextDue, got.Anchor, next, r.Anchor)
 	}
 }
 

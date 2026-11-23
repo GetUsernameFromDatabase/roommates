@@ -15,7 +15,8 @@ const (
 	maxEmailLength = 254
 
 	minHouseholdNameLength = 1
-	maxHouseholdNameLength = 64
+	// MaxHouseholdNameLength is the rule of the create form and of a rename
+	MaxHouseholdNameLength = 64
 
 	passwordSpecialCharaters = "!@#$%^&*()-_=+[]{}|;:',.<>?/`~"
 )
