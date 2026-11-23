@@ -171,8 +171,8 @@ func (s *DefaultService) writeDataExport(ctx context.Context, userID pgtype.UUID
 		return err
 	}
 	for _, m := range memberships {
-		hid := m.HouseholdID.String()
-		dir := zipName(m.Household) + "-" + hid[:8]
+		// the whole id: a uuidv7 starts with its creation time, so a prefix can repeat
+		dir := zipName(m.Household) + "-" + routes.ShortUUID(m.HouseholdID)
 		if err := s.writeHouseholdExport(ctx, z, dir, m.HouseholdID, userID); err != nil {
 			return err
 		}

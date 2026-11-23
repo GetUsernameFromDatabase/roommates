@@ -10,6 +10,7 @@ import (
 	"time"
 
 	g "roommates/internal/config"
+	"roommates/internal/routes"
 
 	"github.com/jackc/pgx/v5/pgtype"
 )
@@ -119,7 +120,7 @@ func TestDataExport(t *testing.T) {
 	if !strings.Contains(entries["account.json"], `"household": "Flat"`) {
 		t.Errorf("account.json lacks the membership:\n%s", entries["account.json"])
 	}
-	prefix := "Flat-" + ownerM.HouseholdID.String()[:8]
+	prefix := "Flat-" + routes.ShortUUID(ownerM.HouseholdID)
 	household := entries["households/"+prefix+".json"]
 	for _, want := range []string{`"title": "Rent"`, "my own words", "Secret diary", `"name": "lease.txt"`} {
 		if !strings.Contains(household, want) {

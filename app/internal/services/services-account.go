@@ -32,8 +32,8 @@ func (s *DefaultService) checkPassword(ctx context.Context, userID pgtype.UUID, 
 	return nil
 }
 
-// ChangePassword sets a new password if current is right, and signs the user
-// out everywhere, the caller signs the current session in again
+// ChangePassword sets a new password if current is right, cancels a pending email change
+// and signs the user out everywhere, the caller signs the current session in again
 func (s *DefaultService) ChangePassword(ctx context.Context, userID pgtype.UUID, current, password string) error {
 	if err := s.checkPassword(ctx, userID, current); err != nil {
 		return err
@@ -49,13 +49,31 @@ func (s *DefaultService) ChangePassword(ctx context.Context, userID pgtype.UUID,
 		}); err != nil {
 			return err
 		}
-		return q.DeleteUserSessions(ctx, userID)
+		// asked for with the old password, which may be the stolen one
+		if err := q.DeleteEmailTokensOfUser(ctx, dbqueries.DeleteEmailTokensOfUserParams{
+			UserID: userID,
+			Kind:   tokenKindEmailChange,
+		}); err != nil {
+			return err
+		}
+		return signOutEverywhere(ctx, q, userID)
 	})
 }
 
-// SignOutEverywhere deletes every session of the user, this one too
+// SignOutEverywhere ends every session of the user, this one too
 func (s *DefaultService) SignOutEverywhere(ctx context.Context, userID pgtype.UUID) error {
-	return s.db.DeleteUserSessions(ctx, userID)
+	return s.inTx(ctx, func(q *dbqueries.Queries) error {
+		return signOutEverywhere(ctx, q, userID)
+	})
+}
+
+// signOutEverywhere deletes the user's sessions and push subscriptions, so a signed out
+// device stops getting notifications too; one still signed in sends its own again (push.js)
+func signOutEverywhere(ctx context.Context, q *dbqueries.Queries, userID pgtype.UUID) error {
+	if err := q.DeleteUserSessions(ctx, userID); err != nil {
+		return err
+	}
+	return q.DeletePushSubscriptionsOfUser(ctx, userID)
 }
 
 // AccountDeleteBlocked names the households that stop [DefaultService.DeleteAccount]
@@ -146,10 +164,7 @@ func (s *DefaultService) DeleteAccount(ctx context.Context, userID pgtype.UUID, 
 		if err := q.MarkAccountDeleted(ctx, userID); err != nil {
 			return err
 		}
-		if err := q.DeleteUserSessions(ctx, userID); err != nil {
-			return err
-		}
-		return q.DeletePushSubscriptionsOfUser(ctx, userID)
+		return signOutEverywhere(ctx, q, userID)
 	})
 	if err != nil {
 		return err

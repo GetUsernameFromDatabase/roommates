@@ -98,7 +98,23 @@
     });
   };
 
+  // the server forgets every device of a user signed out everywhere or after a password
+  // change, so a signed-in page (it has the logout form) sends this device's subscription again,
+  // as does the account section, which a password change swaps in place
+  let resent = false;
+  const resend = async () => {
+    const reg = await ready;
+    const sub = reg && (await reg.pushManager.getSubscription());
+    if (sub) {
+      await post(ROUTES.pushSubscribe, sub.toJSON());
+    }
+  };
+
   htmx.onLoad((root) => {
+    if (supported && (root.id === "account" || (!resent && root.querySelector("form[data-push-logout]")))) {
+      resent = true;
+      resend().catch((err) => console.warn("push subscription not sent again", err));
+    }
     root.querySelectorAll("[data-push]").forEach(setup);
     // the next person signing in on this device must not get these notifications
     root.querySelectorAll("form[data-push-logout]").forEach((form) => {

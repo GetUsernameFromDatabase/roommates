@@ -237,7 +237,8 @@ func RegisterForm(m models.Register) templ.Component {
 					Placeholder: utils.T(ctx, locales.LK_EmailPlaceholder),
 					Required:    true,
 					Attributes: templ.Attributes{
-						"autocomplete":     "email",
+						// the email is the sign-in name, as on the login form
+						"autocomplete":     "username",
 						"aria-invalid":     len(emailValidations) > 0,
 						"aria-describedby": "email-errors",
 					},
@@ -300,7 +301,7 @@ func RegisterForm(m models.Register) templ.Component {
 					Value:    m.Username,
 					Required: true,
 					Attributes: templ.Attributes{
-						"autocomplete":     "username",
+						"autocomplete":     "nickname",
 						"aria-invalid":     len(usernameValidations) > 0,
 						"aria-describedby": "username-errors",
 					},

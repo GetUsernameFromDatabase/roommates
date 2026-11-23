@@ -153,9 +153,16 @@ func TestDeletedHouseholdIsReadOnly(t *testing.T) {
 		t.Fatalf("lists after the refused POST %+v, %v", lists.ShoppingLists, err)
 	}
 	// the user's own settings on that page still save
-	form = url.Values{"username": {"renamed"}}
-	if w := send(r, http.MethodPost, routes.URL(routes.HouseholdSettings, householdID)+routes.AccountUsername, strings.NewReader(form.Encode()), cookies); w.Code == http.StatusForbidden {
-		t.Errorf("username change in a deleted household was refused")
+	settings := routes.URL(routes.HouseholdSettings, householdID)
+	for route, form := range map[string]url.Values{
+		routes.AccountUsername:   {"username": {"renamed"}},
+		routes.AccountDataExport: {},
+		// a wrong password stops it before anything changes
+		routes.AccountDelete: {"current_password": {"wrong"}},
+	} {
+		if w := send(r, http.MethodPost, settings+route, strings.NewReader(form.Encode()), cookies); w.Code == http.StatusForbidden {
+			t.Errorf("POST %s in a deleted household was refused", route)
+		}
 	}
 }
 

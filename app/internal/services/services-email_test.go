@@ -103,12 +103,20 @@ func TestResetPassword(t *testing.T) {
 	verifyToken := tokenOf(t, nextEmail(t, s).Body)
 	wantErr(t, "verify token used for reset", s.ResetPassword(ctx, verifyToken, "New-pass1!"), g.ErrorTokenInvalid)
 
-	// a session of the user on another device, and of someone else
+	// what a thief with the old password may have left: an email change on its way to them
+	setTestPassword(t, s, userID, "Old-pass1!")
+	if err := s.RequestEmailChange(ctx, userID, "Old-pass1!", newTestEmail()); err != nil {
+		t.Fatal(err)
+	}
+	changeToken := tokenOf(t, nextEmail(t, s).Body)
+
+	// a session and a push device of the user on another device, and of someone else
 	otherID := newTestUser(t, s)
 	for _, id := range []pgtype.UUID{userID, otherID} {
 		if _, err := s.pool.Exec(ctx, "INSERT INTO http_sessions (key, data, user_id) VALUES ($1, '', $2)", "key-"+id.String(), id); err != nil {
 			t.Fatal(err)
 		}
+		subscribeTestDevice(t, s, id, "en")
 	}
 	if err := s.ResetPassword(ctx, token, "New-pass1!"); err != nil {
 		t.Fatal(err)
@@ -126,6 +134,13 @@ func TestResetPassword(t *testing.T) {
 	if n := sessionsOf(t, s, otherID); n != 1 {
 		t.Fatalf("a reset should leave other users signed in, %d sessions left", n)
 	}
+	if n := pushDevicesOf(t, s, userID); n != 0 {
+		t.Fatalf("a signed out device should get no more notifications, %d subscriptions left", n)
+	}
+	if n := pushDevicesOf(t, s, otherID); n != 1 {
+		t.Fatalf("a reset should keep other users' devices, %d subscriptions left", n)
+	}
+	wantErr(t, "email change after the reset", s.ConfirmEmailChange(ctx, changeToken), g.ErrorTokenInvalid)
 	if user, _ := s.GetUser(ctx, userID); !user.EmailValidated {
 		t.Fatal("a reset proves the email, it should be confirmed")
 	}
@@ -216,6 +231,15 @@ func sessionsOf(t *testing.T, s *DefaultService, userID pgtype.UUID) int {
 	t.Helper()
 	var n int
 	if err := s.pool.QueryRow(t.Context(), "SELECT count(*) FROM http_sessions WHERE user_id = $1", userID).Scan(&n); err != nil {
+		t.Fatal(err)
+	}
+	return n
+}
+
+func pushDevicesOf(t *testing.T, s *DefaultService, userID pgtype.UUID) int {
+	t.Helper()
+	var n int
+	if err := s.pool.QueryRow(t.Context(), "SELECT count(*) FROM push_subscriptions WHERE user_id = $1", userID).Scan(&n); err != nil {
 		t.Fatal(err)
 	}
 	return n

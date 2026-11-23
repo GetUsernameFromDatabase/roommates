@@ -78,6 +78,8 @@ var userSettings = []string{
 	routes.AccountEmail,
 	routes.AccountSignOutEverywhere,
 	routes.AccountPayment,
+	routes.AccountDelete,
+	routes.AccountDataExport,
 }
 
 // readOnly refuses a change to a deleted household, htmx shows the message in <main>

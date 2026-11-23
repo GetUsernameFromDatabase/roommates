@@ -194,7 +194,8 @@ func (s *DefaultService) CheckPasswordResetToken(ctx context.Context, token stri
 }
 
 // ResetPassword sets the password and confirms the email (the link proved access to it),
-// and signs the user out everywhere, a reset is what follows a stolen password
+// signs the user out everywhere and cancels a pending email change, a reset is what follows
+// a stolen password
 func (s *DefaultService) ResetPassword(ctx context.Context, token, password string) error {
 	hashed, err := bcrypt.GenerateFromPassword([]byte(password), bcryptCost)
 	if err != nil {
@@ -217,13 +218,19 @@ func (s *DefaultService) ResetPassword(ctx context.Context, token, password stri
 		if err := q.SetEmailValidated(ctx, userID); err != nil {
 			return err
 		}
-		if err := q.DeleteUserSessions(ctx, userID); err != nil {
+		if err := signOutEverywhere(ctx, q, userID); err != nil {
 			return err
 		}
-		return q.DeleteEmailTokensOfUser(ctx, dbqueries.DeleteEmailTokensOfUserParams{
-			UserID: userID,
-			Kind:   tokenKindReset,
-		})
+		// an email change asked for with the stolen password must not outlive the reset
+		for _, kind := range []string{tokenKindReset, tokenKindEmailChange} {
+			if err := q.DeleteEmailTokensOfUser(ctx, dbqueries.DeleteEmailTokensOfUserParams{
+				UserID: userID,
+				Kind:   kind,
+			}); err != nil {
+				return err
+			}
+		}
+		return nil
 	})
 }
 

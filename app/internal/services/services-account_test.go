@@ -51,6 +51,13 @@ func TestChangePassword(t *testing.T) {
 	addTestSession(t, s, userID)
 	addTestSession(t, s, userID)
 	addTestSession(t, s, otherID)
+	subscribeTestDevice(t, s, userID, "en")
+	subscribeTestDevice(t, s, otherID, "en")
+	ectx := englishContext(t)
+	if err := s.RequestEmailChange(ectx, userID, "Old-pass1!", newTestEmail()); err != nil {
+		t.Fatal(err)
+	}
+	changeToken := tokenOf(t, nextEmail(t, s).Body)
 
 	wantErr(t, "wrong current", s.ChangePassword(ctx, userID, "wrong", "New-pass1!"), g.ErrorInvalidCredential)
 	if n := sessionsOf(t, s, userID); n != 2 {
@@ -69,6 +76,31 @@ func TestChangePassword(t *testing.T) {
 	}
 	if n := sessionsOf(t, s, otherID); n != 1 {
 		t.Fatalf("other users should stay signed in, %d sessions left", n)
+	}
+	if n := pushDevicesOf(t, s, userID); n != 0 {
+		t.Fatalf("signed out devices should get no more notifications, %d subscriptions left", n)
+	}
+	if n := pushDevicesOf(t, s, otherID); n != 1 {
+		t.Fatalf("other users' devices should stay, %d subscriptions left", n)
+	}
+	wantErr(t, "email change asked for with the old password", s.ConfirmEmailChange(ctx, changeToken), g.ErrorTokenInvalid)
+}
+
+func TestSignOutEverywhere(t *testing.T) {
+	s := newTestService(t)
+	userID, otherID := newTestUser(t, s), newTestUser(t, s)
+	for _, id := range []pgtype.UUID{userID, otherID} {
+		addTestSession(t, s, id)
+		subscribeTestDevice(t, s, id, "en")
+	}
+	if err := s.SignOutEverywhere(t.Context(), userID); err != nil {
+		t.Fatal(err)
+	}
+	if sessionsOf(t, s, userID) != 0 || pushDevicesOf(t, s, userID) != 0 {
+		t.Fatal("a session or push device of the user is left")
+	}
+	if sessionsOf(t, s, otherID) != 1 || pushDevicesOf(t, s, otherID) != 1 {
+		t.Fatal("another user was signed out")
 	}
 }
 
