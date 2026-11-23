@@ -563,7 +563,8 @@ templ ExpensePage(actor services.Membership, e services.Expense, uploadError str
 									if sh.UserID != e.Expense.PayerID {
 										<div class="mt-1 flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
 											@sharePaidStamp(sh.PaidAt.Valid)
-											if isPayer {
+											// a former member's share and one from an older currency can no longer change
+											if isPayer && sh.Active && e.Expense.Currency == actor.Currency {
 												<form action={ routes.URL(routes.ExpenseSharePaid, actor.HouseholdID, e.Expense.ID, sh.UserID) } method="post" hx-boost="true">
 													<input type="hidden" name="paid" value={ utils.IfElse(sh.PaidAt.Valid, "0", "1") }/>
 													@button.Button(button.Props{
@@ -601,6 +602,9 @@ templ ExpensePage(actor services.Membership, e services.Expense, uploadError str
 				@button.Button(button.Props{Href: routes.URL(routes.ExpenseEdit, actor.HouseholdID, e.Expense.ID),Variant: button.VariantSecondary, Size: button.SizeLg}) {
 					@components.T(locales.LK_ExpensesEdit)
 				}
+			}
+			// with an amount lock, deleting would change a settled balance, see [services.DeleteExpense]
+			if isPayer && e.AmountLock(actor.Currency) == "" {
 				<form
 					action={ routes.URL(routes.ExpenseDelete, actor.HouseholdID, e.Expense.ID) }
 					method="post"

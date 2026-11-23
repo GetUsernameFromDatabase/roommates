@@ -412,17 +412,43 @@ func (e Expense) CopyInput(order []pgtype.UUID) ExpenseInput {
 	return in
 }
 
-// DeleteExpense returns [g.ErrorNotFound] unless the actor paid the expense
-// and everyone sharing it is still a member
+// DeleteExpense returns [g.ErrorNotFound] unless the actor paid the expense, everyone
+// sharing it is still a member and it is in the household's currency, see [lockCurrentExpense]
 func (s *DefaultService) DeleteExpense(ctx context.Context, actor Membership, expenseID pgtype.UUID) error {
-	return s.inTx(ctx, func(q *dbqueries.Queries) error { return deleteExpense(ctx, q, actor, expenseID) })
+	return s.inTx(ctx, func(q *dbqueries.Queries) error { return deleteExpense(ctx, q, actor, expenseID, false) })
 }
 
-// deleteExpense deletes the actor's expense and logs it
-func deleteExpense(ctx context.Context, q *dbqueries.Queries, actor Membership, expenseID pgtype.UUID) error {
+// lockCurrentExpense locks the household, so a member leaving or the currency changing waits,
+// and the expense, [g.ErrorNotFound] unless it is in the household and in its currency:
+// deleting or marking one from an older currency would reopen its money in the new one
+func lockCurrentExpense(ctx context.Context, q *dbqueries.Queries, householdID, expenseID pgtype.UUID) error {
+	if err := q.LockHousehold(ctx, householdID); err != nil {
+		return err
+	}
+	ex, err := q.GetExpenseToEdit(ctx, dbqueries.GetExpenseToEditParams{ID: expenseID, HouseholdID: householdID})
+	if err != nil {
+		return noRowsAs(err, g.ErrorNotFound)
+	}
+	if ex.Currency != ex.HouseholdCurrency {
+		return g.ErrorNotFound
+	}
+	return nil
+}
+
+// deleteExpense deletes the actor's expense and logs it, with keepFiles it leaves
+// the files only the expense holds in Files
+func deleteExpense(ctx context.Context, q *dbqueries.Queries, actor Membership, expenseID pgtype.UUID, keepFiles bool) error {
+	if err := lockCurrentExpense(ctx, q, actor.HouseholdID, expenseID); err != nil {
+		return err
+	}
 	e, err := expenseOf(ctx, q, actor.HouseholdID, expenseID)
 	if err != nil {
 		return err
+	}
+	if keepFiles {
+		if err := q.KeepExpenseFiles(ctx, dbqueries.KeepExpenseFilesParams{ExpenseID: expenseID, HouseholdID: actor.HouseholdID}); err != nil {
+			return err
+		}
 	}
 	if err := rowsAffected(q.DeleteExpense(ctx, dbqueries.DeleteExpenseParams{
 		ID:          expenseID,
@@ -437,13 +463,7 @@ func deleteExpense(ctx context.Context, q *dbqueries.Queries, actor Membership, 
 // DeleteExpenseKeepingFiles is [DefaultService.DeleteExpense] that leaves the files only the
 // expense holds in Files, a refused delete keeps nothing
 func (s *DefaultService) DeleteExpenseKeepingFiles(ctx context.Context, actor Membership, expenseID pgtype.UUID) error {
-	return s.inTx(ctx, func(q *dbqueries.Queries) error {
-		err := q.KeepExpenseFiles(ctx, dbqueries.KeepExpenseFilesParams{ExpenseID: expenseID, HouseholdID: actor.HouseholdID})
-		if err != nil {
-			return err
-		}
-		return deleteExpense(ctx, q, actor, expenseID)
-	})
+	return s.inTx(ctx, func(q *dbqueries.Queries) error { return deleteExpense(ctx, q, actor, expenseID, true) })
 }
 
 // SetExpenseSharePaid lets the actor who paid the expense mark the share of userID, who must
@@ -451,9 +471,12 @@ func (s *DefaultService) DeleteExpenseKeepingFiles(ctx context.Context, actor Me
 // the rest of the share counts as paid outside the app
 //
 // the debtor marks their own share paid only when confirmed payments cover all of it,
-// anything else is [g.ErrorNotFound]
+// anything else is [g.ErrorNotFound], so is an expense from an older currency, see [lockCurrentExpense]
 func (s *DefaultService) SetExpenseSharePaid(ctx context.Context, actor Membership, expenseID, userID pgtype.UUID, paid bool) error {
 	return s.inTx(ctx, func(q *dbqueries.Queries) error {
+		if err := lockCurrentExpense(ctx, q, actor.HouseholdID, expenseID); err != nil {
+			return err
+		}
 		sh, err := q.GetShareToMark(ctx, dbqueries.GetShareToMarkParams{
 			ExpenseID:   expenseID,
 			UserID:      userID,

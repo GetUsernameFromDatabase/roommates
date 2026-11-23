@@ -162,18 +162,24 @@ func expenseInputError(ctx *gin.Context, err error) (message, field string) {
 }
 
 // expenseFromForm reads the ticked "member" values and the typed shares named "share-<userID>"
-func expenseFromForm(ctx *gin.Context) services.ExpenseInput {
-	// without JS the picker sends no day, the server's today stands in
+func (h *DefaultHandler) expenseFromForm(ctx *gin.Context) services.ExpenseInput {
 	in := services.ExpenseInput{
 		Title:      ctx.PostForm("title"),
 		Amount:     ctx.PostForm("amount"),
 		Category:   ctx.PostForm("category"),
-		IncurredOn: cmp.Or(strings.TrimSpace(ctx.PostForm("incurred_on")), time.Now().Format(time.DateOnly)),
+		IncurredOn: strings.TrimSpace(ctx.PostForm("incurred_on")),
 		Custom:     ctx.PostForm("split") == "custom",
 		Members:    nil,
 		Shares:     map[pgtype.UUID]string{},
 		ListID:     pgtype.UUID{},
 		ItemID:     pgtype.UUID{},
+	}
+	// without JS the picker sends no day, the household's today stands in (the server's clock
+	// can be in another zone); a failed read leaves it blank, the save refuses that as a bad date
+	if in.IncurredOn == "" {
+		if today, err := h.service.HouseholdToday(ctx, membershipFromContext(ctx)); err == nil {
+			in.IncurredOn = today.Format(time.DateOnly)
+		}
 	}
 	// a bad id only links nothing, the expense itself is what was asked for
 	if id, err := utils.ParseUUID(ctx.PostForm("list")); err == nil {
@@ -207,7 +213,7 @@ func expenseFromForm(ctx *gin.Context) services.ExpenseInput {
 // CreateExpense opens the new expense, with a "repeat" of [g.Intervals] it starts a schedule too
 func (h *DefaultHandler) CreateExpense(ctx *gin.Context) {
 	actor := membershipFromContext(ctx)
-	in := expenseFromForm(ctx)
+	in := h.expenseFromForm(ctx)
 	repeat := ctx.PostForm("repeat")
 	var expenseID pgtype.UUID
 	var err error
@@ -254,7 +260,7 @@ func (h *DefaultHandler) UpdateExpense(ctx *gin.Context) {
 		return
 	}
 	actor := membershipFromContext(ctx)
-	in := expenseFromForm(ctx)
+	in := h.expenseFromForm(ctx)
 	err := h.service.UpdateExpense(ctx, actor, e.Expense.ID, in)
 	switch {
 	case err == nil:

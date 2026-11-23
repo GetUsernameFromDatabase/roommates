@@ -208,6 +208,10 @@ func TestEditExpenseRefused(t *testing.T) {
 	if err != nil || len(rows) == 0 || rows[0].Kind != g.ActExpenseEdited || rows[0].Currency == nil || *rows[0].Currency != e.Expense.Currency {
 		t.Fatalf("newest activity %+v, %v", rows[:min(len(rows), 1)], err)
 	}
+	// marking or deleting it would open its old-currency money in USD
+	wantErr(t, "mark an old currency share", s.SetExpenseSharePaid(ctx, ownerNow, id, memberM.UserID, true), g.ErrorNotFound)
+	wantErr(t, "delete an old currency expense", s.DeleteExpense(ctx, ownerNow, id), g.ErrorNotFound)
+	wantErr(t, "delete it keeping files", s.DeleteExpenseKeepingFiles(ctx, ownerNow, id), g.ErrorNotFound)
 }
 
 // whatever the share was paid with, each balance moves by exactly the change of the share

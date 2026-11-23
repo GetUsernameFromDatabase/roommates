@@ -71,7 +71,7 @@ func (h *DefaultHandler) UpdateRecurring(ctx *gin.Context) {
 		return
 	}
 	actor := membershipFromContext(ctx)
-	in := services.RecurringInput{ExpenseInput: expenseFromForm(ctx), Interval: ctx.PostForm("repeat"), ShownDue: ctx.PostForm("shown_due")}
+	in := services.RecurringInput{ExpenseInput: h.expenseFromForm(ctx), Interval: ctx.PostForm("repeat"), ShownDue: ctx.PostForm("shown_due")}
 	err := h.service.UpdateRecurring(ctx, actor, r.ID, in)
 	switch {
 	case err == nil:
