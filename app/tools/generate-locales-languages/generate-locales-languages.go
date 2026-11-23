@@ -1,6 +1,7 @@
 //go:generate go run .
 
-// generates locales and checks if other language files than default have missing keys
+// generates the Language type and embeds from the language folders,
+// internal/locales/locales_test.go checks the translations match the default
 
 package main
 
@@ -14,8 +15,6 @@ import (
 	"slices"
 	"sort"
 	"strings"
-
-	"gopkg.in/yaml.v3"
 )
 
 // used to reference this file
@@ -33,80 +32,11 @@ const (
 	outFile        = "locales-languages.go"
 )
 
-// command flag arguments
-var (
-	baseLocaleFile = resolve(toLocaleFolder + "/et/et.yaml")
-	localeFolder   = resolve(toLocaleFolder)
-)
+var localeFolder = resolve(toLocaleFolder)
 
 func main() {
 	if thisFile == "" {
 		panic("thisFile is used to resolve other files")
-	}
-
-	base, err := loadYAML(baseLocaleFile)
-	if err != nil {
-		fmt.Fprintf(
-			os.Stderr,
-			"%s: %v\n",
-			baseLocaleFile,
-			err,
-		)
-		os.Exit(2)
-	}
-
-	base, err = unwrapLocale(base)
-	if err != nil {
-		fmt.Fprintf(
-			os.Stderr,
-			"%s: %v\n",
-			baseLocaleFile,
-			err,
-		)
-		os.Exit(2)
-	}
-
-	files, err := filepath.Glob(
-		filepath.Join(localeFolder, "*", "*.yaml"),
-	)
-	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(2)
-	}
-
-	var failed bool
-
-	for _, file := range files {
-		if file == baseLocaleFile {
-			continue
-		}
-
-		target, err := loadYAML(file)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "%s: %v\n", file, err)
-			failed = true
-			continue
-		}
-
-		target, err = unwrapLocale(target)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "%s: %v\n", file, err)
-			failed = true
-			continue
-		}
-
-		missing := missingKeys(base, target, "")
-		if len(missing) == 0 {
-			fmt.Printf("OK: %s\n", file)
-			continue
-		}
-
-		failed = true
-		fmt.Printf("MISSING KEYS: %s\n", file)
-
-		for _, key := range missing {
-			fmt.Printf("  - %s\n", key)
-		}
 	}
 
 	langs, err := discoverLanguages(localeFolder)
@@ -126,119 +56,10 @@ func main() {
 		os.Exit(2)
 	}
 
-	// Generate even if translations are incomplete, so the Go source
-	// stays synchronized with the discovered language directories.
 	if err := generateLocales(localeFolder, langs); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(2)
 	}
-
-	if failed {
-		os.Exit(1)
-	}
-
-	fmt.Println("All translation files contain the baseline keys.")
-}
-
-func loadYAML(path string) (*yaml.Node, error) {
-	data, err := os.ReadFile(path)
-	if err != nil {
-		return nil, err
-	}
-
-	var doc yaml.Node
-	if err := yaml.Unmarshal(data, &doc); err != nil {
-		return nil, fmt.Errorf("parse YAML: %w", err)
-	}
-
-	if len(doc.Content) == 0 {
-		return nil, fmt.Errorf("empty YAML document")
-	}
-
-	return doc.Content[0], nil
-}
-
-func mapping(node *yaml.Node) map[string]*yaml.Node {
-	result := make(map[string]*yaml.Node)
-
-	if node == nil || node.Kind != yaml.MappingNode {
-		return result
-	}
-
-	for i := 0; i+1 < len(node.Content); i += 2 {
-		key := node.Content[i]
-		value := node.Content[i+1]
-		result[key.Value] = value
-	}
-
-	return result
-}
-
-func unwrapLocale(node *yaml.Node) (*yaml.Node, error) {
-	if node.Kind != yaml.MappingNode || len(node.Content) != 2 {
-		return nil, fmt.Errorf(
-			"expected a YAML mapping with one top-level locale key",
-		)
-	}
-
-	return node.Content[1], nil
-}
-
-func missingKeys(base, target *yaml.Node, prefix string) []string {
-	baseMap := mapping(base)
-	targetMap := mapping(target)
-
-	var missing []string
-
-	// Sort keys so traversal and output are deterministic.
-	keys := make([]string, 0, len(baseMap))
-	for key := range baseMap {
-		keys = append(keys, key)
-	}
-	sort.Strings(keys)
-
-	for _, key := range keys {
-		baseValue := baseMap[key]
-
-		path := key
-		if prefix != "" {
-			path = prefix + "." + key
-		}
-
-		targetValue, exists := targetMap[key]
-		if !exists {
-			missing = append(missing, path)
-
-			// Report every nested key when an entire mapping is missing.
-			if baseValue.Kind == yaml.MappingNode {
-				missing = append(
-					missing,
-					missingKeys(baseValue, nil, path)...,
-				)
-			}
-			continue
-		}
-
-		if baseValue.Kind == yaml.MappingNode {
-			if targetValue.Kind != yaml.MappingNode {
-				missing = append(missing, path+" (expected mapping)")
-
-				// Also report the nested keys that cannot be present.
-				missing = append(
-					missing,
-					missingKeys(baseValue, nil, path)...,
-				)
-				continue
-			}
-
-			missing = append(
-				missing,
-				missingKeys(baseValue, targetValue, path)...,
-			)
-		}
-	}
-
-	return missing
 }
 
 // discoverLanguages finds language directories containing YAML files.
@@ -317,6 +138,17 @@ func generateLocales(root string, langs []string) error {
 		strings.ToUpper(defaultLang),
 	)
 	fmt.Fprintln(&b, ")")
+	fmt.Fprintln(&b)
+
+	// all languages, langs is already sorted
+	fmt.Fprintln(&b, "// All is the picker order: Default first, then the rest alphabetically")
+	fmt.Fprintf(&b, "var All = []Language{%s", strings.ToUpper(defaultLang))
+	for _, lang := range langs {
+		if lang != defaultLang {
+			fmt.Fprintf(&b, ", %s", strings.ToUpper(lang))
+		}
+	}
+	fmt.Fprintln(&b, "}")
 	fmt.Fprintln(&b)
 
 	// to string

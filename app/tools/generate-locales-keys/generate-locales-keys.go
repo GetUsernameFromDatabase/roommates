@@ -156,21 +156,33 @@ func writeOutput(buffer *bytes.Buffer) {
 func flattenYAML(node any, path []string, out map[string]string) {
 	switch v := node.(type) {
 	case map[string]any:
+		// a plural group is used through its parent key, its leaves are not keys on their own
+		if isPlural(v) {
+			name, value := pathToConst(path)
+			out[name] = value
+			return
+		}
 		for key, value := range v {
 			flattenYAML(value, append(path, key), out)
 		}
 	default:
 		name, value := pathToConst(path)
 		out[name] = value
+	}
+}
 
-		lastIndex := len(path) - 1
-		// it is assumed that when last element is "other" then pluralization
-		if path[lastIndex] == "other" {
-			parentPath := path[:lastIndex]
-			name, value := pathToConst(parentPath)
-			out[name] = value
+// isPlural is a mapping like {one: …, other: …}: it has "other" and only the forms ctxi18n picks from,
+// so a list of choices that happens to include "other" ({cash, card, other}) keeps its own keys
+func isPlural(m map[string]any) bool {
+	if _, ok := m["other"]; !ok {
+		return false
+	}
+	for key := range m {
+		if key != "zero" && key != "one" && key != "other" {
+			return false
 		}
 	}
+	return true
 }
 
 // does not check the length of the path, is assumed it is bigger than 0

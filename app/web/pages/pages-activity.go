@@ -11,58 +11,61 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
-var activityKeys = map[string]locales.LK{
-	g.ActExpenseAdded:         locales.LK_ActivityExpenseAdded,
-	g.ActExpenseEdited:        locales.LK_ActivityExpenseEdited,
-	g.ActExpenseDeleted:       locales.LK_ActivityExpenseDeleted,
-	g.ActSharePaid:            locales.LK_ActivitySharePaid,
-	g.ActShareUnpaid:          locales.LK_ActivityShareUnpaid,
-	g.ActSettlementRequested:  locales.LK_ActivitySettlementRequested,
-	g.ActSettlementConfirmed:  locales.LK_ActivitySettlementConfirmed,
-	g.ActSettlementDeclined:   locales.LK_ActivitySettlementDeclined,
-	g.ActRecurringAdded:       locales.LK_ActivityRecurringAdded,
-	g.ActRecurringEdited:      locales.LK_ActivityRecurringEdited,
-	g.ActRecurringDeleted:     locales.LK_ActivityRecurringDeleted,
-	g.ActRecurringSkipped:     locales.LK_ActivityRecurringSkipped,
-	g.ActListCreated:          locales.LK_ActivityListCreated,
-	g.ActListRenamed:          locales.LK_ActivityListRenamed,
-	g.ActListDeleted:          locales.LK_ActivityListDeleted,
-	g.ActItemBought:           locales.LK_ActivityItemBought,
-	g.ActItemsCleared:         locales.LK_ActivityItemsCleared,
-	g.ActNoteCreated:          locales.LK_ActivityNoteCreated,
-	g.ActNoteEdited:           locales.LK_ActivityNoteEdited,
-	g.ActNoteDeleted:          locales.LK_ActivityNoteDeleted,
-	g.ActFileUploaded:         locales.LK_ActivityFileUploaded,
-	g.ActFileRemoved:          locales.LK_ActivityFileRemoved,
-	g.ActMemberJoined:         locales.LK_ActivityMemberJoined,
-	g.ActMemberLeft:           locales.LK_ActivityMemberLeft,
-	g.ActMemberRemoved:        locales.LK_ActivityMemberRemoved,
-	g.ActMemberPromoted:       locales.LK_ActivityMemberPromoted,
-	g.ActOwnershipTransferred: locales.LK_ActivityOwnershipTransferred,
-	g.ActSteppedDown:          locales.LK_ActivitySteppedDown,
-	g.ActHouseholdRenamed:     locales.LK_ActivityHouseholdRenamed,
-	g.ActCurrencyChanged:      locales.LK_ActivityCurrencyChanged,
-	g.ActHouseholdDeleted:     locales.LK_ActivityHouseholdDeleted,
-	g.ActHouseholdRestored:    locales.LK_ActivityHouseholdRestored,
-	g.ActChoreAdded:           locales.LK_ActivityChoreAdded,
-	g.ActChoreDeleted:         locales.LK_ActivityChoreDeleted,
-	g.ActChoreDone:            locales.LK_ActivityChoreDone,
-	g.ActChoreSkipped:         locales.LK_ActivityChoreSkipped,
-	g.ActChorePassed:          locales.LK_ActivityChorePassed,
-	g.ActEventAdded:           locales.LK_ActivityEventAdded,
-	g.ActEventDeleted:         locales.LK_ActivityEventDeleted,
+// activityKey is the sentence of a kind, said of someone else and of the viewer
+type activityKey struct{ them, you locales.LK }
+
+var activityKeys = map[string]activityKey{
+	g.ActExpenseAdded:         {locales.LK_ActivityExpenseAdded, locales.LK_ActivityExpenseAddedYou},
+	g.ActExpenseEdited:        {locales.LK_ActivityExpenseEdited, locales.LK_ActivityExpenseEditedYou},
+	g.ActExpenseDeleted:       {locales.LK_ActivityExpenseDeleted, locales.LK_ActivityExpenseDeletedYou},
+	g.ActSharePaid:            {locales.LK_ActivitySharePaid, locales.LK_ActivitySharePaidYou},
+	g.ActShareUnpaid:          {locales.LK_ActivityShareUnpaid, locales.LK_ActivityShareUnpaidYou},
+	g.ActSettlementRequested:  {locales.LK_ActivitySettlementRequested, locales.LK_ActivitySettlementRequestedYou},
+	g.ActSettlementConfirmed:  {locales.LK_ActivitySettlementConfirmed, locales.LK_ActivitySettlementConfirmedYou},
+	g.ActSettlementDeclined:   {locales.LK_ActivitySettlementDeclined, locales.LK_ActivitySettlementDeclinedYou},
+	g.ActRecurringAdded:       {locales.LK_ActivityRecurringAdded, locales.LK_ActivityRecurringAddedYou},
+	g.ActRecurringEdited:      {locales.LK_ActivityRecurringEdited, locales.LK_ActivityRecurringEditedYou},
+	g.ActRecurringDeleted:     {locales.LK_ActivityRecurringDeleted, locales.LK_ActivityRecurringDeletedYou},
+	g.ActRecurringSkipped:     {locales.LK_ActivityRecurringSkipped, locales.LK_ActivityRecurringSkippedYou},
+	g.ActListCreated:          {locales.LK_ActivityListCreated, locales.LK_ActivityListCreatedYou},
+	g.ActListRenamed:          {locales.LK_ActivityListRenamed, locales.LK_ActivityListRenamedYou},
+	g.ActListDeleted:          {locales.LK_ActivityListDeleted, locales.LK_ActivityListDeletedYou},
+	g.ActItemBought:           {locales.LK_ActivityItemBought, locales.LK_ActivityItemBoughtYou},
+	g.ActItemsCleared:         {locales.LK_ActivityItemsCleared, locales.LK_ActivityItemsClearedYou},
+	g.ActNoteCreated:          {locales.LK_ActivityNoteCreated, locales.LK_ActivityNoteCreatedYou},
+	g.ActNoteEdited:           {locales.LK_ActivityNoteEdited, locales.LK_ActivityNoteEditedYou},
+	g.ActNoteDeleted:          {locales.LK_ActivityNoteDeleted, locales.LK_ActivityNoteDeletedYou},
+	g.ActFileUploaded:         {locales.LK_ActivityFileUploaded, locales.LK_ActivityFileUploadedYou},
+	g.ActFileRemoved:          {locales.LK_ActivityFileRemoved, locales.LK_ActivityFileRemovedYou},
+	g.ActMemberJoined:         {locales.LK_ActivityMemberJoined, locales.LK_ActivityMemberJoinedYou},
+	g.ActMemberLeft:           {locales.LK_ActivityMemberLeft, locales.LK_ActivityMemberLeftYou},
+	g.ActMemberRemoved:        {locales.LK_ActivityMemberRemoved, locales.LK_ActivityMemberRemovedYou},
+	g.ActMemberPromoted:       {locales.LK_ActivityMemberPromoted, locales.LK_ActivityMemberPromotedYou},
+	g.ActOwnershipTransferred: {locales.LK_ActivityOwnershipTransferred, locales.LK_ActivityOwnershipTransferredYou},
+	g.ActSteppedDown:          {locales.LK_ActivitySteppedDown, locales.LK_ActivitySteppedDownYou},
+	g.ActHouseholdRenamed:     {locales.LK_ActivityHouseholdRenamed, locales.LK_ActivityHouseholdRenamedYou},
+	g.ActCurrencyChanged:      {locales.LK_ActivityCurrencyChanged, locales.LK_ActivityCurrencyChangedYou},
+	g.ActHouseholdDeleted:     {locales.LK_ActivityHouseholdDeleted, locales.LK_ActivityHouseholdDeletedYou},
+	g.ActHouseholdRestored:    {locales.LK_ActivityHouseholdRestored, locales.LK_ActivityHouseholdRestoredYou},
+	g.ActChoreAdded:           {locales.LK_ActivityChoreAdded, locales.LK_ActivityChoreAddedYou},
+	g.ActChoreDeleted:         {locales.LK_ActivityChoreDeleted, locales.LK_ActivityChoreDeletedYou},
+	g.ActChoreDone:            {locales.LK_ActivityChoreDone, locales.LK_ActivityChoreDoneYou},
+	g.ActChoreSkipped:         {locales.LK_ActivityChoreSkipped, locales.LK_ActivityChoreSkippedYou},
+	g.ActChorePassed:          {locales.LK_ActivityChorePassed, locales.LK_ActivityChorePassedYou},
+	g.ActEventAdded:           {locales.LK_ActivityEventAdded, locales.LK_ActivityEventAddedYou},
+	g.ActEventDeleted:         {locales.LK_ActivityEventDeleted, locales.LK_ActivityEventDeletedYou},
 }
 
 // activityText is the sentence of a row, "Mari added the expense Rent · 650,00 €",
-// the viewer's own rows use the "-you" variant of the key ("You added the expense Rent")
+// the viewer's own rows use the "you" key ("You added the expense Rent")
 func activityText(ctx context.Context, actor services.Membership, r services.ActivityRow) string {
 	someone := utils.T(ctx, locales.LK_ActivitySomeone)
 	who, target := someone, someone
-	key := activityKeys[r.Kind]
+	key := activityKeys[r.Kind].them
 	if r.ActorName != nil {
 		who = utils.MemberName(ctx, *r.ActorName)
 		if r.ActorID == actor.UserID {
-			key += "-you"
+			key = activityKeys[r.Kind].you
 		}
 	}
 	if r.TargetName != nil {

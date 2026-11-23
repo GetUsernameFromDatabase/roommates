@@ -19,7 +19,6 @@ import (
 	"roommates/internal/routes"
 	"roommates/internal/utils"
 
-	"github.com/invopop/ctxi18n"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 )
@@ -109,10 +108,7 @@ func (s *DefaultService) BuildPendingExports(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	lctx, err := ctxi18n.WithLocale(ctx, row.Lang)
-	if err != nil {
-		lctx = ctx
-	}
+	lctx := locales.WithLocale(ctx, row.Lang)
 	f, err := os.CreateTemp("", "roommates-export-*.zip")
 	if err != nil {
 		return err

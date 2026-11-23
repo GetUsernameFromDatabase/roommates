@@ -89,6 +89,8 @@ tasks:
       - task: vendor
       - sqlc generate
       - go generate ./tools/...
+      # a missing or broken translation stops the build, no database needed
+      - go test ./internal/locales/
       - tailwindcss -i {{.TAILWIND_INPUT}} -o {{.TAILWIND_OUTPUT}} --minify
       - go tool shadcn-templ bundle
       - go tool templ generate

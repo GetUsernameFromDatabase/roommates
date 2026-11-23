@@ -25,6 +25,20 @@ const (
 	MaxAmountCents = 1_000_000_000
 )
 
+// categoryKeys has a key for each of [g.ExpenseCategories]
+var categoryKeys = map[string]locales.LK{
+	"groceries": locales.LK_ExpensesCategoryGroceries,
+	"utilities": locales.LK_ExpensesCategoryUtilities,
+	"rent":      locales.LK_ExpensesCategoryRent,
+	"household": locales.LK_ExpensesCategoryHousehold,
+	"other":     locales.LK_ExpensesCategoryOther,
+}
+
+// CategoryName is the translated expenses.category
+func CategoryName(ctx context.Context, category string) string {
+	return utils.T(ctx, categoryKeys[category])
+}
+
 var amountPattern = regexp.MustCompile(`^(\d{1,10})(?:[.,](\d{1,2}))?$`)
 
 // ParseCents reads "12", "12.5" or "12,50" as minor units,

@@ -173,7 +173,7 @@ templ HouseholdExpenses(actor services.Membership, o services.ExpensesOverview, 
 											</span>
 											<span class="flex flex-wrap justify-between gap-x-3 text-xs text-muted-foreground">
 												<span>{ paidByLine(ctx, actor, e.PayerID, e.PayerName, e.IncurredOn) }</span>
-												<span>{ CategoryName(ctx, e.Category) }</span>
+												<span>{ services.CategoryName(ctx, e.Category) }</span>
 											</span>
 											if e.FullyPaid {
 												<span class="mt-1 block">
@@ -548,7 +548,7 @@ templ ExpensePage(actor services.Membership, e services.Expense, uploadError str
 					</h2>
 					<p class="flex flex-wrap justify-between gap-x-3 text-xs text-muted-foreground">
 						<span>{ paidByLine(ctx, actor, e.Expense.PayerID, e.Expense.PayerName, e.Expense.IncurredOn) }</span>
-						<span>{ CategoryName(ctx, e.Expense.Category) }</span>
+						<span>{ services.CategoryName(ctx, e.Expense.Category) }</span>
 					</p>
 					@liveRegion("shares", events.TopicExpenses) {
 						<ul class="mt-1 divide-y divide-dashed">
@@ -662,7 +662,7 @@ templ datePicker(id, name, value string) {
 templ categorySelect(id, selected, class string, attrs templ.Attributes) {
 	{{
 		items := utils.Map(g.ExpenseCategories, func(c string) selectcomp.ItemData {
-			return selectcomp.ItemData{Value: c, Label: CategoryName(ctx, c)}
+			return selectcomp.ItemData{Value: c, Label: services.CategoryName(ctx, c)}
 		})
 	}}
 	@optionSelect(id, "category", selected, class, attrs, items)

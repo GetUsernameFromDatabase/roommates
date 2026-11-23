@@ -7,8 +7,6 @@ import "errors"
 type ErrorCode string
 
 const (
-	EC_MissingLocale ErrorCode = "MISSING_LOCALE"
-
 	EC_InternalError ErrorCode = "INTERNAL_ERROR"
 )
 

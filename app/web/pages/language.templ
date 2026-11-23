@@ -13,6 +13,7 @@ import "roommates/internal/utils"
 // id keeps the select unique on the page, without JS Save does it and next is where to go after,
 // compact is only the flag, for beside a title
 templ LanguageForm(id, next string, compact bool) {
+	{{ items := languageItems() }}
 	<form
 		action={ routes.Language }
 		method="post"
@@ -29,7 +30,7 @@ templ LanguageForm(id, next string, compact bool) {
 			}
 		}
 		<div class="flex items-center gap-3">
-			@selectcomp.Select(selectcomp.Props{ID: id, Name: "language", Items: languageItems, DefaultValue: utils.GetLocaleString(ctx)}) {
+			@selectcomp.Select(selectcomp.Props{ID: id, Name: "language", Items: items, DefaultValue: utils.GetLocaleString(ctx)}) {
 				if compact {
 					// the name stays for screen readers
 					@selectcomp.Trigger(selectcomp.TriggerProps{
@@ -39,14 +40,14 @@ templ LanguageForm(id, next string, compact bool) {
 						@selectcomp.Value()
 					}
 					@selectcomp.Content(selectcomp.ContentProps{Align: selectcomp.AlignEnd, AlignItemWithTrigger: new(false)}) {
-						@languageOptions()
+						@languageOptions(items)
 					}
 				} else {
 					@selectcomp.Trigger(selectcomp.TriggerProps{Class: "w-full data-[size=default]:h-11 sm:w-56"}) {
 						@selectcomp.Value()
 					}
 					@selectcomp.Content() {
-						@languageOptions()
+						@languageOptions(items)
 					}
 				}
 			}
@@ -59,36 +60,22 @@ templ LanguageForm(id, next string, compact bool) {
 	</form>
 }
 
-templ languageOptions() {
-	for _, it := range languageItems {
+templ languageOptions(items []selectcomp.ItemData) {
+	for _, it := range items {
 		@selectcomp.Item(selectcomp.ItemProps{Value: it.Value}) {
 			@it.Label.(templ.Component)
 		}
 	}
 }
 
-templ languageLabel(lang, name string) {
+// flag is the language's flag.svg, inline SVG since Windows shows emoji flags as letters,
+// all the same height with the width from the flag's own ratio
+templ languageLabel(lang, name, flag string) {
+	// ! beats the select's [&_svg:not([class*='size-'])]:size-4, which made every flag a 16px square
 	<span class="flex items-center gap-2">
-		@flag(lang)
+		<span class="flex shrink-0 overflow-hidden rounded-[2px] ring-1 ring-foreground/15 [&>svg]:h-3.5! [&>svg]:w-auto!">
+			@templ.Raw(flag)
+		</span>
 		<span lang={ lang } data-language-name>{ name }</span>
 	</span>
-}
-
-// flag of the country the language is named after, inline SVG since Windows shows emoji flags as letters
-// shortcut: the Union Jack's red diagonals are centred, not counterchanged, invisible at this size
-templ flag(lang string) {
-	<svg viewBox="0 0 60 40" preserveAspectRatio="none" class="h-3.5 w-5 shrink-0 rounded-[2px] ring-1 ring-foreground/15" aria-hidden="true">
-		switch lang {
-			case locales.ET.String():
-				<rect width="60" height="40" fill="#fff"></rect>
-				<rect width="60" height="26.67" fill="#000"></rect>
-				<rect width="60" height="13.33" fill="#0072ce"></rect>
-			case locales.EN.String():
-				<rect width="60" height="40" fill="#012169"></rect>
-				<path d="M0,0 L60,40 M60,0 L0,40" stroke="#fff" stroke-width="8"></path>
-				<path d="M0,0 L60,40 M60,0 L0,40" stroke="#c8102e" stroke-width="3"></path>
-				<path d="M30,0 V40 M0,20 H60" stroke="#fff" stroke-width="12"></path>
-				<path d="M30,0 V40 M0,20 H60" stroke="#c8102e" stroke-width="7"></path>
-		}
-	</svg>
 }

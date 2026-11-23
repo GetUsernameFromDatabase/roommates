@@ -11,7 +11,6 @@ import (
 	"roommates/internal/utils"
 	"time"
 
-	"github.com/invopop/ctxi18n"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 	"golang.org/x/crypto/bcrypt"
@@ -235,14 +234,11 @@ func (s *DefaultService) eraseAccount(ctx context.Context, userID pgtype.UUID, b
 	} else if err != nil {
 		return err
 	}
-	lang := locales.Default.String()
+	lang := ""
 	if user.Language != nil {
 		lang = *user.Language
 	}
-	lctx, err := ctxi18n.WithLocale(ctx, lang)
-	if err != nil {
-		lctx, _ = ctxi18n.WithLocale(ctx, locales.Default.String())
-	}
+	lctx := locales.WithLocale(ctx, lang)
 	s.sendAsync(mailer.Message{
 		To:      user.Email,
 		Subject: utils.T(lctx, locales.LK_MailAccountErasedSubject),

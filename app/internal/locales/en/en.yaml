@@ -300,7 +300,6 @@ en:
     empty: Nothing here yet. Write the first message to the household
     unread: "%d unread"
     length: Write a message or add up to %d files, the message can be at most %d characters
-    delete: Delete message
     delete-confirm: Delete this message?
     search: Search messages
     no-match: No messages match
@@ -349,6 +348,7 @@ en:
     device-description: Only changes this phone or computer
   language:
     title: Language
+    name: English
   nav:
     label: Household
     on-page: On this page
@@ -719,7 +719,6 @@ en:
     delete-description: "Nobody can change anything in it any more. It stays readable for %d days and an owner can restore it until then, after that it is gone for good with all its files."
     delete-open-debts: "Debts are still open, settle them first or save the expenses:"
     delete-debt: "%s owes %s %s"
-    delete-export: Download the expenses (CSV)
     delete-confirm-label: "Type %s to confirm"
     delete-name-mismatch: The name does not match
     deleted-banner: "Deleted · read-only until %s"

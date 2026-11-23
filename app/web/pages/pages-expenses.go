@@ -38,19 +38,6 @@ func formatDay(ctx context.Context, d pgtype.Date) string {
 	return utils.FormatDate(ctx, d.Time)
 }
 
-var categoryKeys = map[string]locales.LK{
-	"groceries": locales.LK_ExpensesCategoryGroceries,
-	"utilities": locales.LK_ExpensesCategoryUtilities,
-	"rent":      locales.LK_ExpensesCategoryRent,
-	"household": locales.LK_ExpensesCategoryHousehold,
-	"other":     locales.LK_ExpensesCategoryOther,
-}
-
-// CategoryName is the translated expenses.category
-func CategoryName(ctx context.Context, category string) string {
-	return utils.T(ctx, categoryKeys[category])
-}
-
 var methodKeys = map[string]locales.LK{
 	"transfer": locales.LK_ExpensesMethodTransfer,
 	"cash":     locales.LK_ExpensesMethodCash,

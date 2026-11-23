@@ -300,7 +300,6 @@ et:
     empty: Siin on veel vaikne. Kirjuta leibkonnale esimene sõnum
     unread: "%d lugemata"
     length: Kirjuta sõnum või lisa kuni %d faili, sõnum võib olla kuni %d märki
-    delete: Kustuta sõnum
     delete-confirm: Kustutada see sõnum?
     search: Otsi sõnumitest
     no-match: Ühtegi sobivat sõnumit pole
@@ -349,6 +348,7 @@ et:
     device-description: Muudab ainult seda telefoni või arvutit
   language:
     title: Keel
+    name: Eesti
   nav:
     label: Leibkond
     on-page: Sellel lehel
@@ -719,7 +719,6 @@ et:
     delete-description: "Keegi ei saa selles enam midagi muuta. See jääb %d päevaks loetavaks ja omanik saab selle seni taastada, seejärel kaob see koos kõigi failidega jäädavalt."
     delete-open-debts: "Võlad on veel lahtised, arveldage need enne või salvestage kulud:"
     delete-debt: "%s võlgneb kasutajale %s %s"
-    delete-export: Laadi kulud alla (CSV)
     delete-confirm-label: "Kinnitamiseks kirjuta %s"
     delete-name-mismatch: Nimi ei klapi
     deleted-banner: "Kustutatud · ainult loetav kuni %s"

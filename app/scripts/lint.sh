@@ -29,6 +29,16 @@ if [ -n "$stale" ]; then
 	status=1
 fi
 
+# a locale key nothing uses is dead text every translation still has to carry
+used=$(grep -rhoE --include='*.go' --include='*.templ' --exclude='locales-keys.go' --exclude='*_templ.go' --exclude='*_test.go' \
+	'\bLK_\w+' internal web cmd tools | sort -u)
+unused=$(grep -oE '^\s+LK_\w+' internal/locales/locales-keys.go | tr -d '[:blank:]' | sort -u | grep -vxF "$used")
+if [ -n "$unused" ]; then
+	echo "$unused" >&2
+	echo "remove these from the locale yaml files, or use them" >&2
+	status=1
+fi
+
 staticcheck -checks "all,-ST1000" ./... || status=1
 golangci-lint run || status=1
 exit $status

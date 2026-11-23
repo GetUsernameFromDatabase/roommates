@@ -16,6 +16,9 @@ const (
 	Default Language = ET
 )
 
+// All is the picker order: Default first, then the rest alphabetically
+var All = []Language{ET, EN}
+
 func (e Language) String() string {
 	return string(e)
 }

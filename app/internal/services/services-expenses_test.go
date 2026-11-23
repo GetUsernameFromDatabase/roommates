@@ -742,3 +742,11 @@ func TestSettlementCoversShares(t *testing.T) {
 	wantPaid("overpaid, the share it does not cover", bigger, false)
 	wantPaid("overpaid, the other way", smaller, false)
 }
+
+func TestEveryCategoryHasAName(t *testing.T) {
+	for _, c := range g.ExpenseCategories {
+		if categoryKeys[c] == "" {
+			t.Errorf("category %q has no locale key", c)
+		}
+	}
+}

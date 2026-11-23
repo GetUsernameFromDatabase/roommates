@@ -509,9 +509,9 @@ func HouseholdExpenses(actor services.Membership, o services.ExpensesOverview, f
 						return templ_7745c5c3_Err
 					}
 					var templ_7745c5c3_Var14 string
-					templ_7745c5c3_Var14, templ_7745c5c3_Err = templ.JoinStringErrs(CategoryName(ctx, e.Category))
+					templ_7745c5c3_Var14, templ_7745c5c3_Err = templ.JoinStringErrs(services.CategoryName(ctx, e.Category))
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/expenses.templ`, Line: 176, Col: 49}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/expenses.templ`, Line: 176, Col: 58}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var14))
 					if templ_7745c5c3_Err != nil {
@@ -2040,9 +2040,9 @@ func ExpensePage(actor services.Membership, e services.Expense, uploadError stri
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var76 string
-			templ_7745c5c3_Var76, templ_7745c5c3_Err = templ.JoinStringErrs(CategoryName(ctx, e.Expense.Category))
+			templ_7745c5c3_Var76, templ_7745c5c3_Err = templ.JoinStringErrs(services.CategoryName(ctx, e.Expense.Category))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/expenses.templ`, Line: 551, Col: 51}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/expenses.templ`, Line: 551, Col: 60}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var76))
 			if templ_7745c5c3_Err != nil {
@@ -2583,7 +2583,7 @@ func categorySelect(id, selected, class string, attrs templ.Attributes) templ.Co
 		ctx = templ.InitializeContext(ctx)
 		ctx = templ.ClearChildren(ctx)
 		items := utils.Map(g.ExpenseCategories, func(c string) selectcomp.ItemData {
-			return selectcomp.ItemData{Value: c, Label: CategoryName(ctx, c)}
+			return selectcomp.ItemData{Value: c, Label: services.CategoryName(ctx, c)}
 		})
 		templ_7745c5c3_Err = optionSelect(id, "category", selected, class, attrs, items).Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {

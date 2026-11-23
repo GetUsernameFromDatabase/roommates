@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 50 30" aria-hidden="true">
+	<!-- the 3:5 land version, the 1:2 one looked stretched beside the other flags at 14px -->
+	<rect width="50" height="30" fill="#012169"/>
+	<path d="M0,0 L50,30 M50,0 L0,30" stroke="#fff" stroke-width="6"/>
+	<!-- red diagonals counterchanged: each half of a diagonal keeps its red to one side, turning clockwise around the centre -->
+	<path d="M0,0 L25,15 H21.113 L0,2.332 Z M50,0 L25,15 V12.668 L46.113,0 Z M50,30 L25,15 H28.887 L50,27.668 Z M0,30 L25,15 V17.332 L3.887,30 Z" fill="#c8102e"/>
+	<path d="M25,0 V30 M0,15 H50" stroke="#fff" stroke-width="10"/>
+	<path d="M25,0 V30 M0,15 H50" stroke="#c8102e" stroke-width="6"/>
+</svg>

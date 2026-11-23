@@ -6,11 +6,11 @@ import (
 	"net/url"
 	g "roommates/internal/config"
 	"roommates/internal/db/dbqueries"
+	"roommates/internal/locales"
 	"roommates/internal/push"
 	"slices"
 	"strings"
 
-	"github.com/invopop/ctxi18n"
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
@@ -103,12 +103,8 @@ func (s *DefaultService) notifyAsync(ctx context.Context, actor Membership, kind
 			return
 		}
 		for _, sub := range subs {
-			lctx, err := ctxi18n.WithLocale(ctx, sub.Lang)
-			if err != nil {
-				lctx = ctx
-			}
-			msg := build(lctx, sub.UserID, user.Username, household.Name)
-			err = s.pusher.Send(ctx, push.Subscription{Endpoint: sub.Endpoint, Keys: push.Keys{P256dh: sub.P256dh, Auth: sub.Auth}}, msg)
+			msg := build(locales.WithLocale(ctx, sub.Lang), sub.UserID, user.Username, household.Name)
+			err := s.pusher.Send(ctx, push.Subscription{Endpoint: sub.Endpoint, Keys: push.Keys{P256dh: sub.P256dh, Auth: sub.Auth}}, msg)
 			if errors.Is(err, push.ErrGone) {
 				err = s.db.DeleteGonePushSubscription(ctx, sub.Endpoint)
 			}
